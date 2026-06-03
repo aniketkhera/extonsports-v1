@@ -274,7 +274,7 @@ function Panel({
         {/* Academy logos — always visible; compact when not hovered, full when hovered */}
         {kind === "academies" && (
           <motion.div
-            className={`${isMobile ? "flex flex-col" : "flex"} gap-2 mt-3`}
+            className={`w-full ${isMobile ? "flex flex-col" : "flex"} gap-2 mt-3`}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "0px" }}
