@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Barlow, Barlow_Condensed, Comfortaa, Caveat, Exo_2 } from "next/font/google";
+import { Barlow, Oswald, Comfortaa, Caveat, Exo_2 } from "next/font/google";
 import "./globals.css";
 
-const cond = Barlow_Condensed({
+const cond = Oswald({
   subsets: ["latin"],
   variable: "--font-cond",
-  weight: ["500", "700", "800", "900"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 

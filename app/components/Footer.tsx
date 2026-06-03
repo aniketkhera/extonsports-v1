@@ -112,7 +112,7 @@ export default function Footer() {
         style={{ padding: "18px clamp(20px,4vw,48px)" }}
       >
         <p className="text-[0.7rem] text-white/25 text-center sm:text-left">
-          © {year} Exton Sports Center, LLC · All rights reserved
+          © {year} Exton Sports Center · All rights reserved
         </p>
         <p className="text-[0.7rem] text-white/20 text-center sm:text-right">
           Lessons &amp; membership via{" "}
