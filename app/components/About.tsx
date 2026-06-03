@@ -447,6 +447,30 @@ function TrafficFace() {
    additive="sum"  = animation translates relative to outer <g> position.
    phase offset    = stagger so every player shows a different face.
 ─────────────────────────────────────────────────────────────────── */
+/* ── Sub-components defined at module level (not inside render) ── */
+function smFa(n: number) {
+  const s = (n / 7).toFixed(4);
+  const e = ((n + 1) / 7).toFixed(4);
+  if (n === 0) return { values: "1;1;0;0",     keyTimes: `0;${e};${e};1` };
+  if (n === 6) return { values: "0;0;1;1",     keyTimes: `0;${s};${s};1` };
+  return            { values: "0;0;1;1;0;0", keyTimes: `0;${s};${s};${e};${e};1` };
+}
+
+function Exp({ n, cyc, begin, children }: { n: number; cyc: string; begin: string; children: React.ReactNode }) {
+  const a = smFa(n);
+  return (
+    <g>
+      <animate attributeName="opacity" values={a.values} keyTimes={a.keyTimes}
+        dur={cyc} begin={begin} repeatCount="indefinite" />
+      {children}
+    </g>
+  );
+}
+
+function NE() { return (<><circle cx="-2.64" cy="-1.68" r="1.08" fill="#0A0A0A"/><circle cx="2.64" cy="-1.68" r="1.08" fill="#0A0A0A"/></>); }
+function BE() { return (<><circle cx="-2.64" cy="-2.24" r="1.6" fill="#0A0A0A"/><circle cx="2.64" cy="-2.24" r="1.6" fill="#0A0A0A"/><circle cx="-2.16" cy="-2.56" r="0.56" fill="white"/><circle cx="2.16" cy="-2.56" r="0.56" fill="white"/></>); }
+function SE() { return (<><path d="M -4.16,-2.24 Q -2.64,-0.8 -1.12,-2.24" stroke="#0A0A0A" strokeWidth="1.12" fill="none" strokeLinecap="round"/><path d="M 1.12,-2.24 Q 2.64,-0.8 4.16,-2.24" stroke="#0A0A0A" strokeWidth="1.12" fill="none" strokeLinecap="round"/></>); }
+
 function Smiley({
   x, y, color, values, keyTimes, dur = 3.4, delay = 0, phase = 0,
 }: {
@@ -455,30 +479,6 @@ function Smiley({
 }) {
   const CYC = "14s";
   const BEGIN = `-${phase % 14}s`;
-
-  // Opacity keyframes for expression at slot n in a 7-slot, 14-second cycle
-  const fa = (n: number) => {
-    const s = (n / 7).toFixed(4);
-    const e = ((n + 1) / 7).toFixed(4);
-    if (n === 0) return { values: "1;1;0;0",     keyTimes: `0;${e};${e};1` };
-    if (n === 6) return { values: "0;0;1;1",     keyTimes: `0;${s};${s};1` };
-    return            { values: "0;0;1;1;0;0", keyTimes: `0;${s};${s};${e};${e};1` };
-  };
-
-  const Exp = ({ n, children }: { n: number; children: React.ReactNode }) => {
-    const a = fa(n);
-    return (
-      <g>
-        <animate attributeName="opacity" values={a.values} keyTimes={a.keyTimes}
-          dur={CYC} begin={BEGIN} repeatCount="indefinite" />
-        {children}
-      </g>
-    );
-  };
-
-  const NE = () => (<><circle cx="-2.64" cy="-1.68" r="1.08" fill="#0A0A0A"/><circle cx="2.64" cy="-1.68" r="1.08" fill="#0A0A0A"/></>);
-  const BE = () => (<><circle cx="-2.64" cy="-2.24" r="1.6" fill="#0A0A0A"/><circle cx="2.64" cy="-2.24" r="1.6" fill="#0A0A0A"/><circle cx="-2.16" cy="-2.56" r="0.56" fill="white"/><circle cx="2.16" cy="-2.56" r="0.56" fill="white"/></>);
-  const SE = () => (<><path d="M -4.16,-2.24 Q -2.64,-0.8 -1.12,-2.24" stroke="#0A0A0A" strokeWidth="1.12" fill="none" strokeLinecap="round"/><path d="M 1.12,-2.24 Q 2.64,-0.8 4.16,-2.24" stroke="#0A0A0A" strokeWidth="1.12" fill="none" strokeLinecap="round"/></>);
 
   return (
     <g transform={`translate(${x}, ${y})`}>
@@ -492,29 +492,14 @@ function Smiley({
           begin={`${delay}s`}
           repeatCount="indefinite"
         />
-        {/* face base — 20% smaller: r 10.2→8.16 */}
         <circle cx="0" cy="0" r="8.16" fill={color} stroke="#0A0A0A" strokeWidth="0.84" />
-
-        {/* 0 Smile 😊 */}
-        <Exp n={0}><NE /><path d="M -3.6,1.44 Q 0,4.56 3.6,1.44" stroke="#0A0A0A" strokeWidth="0.96" fill="none" strokeLinecap="round" /></Exp>
-
-        {/* 1 Big grin 😁 */}
-        <Exp n={1}><NE /><path d="M -4,0.8 Q 0,6 4,0.8" fill="#0A0A0A"/><path d="M -4,0.8 Q 0,3.2 4,0.8" fill="white"/><line x1="-1.6" y1="0.8" x2="-1.6" y2="3.2" stroke="#0A0A0A" strokeWidth="0.72"/><line x1="1.6" y1="0.8" x2="1.6" y2="3.2" stroke="#0A0A0A" strokeWidth="0.72"/></Exp>
-
-        {/* 2 Awe 😮 */}
-        <Exp n={2}><circle cx="-2.64" cy="-2.4" r="1.28" fill="#0A0A0A"/><circle cx="2.64" cy="-2.4" r="1.28" fill="#0A0A0A"/><ellipse cx="0" cy="2.8" rx="2.0" ry="2.4" fill="#0A0A0A"/><ellipse cx="0" cy="3.04" rx="1.28" ry="1.68" fill="#AA0000"/></Exp>
-
-        {/* 3 Shock 😱 */}
-        <Exp n={3}><BE /><ellipse cx="0" cy="3.2" rx="3.6" ry="3.36" fill="#0A0A0A"/><ellipse cx="0" cy="3.6" rx="2.56" ry="2.48" fill="#AA0000"/></Exp>
-
-        {/* 4 Wink 😉 */}
-        <Exp n={4}><circle cx="-2.64" cy="-1.68" r="1.08" fill="#0A0A0A"/><path d="M 1.44,-2.32 Q 2.64,-0.64 4.16,-1.68" stroke="#0A0A0A" strokeWidth="1.12" fill="none" strokeLinecap="round"/><path d="M -3.6,1.44 Q 0,4.56 3.6,1.44" stroke="#0A0A0A" strokeWidth="0.96" fill="none" strokeLinecap="round"/></Exp>
-
-        {/* 5 Laughing 😂 */}
-        <Exp n={5}><SE /><path d="M -4.4,0.8 Q 0,6.4 4.4,0.8" fill="#0A0A0A"/><path d="M -4.4,0.8 Q 0,3.36 4.4,0.8" fill="white"/><ellipse cx="-4.16" cy="-0.4" rx="0.56" ry="0.96" fill="#99CCFF"/><ellipse cx="4.16" cy="-0.4" rx="0.56" ry="0.96" fill="#99CCFF"/></Exp>
-
-        {/* 6 Neutral 😐 */}
-        <Exp n={6}><NE /><path d="M -3.2,2.4 Q 0,1.76 3.2,2.4" stroke="#0A0A0A" strokeWidth="0.96" fill="none" strokeLinecap="round"/></Exp>
+        <Exp n={0} cyc={CYC} begin={BEGIN}><NE /><path d="M -3.6,1.44 Q 0,4.56 3.6,1.44" stroke="#0A0A0A" strokeWidth="0.96" fill="none" strokeLinecap="round" /></Exp>
+        <Exp n={1} cyc={CYC} begin={BEGIN}><NE /><path d="M -4,0.8 Q 0,6 4,0.8" fill="#0A0A0A"/><path d="M -4,0.8 Q 0,3.2 4,0.8" fill="white"/><line x1="-1.6" y1="0.8" x2="-1.6" y2="3.2" stroke="#0A0A0A" strokeWidth="0.72"/><line x1="1.6" y1="0.8" x2="1.6" y2="3.2" stroke="#0A0A0A" strokeWidth="0.72"/></Exp>
+        <Exp n={2} cyc={CYC} begin={BEGIN}><circle cx="-2.64" cy="-2.4" r="1.28" fill="#0A0A0A"/><circle cx="2.64" cy="-2.4" r="1.28" fill="#0A0A0A"/><ellipse cx="0" cy="2.8" rx="2.0" ry="2.4" fill="#0A0A0A"/><ellipse cx="0" cy="3.04" rx="1.28" ry="1.68" fill="#AA0000"/></Exp>
+        <Exp n={3} cyc={CYC} begin={BEGIN}><BE /><ellipse cx="0" cy="3.2" rx="3.6" ry="3.36" fill="#0A0A0A"/><ellipse cx="0" cy="3.6" rx="2.56" ry="2.48" fill="#AA0000"/></Exp>
+        <Exp n={4} cyc={CYC} begin={BEGIN}><circle cx="-2.64" cy="-1.68" r="1.08" fill="#0A0A0A"/><path d="M 1.44,-2.32 Q 2.64,-0.64 4.16,-1.68" stroke="#0A0A0A" strokeWidth="1.12" fill="none" strokeLinecap="round"/><path d="M -3.6,1.44 Q 0,4.56 3.6,1.44" stroke="#0A0A0A" strokeWidth="0.96" fill="none" strokeLinecap="round"/></Exp>
+        <Exp n={5} cyc={CYC} begin={BEGIN}><SE /><path d="M -4.4,0.8 Q 0,6.4 4.4,0.8" fill="#0A0A0A"/><path d="M -4.4,0.8 Q 0,3.36 4.4,0.8" fill="white"/><ellipse cx="-4.16" cy="-0.4" rx="0.56" ry="0.96" fill="#99CCFF"/><ellipse cx="4.16" cy="-0.4" rx="0.56" ry="0.96" fill="#99CCFF"/></Exp>
+        <Exp n={6} cyc={CYC} begin={BEGIN}><NE /><path d="M -3.2,2.4 Q 0,1.76 3.2,2.4" stroke="#0A0A0A" strokeWidth="0.96" fill="none" strokeLinecap="round"/></Exp>
       </g>
     </g>
   );

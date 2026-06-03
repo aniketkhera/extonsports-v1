@@ -11,7 +11,9 @@ export default function Hero() {
 
   useEffect(() => {
     const mq = window.matchMedia("(hover: none) and (pointer: coarse)");
-    setIsMobile(mq.matches);
+    // Defer first read so it doesn't fire synchronously inside the effect
+    const initial = mq.matches;
+    setTimeout(() => setIsMobile(initial), 0);
     const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
