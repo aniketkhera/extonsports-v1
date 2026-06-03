@@ -274,7 +274,7 @@ function Panel({
         {/* Academy logos — always visible; compact when not hovered, full when hovered */}
         {kind === "academies" && (
           <motion.div
-            className={`w-full ${isMobile ? "flex flex-col" : "flex"} gap-2 mt-3`}
+            className={`w-full ${isMobile ? "flex flex-col" : "grid grid-cols-3"} gap-2 mt-3`}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "0px" }}
@@ -286,7 +286,7 @@ function Panel({
             {[...ACADEMY_PARTNERS].reverse().map((ac) => (
               <motion.div
                 key={ac.name}
-                className={`h-full ${isMobile ? "w-full" : "flex-1 min-w-0"}`}
+                className="h-full w-full min-w-0"
                 variants={{
                   hidden: { opacity: 0, y: 24, scale: 0.94 },
                   visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
