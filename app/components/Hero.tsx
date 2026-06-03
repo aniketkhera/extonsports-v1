@@ -235,7 +235,7 @@ function Panel({
                       }
                 }
                 transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                className="border border-white/10 hover:border-[var(--color-ember)]/50 block overflow-hidden px-4 transition-colors w-full h-full min-w-0"
+                className="border border-white/10 hover:border-[var(--color-ember)]/50 block overflow-hidden px-4 transition-colors w-full h-full min-w-0 min-h-[64px]"
               >
                 <motion.div
                   animate={isMobile ? { scale: 1, originX: 0 } : { scale: hovered ? 1 : 0.8, originX: 0 }}
@@ -416,7 +416,8 @@ const ACADEMY_PARTNERS = [
         style={{
           fontFamily: "var(--font-caveat), cursive",
           fontWeight: 700,
-          fontSize: "1.3rem",
+          fontSize: "1.05rem",
+          lineHeight: 1.1,
         }}
       >
         <span style={{ color: "var(--color-ember)" }}>smash!</span>
