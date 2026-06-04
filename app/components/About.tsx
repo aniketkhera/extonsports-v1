@@ -28,7 +28,7 @@ export default function About() {
             A <span className="text-[var(--color-ember)]">full sports club</span>.
           </h2>
           <p className="text-white/60 text-[0.94rem] leading-[1.7] mb-3 max-w-[48ch]">
-            Exton Sports Center is a members-only multi-sport facility in
+            Exton Sports Center is a multi-sport facility in
             Chester County — cricket, squash, badminton and indoor turf under
             one roof, open round the clock.
           </p>
@@ -62,6 +62,16 @@ export default function About() {
               Open 24/7 · members and guests only
             </dd>
           </dl>
+
+          <a
+            href="https://maps.app.goo.gl/t35BeZFRtdmZeLuo9"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2.5 mt-7 border-2 border-white/30 hover:border-[var(--color-ember)] text-white text-cond-md text-[0.85rem] no-underline transition"
+            style={{ padding: "10px 24px" }}
+          >
+            Get directions →
+          </a>
 
         </motion.div>
 
