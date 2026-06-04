@@ -175,7 +175,7 @@ function Panel({
               {config.body}
             </p>
           ) : (
-            <p className="text-white/70 text-[0.94rem] leading-[1.55] max-w-[38ch] mb-4">
+            <p className="text-white/70 text-[0.94rem] leading-[1.55] whitespace-nowrap mb-4">
               {config.body}
             </p>
           )}
