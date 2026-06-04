@@ -40,24 +40,24 @@ export default function Hero() {
             }
       }
     >
-      {/* LEFT: Academies */}
-      <Panel
-        kind="academies"
-        flex={flexFor("academies")}
-        onEnter={() => !isMobile && setHovered("academies")}
-        onLeave={() => !isMobile && setHovered(null)}
-        hovered={isMobile ? true : hovered === "academies"}
-        anyHovered={isMobile ? true : hovered !== null}
-        isMobile={isMobile}
-      />
-
-      {/* RIGHT: Recreation */}
+      {/* LEFT: Recreation */}
       <Panel
         kind="recreation"
         flex={flexFor("recreation")}
         onEnter={() => !isMobile && setHovered("recreation")}
         onLeave={() => !isMobile && setHovered(null)}
         hovered={isMobile ? true : hovered === "recreation"}
+        anyHovered={isMobile ? true : hovered !== null}
+        isMobile={isMobile}
+      />
+
+      {/* RIGHT: Academies */}
+      <Panel
+        kind="academies"
+        flex={flexFor("academies")}
+        onEnter={() => !isMobile && setHovered("academies")}
+        onLeave={() => !isMobile && setHovered(null)}
+        hovered={isMobile ? true : hovered === "academies"}
         anyHovered={isMobile ? true : hovered !== null}
         isMobile={isMobile}
       />
@@ -93,7 +93,7 @@ function Panel({
       animate={isMobile ? {} : { flex }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
       className={`relative overflow-hidden cursor-pointer ${
-        kind === "academies"
+        kind === "recreation"
           ? isMobile
             ? "border-b-2 border-[var(--color-ember)]"
             : "border-r-2 border-[var(--color-ember)]"
