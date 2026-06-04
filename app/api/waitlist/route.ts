@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     if (resendKey) {
       const resend = new Resend(resendKey);
       await resend.emails.send({
-        from: "Exton Sports <news@orangish.io>",
+        from: "Exton Sports <noreply@orangish.io>",
         to: ["akhera@gmail.com"],
         replyTo: email,
         subject: `New Exton Sports waitlist signup — ${name}`,
