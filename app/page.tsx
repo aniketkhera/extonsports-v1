@@ -8,16 +8,18 @@ import Footer from "./components/Footer";
 
 export default function Home() {
   return (
-    <div className="relative">
+    <div className="relative pb-[320px] sm:pb-[200px] md:pb-[90px]">
       <Nav />
       <main>
         <Hero />
         <TrustStrip />
-        <CtaBanner />
         <Sports />
         <About />
       </main>
       <Footer />
+      {/* CtaBanner is position:fixed — rendered outside main so it
+          doesn't leave a gap in the document flow */}
+      <CtaBanner />
     </div>
   );
 }

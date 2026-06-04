@@ -26,8 +26,12 @@ export default function CtaBanner() {
   return (
     <div
       id="waitlist"
-      className="bg-[var(--color-ember)] flex flex-col gap-5 md:flex-row md:gap-10 md:items-center md:justify-between"
-      style={{ padding: "32px 24px", paddingInline: "clamp(24px, 5vw, 56px)" }}
+      className="fixed bottom-0 left-0 right-0 z-40 bg-[var(--color-ember)] flex flex-col gap-4 md:flex-row md:gap-10 md:items-center md:justify-between shadow-2xl"
+      style={{
+        padding: "18px 24px",
+        paddingInline: "clamp(20px, 4vw, 56px)",
+        paddingBottom: "calc(18px + env(safe-area-inset-bottom, 0px))",
+      }}
     >
       {/* Left: copy */}
       <div className="flex-shrink-0 text-center md:text-left">
