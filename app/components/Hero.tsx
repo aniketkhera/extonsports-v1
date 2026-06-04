@@ -325,7 +325,7 @@ const ACADEMIES = {
 const RECREATION = {
   bigLetter: "R",
   bg: "radial-gradient(60% 80% at 80% 60%, rgba(248,155,114,0.12) 0%, transparent 65%), linear-gradient(225deg, #0B0B0B 0%, #181818 100%)",
-  label: "Recreation · Members",
+  label: "Members & Guests",
   headline: { line1: "Play.", line2: "Anytime." },
   body: "Play squash today, play badminton tomorrow, play cricket the day after…",
   cta: "Become a member",
