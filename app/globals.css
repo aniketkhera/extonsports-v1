@@ -29,11 +29,15 @@ html, body {
   font-family: var(--font-body), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  position: relative;
+  /* NOTE: do NOT add position:relative or overflow:hidden here —
+     either property on html/body breaks position:fixed children
+     by making them position relative to the page instead of the viewport. */
 }
 
 html { scroll-behavior: smooth; }
-body { overflow-x: hidden; }
+
+/* overflow-x:hidden lives on a wrapper div inside body (see layout.tsx)
+   so it never traps fixed-positioned elements. */
 
 ::selection {
   background: var(--color-ember);

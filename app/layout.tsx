@@ -60,7 +60,11 @@ export default function RootLayout({
       lang="en"
       className={`${cond.variable} ${body.variable} ${comfortaa.variable} ${caveat.variable} ${exo2.variable} h-full antialiased`}
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        {/* overflow-x wrapper: keeps horizontal scroll locked without
+            touching body overflow, which would break position:fixed */}
+        <div style={{ overflowX: "hidden" }}>{children}</div>
+      </body>
     </html>
   );
 }
