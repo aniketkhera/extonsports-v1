@@ -93,6 +93,7 @@ export async function POST(req: NextRequest) {
       body_html: bodyHtml,
       sent_by_email: session.email,
       recipient_count: report.sent,
+      recipient_emails: rows.map(r => r.email),
       filter_json: body.filter_summary || {},
       send_errors: report.errors.length > 0 ? report.errors : null,
     }, 'return=minimal')

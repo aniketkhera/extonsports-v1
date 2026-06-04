@@ -10,6 +10,7 @@ export type MailerRow = {
   sent_at: string
   sent_by_email: string
   recipient_count: number
+  recipient_emails: string[]
   filter_json: Record<string, unknown> | null
   send_errors: unknown[] | null
 }
@@ -100,6 +101,21 @@ function DetailModal({ row, onClose }: { row: MailerRow; onClose: () => void }) 
             <pre style={{ margin: 0, fontSize: 11, whiteSpace: 'pre-wrap' }}>
               {JSON.stringify(row.send_errors, null, 2)}
             </pre>
+          </div>
+        )}
+
+        {row.recipient_emails && row.recipient_emails.length > 0 && (
+          <div style={{ padding: '10px 14px', background: '#FDF4EE', borderRadius: 9, fontSize: 12, color: '#444', marginBottom: 14 }}>
+            <div style={{ fontWeight: 700, marginBottom: 6, color: '#0D0D0D' }}>
+              Recipients ({row.recipient_emails.length})
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {row.recipient_emails.map(email => (
+                <span key={email} style={{ background: '#fff', border: '1px solid #E8D5C8', borderRadius: 9999, padding: '2px 10px', fontSize: 11 }}>
+                  {email}
+                </span>
+              ))}
+            </div>
           </div>
         )}
 

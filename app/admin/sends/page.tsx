@@ -15,7 +15,7 @@ export default async function SendsPage() {
   if (supabaseConfigured()) {
     try {
       rows = await selectRows<MailerRow>('mailers', {
-        select: 'id,subject,body_md,body_html,sent_at,sent_by_email,recipient_count,filter_json,send_errors',
+        select: 'id,subject,body_md,body_html,sent_at,sent_by_email,recipient_count,recipient_emails,filter_json,send_errors',
         filters: { property: `eq.${PROPERTY}` },
         order: 'sent_at.desc',
         limit: 200,
