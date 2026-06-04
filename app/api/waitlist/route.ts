@@ -30,29 +30,22 @@ export async function POST(req: NextRequest) {
     if (resendKey) {
       const resend = new Resend(resendKey);
       await resend.emails.send({
-        from: "Exton Sports <noreply@extonsports.com>",
+        from: "Exton Sports <noreply@starsquash.com>",
         to: ["akhera@gmail.com"],
         replyTo: email,
-        subject: `New waitlist signup — ${name}`,
-        html: `<p><b>Name:</b> ${name}<br><b>Email:</b> ${email}</p><p style="color:#888;font-size:12px">extonsports.com waitlist</p>`,
+        subject: `New Exton Sports waitlist signup — ${name}`,
+        html: `
+          <h2 style="font-family:Arial,sans-serif;color:#F37A4A">New waitlist signup</h2>
+          <table cellpadding="6" style="font-family:Arial,sans-serif;font-size:14px">
+            <tr><td><b>Name</b></td><td>${name}</td></tr>
+            <tr><td><b>Email</b></td><td>${email}</td></tr>
+            <tr><td><b>Source</b></td><td>extonsports.com</td></tr>
+          </table>
+        `,
       });
     } else {
-      // Formsubmit fallback — deliver to akhera@gmail.com only
-      const fsRes = await fetch("https://formsubmit.co/ajax/akhera@gmail.com", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({
-          _subject: `Exton Sports waitlist — ${name}`,
-          _replyto: email,
-          _captcha: "false",
-          _template: "table",
-          Name: name,
-          Email: email,
-          Source: "extonsports.com",
-        }),
-      });
-      const fsBody = await fsRes.text().catch(() => "no body");
-      console.log("[waitlist] formsubmit status:", fsRes.status, fsBody);
+      // Resend key missing — log clearly so it shows in Vercel logs
+      console.error("[waitlist] RESEND_API_KEY not set — email not sent. Add it in Vercel env vars.");
     }
 
     return NextResponse.json({ success: true });
