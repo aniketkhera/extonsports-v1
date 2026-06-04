@@ -38,7 +38,7 @@ export default function CtaBanner() {
           Be the first to know when we open for memberships.
         </p>
         <p className="text-black/65 text-[0.88rem] mt-1.5 font-semibold tracking-wide">
-          Opening July 2026 · Exton, PA · 24×7
+          Badminton, Cricket, and Turf Opening July 2026. Stay tuned for membership options.
         </p>
       </div>
 
