@@ -63,25 +63,6 @@ export default function About() {
             </dd>
           </dl>
 
-          <div className="mt-7 flex gap-3 flex-wrap">
-            <a
-              href="#waitlist"
-              className="inline-flex items-center gap-2.5 bg-[var(--color-ember)] hover:bg-[var(--color-ember-hi)] text-white text-cond-md text-[0.85rem] no-underline transition"
-              style={{ padding: "12px 24px" }}
-            >
-              Be first to know →
-            </a>
-            <a
-              href="https://maps.app.goo.gl/pX53mpfkSt81DBnh6"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2.5 border-2 border-white/30 hover:border-[var(--color-ember)] text-white text-cond-md text-[0.85rem] no-underline transition"
-              style={{ padding: "10px 24px" }}
-            >
-              Get directions
-              <span aria-hidden>→</span>
-            </a>
-          </div>
         </motion.div>
 
         {/* Visual column — floor plan with animated smileys */}

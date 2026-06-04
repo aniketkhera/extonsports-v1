@@ -97,11 +97,6 @@ export default function Footer() {
               </li>
             ))}
           </ul>
-          <div className="mt-6 pt-5 border-t border-white/8">
-            <p className="text-white/25 text-[0.72rem] leading-relaxed">
-              Opening July 2026 · Members &amp; guests only · Open 24/7
-            </p>
-          </div>
         </div>
       </div>
 
@@ -112,9 +107,6 @@ export default function Footer() {
       >
         <p className="text-[0.7rem] text-white/25 text-center sm:text-left">
           © {year} Exton Sports Center · All rights reserved
-        </p>
-        <p className="text-[0.7rem] text-white/20 text-center sm:text-right">
-          Opening July 2026
         </p>
       </div>
     </footer>
