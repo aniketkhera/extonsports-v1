@@ -364,7 +364,7 @@ const RECREATION = {
   bg: "radial-gradient(60% 80% at 80% 60%, rgba(248,155,114,0.12) 0%, transparent 65%), linear-gradient(225deg, #0B0B0B 0%, #181818 100%)",
   label: "Recreation · Members",
   headline: { line1: "Play.", line2: "Anytime." },
-  body: "Members-only access to all four sports — book a court at 6 a.m. or midnight, walk in any day. Your hours, your game.",
+  body: "One booking per day. Every sport. Your hours.",
   cta: "Become a member",
 };
 
