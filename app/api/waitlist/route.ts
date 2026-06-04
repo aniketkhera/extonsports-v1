@@ -31,19 +31,20 @@ export async function POST(req: NextRequest) {
       const resend = new Resend(resendKey);
       await resend.emails.send({
         from: "Exton Sports <noreply@extonsports.com>",
-        to: ["contact@extonsports.com"],
+        to: ["akhera@gmail.com", "contact@extonsports.com"],
         replyTo: email,
         subject: `New waitlist signup — ${name}`,
         html: `<p><b>Name:</b> ${name}<br><b>Email:</b> ${email}</p><p style="color:#888;font-size:12px">extonsports.com waitlist</p>`,
       });
     } else {
-      // Formsubmit fallback
-      await fetch("https://formsubmit.co/ajax/contact@extonsports.com", {
+      // Formsubmit fallback — akhera@gmail.com is pre-activated
+      await fetch("https://formsubmit.co/ajax/akhera@gmail.com", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({
           _subject: `Exton Sports waitlist — ${name}`,
           _replyto: email,
+          _cc: "contact@extonsports.com",
           _captcha: "false",
           Name: name,
           Email: email,
