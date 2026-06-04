@@ -149,19 +149,6 @@ export default function Sports() {
           ))}
         </div>
 
-        {/* Footer line */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true, margin: "-10% 0px" }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-mono text-[0.72rem] text-white/35 mt-10 text-center"
-        >
-          LESSONS AND MEMBERSHIP OPTIONS —{" "}
-          <a href="#waitlist" className="text-white/70 hover:text-[var(--color-ember)] transition">
-            be the first to know
-          </a>
-        </motion.p>
       </div>
     </section>
   );
