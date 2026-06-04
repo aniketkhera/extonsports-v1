@@ -223,54 +223,26 @@ function Panel({
                   visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] } },
                 }}
               >
-              <motion.a
+              <a
                 href="#waitlist"
-                animate={
-                  isMobile
-                    ? {
-                        paddingTop: 10,
-                        paddingBottom: 10,
-                        backgroundColor: "rgba(255,255,255,0.07)",
-                      }
-                    : {
-                        paddingTop: hovered ? 10 : 5,
-                        paddingBottom: hovered ? 10 : 5,
-                        backgroundColor: hovered ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.04)",
-                      }
-                }
-                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                className="border border-white/10 hover:border-[var(--color-ember)]/50 block overflow-hidden px-4 transition-colors w-full min-w-0"
-                style={{ height: "72px" }}
+                className="border border-white/10 hover:border-[var(--color-ember)]/50 block px-4 py-3 transition-colors w-full bg-white/[0.07]"
               >
-                <motion.div
-                  animate={isMobile ? { scale: 1, originX: 0 } : { scale: hovered ? 1 : 0.8, originX: 0 }}
-                  transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                  className="text-cond leading-none tracking-wide"
+                <div
+                  className="text-cond leading-none tracking-wide mb-2"
                   style={{
                     fontSize: "clamp(0.9rem, 1.4vw, 1.1rem)",
-                    transformOrigin: "left center",
                     color: "var(--color-ember)",
                   }}
                 >
                   {tier.name}
-                </motion.div>
-                <motion.div
-                  animate={
-                    isMobile
-                      ? { opacity: 0.55, height: "auto", marginTop: 5 }
-                      : {
-                          opacity: hovered ? 0.55 : 0,
-                          height: hovered ? "auto" : 0,
-                          marginTop: hovered ? 5 : 0,
-                        }
-                  }
-                  transition={{ duration: 0.35, ease: "easeOut" }}
-                  className="text-white/55"
+                </div>
+                <div
+                  className="text-white/60"
                   style={{ fontSize: "0.76rem", lineHeight: 1.5 }}
                 >
                   {tier.desc}
-                </motion.div>
-              </motion.a>
+                </div>
+              </a>
               </motion.div>
             ))}
           </motion.div>
