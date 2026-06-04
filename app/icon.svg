@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Dark rounded square background -->
+  <rect width="32" height="32" rx="5" fill="#0A0A0A"/>
+  <!-- Geometric "E" mark in Exton orange -->
+  <!-- Vertical spine -->
+  <rect x="7" y="6" width="3.5" height="20" fill="#F37A4A"/>
+  <!-- Top bar -->
+  <rect x="7" y="6" width="17" height="3.5" fill="#F37A4A"/>
+  <!-- Middle bar (slightly shorter) -->
+  <rect x="7" y="14.25" width="13" height="3.5" fill="#F37A4A"/>
+  <!-- Bottom bar -->
+  <rect x="7" y="22.5" width="17" height="3.5" fill="#F37A4A"/>
+</svg>
