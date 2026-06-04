@@ -265,8 +265,8 @@ function Panel({
                         }
                   }
                   transition={{ duration: 0.35, ease: "easeOut" }}
-                  className="text-white/55 overflow-hidden"
-                  style={{ fontSize: "0.72rem", lineHeight: 1.45 }}
+                  className="text-white/55"
+                  style={{ fontSize: "0.76rem", lineHeight: 1.5 }}
                 >
                   {tier.desc}
                 </motion.div>
@@ -315,7 +315,7 @@ function Panel({
                       }
                 }
                 transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                className={`border border-white/10 hover:border-[var(--color-ember)]/50 block overflow-hidden px-4 transition-colors ${isMobile ? "w-full" : "flex-1"}`}
+                className={`border border-white/10 hover:border-[var(--color-ember)]/50 block px-4 py-3 transition-colors ${isMobile ? "w-full" : "flex-1"}`}
               >
                 <motion.div
                   animate={isMobile ? { scale: 1, originX: 0 } : { scale: hovered ? 1 : 0.72, originX: 0 }}
