@@ -140,27 +140,6 @@ function Panel({
         {config.bigLetter}
       </motion.span>
 
-      {/* Hint chip — hidden on mobile, visible on desktop, fades on hover */}
-      <motion.div
-        animate={{ opacity: hovered ? 0 : 1, y: hovered ? -6 : 0 }}
-        transition={{ duration: 0.3 }}
-        className={`absolute top-[48px] z-10 hidden md:flex items-center gap-2.5 text-cond-md text-[0.78rem] text-white/55 ${
-          kind === "academies" ? "left-[48px]" : "right-[48px] flex-row-reverse"
-        }`}
-      >
-        <span>Hover to explore</span>
-        {kind === "academies" ? (
-          <svg width="28" height="10" viewBox="0 0 28 10" fill="none" aria-hidden>
-            <line x1="0" y1="5" x2="22" y2="5" stroke="rgba(255,255,255,0.55)" strokeWidth="1.4"/>
-            <polyline points="18,1 25,5 18,9" stroke="rgba(255,255,255,0.55)" strokeWidth="1.4" fill="none" strokeLinejoin="round" strokeLinecap="round"/>
-          </svg>
-        ) : (
-          <svg width="28" height="10" viewBox="0 0 28 10" fill="none" aria-hidden>
-            <line x1="28" y1="5" x2="6" y2="5" stroke="rgba(255,255,255,0.55)" strokeWidth="1.4"/>
-            <polyline points="10,1 3,5 10,9" stroke="rgba(255,255,255,0.55)" strokeWidth="1.4" fill="none" strokeLinejoin="round" strokeLinecap="round"/>
-          </svg>
-        )}
-      </motion.div>
 
       {/* Body content */}
       <div className={`relative z-[3] flex flex-col ${isMobile ? "p-8 pt-10 pb-10" : "h-full px-12 pt-16 pb-12 justify-start"}`}>

@@ -35,7 +35,7 @@ export default function CtaBanner() {
           className="text-cond text-[1.55rem] text-black leading-tight"
           style={{ letterSpacing: "0.02em" }}
         >
-          Be the first to know when we open.
+          Be the first to know when we open for memberships.
         </p>
         <p className="text-black/65 text-[0.88rem] mt-1.5 font-semibold tracking-wide">
           Opening July 2026 · Exton, PA · 24×7
