@@ -84,7 +84,7 @@ export default function About() {
               Be first to know →
             </a>
             <a
-              href="https://maps.app.goo.gl/?q=4+Tabas+Lane+Exton+PA+19341"
+              href="https://maps.app.goo.gl/pX53mpfkSt81DBnh6"
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-2.5 border-2 border-white/30 hover:border-[var(--color-ember)] text-white text-cond-md text-[0.85rem] no-underline transition"
