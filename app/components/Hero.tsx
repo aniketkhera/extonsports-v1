@@ -386,7 +386,7 @@ const MEMBERSHIP_TIERS = [
   },
   {
     name: "JUNIOR",
-    desc: "Under 18. Full court access, academy programs, supervised open play.",
+    desc: "Under 19. Full court access, academy programs, supervised open play.",
   },
 ];
 

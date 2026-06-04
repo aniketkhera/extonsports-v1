@@ -114,15 +114,7 @@ export default function Footer() {
           © {year} Exton Sports Center · All rights reserved
         </p>
         <p className="text-[0.7rem] text-white/20 text-center sm:text-right">
-          Lessons &amp; membership via{" "}
-          <a
-            href="https://orangish.io"
-            target="_blank"
-            rel="noreferrer"
-            className="text-white/35 hover:text-[var(--color-ember)] transition"
-          >
-            Orangish
-          </a>
+          Opening July 2026
         </p>
       </div>
     </footer>
