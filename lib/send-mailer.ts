@@ -36,7 +36,10 @@ export type SendReport = {
 }
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://extonsports.com'
-const FROM = 'Exton Sports <news@extonsports.com>'
+// FROM switches to news@extonsports.com once the domain is verified
+// on Resend (Task #9 — DNS records in Squarespace). Until then,
+// noreply@orangish.io is the verified fallback.
+const FROM = process.env.RESEND_FROM || 'Exton Sports <noreply@orangish.io>'
 const REPLY_TO = 'info@extonsports.com'
 
 export function unsubscribeUrl(token: string): string {
