@@ -11,9 +11,7 @@ export default function Footer() {
           title="Explore"
           links={[
             { label: "Sports", href: "#sports" },
-            { label: "About", href: "#about" },
             { label: "Get directions", href: "https://maps.app.goo.gl/pX53mpfkSt81DBnh6" },
-            { label: "Be first to know", href: "#waitlist" },
           ]}
         />
         <FooterCol
