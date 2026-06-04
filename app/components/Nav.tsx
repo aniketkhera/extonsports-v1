@@ -39,15 +39,6 @@ export default function Nav() {
             </a>
           </li>
         ))}
-        <li>
-          <a
-            href="#waitlist"
-            className="block px-[18px] text-[0.74rem] font-bold text-mono text-white hover:bg-[var(--color-ember-hi)] bg-[var(--color-ember)] transition"
-            style={{ lineHeight: "64px" }}
-          >
-            Be first to know
-          </a>
-        </li>
       </ul>
     </header>
   );
