@@ -92,7 +92,9 @@ function Panel({
       onMouseLeave={onLeave}
       animate={isMobile ? {} : { flex }}
       transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-      className={`relative overflow-hidden cursor-pointer ${
+      className={`relative cursor-pointer ${
+        isMobile ? "overflow-visible" : "overflow-hidden"
+      } ${
         kind === "recreation"
           ? isMobile
             ? "border-b-2 border-[var(--color-ember)]"
@@ -161,7 +163,7 @@ function Panel({
       </motion.div>
 
       {/* Body content */}
-      <div className={`relative z-[3] flex flex-col p-8 md:p-12 ${isMobile ? "pt-10 pb-20" : "h-full justify-end"}`}>
+      <div className={`relative z-[3] flex flex-col ${isMobile ? "p-8 pt-10 pb-10" : "h-full p-12 justify-start pt-24"}`}>
         <span className="label-chip self-start mb-[18px]">
           {config.label}
         </span>
