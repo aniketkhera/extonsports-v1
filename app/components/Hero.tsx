@@ -418,7 +418,7 @@ const ACADEMY_PARTNERS = [
         style={{
           fontFamily: "var(--font-caveat), cursive",
           fontWeight: 700,
-          fontSize: "1.05rem",
+          fontSize: "1.35rem",
           lineHeight: 1.1,
         }}
       >
