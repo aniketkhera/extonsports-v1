@@ -82,9 +82,9 @@ export default function Sports() {
             </h2>
           </div>
           <p className="text-white/60 text-[0.94rem] leading-[1.7] max-w-[44ch]">
-            Members move between sports freely — book a squash court at noon,
-            badminton at six, the cricket nets at midnight. No upcharges,
-            no per-sport fees, no separate memberships.
+            One booking per day, per member — squash today, badminton
+            tomorrow, cricket the day after. No upcharges, no per-sport
+            fees, no separate memberships.
           </p>
         </motion.div>
 

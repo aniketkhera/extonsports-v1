@@ -43,8 +43,8 @@ body { overflow-x: hidden; }
 /* ── Typography utilities ──────────────────────────────────────── */
 .text-cond {
   font-family: var(--font-cond);
-  font-weight: 700;
-  letter-spacing: 0.005em;
+  font-weight: 400;
+  letter-spacing: -0.01em;
   text-transform: uppercase;
   line-height: 0.92;
 }

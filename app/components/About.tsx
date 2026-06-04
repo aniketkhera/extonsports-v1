@@ -163,22 +163,28 @@ function FloorPlan() {
         const ch = 164;
         return (
           <g key={i}>
-            {/* doubles outer */}
+            {/* ── Real badminton doubles court markings ──────────────── */}
+            {/* Court: 13.4m long × 6.1m wide. Scale: 62px wide, 164px tall.
+                Net at cy+82. Short svc 1.98m from net = 24px → cy+58 / cy+106.
+                Long svc (doubles) 0.76m from baseline = 9px → cy+9 / cy+155.
+                Singles sideline 0.46m inside = 5px → cx+5 / cx+57.
+                Centre service line runs from baseline to short service line. */}
+            {/* Outer doubles boundary */}
             <rect x={cx} y={cy} width="62" height={ch} stroke={line} strokeWidth={sw} fill="none" />
-            {/* inner singles sidelines */}
-            <line x1={cx + 5}  y1={cy}            x2={cx + 5}  y2={cy + ch} stroke={lineSoft} strokeWidth={swThin} />
-            <line x1={cx + 57} y1={cy}            x2={cx + 57} y2={cy + ch} stroke={lineSoft} strokeWidth={swThin} />
-            {/* net — thicker, across the middle */}
-            <line x1={cx}      y1={cy + ch / 2}   x2={cx + 62} y2={cy + ch / 2} stroke={lineThick} strokeWidth={sw + 0.6} />
-            {/* short service lines either side of net */}
-            <line x1={cx}      y1={cy + 54}       x2={cx + 62} y2={cy + 54}       stroke={lineSoft} strokeWidth={swThin} />
-            <line x1={cx}      y1={cy + 110}      x2={cx + 62} y2={cy + 110}      stroke={lineSoft} strokeWidth={swThin} />
-            {/* long service line for doubles (just short of baselines) */}
-            <line x1={cx}      y1={cy + 18}       x2={cx + 62} y2={cy + 18}       stroke={lineSoft} strokeWidth={swThin} />
-            <line x1={cx}      y1={cy + 146}      x2={cx + 62} y2={cy + 146}      stroke={lineSoft} strokeWidth={swThin} />
-            {/* centre service line (top + bottom halves only, broken by net) */}
-            <line x1={cx + 31} y1={cy + 18}       x2={cx + 31} y2={cy + 54}       stroke={lineSoft} strokeWidth={swThin} />
-            <line x1={cx + 31} y1={cy + 110}      x2={cx + 31} y2={cy + 146}      stroke={lineSoft} strokeWidth={swThin} />
+            {/* Singles sidelines — inner vertical */}
+            <line x1={cx+5}  y1={cy} x2={cx+5}  y2={cy+ch} stroke={lineSoft} strokeWidth={swThin} />
+            <line x1={cx+57} y1={cy} x2={cx+57} y2={cy+ch} stroke={lineSoft} strokeWidth={swThin} />
+            {/* Net — thick horizontal at exact centre */}
+            <line x1={cx} y1={cy+82} x2={cx+62} y2={cy+82} stroke={lineThick} strokeWidth={sw + 0.8} />
+            {/* Short service lines (1.98m from net) */}
+            <line x1={cx} y1={cy+58}  x2={cx+62} y2={cy+58}  stroke={line} strokeWidth={sw} />
+            <line x1={cx} y1={cy+106} x2={cx+62} y2={cy+106} stroke={line} strokeWidth={sw} />
+            {/* Long service lines for doubles (0.76m from baseline) */}
+            <line x1={cx} y1={cy+9}   x2={cx+62} y2={cy+9}   stroke={lineSoft} strokeWidth={swThin} />
+            <line x1={cx} y1={cy+155} x2={cx+62} y2={cy+155} stroke={lineSoft} strokeWidth={swThin} />
+            {/* Centre service line — baseline → short service line (each half) */}
+            <line x1={cx+31} y1={cy}      x2={cx+31} y2={cy+58}  stroke={lineSoft} strokeWidth={swThin} />
+            <line x1={cx+31} y1={cy+106}  x2={cx+31} y2={cy+ch}  stroke={lineSoft} strokeWidth={swThin} />
           </g>
         );
       })}
@@ -302,41 +308,45 @@ function FloorPlan() {
       {[22, 90, 158, 226].map((cx, i) => {
         const cy = 46;
         const ch = 164;
-        const topY = cy + ch * 0.28;
-        const botY = cy + ch * 0.78;
+        // Players start near the T area of each half — 30% and 70% down court
+        const topY = cy + ch * 0.30;  // top player starts ~49px from top
+        const botY = cy + ch * 0.70;  // bottom player starts ~115px from top
         const px = cx + 31;
         const d = i * 0.55;
-        const isDoubles = i < 3;   // left 3 courts = doubles
+        const isDoubles = i < 3;
 
         return (
           <g key={`bad-${i}`}>
             {isDoubles ? (
-              /* Doubles — 2 on each side, offset ±9 horizontally */
+              /* Doubles — 2 on each side, offset ±9 horizontally.
+                 Wider movement values so players roam the full half-court. */
               <>
-                {/* Top side */}
+                {/* Top-left — moves toward net and back boundary */}
                 <Smiley x={px - 9} y={topY} color="#FFE066"
-                  values="0,0; 8,-10; -10,-5; 6,16; -4,-8; 0,0"
-                  dur={3.2} delay={d} phase={i * 4} />
+                  values="0,0; 14,-22; -18,-10; 20,18; -10,-28; 0,0"
+                  dur={3.6} delay={d} phase={i * 4} />
+                {/* Top-right — mirrors across centre */}
                 <Smiley x={px + 9} y={topY} color="#FFE066"
-                  values="0,0; -8,-12; 9,-6; -7,14; 5,-10; 0,0"
-                  dur={3.2} delay={d + 0.3} phase={i * 4 + 3} />
-                {/* Bottom side */}
+                  values="0,0; -16,-18; 18,-24; -14,20; 12,-14; 0,0"
+                  dur={3.6} delay={d + 0.35} phase={i * 4 + 3} />
+                {/* Bottom-left */}
                 <Smiley x={px - 9} y={botY} color="#FFE066"
-                  values="0,0; -10,12; 9,8; -7,-12; 5,10; 0,0"
-                  dur={3.2} delay={d + 0.6} phase={i * 4 + 6} />
+                  values="0,0; -18,22; 16,18; -20,-18; 10,26; 0,0"
+                  dur={3.6} delay={d + 0.7} phase={i * 4 + 6} />
+                {/* Bottom-right */}
                 <Smiley x={px + 9} y={botY} color="#FFE066"
-                  values="0,0; 10,10; -9,12; 8,-10; -5,8; 0,0"
-                  dur={3.2} delay={d + 0.9} phase={i * 4 + 9} />
+                  values="0,0; 16,20; -18,24; 14,-20; -12,16; 0,0"
+                  dur={3.6} delay={d + 1.05} phase={i * 4 + 9} />
               </>
             ) : (
-              /* Singles — 1 per side (court 4) */
+              /* Singles — 1 per side (court 4), wider range */
               <>
                 <Smiley x={px} y={topY} color="#FFE066"
-                  values="0,0; 16,-12; -14,-6; 10,18; -5,-10; 0,0"
-                  dur={3.4} delay={d} phase={12} />
+                  values="0,0; 20,-24; -20,-14; 18,20; -16,-18; 0,0"
+                  dur={3.8} delay={d} phase={12} />
                 <Smiley x={px} y={botY} color="#FFE066"
-                  values="0,0; -15,14; 13,10; -9,-14; 6,12; 0,0"
-                  dur={3.4} delay={d + 0.5} phase={0} />
+                  values="0,0; -20,24; 18,14; -16,-22; 14,18; 0,0"
+                  dur={3.8} delay={d + 0.5} phase={0} />
               </>
             )}
           </g>
