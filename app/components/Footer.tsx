@@ -10,7 +10,7 @@ export default function Footer() {
         {/* Brand + address */}
         <div className="sm:col-span-2 md:col-span-1">
           <a href="#top" className="brand-wordmark text-[1.05rem] inline-flex mb-4">
-            <span className="brand-dot" />
+
             <span>
               EXTON <span className="brand-accent">SPORTS CENTER</span>
             </span>

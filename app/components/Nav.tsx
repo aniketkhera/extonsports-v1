@@ -19,7 +19,7 @@ export default function Nav() {
       }}
     >
       <a href="#top" className="brand-wordmark text-[1.45rem]">
-        <span className="brand-dot" />
+
         <span>
           EXTON <span className="brand-accent">SPORTS CENTER</span>
         </span>
