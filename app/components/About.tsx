@@ -32,18 +32,6 @@ export default function About() {
             Chester County — cricket, squash, badminton and indoor turf under
             one roof, open round the clock.
           </p>
-          <p className="text-white/60 text-[0.94rem] leading-[1.7] mb-3 max-w-[48ch]">
-            Lessons and membership options will be delivered through{" "}
-            <a
-              href="https://orangish.io"
-              target="_blank"
-              rel="noreferrer"
-              className="text-white font-semibold underline decoration-white/30 underline-offset-3 hover:decoration-[var(--color-ember)] transition"
-            >
-              Orangish
-            </a>
-            , our partner platform.
-          </p>
 
           <dl className="mt-6 pt-5 border-t border-[var(--color-line-2)] grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5">
             <dt className="text-mono text-[0.7rem] text-white/35">Address</dt>
