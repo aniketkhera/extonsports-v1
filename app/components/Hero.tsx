@@ -263,7 +263,7 @@ function Panel({
             {[...ACADEMY_PARTNERS].reverse().map((ac) => (
               <motion.div
                 key={ac.name}
-                className={`h-full min-w-0 ${isMobile ? "w-full" : "flex-1"}`}
+                className="h-full w-full min-w-0"
                 variants={{
                   hidden: { opacity: 0, y: 24, scale: 0.94 },
                   visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
@@ -287,7 +287,7 @@ function Panel({
                       }
                 }
                 transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                className={`border border-white/10 hover:border-[var(--color-ember)]/50 block px-4 py-3 transition-colors ${isMobile ? "w-full" : "flex-1"}`}
+                className={`border border-white/10 hover:border-[var(--color-ember)]/50 flex flex-col px-4 py-3 transition-colors h-full ${isMobile ? "w-full" : "w-full"}`}
               >
                 <motion.div
                   animate={isMobile ? { scale: 1, originX: 0 } : { scale: hovered ? 1 : 0.72, originX: 0 }}
