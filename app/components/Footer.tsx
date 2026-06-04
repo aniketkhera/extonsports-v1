@@ -63,7 +63,6 @@ export default function Footer() {
               { label: "Adult membership", href: "#waitlist" },
               { label: "Junior membership", href: "#waitlist" },
               { label: "Add-on / household", href: "#waitlist" },
-              { label: "View options on Orangish", href: "https://orangish.io" },
             ].map((l) => (
               <li key={l.label}>
                 <a
