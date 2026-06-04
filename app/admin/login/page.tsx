@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 const ERR_COPY: Record<string, string> = {
@@ -11,7 +11,19 @@ const ERR_COPY: Record<string, string> = {
   'not-allowed':'Your address is no longer on the admin allowlist.',
 }
 
+// useSearchParams() requires a Suspense boundary in Next.js 16.
+// Split into inner (reads params) + outer (wraps in Suspense).
 export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={
+      <main style={{ minHeight: '100vh', background: '#FDF4EE', display: 'flex', alignItems: 'center', justifyContent: 'center' }} />
+    }>
+      <LoginForm />
+    </Suspense>
+  )
+}
+
+function LoginForm() {
   const params = useSearchParams()
   const errKey = params.get('error')
   const errMsg = errKey ? (ERR_COPY[errKey] || 'Sign-in failed. Try again.') : null
