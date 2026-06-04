@@ -225,7 +225,7 @@ function Panel({
               >
               <a
                 href="#waitlist"
-                className="border border-white/10 hover:border-[var(--color-ember)]/50 block px-4 py-3 transition-colors w-full bg-white/[0.07]"
+                className="border border-white/10 hover:border-[var(--color-ember)]/50 flex flex-col px-4 py-3 transition-colors w-full h-full bg-white/[0.07]"
               >
                 <div
                   className="text-cond leading-none tracking-wide mb-2"
