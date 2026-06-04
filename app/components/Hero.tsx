@@ -381,6 +381,8 @@ const ACADEMY_PARTNERS = [
     name: "ExcelCricket",
     href: "https://www.excelcricket.com",
     sport: "Cricket academy",
+    desc: "Coming Soon",
+    cta: "Learn More",
     logo: (
       <span
         style={{
@@ -398,6 +400,8 @@ const ACADEMY_PARTNERS = [
     name: "SmashShuttler",
     href: "https://smashshuttler.com",
     sport: "Badminton academy",
+    desc: "Coming Soon",
+    cta: "Learn More",
     logo: (
       <span
         style={{
