@@ -163,7 +163,7 @@ function Panel({
       </motion.div>
 
       {/* Body content */}
-      <div className={`relative z-[3] flex flex-col ${isMobile ? "p-8 pt-10 pb-10" : "h-full p-12 justify-start pt-24"}`}>
+      <div className={`relative z-[3] flex flex-col ${isMobile ? "p-8 pt-10 pb-10" : "h-full p-12 justify-center"}`}>
         <span className="label-chip self-start mb-[18px]">
           {config.label}
         </span>
@@ -205,7 +205,7 @@ function Panel({
         {/* Membership tiers — always visible on Recreation panel */}
         {kind === "recreation" && (
           <motion.div
-            className={`${isMobile ? "grid grid-cols-2" : "flex"} gap-2 mt-3`}
+            className="grid grid-cols-2 gap-2 mt-3"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "0px" }}
@@ -251,7 +251,7 @@ function Panel({
         {/* Academy logos — always visible; compact when not hovered, full when hovered */}
         {kind === "academies" && (
           <motion.div
-            className={`w-full ${isMobile ? "flex flex-col" : "flex"} gap-2 mt-3`}
+            className={`w-full ${isMobile ? "flex flex-col" : "grid grid-cols-3"} gap-2 mt-3`}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "0px" }}
