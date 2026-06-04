@@ -312,6 +312,16 @@ function Panel({
                 >
                   {ac.sport}
                 </motion.div>
+                {"desc" in ac && ac.desc && (
+                  <p className="text-white/55 mt-2" style={{ fontSize: "0.72rem", lineHeight: 1.5 }}>
+                    {(ac as { desc: string }).desc}
+                  </p>
+                )}
+                {"cta" in ac && ac.cta && (
+                  <span className="inline-block mt-3 text-[var(--color-ember)] hover:text-white text-mono text-[0.6rem] border border-[var(--color-ember)]/50 px-3 py-1 transition-colors">
+                    {(ac as { cta: string }).cta} →
+                  </span>
+                )}
               </motion.a>
               </motion.div>
             ))}
@@ -406,6 +416,8 @@ const ACADEMY_PARTNERS = [
     name: "SquashTigers",
     href: "https://squashtigers.com",
     sport: "Squash academy",
+    desc: "High performance junior squash academy with locations in NJ, PA and CT (forthcoming).",
+    cta: "Book a Trial",
     logo: (
       <span
         style={{
