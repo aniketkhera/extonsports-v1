@@ -12,8 +12,8 @@ export default function Home() {
       <Nav />
       <main>
         <Hero />
-        <CtaBanner />
         <TrustStrip />
+        <CtaBanner />
         <Sports />
         <About />
       </main>
