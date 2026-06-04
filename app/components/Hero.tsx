@@ -161,7 +161,7 @@ function Panel({
       </motion.div>
 
       {/* Body content */}
-      <div className={`relative z-[3] flex flex-col p-8 md:p-12 ${isMobile ? "pt-10 pb-10" : "h-full justify-end"}`}>
+      <div className={`relative z-[3] flex flex-col p-8 md:p-12 ${isMobile ? "pt-10 pb-20" : "h-full justify-end"}`}>
         <span className="label-chip self-start mb-[18px]">
           {config.label}
         </span>
