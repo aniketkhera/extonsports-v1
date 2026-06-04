@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminSession } from '../../../../lib/auth-guard'
-import { selectRows, insertRow, selectOne } from '../../../../lib/supabase'
+import { selectRows, insertRow, selectOne, PROPERTY } from '../../../../lib/supabase'
 
 // GET  /api/admin/subscribers — list (admin only)
 // POST /api/admin/subscribers — manual add
@@ -12,6 +12,7 @@ export async function GET() {
   try {
     const rows = await selectRows('subscribers', {
       select: 'id,email,first_name,last_name,source,tags,subscribed_at,unsubscribed_at',
+      filters: { property: `eq.${PROPERTY}` },
       order: 'subscribed_at.desc',
       limit: 1000,
     })
@@ -45,12 +46,12 @@ export async function POST(req: NextRequest) {
     // first so we can return a friendlier error than a 409.
     const existing = await selectOne<{ id: string }>('subscribers', {
       select: 'id',
-      filters: { email: `eq.${email}` },
+      filters: { property: `eq.${PROPERTY}`, email: `eq.${email}` },
     })
     if (existing) {
       return NextResponse.json({ error: 'That email is already on the list.' }, { status: 409 })
     }
-    await insertRow('subscribers', { email, first_name, last_name, source, tags }, 'return=minimal')
+    await insertRow('subscribers', { property: PROPERTY, email, first_name, last_name, source, tags }, 'return=minimal')
     return NextResponse.json({ success: true })
   } catch (e) {
     console.error('[admin/subscribers POST]', e instanceof Error ? e.message : e)

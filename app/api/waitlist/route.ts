@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { insertRow, selectOne, updateRows, supabaseConfigured } from '../../../lib/supabase'
+import { insertRow, selectOne, updateRows, supabaseConfigured, PROPERTY } from '../../../lib/supabase'
 import { sendOne } from '../../../lib/send-mailer'
 
 // POST /api/waitlist  { name, email }
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     try {
       const existing = await selectOne<SubscriberLookup>('subscribers', {
         select: 'id,unsubscribed_at',
-        filters: { email: `eq.${email}` },
+        filters: { property: `eq.${PROPERTY}`, email: `eq.${email}` },
       })
       if (existing) {
         // Resubscribe if they previously opted out — explicit
@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
         // Otherwise: already-active no-op.
       } else {
         await insertRow('subscribers', {
+          property: PROPERTY,
           email,
           first_name,
           last_name,

@@ -9,6 +9,12 @@
 const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
+// Which property site this codebase represents. Set via env var
+// so the same schema + admin code pattern can be reused across
+// squashtigers-v2, excelcricket-v1, smashshuttler-v1 etc. by just
+// changing one env var in Vercel per deployment.
+export const PROPERTY = process.env.SITE_PROPERTY || 'extonsports'
+
 export function supabaseConfigured(): boolean {
   return !!(SUPA_URL && SUPA_KEY)
 }

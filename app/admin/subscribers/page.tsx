@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getAdminSession } from '../../../lib/auth-guard'
-import { selectRows, supabaseConfigured } from '../../../lib/supabase'
+import { selectRows, supabaseConfigured, PROPERTY } from '../../../lib/supabase'
 import { AdminNav } from '../layout'
 import SubscribersClient, { type SubscriberRow } from './SubscribersClient'
 
@@ -17,6 +17,7 @@ export default async function SubscribersPage() {
     try {
       rows = await selectRows<SubscriberRow>('subscribers', {
         select: 'id,email,first_name,last_name,source,tags,subscribed_at,unsubscribed_at',
+        filters: { property: `eq.${PROPERTY}` },
         order: 'subscribed_at.desc',
         limit: 1000,
       })

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAdminSession } from '../../../../../lib/auth-guard'
 import { markdownToEmailHtml } from '../../../../../lib/markdown'
 import { sendMailer } from '../../../../../lib/send-mailer'
-import { selectRows, insertRow } from '../../../../../lib/supabase'
+import { selectRows, insertRow, PROPERTY } from '../../../../../lib/supabase'
 
 // POST /api/admin/compose/send
 //   { subject, body_md, recipient_ids: string[], filter_summary?: object }
@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
     rows = await selectRows<RecipientLoad>('subscribers', {
       select: 'id,email,unsubscribe_token',
       filters: {
+        property: `eq.${PROPERTY}`,
         id: `in.(${ids.map(i => `"${i}"`).join(',')})`,
         unsubscribed_at: 'is.null',
       },
@@ -86,6 +87,7 @@ export async function POST(req: NextRequest) {
   // success (the emails actually went out, which matters more).
   try {
     await insertRow('mailers', {
+      property: PROPERTY,
       subject,
       body_md,
       body_html: bodyHtml,

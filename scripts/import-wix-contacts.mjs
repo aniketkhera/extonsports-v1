@@ -29,7 +29,8 @@ import { argv, exit } from 'node:process'
 
 const args = argv.slice(2)
 const csvPath = args.find(a => !a.startsWith('--'))
-const sourceArg = args.find(a => a.startsWith('--source='))?.split('=')[1] || 'wix-migration'
+const sourceArg   = args.find(a => a.startsWith('--source='))?.split('=')[1]   || 'wix-migration'
+const propertyArg = args.find(a => a.startsWith('--property='))?.split('=')[1] || process.env.SITE_PROPERTY || 'extonsports'
 const dryRun = args.includes('--dry-run')
 
 if (!csvPath) {
@@ -81,7 +82,7 @@ console.log(`Parsed ${candidates.length} unique valid rows from ${rows.length - 
 // ── dedupe vs existing DB rows ─────────────────────────────────────
 const emails = candidates.map(c => c.email)
 const inClause = emails.map(e => `"${e.replace(/"/g, '\\"')}"`).join(',')
-const existsRes = await fetch(`${SUPA_URL}/rest/v1/subscribers?select=email&email=in.(${encodeURIComponent(inClause)})`, {
+const existsRes = await fetch(`${SUPA_URL}/rest/v1/subscribers?select=email&property=eq.${propertyArg}&email=in.(${encodeURIComponent(inClause)})`, {
   headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
 })
 if (!existsRes.ok) {
@@ -123,7 +124,7 @@ for (let i = 0; i < fresh.length; i += BATCH) {
       Authorization: `Bearer ${SUPA_KEY}`,
       Prefer: 'resolution=ignore-duplicates,return=minimal',
     },
-    body: JSON.stringify(batch),
+    body: JSON.stringify(batch.map(r => ({ ...r, property: propertyArg }))),
   })
   if (!res.ok) {
     console.error(`Batch ${i / BATCH} insert failed:`, res.status, await res.text())

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getAdminSession } from '../../../lib/auth-guard'
-import { selectRows, supabaseConfigured } from '../../../lib/supabase'
+import { selectRows, supabaseConfigured, PROPERTY } from '../../../lib/supabase'
 import { AdminNav } from '../layout'
 import SendsClient, { type MailerRow } from './SendsClient'
 
@@ -16,6 +16,7 @@ export default async function SendsPage() {
     try {
       rows = await selectRows<MailerRow>('mailers', {
         select: 'id,subject,body_md,body_html,sent_at,sent_by_email,recipient_count,filter_json,send_errors',
+        filters: { property: `eq.${PROPERTY}` },
         order: 'sent_at.desc',
         limit: 200,
       })

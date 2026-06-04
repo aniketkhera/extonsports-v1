@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getAdminSession } from '../../lib/auth-guard'
-import { selectRows, supabaseConfigured } from '../../lib/supabase'
+import { selectRows, supabaseConfigured, PROPERTY } from '../../lib/supabase'
 import { AdminNav } from './layout'
 
 export const dynamic = 'force-dynamic'
@@ -28,10 +28,10 @@ async function loadStats(): Promise<{ counts: SubscriberCounts; lastMailer: Mail
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 3600_000).toISOString()
     // Three parallel fetches.
     const [all, unsub, recent, lastMailerRows] = await Promise.all([
-      selectRows<{ id: string }>('subscribers', { select: 'id' }),
-      selectRows<{ id: string }>('subscribers', { select: 'id', filters: { unsubscribed_at: 'not.is.null' } }),
-      selectRows<{ id: string }>('subscribers', { select: 'id', filters: { subscribed_at: `gte.${sevenDaysAgo}`, unsubscribed_at: 'is.null' } }),
-      selectRows<Mailer>('mailers', { select: 'id,subject,sent_at,recipient_count', order: 'sent_at.desc', limit: 1 }),
+      selectRows<{ id: string }>('subscribers', { select: 'id', filters: { property: `eq.${PROPERTY}` } }),
+      selectRows<{ id: string }>('subscribers', { select: 'id', filters: { property: `eq.${PROPERTY}`, unsubscribed_at: 'not.is.null' } }),
+      selectRows<{ id: string }>('subscribers', { select: 'id', filters: { property: `eq.${PROPERTY}`, subscribed_at: `gte.${sevenDaysAgo}`, unsubscribed_at: 'is.null' } }),
+      selectRows<Mailer>('mailers', { select: 'id,subject,sent_at,recipient_count', filters: { property: `eq.${PROPERTY}` }, order: 'sent_at.desc', limit: 1 }),
     ])
     return {
       counts: {

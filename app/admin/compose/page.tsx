@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getAdminSession } from '../../../lib/auth-guard'
-import { selectRows, supabaseConfigured } from '../../../lib/supabase'
+import { selectRows, supabaseConfigured, PROPERTY } from '../../../lib/supabase'
 import { AdminNav } from '../layout'
 import ComposeClient, { type RecipientRow } from './ComposeClient'
 
@@ -16,7 +16,7 @@ export default async function ComposePage() {
     try {
       recipients = await selectRows<RecipientRow>('subscribers', {
         select: 'id,email,first_name,last_name,source,tags',
-        filters: { unsubscribed_at: 'is.null' },
+        filters: { property: `eq.${PROPERTY}`, unsubscribed_at: 'is.null' },
         order: 'subscribed_at.desc',
         limit: 5000,
       })

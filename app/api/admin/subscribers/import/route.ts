@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminSession } from '../../../../../lib/auth-guard'
-import { insertRows, selectRows } from '../../../../../lib/supabase'
+import { insertRows, selectRows, PROPERTY } from '../../../../../lib/supabase'
 
 // POST /api/admin/subscribers/import — multipart form upload
 //   file:   the CSV
@@ -81,7 +81,10 @@ export async function POST(req: NextRequest) {
   // PostgREST `in.()` filter for batch lookup.
   const existing = await selectRows<{ email: string }>('subscribers', {
     select: 'email',
-    filters: { email: `in.(${emails.map(e => `"${e.replace(/"/g, '\\"')}"`).join(',')})` },
+    filters: {
+      property: `eq.${PROPERTY}`,
+      email: `in.(${emails.map(e => `"${e.replace(/"/g, '\\"')}"`).join(',')})`,
+    },
   })
   const existingSet = new Set(existing.map(r => r.email))
   const fresh = candidates.filter(c => !existingSet.has(c.email))
@@ -93,6 +96,7 @@ export async function POST(req: NextRequest) {
   try {
     // Bulk insert with ignore-duplicates Prefer just in case of race.
     await insertRows('subscribers', fresh.map(c => ({
+      property: PROPERTY,
       email: c.email,
       first_name: c.first_name,
       last_name: c.last_name,
