@@ -57,7 +57,7 @@ function LoginForm() {
   }
 
   return (
-    <main style={{ minHeight: '100vh', background: '#FDF4EE', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Familjen Grotesk', Arial, sans-serif" }}>
+    <main style={{ minHeight: '100vh', background: '#FDF4EE', color: '#0D0D0D', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Familjen Grotesk', Arial, sans-serif" }}>
       <div style={{ background: '#fff', border: '1px solid #E8D5C8', borderRadius: 16, padding: 36, maxWidth: 440, width: '100%' }}>
         <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#F37A4A', marginBottom: 16 }}>
           Exton Sports · Admin
@@ -89,7 +89,7 @@ function LoginForm() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               disabled={state === 'sending'}
-              style={{ padding: '12px 14px', fontSize: 15, border: '1px solid #E8D5C8', borderRadius: 9, background: '#FAFAFA', outline: 'none' }}
+              style={{ padding: '12px 14px', fontSize: 15, border: '1px solid #E8D5C8', borderRadius: 9, background: '#FAFAFA', color: '#0D0D0D', outline: 'none' }}
             />
             <button
               type="submit"

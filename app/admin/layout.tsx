@@ -31,7 +31,7 @@ export default async function AdminLayout({
   // /admin/subscribers/page.tsx etc.
 
   return (
-    <div style={{ minHeight: '100vh', background: '#FDF4EE', fontFamily: "'Familjen Grotesk', Arial, sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#FDF4EE', fontFamily: "'Familjen Grotesk', Arial, sans-serif", color: '#0D0D0D' }}>
       {children}
     </div>
   )
