@@ -42,10 +42,10 @@ export default function About() {
             <dt className="text-mono text-[0.7rem] text-white/35">Phone</dt>
             <dd className="text-white/80 text-[0.92rem]">
               <a
-                href="tel:6099064271"
+                href="tel:6096190999"
                 className="hover:text-[var(--color-ember)] transition"
               >
-                609-906-4271
+                609-619-0999
               </a>
             </dd>
             <dt className="text-mono text-[0.7rem] text-white/35">Email</dt>
