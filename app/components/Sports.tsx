@@ -10,7 +10,7 @@ type Sport = {
   spec: string;
   body: string;
   // SVG line decoration drawn faintly on the card
-  decoration: "cricket" | "squash" | "badminton" | "turf";
+  decoration: "cricket" | "squash" | "badminton" | "turf" | "fitness";
 };
 
 const sports: Sport[] = [
@@ -53,11 +53,12 @@ const sports: Sport[] = [
   {
     n: "05",
     name: "Fitness",
+
     count: "—",
     unit: "",
     spec: "Rowers · weights · cable",
     body: "Dedicated fitness studio with rowing machines, free weights, and cable training — included with every membership.",
-    decoration: "turf",
+    decoration: "fitness",
   },
 ];
 
@@ -253,6 +254,42 @@ function SportDeco({ kind }: { kind: Sport["decoration"] }) {
           {/* Centre service line (top + bottom halves only, not through net) */}
           <line x1="100" y1="52" x2="100" y2="100" stroke={line} strokeWidth={sw} />
           <line x1="100" y1="180" x2="100" y2="228" stroke={line} strokeWidth={sw} />
+        </>
+      )}
+
+      {kind === "fitness" && (
+        <>
+          {/* Rowing machine — top-down view, centred and large */}
+          {/* Frame */}
+          <rect x="74" y="30" width="52" height="160" stroke={line} strokeWidth={sw} fill="none" rx="5" />
+          {/* Flywheel housing at top */}
+          <circle cx="100" cy="52" r="16" stroke={line} strokeWidth={sw} fill="none" />
+          <circle cx="100" cy="52" r="6" stroke={lineSoft} strokeWidth={sw} fill="none" />
+          {/* Monorail */}
+          <line x1="100" y1="68" x2="100" y2="170" stroke={lineSoft} strokeWidth={sw} />
+          {/* Seat */}
+          <rect x="88" y="100" width="24" height="16" stroke={line} strokeWidth={sw} fill={fillSoft} rx="2" />
+          {/* Foot stretcher */}
+          <rect x="82" y="158" width="36" height="18" stroke={line} strokeWidth={sw} fill="none" rx="2" />
+          {/* Foot pads */}
+          <rect x="83" y="159" width="14" height="16" stroke={lineSoft} strokeWidth={sw - 0.4} fill="none" />
+          <rect x="103" y="159" width="14" height="16" stroke={lineSoft} strokeWidth={sw - 0.4} fill="none" />
+          {/* Handle chain — dashed */}
+          <line x1="100" y1="68" x2="100" y2="100" stroke={lineSoft} strokeWidth={sw} strokeDasharray="3 3" />
+
+          {/* Dumbbell — bottom of card */}
+          {/* Bar */}
+          <line x1="60" y1="230" x2="140" y2="230" stroke={line} strokeWidth={sw + 0.6} />
+          {/* Left collar */}
+          <rect x="60" y="224" width="8" height="12" stroke={line} strokeWidth={sw} fill={fillSoft} rx="1" />
+          {/* Left plate */}
+          <circle cx="52" cy="230" r="10" stroke={line} strokeWidth={sw} fill="none" />
+          <circle cx="52" cy="230" r="5" stroke={lineSoft} strokeWidth={sw - 0.4} fill="none" />
+          {/* Right collar */}
+          <rect x="132" y="224" width="8" height="12" stroke={line} strokeWidth={sw} fill={fillSoft} rx="1" />
+          {/* Right plate */}
+          <circle cx="148" cy="230" r="10" stroke={line} strokeWidth={sw} fill="none" />
+          <circle cx="148" cy="230" r="5" stroke={lineSoft} strokeWidth={sw - 0.4} fill="none" />
         </>
       )}
 
