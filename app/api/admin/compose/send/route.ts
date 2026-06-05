@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       select: 'id,email,unsubscribe_token',
       filters: {
         property: `eq.${PROPERTY}`,
-        id: `in.(${ids.map(i => `"${i}"`).join(',')})`,
+        id: `in.(${ids.join(',')})`,
         unsubscribed_at: 'is.null',
       },
       limit: ids.length,
