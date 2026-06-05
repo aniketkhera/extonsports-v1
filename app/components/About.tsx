@@ -98,7 +98,9 @@ export default function About() {
 /* ─── Facility floor plan SVG ─────────────────────────────────────
    Top-left:    4 squash courts (1×4 row)   — 32ft long, 21ft wide
    Top-right:   3 badminton courts (1×3)    — 40ft long, 20ft wide
-   Bottom:      2 cricket lanes spanning ~80% of width (the multi-use
+   Bottom-left: 3 cricket lanes spanning squash zone width
+   Bottom-mid:  fitness studio (treadmills, benches, weights, cable)
+   Bottom:      was 2 cricket lanes spanning ~80% of width (the multi-use
                 turf surface; running lanes are described in the Sports
                 section copy rather than overlaid here)
    Bottom-right corner: locker room
@@ -432,6 +434,24 @@ function FloorPlan() {
           </g>
         );
       })}
+
+      {/* FITNESS — green smileys. 3 on treadmills (bobbing), 2 at weights. */}
+      {[330, 374, 418].map((tx, i) => (
+        /* Treadmill runner — bobs up-down to simulate running */
+        <g key={`fit-tread-${i}`}>
+          <Smiley x={tx + 18} y={272} color="#6EE7B7"
+            values="0,0; 0,-4; 0,0; 0,-4; 0,0"
+            dur={0.6} delay={i * 0.18} phase={i * 6} />
+        </g>
+      ))}
+      {/* Weight lifter A — small bounce at bench 1 */}
+      <Smiley x={339} y={351} color="#6EE7B7"
+        values="0,0; 0,-5; 0,2; 0,-3; 0,0"
+        dur={2.4} delay={0.3} phase={2} />
+      {/* Weight lifter B — bench 2 */}
+      <Smiley x={363} y={351} color="#6EE7B7"
+        values="0,0; 0,-5; 0,2; 0,-3; 0,0"
+        dur={2.4} delay={1.1} phase={8} />
 
       {/* ──────── TRAFFIC — 2 entering, 2 leaving via the lower-right door ──────── */}
 

@@ -3,9 +3,10 @@
 import { motion } from "framer-motion";
 
 const stats = [
-  { num: "2",    lab: "Cricket lanes" },
   { num: "4",    lab: "Squash · all-glass" },
   { num: "3",    lab: "Badminton courts" },
+  { num: "3",    lab: "Cricket lanes" },
+  { num: "1",    lab: "Fitness studio" },
   { num: "1",    lab: "Indoor turf" },
   { num: "24/7", lab: "Always open" },
 ];
@@ -47,7 +48,7 @@ export default function TrustStrip() {
       />
 
       <motion.div
-        className="relative grid grid-cols-2 sm:grid-cols-5 gap-4 sm:flex sm:justify-around sm:items-center"
+        className="relative grid grid-cols-2 sm:grid-cols-6 gap-4 sm:flex sm:justify-around sm:items-center"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, margin: "-10% 0px" }}
