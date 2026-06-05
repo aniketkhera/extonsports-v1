@@ -2,24 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { insertRow, selectOne, updateRows, supabaseConfigured, PROPERTY } from '../../../lib/supabase'
 import { sendOne } from '../../../lib/send-mailer'
 
-// POST /api/waitlist  { name, email }
+// POST /api/waitlist  { name, email, referrer?, utm_source?, utm_medium?, utm_campaign? }
 //
 // Public signup form on the homepage. Two side effects, both
 // best-effort (an exception in either does NOT fail the request):
 //
-//   1. Add to the new ExtonSports Supabase `subscribers` table with
-//      source='homepage'. If the email is already on the list,
-//      we either no-op (already active) or resubscribe (unsubscribed
-//      previously and signing up again is intent to re-opt-in).
+//   1. Add to the ExtonSports Supabase `subscribers` table with
+//      source='homepage' + acquisition context (referrer, UTM, geo).
 //
-//   2. Email info@extonsports.com letting them know who just signed
-//      up, so they can follow up personally if they want.
+//   2. Email info@extonsports.com with the signup details.
 //
-// The route is named /api/waitlist for backward compat with the
-// existing WaitlistSection.tsx component on the homepage — that
-// component's mental model is "waitlist", and we don't want to
-// touch it. Underneath, the list IS our mailing list, just with
-// different copy on the way in.
+// Geo (country/city) is read from Vercel's edge headers — available
+// automatically on all Vercel deployments, no extra config needed.
 
 type SubscriberLookup = {
   id: string
@@ -27,15 +21,15 @@ type SubscriberLookup = {
 }
 
 export async function POST(req: NextRequest) {
-  let body: { name?: string; email?: string }
+  let body: Record<string, string | null>
   try {
     body = await req.json()
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const name = (body.name ?? '').toString().trim()
-  const email = (body.email ?? '').toString().trim().toLowerCase()
+  const name  = ((body.name  ?? '') as string).trim()
+  const email = ((body.email ?? '') as string).trim().toLowerCase()
   if (!name || !email) {
     return NextResponse.json({ error: 'Name and email required.' }, { status: 400 })
   }
@@ -43,9 +37,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Valid email required.' }, { status: 400 })
   }
 
-  // Split the single name field into first/last on first whitespace.
-  // Mirrors the convention Orangish uses for `profiles.name`.
-  const tokens = name.split(/\s+/)
+  // Acquisition context — all optional, client captures at submit time
+  const referrer     = clean(body.referrer)
+  const utm_source   = clean(body.utm_source)
+  const utm_medium   = clean(body.utm_medium)
+  const utm_campaign = clean(body.utm_campaign)
+
+  // Geo — Vercel sets these headers automatically at the edge.
+  // Falls back to null in local dev (no edge runtime there).
+  const country = req.headers.get('x-vercel-ip-country') || null
+  const city    = req.headers.get('x-vercel-ip-city')
+    ? decodeURIComponent(req.headers.get('x-vercel-ip-city')!)
+    : null
+
+  const tokens     = name.split(/\s+/)
   const first_name = tokens[0]
   const last_name  = tokens.slice(1).join(' ') || null
 
@@ -57,15 +62,12 @@ export async function POST(req: NextRequest) {
         filters: { property: `eq.${PROPERTY}`, email: `eq.${email}` },
       })
       if (existing) {
-        // Resubscribe if they previously opted out — explicit
-        // intent to re-engage. We don't overwrite first_name /
-        // last_name to avoid clobbering an admin-curated value.
         if (existing.unsubscribed_at) {
           await updateRows('subscribers',
             { id: `eq.${existing.id}` },
             { unsubscribed_at: null })
         }
-        // Otherwise: already-active no-op.
+        // Already active — no-op (don't overwrite acquisition data)
       } else {
         await insertRow('subscribers', {
           property: PROPERTY,
@@ -74,6 +76,12 @@ export async function POST(req: NextRequest) {
           last_name,
           source: 'homepage',
           tags: [],
+          referrer,
+          utm_source,
+          utm_medium,
+          utm_campaign,
+          country,
+          city,
         }, 'return=minimal')
       }
     } catch (e) {
@@ -94,7 +102,10 @@ export async function POST(req: NextRequest) {
           <table cellpadding="6" style="font-size:14px;">
             <tr><td><b>Name</b></td><td>${escapeHtml(name)}</td></tr>
             <tr><td><b>Email</b></td><td><a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></td></tr>
-            <tr><td><b>Source</b></td><td>extonsports.com homepage</td></tr>
+            <tr><td><b>Source</b></td><td>${escapeHtml(referrer || 'Direct / unknown')}</td></tr>
+            ${utm_source ? `<tr><td><b>UTM source</b></td><td>${escapeHtml(utm_source)}</td></tr>` : ''}
+            ${utm_campaign ? `<tr><td><b>UTM campaign</b></td><td>${escapeHtml(utm_campaign)}</td></tr>` : ''}
+            ${city || country ? `<tr><td><b>Location</b></td><td>${[city, country].filter((x): x is string => !!x).map(escapeHtml).join(', ')}</td></tr>` : ''}
             <tr><td><b>When</b></td><td>${new Date().toISOString()}</td></tr>
           </table>
           <p style="margin-top:24px;color:#888;font-size:12px;">
@@ -108,6 +119,12 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ success: true })
+}
+
+function clean(v: unknown): string | null {
+  if (typeof v !== 'string') return null
+  const s = v.trim()
+  return s || null
 }
 
 function escapeHtml(s: string): string {

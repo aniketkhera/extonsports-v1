@@ -31,11 +31,21 @@ export default function CtaBanner() {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     setState("sending");
+
+    // Capture acquisition context at submit time
+    const params = new URLSearchParams(window.location.search);
+    const acquisition = {
+      referrer:     document.referrer || null,
+      utm_source:   params.get("utm_source"),
+      utm_medium:   params.get("utm_medium"),
+      utm_campaign: params.get("utm_campaign"),
+    };
+
     try {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: fd.get("name"), email: fd.get("email") }),
+        body: JSON.stringify({ name: fd.get("name"), email: fd.get("email"), ...acquisition }),
       });
       if (!res.ok) throw new Error();
       setState("ok");

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Barlow, Oswald, Comfortaa, Caveat, Exo_2 } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 
 const cond = Oswald({
@@ -72,6 +73,7 @@ export default function RootLayout({
         {/* overflow-x wrapper: keeps horizontal scroll locked without
             touching body overflow, which would break position:fixed */}
         <div style={{ overflowX: "hidden" }}>{children}</div>
+        <Analytics />
       </body>
     </html>
   );
