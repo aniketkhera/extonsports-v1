@@ -39,6 +39,14 @@ const exo2 = Exo_2({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.extonsports.com"),
+  icons: {
+    icon: [
+      {
+        url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231A1208'/%3E%3Ctext x='16' y='24' font-family='Georgia%2C serif' font-size='24' font-weight='700' fill='%23F89B72' text-anchor='middle'%3Ee%3C/text%3E%3C/svg%3E",
+        type: "image/svg+xml",
+      },
+    ],
+  },
   title: "Exton Sports Center — Members-only multi-sport club · open 24/7",
   description:
     "Cricket, squash, badminton and indoor turf — under one roof in Exton, PA. Members-only, open 24/7, unlimited court access. Coaching delivered through Orangish.",
