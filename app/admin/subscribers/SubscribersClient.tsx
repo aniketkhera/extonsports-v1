@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, useRef } from 'react'
+import { SPORTS, sportTag, sportsFromTags, sportLabel } from '../../../lib/sports'
 
 export type SubscriberRow = {
   id: string
@@ -22,6 +23,7 @@ export default function SubscribersClient({
   const [filter, setFilter] = useState<Filter>('active')
   const [search, setSearch] = useState('')
   const [sourceFilter, setSourceFilter] = useState<string>('')
+  const [sportFilter, setSportFilter] = useState<string>('')
   const [addOpen, setAddOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -38,17 +40,26 @@ export default function SubscribersClient({
     return Array.from(set).sort()
   }, [rows])
 
+  // Sports actually present on the list — drives the sport filter
+  // options so it only ever shows segments that exist.
+  const sportsInList = useMemo(() => {
+    const set = new Set<string>()
+    for (const r of rows) for (const s of sportsFromTags(r.tags)) set.add(s)
+    return Array.from(set).sort()
+  }, [rows])
+
   const visible = useMemo(() => rows.filter(r => {
     if (filter === 'active'       && r.unsubscribed_at) return false
     if (filter === 'unsubscribed' && !r.unsubscribed_at) return false
     if (sourceFilter && r.source !== sourceFilter) return false
+    if (sportFilter && !sportsFromTags(r.tags).includes(sportFilter)) return false
     if (search) {
       const q = search.toLowerCase()
       const name = `${r.first_name || ''} ${r.last_name || ''}`.toLowerCase()
       if (!r.email.toLowerCase().includes(q) && !name.includes(q)) return false
     }
     return true
-  }), [rows, filter, search, sourceFilter])
+  }), [rows, filter, search, sourceFilter, sportFilter])
 
   async function refresh() {
     try {
@@ -123,6 +134,13 @@ export default function SubscribersClient({
           <option value="">All sources</option>
           {sources.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
+        {sportsInList.length > 0 && (
+          <select value={sportFilter} onChange={e => setSportFilter(e.target.value)}
+            style={{ padding: '7px 12px', fontSize: 13, border: '1px solid #E8D5C8', borderRadius: 9999, background: '#fff' }}>
+            <option value="">All sports</option>
+            {sportsInList.map(s => <option key={s} value={s}>{sportLabel(s)}</option>)}
+          </select>
+        )}
       </div>
 
       <div style={{ background: '#fff', border: '1px solid #E8D5C8', borderRadius: 12, overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
@@ -147,7 +165,12 @@ export default function SubscribersClient({
               <tr key={r.id} style={{ borderBottom: '1px solid #F4E8DD' }}>
                 <Td><a href={`mailto:${r.email}`} style={{ color: '#0D0D0D', textDecoration: 'none' }}>{r.email}</a></Td>
                 <Td>{[r.first_name, r.last_name].filter(Boolean).join(' ') || <span style={{ color: '#bbb' }}>—</span>}</Td>
-                <Td>{r.source || <span style={{ color: '#bbb' }}>—</span>}</Td>
+                <Td>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    {r.source || <span style={{ color: '#bbb' }}>—</span>}
+                    {sportsFromTags(r.tags).map(s => <SportChip key={s} sport={s} />)}
+                  </span>
+                </Td>
                 <Td>{new Date(r.subscribed_at).toLocaleDateString()}</Td>
                 <Td>{r.unsubscribed_at ? <Pill tone="muted">Unsubscribed</Pill> : <Pill tone="ok">Active</Pill>}</Td>
                 <Td align="right">
@@ -214,6 +237,7 @@ function AddModal({ onClose, onAdded }: { onClose: () => void; onAdded: () => vo
   const [first, setFirst] = useState('')
   const [last, setLast] = useState('')
   const [source, setSource] = useState('manual')
+  const [sport, setSport] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
@@ -221,10 +245,11 @@ function AddModal({ onClose, onAdded }: { onClose: () => void; onAdded: () => vo
     e.preventDefault()
     setBusy(true); setErr(null)
     try {
+      const tag = sportTag(sport)
       const res = await fetch('/api/admin/subscribers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, first_name: first, last_name: last, source }),
+        body: JSON.stringify({ email, first_name: first, last_name: last, source, tags: tag ? [tag] : [] }),
       })
       if (!res.ok) {
         const j = await res.json().catch(() => ({}))
@@ -244,6 +269,7 @@ function AddModal({ onClose, onAdded }: { onClose: () => void; onAdded: () => vo
           <Input label="Last name"  value={last}  onChange={setLast}  style={{ flex: 1 }} />
         </div>
         <Input label="Source"  value={source} onChange={setSource} hint='Where they came from — "manual", "homepage", etc.' />
+        <SportField value={sport} onChange={setSport} />
         {err && <div style={{ color: '#991B1B', fontSize: 13 }}>{err}</div>}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
           <Btn onClick={onClose} tone="ghost" type="button">Cancel</Btn>
@@ -257,6 +283,7 @@ function AddModal({ onClose, onAdded }: { onClose: () => void; onAdded: () => vo
 function ImportModal({ onClose, onImported }: { onClose: () => void; onImported: (n: number) => void }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [source, setSource] = useState('wix-migration')
+  const [sport, setSport] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [preview, setPreview] = useState<{ rows: number; sample: string[] } | null>(null)
@@ -278,6 +305,7 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
       const fd = new FormData()
       fd.append('file', file)
       fd.append('source', source)
+      if (sport) fd.append('sport', sport)
       const res = await fetch('/api/admin/subscribers/import', { method: 'POST', body: fd })
       const j = await res.json().catch(() => ({}))
       if (!res.ok) { setErr(j.error || 'Import failed.'); return }
@@ -300,6 +328,7 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
           </div>
         )}
         <Input label="Source tag" value={source} onChange={setSource} hint="How these contacts will be tagged in the source column." />
+        <SportField value={sport} onChange={setSport} hint="Applied to every row in this import — e.g. a cricket prospect list → Cricket." />
         {err && <div style={{ color: '#991B1B', fontSize: 13 }}>{err}</div>}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
           <Btn onClick={onClose} tone="ghost" type="button">Cancel</Btn>
@@ -329,6 +358,28 @@ function Pill({ children, tone }: { children: React.ReactNode; tone: 'ok' | 'mut
   const bg = tone === 'ok' ? '#DCFCE7' : '#F4E8DD'
   const fg = tone === 'ok' ? '#166534' : '#888'
   return <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 9999, background: bg, color: fg, fontSize: 11, fontWeight: 700 }}>{children}</span>
+}
+function SportChip({ sport }: { sport: string }) {
+  return (
+    <span style={{ display: 'inline-block', padding: '1px 8px', borderRadius: 9999, background: '#FDF4EE', border: '1px solid #E8D5C8', color: '#9A5B3B', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>
+      {sportLabel(sport)}
+    </span>
+  )
+}
+function SportField({ value, onChange, hint }: { value: string; onChange: (v: string) => void; hint?: string }) {
+  return (
+    <div>
+      <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#666', marginBottom: 4 }}>
+        Sport interest <span style={{ fontWeight: 400, color: '#aaa' }}>(optional)</span>
+      </label>
+      <select value={value} onChange={e => onChange(e.target.value)}
+        style={{ width: '100%', padding: '9px 12px', fontSize: 13, border: '1px solid #E8D5C8', borderRadius: 8, background: '#fff', boxSizing: 'border-box' }}>
+        <option value="">— None —</option>
+        {SPORTS.map(s => <option key={s} value={s}>{sportLabel(s)}</option>)}
+      </select>
+      {hint && <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>{hint}</div>}
+    </div>
+  )
 }
 function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (

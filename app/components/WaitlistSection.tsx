@@ -2,6 +2,22 @@
 
 import { useState, useEffect, useRef } from "react";
 
+// Reads referrer + UTM + sport off the current URL at submit time.
+// Returns only the keys that are actually present so the API's
+// existing null-defaults stand for everything else. Safe on the server
+// (returns {}), though this only ever runs from a click handler.
+function acquisitionFields(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  const out: Record<string, string> = {};
+  if (document.referrer) out.referrer = document.referrer;
+  const params = new URLSearchParams(window.location.search);
+  for (const key of ["utm_source", "utm_medium", "utm_campaign", "sport"]) {
+    const v = params.get(key);
+    if (v) out[key] = v;
+  }
+  return out;
+}
+
 function useScrollDirection() {
   const [dir, setDir] = useState<"up" | "down">("down");
   const lastY = useRef(0);
@@ -43,7 +59,15 @@ export default function WaitlistSection() {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: fd.get("name"), email: fd.get("email") }),
+        body: JSON.stringify({
+          name: fd.get("name"),
+          email: fd.get("email"),
+          // Acquisition context — captured at submit time so a signup
+          // can be attributed to its referrer / campaign / sport. The
+          // `sport` param (e.g. ?sport=cricket on an outreach link) feeds
+          // the sport-interest segment in the Traffic dashboard.
+          ...acquisitionFields(),
+        }),
       });
       if (!res.ok) throw new Error();
       setState("ok");

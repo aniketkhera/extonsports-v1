@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminSession } from '../../../../../lib/auth-guard'
 import { insertRows, selectRows, PROPERTY } from '../../../../../lib/supabase'
+import { sportTag } from '../../../../../lib/sports'
 
 // POST /api/admin/subscribers/import — multipart form upload
 //   file:   the CSV
 //   source: text tag stored on every imported row
+//   sport:  optional sport interest (cricket | squash | …) applied as a
+//           "sport:<x>" entry in tags[] on every imported row. Lets a
+//           prospect list (e.g. the cricket outreach CSV) be segmented
+//           on import. Unknown/blank values add no tag.
 //
 // CSV requirements:
 //   - First row is a header. We accept any column order.
@@ -35,6 +40,10 @@ export async function POST(req: NextRequest) {
   }
   const file = form.get('file')
   const source = (form.get('source') || 'csv-import').toString().trim() || 'csv-import'
+  // Optional uniform sport tag for the whole import. sportTag() returns
+  // null for anything that isn't a known sport, so a bad value is a no-op.
+  const importTag = sportTag((form.get('sport') || '').toString().trim())
+  const tags = importTag ? [importTag] : []
   if (!(file instanceof File)) {
     return NextResponse.json({ error: 'No file uploaded.' }, { status: 400 })
   }
@@ -101,7 +110,7 @@ export async function POST(req: NextRequest) {
       first_name: c.first_name,
       last_name: c.last_name,
       source,
-      tags: [],
+      tags,
     })), 'resolution=ignore-duplicates,return=minimal')
   } catch (e) {
     console.error('[admin/subscribers/import]', e instanceof Error ? e.message : e)

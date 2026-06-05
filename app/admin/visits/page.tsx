@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getAdminSession } from '../../../lib/auth-guard'
 import { selectRows, supabaseConfigured, PROPERTY } from '../../../lib/supabase'
+import { sportsFromTags, sportLabel } from '../../../lib/sports'
 import { AdminNav } from '../layout'
 
 export const dynamic = 'force-dynamic'
@@ -43,6 +44,7 @@ type Signup = {
   referrer: string | null
   utm_source: string | null
   region: string | null
+  tags: string[]
   subscribed_at: string
 }
 
@@ -56,7 +58,7 @@ async function loadSignups(): Promise<Signup[]> {
   try {
     const since = new Date(Date.now() - 30 * 24 * 3600_000).toISOString()
     return await selectRows<Signup>('subscribers', {
-      select: 'referrer,utm_source,region,subscribed_at',
+      select: 'referrer,utm_source,region,tags,subscribed_at',
       filters: { property: `eq.${PROPERTY}`, source: 'eq.homepage', subscribed_at: `gte.${since}` },
       limit: 10000,
     })
@@ -137,6 +139,18 @@ export default async function VisitsPage() {
   const byDevice   = tally(visits, v => v.device)
   const byCampaign = tally(visits.filter(v => v.utm_source), v => v.utm_source)
 
+  // Inbound signups by sport interest. Counts each "sport:<x>" tag on
+  // homepage signups (a signup may carry more than one). Populated when
+  // outreach links carry ?sport=cricket (or a sport-named UTM).
+  const bySport = (() => {
+    const m = new Map<string, number>()
+    for (const s of signups) for (const sp of sportsFromTags(s.tags)) m.set(sp, (m.get(sp) || 0) + 1)
+    return [...m.entries()]
+      .map(([sport, count]) => ({ label: sportLabel(sport), count }))
+      .sort((a, b) => b.count - a.count)
+  })()
+  const sportSignups = bySport.reduce((s, r) => s + r.count, 0)
+
   // Conversion: visits vs signups, matched by normalized source + region.
   const convBySource = buildConversion(visits, signups, v => refHost(v.referrer), s => refHost(s.referrer))
   const convByRegion = buildConversion(visits, signups, v => v.region || '—', s => s.region || '—')
@@ -172,6 +186,7 @@ export default async function VisitsPage() {
               <BarCard title="Where they came from" rows={byReferrer} total={last30} />
               <BarCard title="Device" rows={byDevice} total={last30} />
               <BarCard title="Campaign (utm_source)" rows={byCampaign} total={byCampaign.reduce((s, r) => s + r.count, 0)} emptyHint="Tag your shared links with ?utm_source=… to see campaigns here." />
+              <BarCard title="Signups by sport interest" rows={bySport} total={sportSignups} emptyHint="Tag outreach links with ?sport=cricket (or utm_source=cricket) so cricket-driven signups show up here." />
             </div>
 
             <ConversionCard

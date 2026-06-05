@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { insertRow, selectOne, updateRows, supabaseConfigured, PROPERTY } from '../../../lib/supabase'
 import { sendOne } from '../../../lib/send-mailer'
+import { deriveSport, sportTag, sportLabel } from '../../../lib/sports'
 
-// POST /api/waitlist  { name, email, referrer?, utm_source?, utm_medium?, utm_campaign? }
+// POST /api/waitlist  { name, email, referrer?, utm_source?, utm_medium?, utm_campaign?, sport? }
 //
 // Public signup form on the homepage. Two side effects, both
 // best-effort (an exception in either does NOT fail the request):
@@ -43,6 +44,13 @@ export async function POST(req: NextRequest) {
   const utm_medium   = clean(body.utm_medium)
   const utm_campaign = clean(body.utm_campaign)
 
+  // Sport interest — drives the cricket / squash / … segment. Prefer an
+  // explicit ?sport= param, else infer from a sport-named UTM (so an
+  // outreach link like ?utm_source=cricket auto-tags). Stored as a
+  // "sport:<x>" entry in tags[]; null when nothing recognizable is given.
+  const sport         = deriveSport(clean(body.sport), utm_source, utm_campaign)
+  const sportTagValue = sportTag(sport)
+
   // Geo — Vercel sets these headers automatically at the edge.
   // Falls back to null in local dev (no edge runtime there).
   // region (ISO 3166-2 subdivision, e.g. "PA") resolves far more
@@ -80,7 +88,7 @@ export async function POST(req: NextRequest) {
           first_name,
           last_name,
           source: 'homepage',
-          tags: [],
+          tags: sportTagValue ? [sportTagValue] : [],
           referrer,
           utm_source,
           utm_medium,
@@ -109,6 +117,7 @@ export async function POST(req: NextRequest) {
             <tr><td><b>Name</b></td><td>${escapeHtml(name)}</td></tr>
             <tr><td><b>Email</b></td><td><a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a></td></tr>
             <tr><td><b>Source</b></td><td>${escapeHtml(referrer || 'Direct / unknown')}</td></tr>
+            ${sport ? `<tr><td><b>Sport</b></td><td>${escapeHtml(sportLabel(sport))}</td></tr>` : ''}
             ${utm_source ? `<tr><td><b>UTM source</b></td><td>${escapeHtml(utm_source)}</td></tr>` : ''}
             ${utm_campaign ? `<tr><td><b>UTM campaign</b></td><td>${escapeHtml(utm_campaign)}</td></tr>` : ''}
             ${city || region || country ? `<tr><td><b>Location</b></td><td>${[city, region, country].filter((x): x is string => !!x).map(escapeHtml).join(', ')}</td></tr>` : ''}

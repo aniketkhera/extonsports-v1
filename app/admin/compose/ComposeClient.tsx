@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { markdownToEmailHtml } from '../../../lib/markdown'
+import { sportsFromTags, sportLabel } from '../../../lib/sports'
 
 export type RecipientRow = {
   id: string
@@ -36,6 +37,7 @@ export default function ComposeClient({
   const [pickerOpen, setPickerOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [sourceFilter, setSourceFilter] = useState<string>('')
+  const [sportFilter, setSportFilter] = useState<string>('')
   const [busy, setBusy] = useState<null | 'test' | 'send'>(null)
   const [flash, setFlash] = useState<{ kind: 'ok' | 'err'; msg: string } | null>(null)
   const [confirmSend, setConfirmSend] = useState(false)
@@ -50,15 +52,24 @@ export default function ComposeClient({
     return Array.from(set).sort()
   }, [recipients])
 
+  // Sports present among recipients — drives the sport filter so you can
+  // send to e.g. everyone tagged Cricket.
+  const sportsInList = useMemo(() => {
+    const set = new Set<string>()
+    for (const r of recipients) for (const s of sportsFromTags(r.tags)) set.add(s)
+    return Array.from(set).sort()
+  }, [recipients])
+
   const filteredRecipients = useMemo(() => recipients.filter(r => {
     if (sourceFilter && r.source !== sourceFilter) return false
+    if (sportFilter && !sportsFromTags(r.tags).includes(sportFilter)) return false
     if (search) {
       const q = search.toLowerCase()
       const name = `${r.first_name || ''} ${r.last_name || ''}`.toLowerCase()
       if (!r.email.toLowerCase().includes(q) && !name.includes(q)) return false
     }
     return true
-  }), [recipients, search, sourceFilter])
+  }), [recipients, search, sourceFilter, sportFilter])
 
   const bodyHtml = useMemo(() => markdownToEmailHtml(body), [body])
   const previewHtml = useMemo(() => buildPreviewHtml(subject || '(Subject preview)', bodyHtml), [subject, bodyHtml])
@@ -139,6 +150,7 @@ export default function ComposeClient({
           filter_summary: {
             search: search || undefined,
             source: sourceFilter || undefined,
+            sport: sportFilter || undefined,
             count: selected.size,
           },
         }),
@@ -200,6 +212,7 @@ export default function ComposeClient({
         <div style={{ fontSize: 13, color: '#666' }}>
           <strong style={{ color: '#0D0D0D' }}>{selected.size}</strong> of {recipients.length} active subscribers selected
           {sourceFilter && <span> · source: {sourceFilter}</span>}
+          {sportFilter && <span> · sport: {sportLabel(sportFilter)}</span>}
           {search && <span> · search: &ldquo;{search}&rdquo;</span>}
         </div>
         <button onClick={() => setPickerOpen(o => !o)} style={btnStyle('ghost')}>
@@ -216,6 +229,8 @@ export default function ComposeClient({
           search={search} setSearch={setSearch}
           sourceFilter={sourceFilter} setSourceFilter={setSourceFilter}
           sources={sources}
+          sportFilter={sportFilter} setSportFilter={setSportFilter}
+          sportsInList={sportsInList}
         />
       )}
 
@@ -287,6 +302,7 @@ export default function ComposeClient({
 
 function RecipientPicker({
   recipients, allCount, selected, setSelected, search, setSearch, sourceFilter, setSourceFilter, sources,
+  sportFilter, setSportFilter, sportsInList,
 }: {
   recipients: RecipientRow[]
   allCount: number
@@ -295,6 +311,8 @@ function RecipientPicker({
   search: string; setSearch: (s: string) => void
   sourceFilter: string; setSourceFilter: (s: string) => void
   sources: string[]
+  sportFilter: string; setSportFilter: (s: string) => void
+  sportsInList: string[]
 }) {
   function toggle(id: string) {
     const next = new Set(selected)
@@ -318,6 +336,13 @@ function RecipientPicker({
           <option value="">All sources</option>
           {sources.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
+        {sportsInList.length > 0 && (
+          <select value={sportFilter} onChange={e => setSportFilter(e.target.value)}
+            style={{ padding: '7px 12px', fontSize: 13, border: '1px solid #E8D5C8', borderRadius: 9999, background: '#FDF4EE' }}>
+            <option value="">All sports</option>
+            {sportsInList.map(s => <option key={s} value={s}>{sportLabel(s)}</option>)}
+          </select>
+        )}
         <button onClick={selectAll}     style={btnStyle('ghost', false, 'tiny')}>All ({allCount})</button>
         <button onClick={selectVisible} style={btnStyle('ghost', false, 'tiny')}>+ Visible ({recipients.length})</button>
         <button onClick={selectNone}    style={btnStyle('ghost', false, 'tiny')}>None</button>
@@ -334,6 +359,7 @@ function RecipientPicker({
               <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>
                 {[r.first_name, r.last_name].filter(Boolean).join(' ') || '—'}
                 {r.source && <> · <span>{r.source}</span></>}
+                {sportsFromTags(r.tags).map(s => <span key={s}> · <span style={{ color: '#9A5B3B', fontWeight: 700 }}>{sportLabel(s)}</span></span>)}
               </div>
             </div>
           </label>
