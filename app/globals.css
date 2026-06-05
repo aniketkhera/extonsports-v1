@@ -13,12 +13,11 @@
   --color-bone: #DDE3EA;
   --color-paper: #FAFAFA;
 
-  /* Primary accent — the logo's gold (squash racquet + underline arc).
-     Variable kept named "ember" to avoid touching every call site; the
-     value is now brand gold, not the old salmon. */
-  --color-ember: #EAA323;
-  --color-ember-hi: #F4B945;
-  --color-ember-soft: #F6D082;
+  /* Primary accent — the original peach/salmon "ember". Kept against the
+     new navy palette + green badminton accent. */
+  --color-ember: #F89B72;
+  --color-ember-hi: #FBB28C;
+  --color-ember-soft: #FDCFB1;
 
   /* Secondary accent — the logo's green (badminton shuttlecock arc). */
   --color-green: #42B54D;

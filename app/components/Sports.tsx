@@ -166,10 +166,10 @@ export default function Sports() {
 /* ─── Sport-specific court lines — accurate to the real sport ── */
 function SportDeco({ kind }: { kind: Sport["decoration"] }) {
   // Higher opacity than before so the lines actually read.
-  const line = "rgba(234,163,35,0.18)";
-  const lineSoft = "rgba(234,163,35,0.11)";
-  const fillSoft = "rgba(234,163,35,0.05)";
-  const tin = "rgba(234,163,35,0.30)";
+  const line = "rgba(248,155,114,0.18)";
+  const lineSoft = "rgba(248,155,114,0.11)";
+  const fillSoft = "rgba(248,155,114,0.05)";
+  const tin = "rgba(248,155,114,0.30)";
   const sw = 1.2;
 
   return (

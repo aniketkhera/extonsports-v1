@@ -315,7 +315,7 @@ function Panel({
 
 const ACADEMIES = {
   bigLetter: "A",
-  bg: "radial-gradient(60% 80% at 20% 40%, rgba(234,163,35,0.20) 0%, transparent 60%), linear-gradient(135deg, #0E1825 0%, #15263A 100%)",
+  bg: "radial-gradient(60% 80% at 20% 40%, rgba(248,155,114,0.20) 0%, transparent 60%), linear-gradient(135deg, #0E1825 0%, #15263A 100%)",
   label: "Academies · Juniors",
   headline: { line1: "Train.", line2: "Compete." },
   body: "Structured Coaching in Cricket, Squash and Badminton. Fitness and Agility on the Turf.",
