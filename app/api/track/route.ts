@@ -30,6 +30,10 @@ export async function POST(req: NextRequest) {
     let body: Record<string, string | null> = {}
     try { body = await req.json() } catch { /* empty beacon is fine */ }
 
+    // Don't log admin traffic — only public-site visits are interesting.
+    const path = clean(body.path)
+    if (path && path.startsWith('/admin')) return new NextResponse(null, { status: 204 })
+
     const ua = req.headers.get('user-agent') || ''
     const is_bot = BOT_RE.test(ua)
 
@@ -40,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     await insertRow('visits', {
       property:     PROPERTY,
-      path:         clean(body.path),
+      path,
       referrer:     clean(body.referrer),
       utm_source:   clean(body.utm_source),
       utm_medium:   clean(body.utm_medium),

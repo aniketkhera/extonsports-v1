@@ -6,6 +6,7 @@ import { AdminNav } from '../layout'
 export const dynamic = 'force-dynamic'
 
 type Visit = {
+  path: string | null
   referrer: string | null
   utm_source: string | null
   utm_campaign: string | null
@@ -23,12 +24,15 @@ async function loadVisits(): Promise<Visit[]> {
   if (!supabaseConfigured()) return []
   try {
     const since = new Date(Date.now() - 30 * 24 * 3600_000).toISOString()
-    return await selectRows<Visit>('visits', {
-      select: 'referrer,utm_source,utm_campaign,region,country,device,is_bot,created_at',
+    const rows = await selectRows<Visit>('visits', {
+      select: 'path,referrer,utm_source,utm_campaign,region,country,device,is_bot,created_at',
       filters: { property: `eq.${PROPERTY}`, is_bot: 'eq.false', created_at: `gte.${since}` },
       order: 'created_at.desc',
       limit: 10000,
     })
+    // Exclude admin traffic that may have been logged before the guard
+    // was added (only public-site visits count).
+    return rows.filter(v => !v.path?.startsWith('/admin'))
   } catch (e) {
     console.error('[/admin/visits] load failed:', e instanceof Error ? e.message : e)
     return []

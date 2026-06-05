@@ -9,6 +9,8 @@ import { useEffect } from "react";
 export default function TrackBeacon() {
   useEffect(() => {
     try {
+      // Never log admin traffic — only public-site visits.
+      if (window.location.pathname.startsWith("/admin")) return;
       const params = new URLSearchParams(window.location.search);
       const payload = JSON.stringify({
         path: window.location.pathname,
