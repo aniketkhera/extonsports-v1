@@ -227,9 +227,71 @@ function FloorPlan() {
         );
       })}
 
-      {/* ──────── ZONE 4 — bottom-right, LOCKERS + ENTRANCE ALLEY ──────── */}
+      {/* ──────── ZONE 4b — FITNESS (between squash divider x=320 and locker wall x=470) ──────── */}
+      <text x="326" y="234" fill={lbl} fontSize="9" fontFamily="var(--font-body)" letterSpacing="2" fontWeight="700">
+        04 · FITNESS
+      </text>
+
+      {/* 3 treadmills — top row, each 36px wide × 62px long (top-down view) */}
+      {[330, 374, 418].map((tx, i) => (
+        <g key={`tread-${i}`}>
+          {/* belt */}
+          <rect x={tx} y={246} width="36" height="62" stroke={line} strokeWidth={sw} fill="none" rx="3" />
+          {/* motor housing (front) */}
+          <rect x={tx+2} y={246} width="32" height="9" stroke="none" fill={`rgba(248,155,114,0.12)`} />
+          {/* front + rear rollers */}
+          <circle cx={tx+18} cy={250}  r="3" stroke={lineSoft} strokeWidth={swThin} fill="none" />
+          <circle cx={tx+18} cy={303}  r="3" stroke={lineSoft} strokeWidth={swThin} fill="none" />
+          {/* handrail lines */}
+          <line x1={tx+4}  y1={252} x2={tx+4}  y2={301} stroke={lineSoft} strokeWidth={swThin} />
+          <line x1={tx+32} y1={252} x2={tx+32} y2={301} stroke={lineSoft} strokeWidth={swThin} />
+        </g>
+      ))}
+
+      {/* Bench press — top view: bench + barbell */}
+      <g>
+        {/* bench */}
+        <rect x="332" y="323" width="14" height="56" stroke={line} strokeWidth={sw} fill="none" rx="2" />
+        {/* barbell bar */}
+        <line x1="339" y1="330" x2="339" y2="371" stroke={line} strokeWidth={sw+0.6} />
+        {/* weight plates left */}
+        <circle cx="339" cy="328" r="5" stroke={line} strokeWidth={sw} fill="none" />
+        {/* weight plates right */}
+        <circle cx="339" cy="373" r="5" stroke={line} strokeWidth={sw} fill="none" />
+        {/* second bench */}
+        <rect x="356" y="323" width="14" height="56" stroke={line} strokeWidth={sw} fill="none" rx="2" />
+        <line x1="363" y1="330" x2="363" y2="371" stroke={line} strokeWidth={sw+0.6} />
+        <circle cx="363" cy="328" r="5" stroke={line} strokeWidth={sw} fill="none" />
+        <circle cx="363" cy="373" r="5" stroke={line} strokeWidth={sw} fill="none" />
+      </g>
+
+      {/* Dumbbell rack — row of paired circles along the right wall */}
+      <g>
+        <text x="385" y="336" fill={lbl} fontSize="7" fontFamily="var(--font-body)" letterSpacing="1.5" fontWeight="600">
+          WEIGHTS
+        </text>
+        {[344, 354, 364, 374, 384, 394].map((y) => (
+          <g key={`db-${y}`}>
+            <circle cx="392" cy={y} r="4.5" stroke={line} strokeWidth={swThin} fill="none" />
+            <circle cx="402" cy={y} r="4.5" stroke={line} strokeWidth={swThin} fill="none" />
+            <line x1="396.5" y1={y} x2="397.5" y2={y} stroke={line} strokeWidth={sw} />
+          </g>
+        ))}
+        {/* rack outline */}
+        <rect x="385" y="338" width="24" height="62" stroke={lineSoft} strokeWidth={swThin} fill="none" />
+      </g>
+
+      {/* Cable machine / functional trainer — top-right of fitness zone */}
+      <g>
+        <rect x="428" y="246" width="34" height="34" stroke={line} strokeWidth={sw} fill="none" rx="2" />
+        <circle cx="445" cy="263" r="8" stroke={lineSoft} strokeWidth={swThin} fill="none" />
+        <circle cx="445" cy="263" r="3" stroke={line} strokeWidth={sw} fill="none" />
+        <text x="430" y="295" fill={lbl} fontSize="6.5" fontFamily="var(--font-body)" letterSpacing="1" fontWeight="600">CABLE</text>
+      </g>
+
+      {/* ──────── ZONE 5 — LOCKERS + ENTRANCE ALLEY ──────── */}
       <text x="478" y="234" fill={lbl} fontSize="9" fontFamily="var(--font-body)" letterSpacing="2" fontWeight="700">
-        04 · LOCKERS
+        05 · LOCKERS
       </text>
       <g>
         {/* outer locker room — narrower, left-aligned; alley on the right */}
