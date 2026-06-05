@@ -11,6 +11,7 @@ type Sport = {
   body: string;
   // SVG line decoration drawn faintly on the card
   decoration: "cricket" | "squash" | "badminton" | "turf" | "fitness";
+  prefix?: string; // orange headline shown when count is "—"
 };
 
 const sports: Sport[] = [
@@ -43,9 +44,10 @@ const sports: Sport[] = [
   },
   {
     n: "04",
-    name: "Indoor Turf",
+    name: "Turf",
     count: "—",
     unit: "",
+    prefix: "Indoor",
     spec: "Athletic lanes · year-round",
     body: "Indoor turf with marked athletic running lanes — sprint work, agility drills, conditioning, and a back-of-house spot for extra cricket nets when needed.",
     decoration: "turf",
@@ -53,9 +55,9 @@ const sports: Sport[] = [
   {
     n: "05",
     name: "Fitness",
-
     count: "—",
     unit: "",
+    prefix: "Studio",
     spec: "Rowers · weights · cable",
     body: "Dedicated fitness studio with rowing machines, free weights, and cable training — included with every membership.",
     decoration: "fitness",
@@ -140,7 +142,7 @@ export default function Sports() {
                     className="text-cond text-[var(--color-ember)] leading-none mb-3"
                     style={{ fontSize: "clamp(2.8rem, 3.6vw, 3.4rem)" }}
                   >
-                    Indoor
+                    {s.prefix ?? ""}
                   </div>
                 )}
 
