@@ -275,17 +275,17 @@ function FloorPlan() {
 
       {/* Dumbbell rack — right of rowers, below cable machine */}
       <g>
-        <text x="400" y="298" fill={lbl} fontSize="7" fontFamily="var(--font-body)" letterSpacing="1.5" fontWeight="600">
+        <text x="400" y="360" fill={lbl} fontSize="7" fontFamily="var(--font-body)" letterSpacing="1.5" fontWeight="600">
           WEIGHTS
         </text>
         {/* rack outline */}
-        <rect x="400" y="302" width="62" height="22" stroke={lineSoft} strokeWidth={swThin} fill="none" />
+        <rect x="400" y="364" width="62" height="22" stroke={lineSoft} strokeWidth={swThin} fill="none" />
         {/* 3 dumbbell pairs left to right */}
         {[404, 421, 438].map((x) => (
           <g key={`db-${x}`}>
-            <circle cx={x}    cy="313" r="4.5" stroke={line} strokeWidth={swThin} fill="none" />
-            <circle cx={x+10} cy="313" r="4.5" stroke={line} strokeWidth={swThin} fill="none" />
-            <line x1={x+4.5} y1="313" x2={x+5.5} y2="313" stroke={line} strokeWidth={sw} />
+            <circle cx={x}    cy="375" r="4.5" stroke={line} strokeWidth={swThin} fill="none" />
+            <circle cx={x+10} cy="375" r="4.5" stroke={line} strokeWidth={swThin} fill="none" />
+            <line x1={x+4.5} y1="375" x2={x+5.5} y2="375" stroke={line} strokeWidth={sw} />
           </g>
         ))}
       </g>
