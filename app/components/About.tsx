@@ -234,19 +234,25 @@ function FloorPlan() {
         04 · FITNESS
       </text>
 
-      {/* 3 treadmills — top row, each 36px wide × 62px long (top-down view) */}
-      {[330, 374, 418].map((tx, i) => (
-        <g key={`tread-${i}`}>
-          {/* belt */}
-          <rect x={tx} y={246} width="36" height="62" stroke={line} strokeWidth={sw} fill="none" rx="3" />
-          {/* motor housing (front) */}
-          <rect x={tx+2} y={246} width="32" height="9" stroke="none" fill={`rgba(248,155,114,0.12)`} />
-          {/* front + rear rollers */}
-          <circle cx={tx+18} cy={250}  r="3" stroke={lineSoft} strokeWidth={swThin} fill="none" />
-          <circle cx={tx+18} cy={303}  r="3" stroke={lineSoft} strokeWidth={swThin} fill="none" />
-          {/* handrail lines */}
-          <line x1={tx+4}  y1={252} x2={tx+4}  y2={301} stroke={lineSoft} strokeWidth={swThin} />
-          <line x1={tx+32} y1={252} x2={tx+32} y2={301} stroke={lineSoft} strokeWidth={swThin} />
+      {/* 2 rowing machines (ergs) — top-down view, side by side */}
+      {[330, 364].map((rx, i) => (
+        <g key={`row-${i}`}>
+          {/* frame outline */}
+          <rect x={rx} y={246} width="28" height="72" stroke={line} strokeWidth={sw} fill="none" rx="3" />
+          {/* flywheel housing at top */}
+          <circle cx={rx+14} cy={254} r="6" stroke={line} strokeWidth={sw} fill="none" />
+          <circle cx={rx+14} cy={254} r="2.5" stroke={lineSoft} strokeWidth={swThin} fill="none" />
+          {/* centre monorail */}
+          <line x1={rx+14} y1={260} x2={rx+14} y2={308} stroke={lineSoft} strokeWidth={swThin} />
+          {/* seat */}
+          <rect x={rx+8} y={273} width="12" height="8" stroke={line} strokeWidth={sw} fill="none" rx="1" />
+          {/* foot stretcher near bottom */}
+          <rect x={rx+4} y={304} width="20" height="10" stroke={line} strokeWidth={sw} fill="none" rx="1" />
+          {/* footrest detail — two pads */}
+          <rect x={rx+5} y={305} width="7" height="8" stroke={lineSoft} strokeWidth={swThin} fill="none" />
+          <rect x={rx+16} y={305} width="7" height="8" stroke={lineSoft} strokeWidth={swThin} fill="none" />
+          {/* handle chain — dashed line from flywheel */}
+          <line x1={rx+14} y1={260} x2={rx+14} y2={273} stroke={lineSoft} strokeWidth={swThin} strokeDasharray="2 2" />
         </g>
       ))}
 
@@ -267,20 +273,21 @@ function FloorPlan() {
         <circle cx="363" cy="373" r="5" stroke={line} strokeWidth={sw} fill="none" />
       </g>
 
-      {/* Dumbbell rack — row of paired circles along the right wall */}
+      {/* Dumbbell rack — pairs running LEFT to RIGHT (horizontal orientation) */}
       <g>
-        <text x="385" y="336" fill={lbl} fontSize="7" fontFamily="var(--font-body)" letterSpacing="1.5" fontWeight="600">
+        <text x="327" y="336" fill={lbl} fontSize="7" fontFamily="var(--font-body)" letterSpacing="1.5" fontWeight="600">
           WEIGHTS
         </text>
-        {[344, 354, 364, 374, 384, 394].map((y) => (
-          <g key={`db-${y}`}>
-            <circle cx="392" cy={y} r="4.5" stroke={line} strokeWidth={swThin} fill="none" />
-            <circle cx="402" cy={y} r="4.5" stroke={line} strokeWidth={swThin} fill="none" />
-            <line x1="396.5" y1={y} x2="397.5" y2={y} stroke={line} strokeWidth={sw} />
+        {/* rack outline — wide horizontal */}
+        <rect x="327" y="340" width="132" height="22" stroke={lineSoft} strokeWidth={swThin} fill="none" />
+        {/* 6 dumbbell pairs running left to right; each pair spaced 22px apart */}
+        {[334, 356, 378, 400, 422, 444].map((x) => (
+          <g key={`db-${x}`}>
+            <circle cx={x}    cy="351" r="4.5" stroke={line} strokeWidth={swThin} fill="none" />
+            <circle cx={x+10} cy="351" r="4.5" stroke={line} strokeWidth={swThin} fill="none" />
+            <line x1={x+4.5} y1="351" x2={x+5.5} y2="351" stroke={line} strokeWidth={sw} />
           </g>
         ))}
-        {/* rack outline */}
-        <rect x="385" y="338" width="24" height="62" stroke={lineSoft} strokeWidth={swThin} fill="none" />
       </g>
 
       {/* Cable machine / functional trainer — top-right of fitness zone */}
@@ -435,13 +442,13 @@ function FloorPlan() {
         );
       })}
 
-      {/* FITNESS — green smileys. 3 on treadmills (bobbing), 2 at weights. */}
-      {[330, 374, 418].map((tx, i) => (
-        /* Treadmill runner — bobs up-down to simulate running */
-        <g key={`fit-tread-${i}`}>
-          <Smiley x={tx + 18} y={272} color="#6EE7B7"
-            values="0,0; 0,-4; 0,0; 0,-4; 0,0"
-            dur={0.6} delay={i * 0.18} phase={i * 6} />
+      {/* FITNESS — green smileys. 2 rowers (slide back/forth), 2 at weights. */}
+      {[330, 364].map((rx, i) => (
+        /* Rower — slides up (toward flywheel) and back on the monorail */
+        <g key={`fit-row-${i}`}>
+          <Smiley x={rx + 14} y={278} color="#6EE7B7"
+            values="0,0; 0,-14; 0,4; 0,-10; 0,0"
+            dur={1.8} delay={i * 0.9} phase={i * 5} />
         </g>
       ))}
       {/* Weight lifter A — small bounce at bench 1 */}
