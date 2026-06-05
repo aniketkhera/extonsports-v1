@@ -25,24 +25,24 @@ export default function WaitlistSection() {
 
   return (
     <section className="bg-[var(--color-ink-2)] border-y border-[var(--color-line)]">
-      <div className="mx-auto max-w-[760px] px-4 py-12 text-center">
-        {/* eyebrow */}
-        <p className="text-cond text-[var(--color-ember)] text-[0.75rem] tracking-[0.22em] mb-4">
+      <div className="mx-auto max-w-[760px] px-4 py-6 sm:py-12 text-center">
+        {/* eyebrow — hidden on mobile to save space */}
+        <p className="hidden sm:block text-cond text-[var(--color-ember)] text-[0.75rem] tracking-[0.22em] mb-3">
           OPENING JULY 2026 · EXTON, PA
         </p>
 
         {/* headline */}
         <h2
-          className="text-cond text-white mb-4"
-          style={{ fontSize: "clamp(1.9rem, 3.4vw, 2.8rem)" }}
+          className="text-cond text-white mb-2 sm:mb-4"
+          style={{ fontSize: "clamp(1.3rem, 3.4vw, 2.8rem)" }}
         >
           Be the first to know when we open.
         </h2>
 
-        {/* sub */}
-        <p className="text-white/60 text-[0.94rem] leading-[1.6] mb-10 max-w-[46ch] mx-auto">
-          Enter your name and email. Founding members get first access, priority court bookings,
-          and an exclusive opening-week rate.
+        {/* sub — shortened on mobile */}
+        <p className="text-white/60 text-[0.82rem] sm:text-[0.94rem] leading-[1.5] mb-4 sm:mb-10 max-w-[46ch] mx-auto">
+          <span className="sm:hidden">Founding members get first access and an exclusive opening rate.</span>
+          <span className="hidden sm:inline">Enter your name and email. Founding members get first access, priority court bookings, and an exclusive opening-week rate.</span>
         </p>
 
         {/* form */}
@@ -88,8 +88,8 @@ export default function WaitlistSection() {
           </p>
         )}
 
-        <p className="text-white/30 text-[0.72rem] mt-6">
-          No spam. You can unsubscribe at any time.
+        <p className="text-white/30 text-[0.68rem] mt-3 sm:mt-6">
+          No spam. Unsubscribe any time.
         </p>
       </div>
     </section>
