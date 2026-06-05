@@ -53,11 +53,11 @@ export async function AdminNav({ active }: { active: 'dashboard' | 'subscribers'
 
   return (
     <header style={{ background: '#fff', borderBottom: '1px solid #E8D5C8' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 24 }}>
-        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#F37A4A' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '12px 16px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px 16px' }}>
+        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#F37A4A', whiteSpace: 'nowrap', flexShrink: 0 }}>
           Exton Sports · Admin
         </div>
-        <nav style={{ display: 'flex', gap: 8, flex: 1 }}>
+        <nav style={{ display: 'flex', flexWrap: 'wrap', gap: 6, flex: '1 1 auto', minWidth: 0 }}>
           {items.map(it => {
             const isActive = it.key === active
             return (
@@ -68,6 +68,7 @@ export async function AdminNav({ active }: { active: 'dashboard' | 'subscribers'
                   fontSize: 13,
                   fontWeight: 700,
                   textDecoration: 'none',
+                  whiteSpace: 'nowrap',
                   color: isActive ? '#fff' : '#444',
                   background: isActive ? '#F37A4A' : 'transparent',
                 }}>
@@ -76,10 +77,10 @@ export async function AdminNav({ active }: { active: 'dashboard' | 'subscribers'
             )
           })}
         </nav>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ fontSize: 12, color: '#888' }}>{session.email}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <div style={{ fontSize: 12, color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>{session.email}</div>
           <form action="/api/auth/logout" method="post">
-            <button type="submit" style={{ padding: '6px 12px', fontSize: 12, fontWeight: 700, background: 'transparent', color: '#888', border: '1px solid #E8D5C8', borderRadius: 8, cursor: 'pointer' }}>
+            <button type="submit" style={{ padding: '6px 12px', fontSize: 12, fontWeight: 700, background: 'transparent', color: '#888', border: '1px solid #E8D5C8', borderRadius: 8, cursor: 'pointer', whiteSpace: 'nowrap' }}>
               Sign out
             </button>
           </form>

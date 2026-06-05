@@ -156,14 +156,14 @@ export default async function VisitsPage() {
           </div>
         ) : (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 28 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14, marginBottom: 28 }}>
               <Stat label="Visits today"   value={today} tone="accent" />
               <Stat label="Last 7 days"    value={last7} />
               <Stat label="Last 30 days"   value={last30} tone="muted" />
               <Stat label="Signup rate (30d)" display={overallRate == null ? '—' : `${(overallRate * 100).toFixed(1)}%`} value={signups.length} tone="accent" />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 14, marginBottom: 14 }}>
               <BarCard title="By region (state)" rows={byRegion} total={last30} />
               <BarCard title="Where they came from" rows={byReferrer} total={last30} />
               <BarCard title="Device" rows={byDevice} total={last30} />
@@ -245,7 +245,8 @@ function ConversionCard({ title, rows, note }: { title: string; rows: ConvRow[];
       {top.length === 0 ? (
         <div style={{ fontSize: 13, color: '#aaa' }}>No data yet.</div>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <table style={{ width: '100%', minWidth: 360, borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ textAlign: 'left', color: '#888', fontSize: 11, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
               <th style={{ padding: '4px 0' }}>Source</th>
@@ -271,6 +272,7 @@ function ConversionCard({ title, rows, note }: { title: string; rows: ConvRow[];
             })}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   )

@@ -34,8 +34,8 @@ export default function SendsClient({ rows, loadError }: { rows: MailerRow[]; lo
         </div>
       )}
 
-      <div style={{ background: '#fff', border: '1px solid #E8D5C8', borderRadius: 12, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+      <div style={{ background: '#fff', border: '1px solid #E8D5C8', borderRadius: 12, overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <table style={{ width: '100%', minWidth: 480, borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ background: '#FDF4EE', borderBottom: '1px solid #E8D5C8' }}>
               <Th>Subject</Th>

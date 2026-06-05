@@ -219,8 +219,8 @@ export default function ComposeClient({
         />
       )}
 
-      {/* ── two-column editor + preview ─────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 4 }}>
+      {/* ── two-column editor + preview (stacks on mobile) ──────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 14, marginTop: 4 }}>
         {/* Editor pane */}
         <div style={{ background: '#fff', border: '1px solid #E8D5C8', borderRadius: 10, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderBottom: '1px solid #F4E8DD', background: '#FDF4EE' }}>

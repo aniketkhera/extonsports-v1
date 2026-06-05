@@ -65,14 +65,14 @@ export default async function AdminDashboardPage() {
           Mailing list + outreach for ExtonSports.
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 28 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14, marginBottom: 28 }}>
           <Stat label="Active subscribers" value={counts.active} />
           <Stat label="Unsubscribed"       value={counts.unsubscribed} tone="muted" />
           <Stat label="Signups (last 7d)"  value={counts.last7} tone="accent" />
           <Stat label="Total ever"         value={counts.total} tone="muted" />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 14 }}>
           <Tile href="/admin/compose" title="Compose new mailer" desc="Send a weekly update or promo to your subscribers." cta="Open composer →" />
           <Tile href="/admin/subscribers" title="Manage subscribers" desc="View, add, import, or export your mailing list." cta="Open list →" />
         </div>
