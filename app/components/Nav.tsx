@@ -19,7 +19,13 @@ export default function Nav() {
       }}
     >
       <a href="#top" className="brand-wordmark text-[1.45rem]">
-
+        <img
+          src="/logo.png"
+          alt="Exton Sports Center"
+          width={38}
+          height={38}
+          style={{ display: "block", flexShrink: 0 }}
+        />
         <span>
           EXTON <span className="brand-accent">SPORTS CENTER</span>
         </span>

@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- Navy rounded square background (logo navy) -->
-  <rect width="32" height="32" rx="6" fill="#0E1825"/>
-  <!-- Lowercase "e" in logo gold -->
-  <text x="16" y="24" font-family="Georgia, serif" font-size="24" font-weight="700" fill="#F89B72" text-anchor="middle">e</text>
-</svg>
