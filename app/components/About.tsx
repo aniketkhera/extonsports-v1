@@ -96,8 +96,8 @@ export default function About() {
 }
 
 /* ─── Facility floor plan SVG ─────────────────────────────────────
-   Top-left:    3 badminton courts (1×3 tall row)
-   Top-right:   4 squash courts (1×4 row)
+   Top-left:    4 squash courts (1×4 row)   — 32ft long, 21ft wide
+   Top-right:   3 badminton courts (1×3)    — 40ft long, 20ft wide
    Bottom:      2 cricket lanes spanning ~80% of width (the multi-use
                 turf surface; running lanes are described in the Sports
                 section copy rather than overlaid here)
@@ -126,73 +126,68 @@ function FloorPlan() {
         stroke={lineThick} strokeWidth={1.4} fill="none"
       />
       {/* Internal walls: symmetric horizontal at y=216 splits top/bottom;
-          vertical at x=268 splits top half into badminton (3) + squash (4);
+          vertical at x=306 splits top half into squash (4, left) + badminton (3, right);
           vertical at x=470 carves the locker corner out of the bottom.  */}
-      <line x1="268" y1="14"  x2="268" y2="216" stroke={lineThick} strokeWidth={1.4} />
+      <line x1="306" y1="14"  x2="306" y2="216" stroke={lineThick} strokeWidth={1.4} />
       <line x1="14"  y1="216" x2="586" y2="216" stroke={lineThick} strokeWidth={1.4} />
       <line x1="470" y1="216" x2="470" y2="406" stroke={lineThick} strokeWidth={1.4} />
 
-      {/* ──────── ZONE 1 — top-left, 3 BADMINTON courts (1×3 tall row) ──────── */}
+      {/* ──────── ZONE 1 — top-left, 4 SQUASH courts ──────── */}
+      {/* 32ft long × 21ft wide each. Scale: 68px wide × 120px tall.          */}
       <text x="22" y="34" fill={lbl} fontSize="9" fontFamily="var(--font-body)" letterSpacing="2" fontWeight="700">
-        01 · 3 BADMINTON COURTS
+        01 · 4 SQUASH COURTS · ALL-GLASS
       </text>
-      {/* 3 vertical courts in a row, each 62 wide × 164 tall (fits top half) */}
-      {[22, 90, 158].map((cx, i) => {
-        const cy = 46;
-        const ch = 164;
+      {[19, 90, 161, 232].map((cx, i) => {
+        const cy = 48; const cw = 68; const ch = 120;
         return (
           <g key={i}>
-            {/* ── Real badminton doubles court markings ──────────────── */}
-            {/* Court: 13.4m long × 6.1m wide. Scale: 62px wide, 164px tall.
-                Net at cy+82. Short svc 1.98m from net = 24px → cy+58 / cy+106.
-                Long svc (doubles) 0.76m from baseline = 9px → cy+9 / cy+155.
-                Singles sideline 0.46m inside = 5px → cx+5 / cx+57.
-                Centre service line runs from baseline to short service line. */}
-            {/* Outer doubles boundary */}
-            <rect x={cx} y={cy} width="62" height={ch} stroke={line} strokeWidth={sw} fill="none" />
-            {/* Singles sidelines — inner vertical */}
-            <line x1={cx+5}  y1={cy} x2={cx+5}  y2={cy+ch} stroke={lineSoft} strokeWidth={swThin} />
-            <line x1={cx+57} y1={cy} x2={cx+57} y2={cy+ch} stroke={lineSoft} strokeWidth={swThin} />
-            {/* Net — thick horizontal at exact centre */}
-            <line x1={cx} y1={cy+82} x2={cx+62} y2={cy+82} stroke={lineThick} strokeWidth={sw + 0.8} />
-            {/* Short service lines (1.98m from net) */}
-            <line x1={cx} y1={cy+58}  x2={cx+62} y2={cy+58}  stroke={line} strokeWidth={sw} />
-            <line x1={cx} y1={cy+106} x2={cx+62} y2={cy+106} stroke={line} strokeWidth={sw} />
-            {/* Long service lines for doubles (0.76m from baseline) */}
-            <line x1={cx} y1={cy+9}   x2={cx+62} y2={cy+9}   stroke={lineSoft} strokeWidth={swThin} />
-            <line x1={cx} y1={cy+155} x2={cx+62} y2={cy+155} stroke={lineSoft} strokeWidth={swThin} />
-            {/* Centre service line — baseline → short service line (each half) */}
-            <line x1={cx+31} y1={cy}      x2={cx+31} y2={cy+58}  stroke={lineSoft} strokeWidth={swThin} />
-            <line x1={cx+31} y1={cy+106}  x2={cx+31} y2={cy+ch}  stroke={lineSoft} strokeWidth={swThin} />
+            <rect x={cx} y={cy} width={cw} height={ch} stroke={line} strokeWidth={sw} fill="none" />
+            {/* TIN bar — front wall (top) */}
+            <rect x={cx} y={cy} width={cw} height={4} stroke="none" fill={accent} />
+            {/* Short line — 56% down */}
+            <line x1={cx} y1={cy+67} x2={cx+cw} y2={cy+67} stroke={line} strokeWidth={sw} />
+            {/* Half-court line — short line to back wall */}
+            <line x1={cx+34} y1={cy+67} x2={cx+34} y2={cy+ch} stroke={line} strokeWidth={sw} />
+            {/* Service boxes */}
+            <rect x={cx}    y={cy+67} width="16" height="16" stroke={line} strokeWidth={swThin} fill="none" />
+            <rect x={cx+52} y={cy+67} width="16" height="16" stroke={line} strokeWidth={swThin} fill="none" />
           </g>
         );
       })}
 
-      {/* ──────── ZONE 2 — top-right, 4 SQUASH courts (1×4) ──────── */}
-      <text x="276" y="34" fill={lbl} fontSize="9" fontFamily="var(--font-body)" letterSpacing="2" fontWeight="700">
-        02 · 4 SQUASH COURTS · ALL-GLASS
+      {/* ──────── ZONE 2 — top-right, 3 BADMINTON courts ──────── */}
+      {/* 40ft long × 20ft wide each. Scale: 80px wide × 150px tall.          */}
+      <text x="314" y="34" fill={lbl} fontSize="9" fontFamily="var(--font-body)" letterSpacing="2" fontWeight="700">
+        02 · 3 BADMINTON COURTS
       </text>
-      {/* 4 courts, each 72px wide × 154px tall, spaced evenly in zone 268–586 */}
-      {[
-        { x: 276, y: 48 },
-        { x: 354, y: 48 },
-        { x: 432, y: 48 },
-        { x: 510, y: 48 },
-      ].map((c, i) => (
-        <g key={i}>
-          {/* outer court (front wall = top) */}
-          <rect x={c.x} y={c.y} width="72" height="154" stroke={line} strokeWidth={sw} fill="none" />
-          {/* TIN bar across the front wall (top) */}
-          <rect x={c.x} y={c.y} width="72" height="4" stroke="none" fill={accent} />
-          {/* short line across — ~56% down */}
-          <line x1={c.x} y1={c.y + 86} x2={c.x + 72} y2={c.y + 86} stroke={line} strokeWidth={sw} />
-          {/* half-court line — from short line to back wall */}
-          <line x1={c.x + 36} y1={c.y + 86} x2={c.x + 36} y2={c.y + 154} stroke={line} strokeWidth={sw} />
-          {/* two service boxes */}
-          <rect x={c.x} y={c.y + 86} width="18" height="18" stroke={line} strokeWidth={swThin} fill="none" />
-          <rect x={c.x + 54} y={c.y + 86} width="18" height="18" stroke={line} strokeWidth={swThin} fill="none" />
-        </g>
-      ))}
+      {/* Court: 13.4m long × 6.1m wide. Scale: 80px wide × 150px tall.
+          Net at cy+75. Short svc 1.98m from net → 22px → cy+53 / cy+97.
+          Long svc (doubles) 0.76m from baseline → 8px → cy+8 / cy+142.
+          Singles sideline 0.46m inside → 6px → cx+6 / cx+74.
+          Centre service line from baseline to short service line. */}
+      {[320, 406, 492].map((cx, i) => {
+        const cy = 46; const cw = 80; const ch = 150;
+        return (
+          <g key={i}>
+            {/* Outer doubles boundary */}
+            <rect x={cx} y={cy} width={cw} height={ch} stroke={line} strokeWidth={sw} fill="none" />
+            {/* Singles sidelines */}
+            <line x1={cx+6}  y1={cy} x2={cx+6}  y2={cy+ch} stroke={lineSoft} strokeWidth={swThin} />
+            <line x1={cx+74} y1={cy} x2={cx+74} y2={cy+ch} stroke={lineSoft} strokeWidth={swThin} />
+            {/* Net — thick at exact centre */}
+            <line x1={cx} y1={cy+75} x2={cx+cw} y2={cy+75} stroke={lineThick} strokeWidth={sw + 0.8} />
+            {/* Short service lines */}
+            <line x1={cx} y1={cy+53}  x2={cx+cw} y2={cy+53}  stroke={line} strokeWidth={sw} />
+            <line x1={cx} y1={cy+97}  x2={cx+cw} y2={cy+97}  stroke={line} strokeWidth={sw} />
+            {/* Long service lines (doubles) */}
+            <line x1={cx} y1={cy+8}   x2={cx+cw} y2={cy+8}   stroke={lineSoft} strokeWidth={swThin} />
+            <line x1={cx} y1={cy+142} x2={cx+cw} y2={cy+142} stroke={lineSoft} strokeWidth={swThin} />
+            {/* Centre service lines */}
+            <line x1={cx+40} y1={cy}      x2={cx+40} y2={cy+53}  stroke={lineSoft} strokeWidth={swThin} />
+            <line x1={cx+40} y1={cy+97}   x2={cx+40} y2={cy+ch}  stroke={lineSoft} strokeWidth={swThin} />
+          </g>
+        );
+      })}
 
       {/* ──────── ZONE 3 — bottom strip, 2 CRICKET LANES (full width except locker corner) ──────── */}
       <text x="22" y="234" fill={lbl} fontSize="9" fontFamily="var(--font-body)" letterSpacing="2" fontWeight="700">
@@ -284,14 +279,32 @@ function FloorPlan() {
 
       {/* ──────── PEOPLE — animated overlay (SMIL, additive="sum") ──────── */}
 
-      {/* BADMINTON — all 3 courts are DOUBLES (2 per side).
-          y offsets capped so players never cross the net at cy+ch/2=128.           */}
-      {[22, 90, 158].map((cx, i) => {
+      {/* SQUASH (left zone) — pink smileys. 4 courts, 68×120px each. */}
+      {[19, 90, 161, 232].map((cx, i) => {
+        const cy = 48; const ch = 120;
+        const tY = cy + ch * 0.55;
+        const bY = cy + ch * 0.85;
+        const px = cx + 34;
+        const d = i * 0.7;
+        return (
+          <g key={`sq-${i}`}>
+            <Smiley x={px - 10} y={tY} color="#FFA8D0"
+              values="0,0; 20,-18; -16,-22; 16,12; -8,-6; 0,0"
+              dur={4.2} delay={d} phase={i * 3 + 1} />
+            <Smiley x={px + 10} y={bY} color="#FFA8D0"
+              values="0,0; -16,7; 14,-12; -12,9; 8,-5; 0,0"
+              dur={4.2} delay={d + 0.6} phase={i * 3 + 9} />
+          </g>
+        );
+      })}
+
+      {/* BADMINTON (right zone) — yellow smileys. 3 courts, 80×150px, all doubles. */}
+      {[320, 406, 492].map((cx, i) => {
         const cy = 46;
-        const ch = 164;
+        const ch = 150;
         const topY = cy + ch * 0.30;
         const botY = cy + ch * 0.70;
-        const px = cx + 31;
+        const px = cx + 40;
         const d = i * 0.55;
         const isDoubles = true;
 
@@ -333,27 +346,6 @@ function FloorPlan() {
         );
       })}
 
-      {/* SQUASH — pink smileys. Player A starts at T, drifts to walls and back.
-          Player B starts in back court and moves around without colliding with A.
-          Returning to 0,0 means returning to starting position = the T.            */}
-      {[276, 354, 432, 510].map((cx, i) => {
-        const cy = 48;
-        const ch = 154;
-        const tY = cy + ch * 0.55;
-        const bY = cy + ch * 0.85;
-        const px = cx + 36;
-        const d = i * 0.7;
-        return (
-          <g key={`sq-${i}`}>
-            <Smiley x={px - 11} y={tY} color="#FFA8D0"
-              values="0,0; 22,-20; -18,-24; 18,14; -10,-8; 0,0"
-              dur={4.2} delay={d} phase={i * 3 + 1} />
-            <Smiley x={px + 11} y={bY} color="#FFA8D0"
-              values="0,0; -18,8; 16,-14; -14,10; 10,-6; 0,0"
-              dur={4.2} delay={d + 0.6} phase={i * 3 + 9} />
-          </g>
-        );
-      })}
 
       {/* CRICKET — orange bowler runs up and back; blue batsman holds position with bat swing */}
       {[
