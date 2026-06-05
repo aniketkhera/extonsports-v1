@@ -273,37 +273,16 @@ function FloorPlan() {
         <circle cx="363" cy="373" r="5" stroke={line} strokeWidth={sw} fill="none" />
       </g>
 
-      {/* ── PRO SHOP — right side of fitness zone ── */}
-      <g>
-        <text x="402" y="258" fill={lbl} fontSize="7.5" fontFamily="var(--font-body)" letterSpacing="1.8" fontWeight="700">
-          PRO SHOP
-        </text>
-
-        {/* Shopping bag icon — centred in the right column */}
-        {/* Bag body */}
-        <rect x="416" y="272" width="38" height="46" stroke={line} strokeWidth={sw} fill="rgba(248,155,114,0.04)" rx="3" />
-        {/* Handle — U arch above bag */}
-        <path d="M423 272 Q423 256 435 256 Q447 256 447 272"
-          stroke={line} strokeWidth={sw} fill="none" />
-        {/* Fold crease */}
-        <line x1="416" y1="287" x2="454" y2="287" stroke={lineSoft} strokeWidth={swThin} />
-        {/* Bag tag */}
-        <rect x="429" y="293" width="12" height="8" stroke={lineSoft} strokeWidth={swThin} fill="none" rx="1" />
-
-        {/* Display shelves — 2 racks with product dots */}
-        <rect x="403" y="334" width="58" height="11" stroke={line} strokeWidth={swThin} fill="none" rx="1" />
-        {[408, 418, 428, 438, 448].map((x) => (
-          <circle key={`item1-${x}`} cx={x} cy="339.5" r="2.2" stroke={lineSoft} strokeWidth={swThin} fill="none" />
-        ))}
-        <rect x="403" y="352" width="58" height="11" stroke={line} strokeWidth={swThin} fill="none" rx="1" />
-        {[408, 418, 428, 438, 448].map((x) => (
-          <circle key={`item2-${x}`} cx={x} cy="357.5" r="2.2" stroke={lineSoft} strokeWidth={swThin} fill="none" />
-        ))}
-
-        {/* Counter / checkout desk at bottom */}
-        <rect x="403" y="378" width="58" height="16" stroke={line} strokeWidth={sw} fill="rgba(248,155,114,0.04)" rx="2" />
-        <text x="419" y="390" fill={lbl} fontSize="6" fontFamily="var(--font-body)" letterSpacing="1.5" fontWeight="600">COUNTER</text>
-      </g>
+      {/* ── PRO SHOP — narrow vertical strip on right wall ── */}
+      <rect x="452" y="224" width="16" height="178" stroke={line} strokeWidth={sw} fill="none" />
+      <text
+        x="0" y="0"
+        fill={lbl} fontSize="7.5" fontFamily="var(--font-body)" letterSpacing="2.5" fontWeight="700"
+        transform="translate(461, 313) rotate(-90)"
+        textAnchor="middle"
+      >
+        PRO SHOP
+      </text>
 
       {/* ──────── ZONE 5 — OFFICE (top) + LOCKER ROOM (bottom) ──────── */}
       <g>
