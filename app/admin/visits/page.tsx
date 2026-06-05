@@ -152,8 +152,7 @@ export default async function VisitsPage() {
 
         {last30 === 0 ? (
           <div style={{ background: '#fff', border: '1px solid #E8D5C8', borderRadius: 14, padding: '28px 22px', color: '#888', fontSize: 14, lineHeight: 1.6 }}>
-            No visits logged yet. Once the <code>visits</code> table migration is applied and the
-            site has had traffic, region / referrer / device breakdowns appear here.
+            No visits logged yet. Visits are logged from the public homepage (not the admin) — open the site, then refresh: region / referrer / device breakdowns appear here within a moment.
           </div>
         ) : (
           <>
