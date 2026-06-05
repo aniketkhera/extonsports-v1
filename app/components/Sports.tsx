@@ -17,28 +17,28 @@ const sports: Sport[] = [
   {
     n: "01",
     name: "Cricket",
-    count: "2",
+    count: "3",
     unit: "lanes",
     spec: "Indoor practice lanes · full bowler run-up",
-    body: "Play with a leather ball, ball machines and full run-up — open to members at any hour.",
+    body: "Three full-length indoor lanes with leather ball, ball machines and full run-up — open to members at any hour.",
     decoration: "cricket",
   },
   {
     n: "02",
     name: "Squash",
-    count: "3",
+    count: "4",
     unit: "courts",
     spec: "Full-glass · WSF spec",
-    body: "Three tournament-grade all-glass courts. The same spec used at championships. Solo practice or league play.",
+    body: "Four tournament-grade all-glass courts. The same spec used at championships. Solo practice or league play.",
     decoration: "squash",
   },
   {
     n: "03",
     name: "Badminton",
-    count: "4",
+    count: "3",
     unit: "courts",
     spec: "Wooden sprung floor",
-    body: "Four full-spec courts with proper height clearance, sprung wooden floors, and tournament shuttle conditions.",
+    body: "Three full-spec courts with proper height clearance, sprung wooden floors, and tournament shuttle conditions.",
     decoration: "badminton",
   },
   {
@@ -48,6 +48,15 @@ const sports: Sport[] = [
     unit: "",
     spec: "Athletic lanes · year-round",
     body: "Indoor turf with marked athletic running lanes — sprint work, agility drills, conditioning, and a back-of-house spot for extra cricket nets when needed.",
+    decoration: "turf",
+  },
+  {
+    n: "05",
+    name: "Fitness",
+    count: "—",
+    unit: "",
+    spec: "Rowers · weights · cable",
+    body: "Dedicated fitness studio with rowing machines, free weights, and cable training — included with every membership.",
     decoration: "turf",
   },
 ];
@@ -68,7 +77,7 @@ export default function Sports() {
             <div className="flex items-center gap-3 mb-5">
               <span className="w-7 h-px bg-[var(--color-ember)]" />
               <span className="text-mono text-[0.7rem] text-[var(--color-ember)]">
-                Four sports · one club
+                Five sports · one club
               </span>
             </div>
             <h2
@@ -89,7 +98,7 @@ export default function Sports() {
         </motion.div>
 
         {/* Sport cards */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {sports.map((s, i) => (
             <motion.article
               key={s.n}
