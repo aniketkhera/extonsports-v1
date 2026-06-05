@@ -273,19 +273,19 @@ function FloorPlan() {
         <circle cx="363" cy="373" r="5" stroke={line} strokeWidth={sw} fill="none" />
       </g>
 
-      {/* Dumbbell rack — pairs running LEFT to RIGHT (horizontal orientation) */}
+      {/* Dumbbell rack — right of rowers, below cable machine */}
       <g>
-        <text x="327" y="336" fill={lbl} fontSize="7" fontFamily="var(--font-body)" letterSpacing="1.5" fontWeight="600">
+        <text x="400" y="298" fill={lbl} fontSize="7" fontFamily="var(--font-body)" letterSpacing="1.5" fontWeight="600">
           WEIGHTS
         </text>
-        {/* rack outline — half width */}
-        <rect x="327" y="340" width="66" height="22" stroke={lineSoft} strokeWidth={swThin} fill="none" />
-        {/* 3 dumbbell pairs running left to right */}
-        {[332, 349, 366].map((x) => (
+        {/* rack outline */}
+        <rect x="400" y="302" width="62" height="22" stroke={lineSoft} strokeWidth={swThin} fill="none" />
+        {/* 3 dumbbell pairs left to right */}
+        {[404, 421, 438].map((x) => (
           <g key={`db-${x}`}>
-            <circle cx={x}    cy="351" r="4.5" stroke={line} strokeWidth={swThin} fill="none" />
-            <circle cx={x+10} cy="351" r="4.5" stroke={line} strokeWidth={swThin} fill="none" />
-            <line x1={x+4.5} y1="351" x2={x+5.5} y2="351" stroke={line} strokeWidth={sw} />
+            <circle cx={x}    cy="313" r="4.5" stroke={line} strokeWidth={swThin} fill="none" />
+            <circle cx={x+10} cy="313" r="4.5" stroke={line} strokeWidth={swThin} fill="none" />
+            <line x1={x+4.5} y1="313" x2={x+5.5} y2="313" stroke={line} strokeWidth={sw} />
           </g>
         ))}
       </g>
@@ -299,9 +299,6 @@ function FloorPlan() {
       </g>
 
       {/* ──────── ZONE 5 — OFFICE (top) + LOCKER ROOM (bottom) ──────── */}
-      <text x="478" y="234" fill={lbl} fontSize="9" fontFamily="var(--font-body)" letterSpacing="2" fontWeight="700">
-        05 · OFFICE + LOCKERS
-      </text>
       <g>
         {/* Outer boundary — full height */}
         <rect x="478" y="244" width="66" height="156" stroke={line} strokeWidth={sw} fill="none" />
