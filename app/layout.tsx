@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Barlow, Oswald, Comfortaa, Caveat, Exo_2 } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
+import TrackBeacon from "./components/TrackBeacon";
 import "./globals.css";
 
 const cond = Oswald({
@@ -74,6 +75,7 @@ export default function RootLayout({
             touching body overflow, which would break position:fixed */}
         <div style={{ overflowX: "hidden" }}>{children}</div>
         <Analytics />
+        <TrackBeacon />
       </body>
     </html>
   );
