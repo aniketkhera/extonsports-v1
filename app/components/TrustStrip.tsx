@@ -4,8 +4,8 @@ import { motion } from "framer-motion";
 
 const stats = [
   { num: "2",    lab: "Cricket lanes" },
-  { num: "3",    lab: "Squash · all-glass" },
-  { num: "4",    lab: "Badminton courts" },
+  { num: "4",    lab: "Squash · all-glass" },
+  { num: "3",    lab: "Badminton courts" },
   { num: "1",    lab: "Indoor turf" },
   { num: "24/7", lab: "Always open" },
 ];

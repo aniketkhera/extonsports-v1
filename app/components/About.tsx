@@ -96,8 +96,8 @@ export default function About() {
 }
 
 /* ─── Facility floor plan SVG ─────────────────────────────────────
-   Top-left:    4 badminton courts (1×4 tall row)
-   Top-right:   3 squash courts (1×3 row)
+   Top-left:    3 badminton courts (1×3 tall row)
+   Top-right:   4 squash courts (1×4 row)
    Bottom:      2 cricket lanes spanning ~80% of width (the multi-use
                 turf surface; running lanes are described in the Sports
                 section copy rather than overlaid here)
@@ -126,18 +126,18 @@ function FloorPlan() {
         stroke={lineThick} strokeWidth={1.4} fill="none"
       />
       {/* Internal walls: symmetric horizontal at y=216 splits top/bottom;
-          vertical at x=310 splits top half into badminton + squash;
+          vertical at x=268 splits top half into badminton (3) + squash (4);
           vertical at x=470 carves the locker corner out of the bottom.  */}
-      <line x1="310" y1="14"  x2="310" y2="216" stroke={lineThick} strokeWidth={1.4} />
+      <line x1="268" y1="14"  x2="268" y2="216" stroke={lineThick} strokeWidth={1.4} />
       <line x1="14"  y1="216" x2="586" y2="216" stroke={lineThick} strokeWidth={1.4} />
       <line x1="470" y1="216" x2="470" y2="406" stroke={lineThick} strokeWidth={1.4} />
 
-      {/* ──────── ZONE 1 — top-left, 4 BADMINTON courts (1×4 tall row) ──────── */}
+      {/* ──────── ZONE 1 — top-left, 3 BADMINTON courts (1×3 tall row) ──────── */}
       <text x="22" y="34" fill={lbl} fontSize="9" fontFamily="var(--font-body)" letterSpacing="2" fontWeight="700">
-        01 · 4 BADMINTON COURTS
+        01 · 3 BADMINTON COURTS
       </text>
-      {/* 4 vertical courts in a row, each 62 wide × 164 tall (fits top half) */}
-      {[22, 90, 158, 226].map((cx, i) => {
+      {/* 3 vertical courts in a row, each 62 wide × 164 tall (fits top half) */}
+      {[22, 90, 158].map((cx, i) => {
         const cy = 46;
         const ch = 164;
         return (
@@ -168,14 +168,16 @@ function FloorPlan() {
         );
       })}
 
-      {/* ──────── ZONE 2 — top-right, 3 SQUASH courts (1×3) ──────── */}
-      <text x="318" y="34" fill={lbl} fontSize="9" fontFamily="var(--font-body)" letterSpacing="2" fontWeight="700">
-        02 · 3 SQUASH COURTS · ALL-GLASS
+      {/* ──────── ZONE 2 — top-right, 4 SQUASH courts (1×4) ──────── */}
+      <text x="276" y="34" fill={lbl} fontSize="9" fontFamily="var(--font-body)" letterSpacing="2" fontWeight="700">
+        02 · 4 SQUASH COURTS · ALL-GLASS
       </text>
+      {/* 4 courts, each 72px wide × 154px tall, spaced evenly in zone 268–586 */}
       {[
-        { x: 322, y: 48 },
-        { x: 412, y: 48 },
-        { x: 502, y: 48 },
+        { x: 276, y: 48 },
+        { x: 354, y: 48 },
+        { x: 432, y: 48 },
+        { x: 510, y: 48 },
       ].map((c, i) => (
         <g key={i}>
           {/* outer court (front wall = top) */}
@@ -282,17 +284,16 @@ function FloorPlan() {
 
       {/* ──────── PEOPLE — animated overlay (SMIL, additive="sum") ──────── */}
 
-      {/* BADMINTON — courts 1-3 are DOUBLES (2 per side), court 4 is singles.
+      {/* BADMINTON — all 3 courts are DOUBLES (2 per side).
           y offsets capped so players never cross the net at cy+ch/2=128.           */}
-      {[22, 90, 158, 226].map((cx, i) => {
+      {[22, 90, 158].map((cx, i) => {
         const cy = 46;
         const ch = 164;
-        // Players start near the T area of each half — 30% and 70% down court
-        const topY = cy + ch * 0.30;  // top player starts ~49px from top
-        const botY = cy + ch * 0.70;  // bottom player starts ~115px from top
+        const topY = cy + ch * 0.30;
+        const botY = cy + ch * 0.70;
         const px = cx + 31;
         const d = i * 0.55;
-        const isDoubles = i < 3;
+        const isDoubles = true;
 
         return (
           <g key={`bad-${i}`}>
@@ -335,7 +336,7 @@ function FloorPlan() {
       {/* SQUASH — pink smileys. Player A starts at T, drifts to walls and back.
           Player B starts in back court and moves around without colliding with A.
           Returning to 0,0 means returning to starting position = the T.            */}
-      {[322, 412, 502].map((cx, i) => {
+      {[276, 354, 432, 510].map((cx, i) => {
         const cy = 48;
         const ch = 154;
         const tY = cy + ch * 0.55;
