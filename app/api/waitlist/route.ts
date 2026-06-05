@@ -45,7 +45,12 @@ export async function POST(req: NextRequest) {
 
   // Geo — Vercel sets these headers automatically at the edge.
   // Falls back to null in local dev (no edge runtime there).
+  // region (ISO 3166-2 subdivision, e.g. "PA") resolves far more
+  // reliably than city for IP-based geolocation.
   const country = req.headers.get('x-vercel-ip-country') || null
+  const region  = req.headers.get('x-vercel-ip-country-region')
+    ? decodeURIComponent(req.headers.get('x-vercel-ip-country-region')!)
+    : null
   const city    = req.headers.get('x-vercel-ip-city')
     ? decodeURIComponent(req.headers.get('x-vercel-ip-city')!)
     : null
@@ -81,6 +86,7 @@ export async function POST(req: NextRequest) {
           utm_medium,
           utm_campaign,
           country,
+          region,
           city,
         }, 'return=minimal')
       }
@@ -105,7 +111,7 @@ export async function POST(req: NextRequest) {
             <tr><td><b>Source</b></td><td>${escapeHtml(referrer || 'Direct / unknown')}</td></tr>
             ${utm_source ? `<tr><td><b>UTM source</b></td><td>${escapeHtml(utm_source)}</td></tr>` : ''}
             ${utm_campaign ? `<tr><td><b>UTM campaign</b></td><td>${escapeHtml(utm_campaign)}</td></tr>` : ''}
-            ${city || country ? `<tr><td><b>Location</b></td><td>${[city, country].filter((x): x is string => !!x).map(escapeHtml).join(', ')}</td></tr>` : ''}
+            ${city || region || country ? `<tr><td><b>Location</b></td><td>${[city, region, country].filter((x): x is string => !!x).map(escapeHtml).join(', ')}</td></tr>` : ''}
             <tr><td><b>When</b></td><td>${new Date().toISOString()}</td></tr>
           </table>
           <p style="margin-top:24px;color:#888;font-size:12px;">
