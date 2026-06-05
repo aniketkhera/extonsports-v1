@@ -298,21 +298,48 @@ function FloorPlan() {
         <text x="430" y="295" fill={lbl} fontSize="6.5" fontFamily="var(--font-body)" letterSpacing="1" fontWeight="600">CABLE</text>
       </g>
 
-      {/* ──────── ZONE 5 — LOCKERS + ENTRANCE ALLEY ──────── */}
+      {/* ──────── ZONE 5 — OFFICE (top) + LOCKER ROOM (bottom) ──────── */}
       <text x="478" y="234" fill={lbl} fontSize="9" fontFamily="var(--font-body)" letterSpacing="2" fontWeight="700">
-        05 · LOCKERS
+        05 · OFFICE + LOCKERS
       </text>
       <g>
-        {/* outer locker room — narrower, left-aligned; alley on the right */}
+        {/* Outer boundary — full height */}
         <rect x="478" y="244" width="66" height="156" stroke={line} strokeWidth={sw} fill="none" />
-        {/* vertical aisle divider — 2 columns of lockers */}
-        <line x1="511" y1="244" x2="511" y2="400" stroke={lineSoft} strokeWidth={swThin} />
-        {/* horizontal dividers between locker rows (5 rows) */}
-        {[275, 306, 337, 368].map((y) => (
+
+        {/* ── OFFICE — top 2 rows (y=244 to y=306) ── */}
+        {/* thick dividing wall between office and lockers */}
+        <line x1="478" y1="306" x2="544" y2="306" stroke={lineThick} strokeWidth={1.4} />
+        {/* OFFICE label */}
+        <text x="499" y="258" fill={lbl} fontSize="7" fontFamily="var(--font-body)" letterSpacing="1.5" fontWeight="700">
+          OFFICE
+        </text>
+        {/* 2 desks along the walls */}
+        <rect x="480" y="262" width="26" height="12" stroke={line} strokeWidth={swThin} fill="none" rx="1" />
+        <rect x="516" y="262" width="26" height="12" stroke={line} strokeWidth={swThin} fill="none" rx="1" />
+        {/* monitor dots on each desk */}
+        <circle cx="493" cy="268" r="3" stroke={lineSoft} strokeWidth={swThin} fill="none" />
+        <circle cx="529" cy="268" r="3" stroke={lineSoft} strokeWidth={swThin} fill="none" />
+        {/* row divider inside office */}
+        <line x1="478" y1="275" x2="544" y2="275" stroke={lineSoft} strokeWidth={swThin} />
+        {/* second desk row */}
+        <rect x="480" y="279" width="26" height="12" stroke={line} strokeWidth={swThin} fill="none" rx="1" />
+        <rect x="516" y="279" width="26" height="12" stroke={line} strokeWidth={swThin} fill="none" rx="1" />
+        <circle cx="493" cy="285" r="3" stroke={lineSoft} strokeWidth={swThin} fill="none" />
+        <circle cx="529" cy="285" r="3" stroke={lineSoft} strokeWidth={swThin} fill="none" />
+
+        {/* ── LOCKER ROOM — bottom 3 rows (y=306 to y=400) ── */}
+        {/* LOCKERS label */}
+        <text x="493" y="318" fill={lbl} fontSize="7" fontFamily="var(--font-body)" letterSpacing="1.5" fontWeight="700">
+          LOCKERS
+        </text>
+        {/* vertical aisle divider */}
+        <line x1="511" y1="306" x2="511" y2="400" stroke={lineSoft} strokeWidth={swThin} />
+        {/* horizontal row dividers */}
+        {[337, 368].map((y) => (
           <line key={y} x1="478" y1={y} x2="544" y2={y} stroke={lineSoft} strokeWidth={swThin} />
         ))}
-        {/* small dots marking locker handles */}
-        {[259.5, 290.5, 321.5, 352.5, 383.5].flatMap((y) =>
+        {/* locker handle dots — 3 rows × 2 columns */}
+        {[321.5, 352.5, 383.5].flatMap((y) =>
           [494.5, 527.5].map((x) => (
             <circle key={`${x}-${y}`} cx={x} cy={y} r="0.9" fill={lineSoft} />
           ))
