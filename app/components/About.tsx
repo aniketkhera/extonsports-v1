@@ -273,29 +273,36 @@ function FloorPlan() {
         <circle cx="363" cy="373" r="5" stroke={line} strokeWidth={sw} fill="none" />
       </g>
 
-      {/* Dumbbell rack — right of rowers, below cable machine */}
+      {/* ── PRO SHOP — right side of fitness zone ── */}
       <g>
-        <text x="400" y="360" fill={lbl} fontSize="7" fontFamily="var(--font-body)" letterSpacing="1.5" fontWeight="600">
-          WEIGHTS
+        <text x="402" y="258" fill={lbl} fontSize="7.5" fontFamily="var(--font-body)" letterSpacing="1.8" fontWeight="700">
+          PRO SHOP
         </text>
-        {/* rack outline */}
-        <rect x="400" y="364" width="62" height="22" stroke={lineSoft} strokeWidth={swThin} fill="none" />
-        {/* 3 dumbbell pairs left to right */}
-        {[404, 421, 438].map((x) => (
-          <g key={`db-${x}`}>
-            <circle cx={x}    cy="375" r="4.5" stroke={line} strokeWidth={swThin} fill="none" />
-            <circle cx={x+10} cy="375" r="4.5" stroke={line} strokeWidth={swThin} fill="none" />
-            <line x1={x+4.5} y1="375" x2={x+5.5} y2="375" stroke={line} strokeWidth={sw} />
-          </g>
-        ))}
-      </g>
 
-      {/* Cable machine / functional trainer — top-right of fitness zone */}
-      <g>
-        <rect x="428" y="246" width="34" height="34" stroke={line} strokeWidth={sw} fill="none" rx="2" />
-        <circle cx="445" cy="263" r="8" stroke={lineSoft} strokeWidth={swThin} fill="none" />
-        <circle cx="445" cy="263" r="3" stroke={line} strokeWidth={sw} fill="none" />
-        <text x="430" y="295" fill={lbl} fontSize="6.5" fontFamily="var(--font-body)" letterSpacing="1" fontWeight="600">CABLE</text>
+        {/* Shopping bag icon — centred in the right column */}
+        {/* Bag body */}
+        <rect x="416" y="272" width="38" height="46" stroke={line} strokeWidth={sw} fill="rgba(248,155,114,0.04)" rx="3" />
+        {/* Handle — U arch above bag */}
+        <path d="M423 272 Q423 256 435 256 Q447 256 447 272"
+          stroke={line} strokeWidth={sw} fill="none" />
+        {/* Fold crease */}
+        <line x1="416" y1="287" x2="454" y2="287" stroke={lineSoft} strokeWidth={swThin} />
+        {/* Bag tag */}
+        <rect x="429" y="293" width="12" height="8" stroke={lineSoft} strokeWidth={swThin} fill="none" rx="1" />
+
+        {/* Display shelves — 2 racks with product dots */}
+        <rect x="403" y="334" width="58" height="11" stroke={line} strokeWidth={swThin} fill="none" rx="1" />
+        {[408, 418, 428, 438, 448].map((x) => (
+          <circle key={`item1-${x}`} cx={x} cy="339.5" r="2.2" stroke={lineSoft} strokeWidth={swThin} fill="none" />
+        ))}
+        <rect x="403" y="352" width="58" height="11" stroke={line} strokeWidth={swThin} fill="none" rx="1" />
+        {[408, 418, 428, 438, 448].map((x) => (
+          <circle key={`item2-${x}`} cx={x} cy="357.5" r="2.2" stroke={lineSoft} strokeWidth={swThin} fill="none" />
+        ))}
+
+        {/* Counter / checkout desk at bottom */}
+        <rect x="403" y="378" width="58" height="16" stroke={line} strokeWidth={sw} fill="rgba(248,155,114,0.04)" rx="2" />
+        <text x="419" y="390" fill={lbl} fontSize="6" fontFamily="var(--font-body)" letterSpacing="1.5" fontWeight="600">COUNTER</text>
       </g>
 
       {/* ──────── ZONE 5 — OFFICE (top) + LOCKER ROOM (bottom) ──────── */}
