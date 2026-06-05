@@ -315,7 +315,7 @@ function Panel({
 
 const ACADEMIES = {
   bigLetter: "A",
-  bg: "radial-gradient(60% 80% at 20% 40%, rgba(248,155,114,0.20) 0%, transparent 60%), linear-gradient(135deg, #121212 0%, #1A1A1A 100%)",
+  bg: "radial-gradient(60% 80% at 20% 40%, rgba(234,163,35,0.20) 0%, transparent 60%), linear-gradient(135deg, #0E1825 0%, #15263A 100%)",
   label: "Academies · Juniors",
   headline: { line1: "Train.", line2: "Compete." },
   body: "Structured Coaching in Cricket, Squash and Badminton. Fitness and Agility on the Turf.",
@@ -324,7 +324,7 @@ const ACADEMIES = {
 
 const RECREATION = {
   bigLetter: "R",
-  bg: "radial-gradient(60% 80% at 80% 60%, rgba(248,155,114,0.12) 0%, transparent 65%), linear-gradient(225deg, #0B0B0B 0%, #181818 100%)",
+  bg: "radial-gradient(60% 80% at 80% 60%, rgba(66,181,77,0.12) 0%, transparent 65%), linear-gradient(225deg, #0A1019 0%, #13202F 100%)",
   label: "Members & Guests",
   headline: { line1: "Play.", line2: "Anytime." },
   body: "Squash today. Badminton tomorrow. Cricket the day after.",

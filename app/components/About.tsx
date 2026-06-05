@@ -85,7 +85,7 @@ export default function About() {
           style={{
             height: "min(420px, 80vw)",
             background:
-              "linear-gradient(135deg, rgba(248,155,114,0.16) 0%, rgba(0,0,0,0) 60%), radial-gradient(120% 80% at 100% 100%, rgba(248,155,114,0.18) 0%, transparent 70%), #0F0F0F",
+              "linear-gradient(135deg, rgba(234,163,35,0.16) 0%, rgba(0,0,0,0) 60%), radial-gradient(120% 80% at 100% 100%, rgba(66,181,77,0.16) 0%, transparent 70%), #0C1623",
           }}
         >
           <FloorPlan />
@@ -107,11 +107,16 @@ export default function About() {
    viewBox 600×420 — fills the dark visual panel.
 ─────────────────────────────────────────────────────────────────── */
 function FloorPlan() {
-  const line = "rgba(248,155,114,0.42)";
-  const lineSoft = "rgba(248,155,114,0.22)";
-  const lineThick = "rgba(248,155,114,0.6)";
-  const accent = "rgba(248,155,114,0.85)";
-  const lbl = "rgba(248,155,114,0.85)";
+  // Gold (logo accent) for most courts; green (logo shuttlecock) reserved
+  // for the badminton zone so all three brand colours appear.
+  const line = "rgba(234,163,35,0.42)";
+  const lineSoft = "rgba(234,163,35,0.22)";
+  const lineThick = "rgba(234,163,35,0.6)";
+  const accent = "rgba(234,163,35,0.85)";
+  const lbl = "rgba(234,163,35,0.85)";
+  const greenLine = "rgba(66,181,77,0.45)";
+  const greenSoft = "rgba(66,181,77,0.24)";
+  const greenThick = "rgba(66,181,77,0.62)";
   const sw = 1.1;
   const swThin = 0.8;
 
@@ -160,31 +165,32 @@ function FloorPlan() {
 
       {/* ──────── ZONE 2 — top-right, 3 BADMINTON courts ──────── */}
       {/* 40ft long × 20ft wide. Scale: 64px wide × 150px tall.               */}
-      <text x="328" y="34" fill={lbl} fontSize="9" fontFamily="var(--font-body)" letterSpacing="2" fontWeight="700">
+      <text x="328" y="34" fill={greenThick} fontSize="9" fontFamily="var(--font-body)" letterSpacing="2" fontWeight="700">
         02 · 3 BADMINTON COURTS
       </text>
       {/* Court: 13.4m long × 6.1m wide. Scale: 64px wide × 150px tall.
           Net at cy+75. Short svc → cy+53 / cy+97. Long svc → cy+8 / cy+142.
-          Singles sideline 5px inside → cx+5 / cx+59. Centre svc → cx+32. */}
+          Singles sideline 5px inside → cx+5 / cx+59. Centre svc → cx+32.
+          Rendered in green to mirror the logo's shuttlecock arc. */}
       {[336, 420, 504].map((cx, i) => {
         const cy = 46; const cw = 64; const ch = 150;
         return (
           <g key={i}>
-            <rect x={cx} y={cy} width={cw} height={ch} stroke={line} strokeWidth={sw} fill="none" />
+            <rect x={cx} y={cy} width={cw} height={ch} stroke={greenLine} strokeWidth={sw} fill="none" />
             {/* Singles sidelines */}
-            <line x1={cx+5}  y1={cy} x2={cx+5}  y2={cy+ch} stroke={lineSoft} strokeWidth={swThin} />
-            <line x1={cx+59} y1={cy} x2={cx+59} y2={cy+ch} stroke={lineSoft} strokeWidth={swThin} />
+            <line x1={cx+5}  y1={cy} x2={cx+5}  y2={cy+ch} stroke={greenSoft} strokeWidth={swThin} />
+            <line x1={cx+59} y1={cy} x2={cx+59} y2={cy+ch} stroke={greenSoft} strokeWidth={swThin} />
             {/* Net — thick at exact centre */}
-            <line x1={cx} y1={cy+75} x2={cx+cw} y2={cy+75} stroke={lineThick} strokeWidth={sw + 0.8} />
+            <line x1={cx} y1={cy+75} x2={cx+cw} y2={cy+75} stroke={greenThick} strokeWidth={sw + 0.8} />
             {/* Short service lines */}
-            <line x1={cx} y1={cy+53} x2={cx+cw} y2={cy+53} stroke={line} strokeWidth={sw} />
-            <line x1={cx} y1={cy+97} x2={cx+cw} y2={cy+97} stroke={line} strokeWidth={sw} />
+            <line x1={cx} y1={cy+53} x2={cx+cw} y2={cy+53} stroke={greenLine} strokeWidth={sw} />
+            <line x1={cx} y1={cy+97} x2={cx+cw} y2={cy+97} stroke={greenLine} strokeWidth={sw} />
             {/* Long service lines (doubles) */}
-            <line x1={cx} y1={cy+8}   x2={cx+cw} y2={cy+8}   stroke={lineSoft} strokeWidth={swThin} />
-            <line x1={cx} y1={cy+142} x2={cx+cw} y2={cy+142} stroke={lineSoft} strokeWidth={swThin} />
+            <line x1={cx} y1={cy+8}   x2={cx+cw} y2={cy+8}   stroke={greenSoft} strokeWidth={swThin} />
+            <line x1={cx} y1={cy+142} x2={cx+cw} y2={cy+142} stroke={greenSoft} strokeWidth={swThin} />
             {/* Centre service lines */}
-            <line x1={cx+32} y1={cy}     x2={cx+32} y2={cy+53} stroke={lineSoft} strokeWidth={swThin} />
-            <line x1={cx+32} y1={cy+97}  x2={cx+32} y2={cy+ch} stroke={lineSoft} strokeWidth={swThin} />
+            <line x1={cx+32} y1={cy}     x2={cx+32} y2={cy+53} stroke={greenSoft} strokeWidth={swThin} />
+            <line x1={cx+32} y1={cy+97}  x2={cx+32} y2={cy+ch} stroke={greenSoft} strokeWidth={swThin} />
           </g>
         );
       })}
@@ -202,7 +208,7 @@ function FloorPlan() {
             <rect x={lx} y={ly} width={lw} height={lh} stroke={line} strokeWidth={sw} fill="none" />
             {/* Pitch strip — center 55% of lane length, shaded */}
             <rect x={lx+16} y={ly+14} width={162} height={18}
-              stroke={lineSoft} strokeWidth={swThin} fill="rgba(248,155,114,0.06)" />
+              stroke={lineSoft} strokeWidth={swThin} fill="rgba(234,163,35,0.06)" />
             {/* Left popping crease */}
             <line x1={lx+32} y1={ly+8} x2={lx+32} y2={ly+38} stroke={line} strokeWidth={sw} />
             {/* Left wickets */}
@@ -507,10 +513,10 @@ function FloorPlan() {
 function TrafficFace() {
   return (
     <>
-      <circle cx="0" cy="0" r="8.16" fill="#FBB28C" stroke="#0A0A0A" strokeWidth="0.84" />
-      <circle cx="-2.64" cy="-1.68" r="1.08" fill="#0A0A0A" />
-      <circle cx=" 2.64" cy="-1.68" r="1.08" fill="#0A0A0A" />
-      <path d="M -3.6,1.44 Q 0,4.56 3.6,1.44" stroke="#0A0A0A" strokeWidth="0.96" fill="none" strokeLinecap="round" />
+      <circle cx="0" cy="0" r="8.16" fill="#F4B945" stroke="#0A1019" strokeWidth="0.84" />
+      <circle cx="-2.64" cy="-1.68" r="1.08" fill="#0A1019" />
+      <circle cx=" 2.64" cy="-1.68" r="1.08" fill="#0A1019" />
+      <path d="M -3.6,1.44 Q 0,4.56 3.6,1.44" stroke="#0A1019" strokeWidth="0.96" fill="none" strokeLinecap="round" />
     </>
   );
 }

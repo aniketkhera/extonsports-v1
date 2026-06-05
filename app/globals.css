@@ -1,19 +1,28 @@
 @import "tailwindcss";
 
 @theme {
-  --color-void: #0A0A0A;
-  --color-ink: #111111;
-  --color-ink-2: #171717;
-  --color-line: #1F1F1F;
-  --color-line-2: #2A2A2A;
-  --color-muted: #6E6E76;
-  --color-fog: #A1A1A8;
-  --color-bone: #E4E4E7;
+  /* Dark palette — deep navy pulled from the Exton Sports Center logo
+     (was near-black; now navy-tinted so the whole site reads on-brand). */
+  --color-void: #0A1019;
+  --color-ink: #0E1825;
+  --color-ink-2: #13202F;
+  --color-line: #1F2E3E;
+  --color-line-2: #2B3B4D;
+  --color-muted: #6E7A88;
+  --color-fog: #9FAAB6;
+  --color-bone: #DDE3EA;
   --color-paper: #FAFAFA;
 
-  --color-ember: #F89B72;
-  --color-ember-hi: #FBB28C;
-  --color-ember-soft: #FDCFB1;
+  /* Primary accent — the logo's gold (squash racquet + underline arc).
+     Variable kept named "ember" to avoid touching every call site; the
+     value is now brand gold, not the old salmon. */
+  --color-ember: #EAA323;
+  --color-ember-hi: #F4B945;
+  --color-ember-soft: #F6D082;
+
+  /* Secondary accent — the logo's green (badminton shuttlecock arc). */
+  --color-green: #42B54D;
+  --color-green-hi: #5CC766;
 
   --font-cond: var(--font-cond);
   --font-body: var(--font-body);
@@ -41,7 +50,7 @@ html { scroll-behavior: smooth; }
 
 ::selection {
   background: var(--color-ember);
-  color: #FFFFFF;
+  color: #0A1019;
 }
 
 /* ── Typography utilities ──────────────────────────────────────── */
