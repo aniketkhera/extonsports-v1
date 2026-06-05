@@ -234,8 +234,8 @@ function FloorPlan() {
         04 · FITNESS
       </text>
 
-      {/* 2 rowing machines (ergs) — top-down view, side by side */}
-      {[330, 364].map((rx, i) => (
+      {/* 2 rowing machines — centred in fitness zone (x=320–452) */}
+      {[355, 389].map((rx, i) => (
         <g key={`row-${i}`}>
           {/* frame outline */}
           <rect x={rx} y={246} width="28" height="72" stroke={line} strokeWidth={sw} fill="none" rx="3" />
@@ -256,21 +256,16 @@ function FloorPlan() {
         </g>
       ))}
 
-      {/* Bench press — top view: bench + barbell */}
+      {/* Bench press — centred to match rowers */}
       <g>
-        {/* bench */}
-        <rect x="332" y="323" width="14" height="56" stroke={line} strokeWidth={sw} fill="none" rx="2" />
-        {/* barbell bar */}
-        <line x1="339" y1="330" x2="339" y2="371" stroke={line} strokeWidth={sw+0.6} />
-        {/* weight plates left */}
-        <circle cx="339" cy="328" r="5" stroke={line} strokeWidth={sw} fill="none" />
-        {/* weight plates right */}
-        <circle cx="339" cy="373" r="5" stroke={line} strokeWidth={sw} fill="none" />
-        {/* second bench */}
-        <rect x="356" y="323" width="14" height="56" stroke={line} strokeWidth={sw} fill="none" rx="2" />
-        <line x1="363" y1="330" x2="363" y2="371" stroke={line} strokeWidth={sw+0.6} />
-        <circle cx="363" cy="328" r="5" stroke={line} strokeWidth={sw} fill="none" />
-        <circle cx="363" cy="373" r="5" stroke={line} strokeWidth={sw} fill="none" />
+        <rect x="367" y="323" width="14" height="56" stroke={line} strokeWidth={sw} fill="none" rx="2" />
+        <line x1="374" y1="330" x2="374" y2="371" stroke={line} strokeWidth={sw+0.6} />
+        <circle cx="374" cy="328" r="5" stroke={line} strokeWidth={sw} fill="none" />
+        <circle cx="374" cy="373" r="5" stroke={line} strokeWidth={sw} fill="none" />
+        <rect x="391" y="323" width="14" height="56" stroke={line} strokeWidth={sw} fill="none" rx="2" />
+        <line x1="398" y1="330" x2="398" y2="371" stroke={line} strokeWidth={sw+0.6} />
+        <circle cx="398" cy="328" r="5" stroke={line} strokeWidth={sw} fill="none" />
+        <circle cx="398" cy="373" r="5" stroke={line} strokeWidth={sw} fill="none" />
       </g>
 
       {/* ── PRO SHOP — narrow vertical strip on right wall ── */}
@@ -453,7 +448,7 @@ function FloorPlan() {
       })}
 
       {/* FITNESS — green smileys. 2 rowers (slide back/forth), 2 at weights. */}
-      {[330, 364].map((rx, i) => (
+      {[355, 389].map((rx, i) => (
         /* Rower — slides up (toward flywheel) and back on the monorail */
         <g key={`fit-row-${i}`}>
           <Smiley x={rx + 14} y={278} color="#6EE7B7"
@@ -461,12 +456,12 @@ function FloorPlan() {
             dur={1.8} delay={i * 0.9} phase={i * 5} />
         </g>
       ))}
-      {/* Weight lifter A — small bounce at bench 1 */}
-      <Smiley x={339} y={351} color="#6EE7B7"
+      {/* Weight lifter A — bench 1 */}
+      <Smiley x={374} y={351} color="#6EE7B7"
         values="0,0; 0,-5; 0,2; 0,-3; 0,0"
         dur={2.4} delay={0.3} phase={2} />
       {/* Weight lifter B — bench 2 */}
-      <Smiley x={363} y={351} color="#6EE7B7"
+      <Smiley x={398} y={351} color="#6EE7B7"
         values="0,0; 0,-5; 0,2; 0,-3; 0,0"
         dur={2.4} delay={1.1} phase={8} />
 
