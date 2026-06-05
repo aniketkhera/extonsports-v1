@@ -119,9 +119,6 @@ export default function Sports() {
                   <span className="text-mono text-[0.7rem] text-white/35">
                     {s.n}
                   </span>
-                  <span className="text-mono text-[0.62rem] text-white/40">
-                    {s.spec}
-                  </span>
                 </div>
 
                 {/* Big count */}
