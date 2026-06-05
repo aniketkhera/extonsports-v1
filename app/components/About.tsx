@@ -278,10 +278,10 @@ function FloorPlan() {
         <text x="327" y="336" fill={lbl} fontSize="7" fontFamily="var(--font-body)" letterSpacing="1.5" fontWeight="600">
           WEIGHTS
         </text>
-        {/* rack outline — wide horizontal */}
-        <rect x="327" y="340" width="132" height="22" stroke={lineSoft} strokeWidth={swThin} fill="none" />
-        {/* 6 dumbbell pairs running left to right; each pair spaced 22px apart */}
-        {[334, 356, 378, 400, 422, 444].map((x) => (
+        {/* rack outline — half width */}
+        <rect x="327" y="340" width="66" height="22" stroke={lineSoft} strokeWidth={swThin} fill="none" />
+        {/* 3 dumbbell pairs running left to right */}
+        {[332, 349, 366].map((x) => (
           <g key={`db-${x}`}>
             <circle cx={x}    cy="351" r="4.5" stroke={line} strokeWidth={swThin} fill="none" />
             <circle cx={x+10} cy="351" r="4.5" stroke={line} strokeWidth={swThin} fill="none" />
