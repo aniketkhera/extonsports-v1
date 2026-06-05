@@ -126,19 +126,20 @@ function FloorPlan() {
         stroke={lineThick} strokeWidth={1.4} fill="none"
       />
       {/* Internal walls: symmetric horizontal at y=216 splits top/bottom;
-          vertical at x=306 splits top half into squash (4, left) + badminton (3, right);
+          vertical at x=320 splits top half into squash (4, wider) + badminton (3, narrower);
+          vertical at x=320 also marks right edge of cricket zone in bottom half;
           vertical at x=470 carves the locker corner out of the bottom.  */}
-      <line x1="306" y1="14"  x2="306" y2="216" stroke={lineThick} strokeWidth={1.4} />
+      <line x1="320" y1="14"  x2="320" y2="406" stroke={lineThick} strokeWidth={1.4} />
       <line x1="14"  y1="216" x2="586" y2="216" stroke={lineThick} strokeWidth={1.4} />
       <line x1="470" y1="216" x2="470" y2="406" stroke={lineThick} strokeWidth={1.4} />
 
       {/* ──────── ZONE 1 — top-left, 4 SQUASH courts ──────── */}
-      {/* 32ft long × 21ft wide each. Scale: 68px wide × 120px tall.          */}
+      {/* 32ft long × 21ft wide. Scale: 74px wide × 120px tall.               */}
       <text x="22" y="34" fill={lbl} fontSize="9" fontFamily="var(--font-body)" letterSpacing="2" fontWeight="700">
         01 · 4 SQUASH COURTS · ALL-GLASS
       </text>
-      {[19, 90, 161, 232].map((cx, i) => {
-        const cy = 48; const cw = 68; const ch = 120;
+      {[16, 92, 168, 244].map((cx, i) => {
+        const cy = 48; const cw = 74; const ch = 120;
         return (
           <g key={i}>
             <rect x={cx} y={cy} width={cw} height={ch} stroke={line} strokeWidth={sw} fill="none" />
@@ -147,89 +148,84 @@ function FloorPlan() {
             {/* Short line — 56% down */}
             <line x1={cx} y1={cy+67} x2={cx+cw} y2={cy+67} stroke={line} strokeWidth={sw} />
             {/* Half-court line — short line to back wall */}
-            <line x1={cx+34} y1={cy+67} x2={cx+34} y2={cy+ch} stroke={line} strokeWidth={sw} />
+            <line x1={cx+37} y1={cy+67} x2={cx+37} y2={cy+ch} stroke={line} strokeWidth={sw} />
             {/* Service boxes */}
-            <rect x={cx}    y={cy+67} width="16" height="16" stroke={line} strokeWidth={swThin} fill="none" />
-            <rect x={cx+52} y={cy+67} width="16" height="16" stroke={line} strokeWidth={swThin} fill="none" />
+            <rect x={cx}    y={cy+67} width="17" height="17" stroke={line} strokeWidth={swThin} fill="none" />
+            <rect x={cx+57} y={cy+67} width="17" height="17" stroke={line} strokeWidth={swThin} fill="none" />
           </g>
         );
       })}
 
       {/* ──────── ZONE 2 — top-right, 3 BADMINTON courts ──────── */}
-      {/* 40ft long × 20ft wide each. Scale: 80px wide × 150px tall.          */}
-      <text x="314" y="34" fill={lbl} fontSize="9" fontFamily="var(--font-body)" letterSpacing="2" fontWeight="700">
+      {/* 40ft long × 20ft wide. Scale: 64px wide × 150px tall.               */}
+      <text x="328" y="34" fill={lbl} fontSize="9" fontFamily="var(--font-body)" letterSpacing="2" fontWeight="700">
         02 · 3 BADMINTON COURTS
       </text>
-      {/* Court: 13.4m long × 6.1m wide. Scale: 80px wide × 150px tall.
-          Net at cy+75. Short svc 1.98m from net → 22px → cy+53 / cy+97.
-          Long svc (doubles) 0.76m from baseline → 8px → cy+8 / cy+142.
-          Singles sideline 0.46m inside → 6px → cx+6 / cx+74.
-          Centre service line from baseline to short service line. */}
-      {[320, 406, 492].map((cx, i) => {
-        const cy = 46; const cw = 80; const ch = 150;
+      {/* Court: 13.4m long × 6.1m wide. Scale: 64px wide × 150px tall.
+          Net at cy+75. Short svc → cy+53 / cy+97. Long svc → cy+8 / cy+142.
+          Singles sideline 5px inside → cx+5 / cx+59. Centre svc → cx+32. */}
+      {[336, 420, 504].map((cx, i) => {
+        const cy = 46; const cw = 64; const ch = 150;
         return (
           <g key={i}>
-            {/* Outer doubles boundary */}
             <rect x={cx} y={cy} width={cw} height={ch} stroke={line} strokeWidth={sw} fill="none" />
             {/* Singles sidelines */}
-            <line x1={cx+6}  y1={cy} x2={cx+6}  y2={cy+ch} stroke={lineSoft} strokeWidth={swThin} />
-            <line x1={cx+74} y1={cy} x2={cx+74} y2={cy+ch} stroke={lineSoft} strokeWidth={swThin} />
+            <line x1={cx+5}  y1={cy} x2={cx+5}  y2={cy+ch} stroke={lineSoft} strokeWidth={swThin} />
+            <line x1={cx+59} y1={cy} x2={cx+59} y2={cy+ch} stroke={lineSoft} strokeWidth={swThin} />
             {/* Net — thick at exact centre */}
             <line x1={cx} y1={cy+75} x2={cx+cw} y2={cy+75} stroke={lineThick} strokeWidth={sw + 0.8} />
             {/* Short service lines */}
-            <line x1={cx} y1={cy+53}  x2={cx+cw} y2={cy+53}  stroke={line} strokeWidth={sw} />
-            <line x1={cx} y1={cy+97}  x2={cx+cw} y2={cy+97}  stroke={line} strokeWidth={sw} />
+            <line x1={cx} y1={cy+53} x2={cx+cw} y2={cy+53} stroke={line} strokeWidth={sw} />
+            <line x1={cx} y1={cy+97} x2={cx+cw} y2={cy+97} stroke={line} strokeWidth={sw} />
             {/* Long service lines (doubles) */}
             <line x1={cx} y1={cy+8}   x2={cx+cw} y2={cy+8}   stroke={lineSoft} strokeWidth={swThin} />
             <line x1={cx} y1={cy+142} x2={cx+cw} y2={cy+142} stroke={lineSoft} strokeWidth={swThin} />
             {/* Centre service lines */}
-            <line x1={cx+40} y1={cy}      x2={cx+40} y2={cy+53}  stroke={lineSoft} strokeWidth={swThin} />
-            <line x1={cx+40} y1={cy+97}   x2={cx+40} y2={cy+ch}  stroke={lineSoft} strokeWidth={swThin} />
+            <line x1={cx+32} y1={cy}     x2={cx+32} y2={cy+53} stroke={lineSoft} strokeWidth={swThin} />
+            <line x1={cx+32} y1={cy+97}  x2={cx+32} y2={cy+ch} stroke={lineSoft} strokeWidth={swThin} />
           </g>
         );
       })}
 
-      {/* ──────── ZONE 3 — bottom strip, 2 CRICKET LANES (full width except locker corner) ──────── */}
+      {/* ──────── ZONE 3 — bottom-left, 3 CRICKET LANES spanning squash zone width ──────── */}
+      {/* 3 lanes × 48px tall, spanning x=22 to x=314 (matches 4 squash courts width). */}
       <text x="22" y="234" fill={lbl} fontSize="9" fontFamily="var(--font-body)" letterSpacing="2" fontWeight="700">
-        03 · TURF · 2 CRICKET LANES
+        03 · 3 CRICKET LANES
       </text>
-      {/* 2 horizontal lanes stacked, spanning x=22 to x=462 (the full zone width
-          minus the locker corner). Each lane is 440 wide × 72 tall. */}
-      {[
-        { x: 22, y: 246 },  // top lane
-        { x: 22, y: 326 },  // bottom lane
-      ].map((c, i) => (
-        <g key={i}>
-          {/* lane outer — wide horizontal strip (full 440 wide for bowler run-up) */}
-          <rect x={c.x} y={c.y} width="440" height="72" stroke={line} strokeWidth={sw} fill="none" />
-          {/* pitch tramlines — only the LEFT ~60% of the lane; the right 40%
-              stays clear for the bowler's run-up */}
-          <rect x={c.x + 24} y={c.y + 24} width="240" height="26" stroke={lineSoft} strokeWidth={swThin} fill="rgba(248,155,114,0.06)" />
-          {/* LEFT popping crease — batsman's end, near the left wall */}
-          <line x1={c.x + 48} y1={c.y + 12} x2={c.x + 48} y2={c.y + 62} stroke={line} strokeWidth={sw} />
-          {/* LEFT wickets — 3 short horizontal stump marks */}
-          <g stroke={line} strokeWidth={sw}>
-            <line x1={c.x + 28} y1={c.y + 32} x2={c.x + 46} y2={c.y + 32} />
-            <line x1={c.x + 28} y1={c.y + 37} x2={c.x + 46} y2={c.y + 37} />
-            <line x1={c.x + 28} y1={c.y + 42} x2={c.x + 46} y2={c.y + 42} />
+      {[246, 298, 350].map((ly, i) => {
+        const lx = 22; const lw = 292; const lh = 46;
+        return (
+          <g key={i}>
+            {/* Lane outer boundary */}
+            <rect x={lx} y={ly} width={lw} height={lh} stroke={line} strokeWidth={sw} fill="none" />
+            {/* Pitch strip — center 55% of lane length, shaded */}
+            <rect x={lx+16} y={ly+14} width={162} height={18}
+              stroke={lineSoft} strokeWidth={swThin} fill="rgba(248,155,114,0.06)" />
+            {/* Left popping crease */}
+            <line x1={lx+32} y1={ly+8} x2={lx+32} y2={ly+38} stroke={line} strokeWidth={sw} />
+            {/* Left wickets */}
+            <g stroke={line} strokeWidth={sw}>
+              <line x1={lx+18} y1={ly+19} x2={lx+30} y2={ly+19} />
+              <line x1={lx+18} y1={ly+23} x2={lx+30} y2={ly+23} />
+              <line x1={lx+18} y1={ly+27} x2={lx+30} y2={ly+27} />
+            </g>
+            {/* Right popping crease */}
+            <line x1={lx+178} y1={ly+8} x2={lx+178} y2={ly+38} stroke={line} strokeWidth={sw} />
+            {/* Right wickets */}
+            <g stroke={line} strokeWidth={sw}>
+              <line x1={lx+180} y1={ly+19} x2={lx+192} y2={ly+19} />
+              <line x1={lx+180} y1={ly+23} x2={lx+192} y2={ly+23} />
+              <line x1={lx+180} y1={ly+27} x2={lx+192} y2={ly+27} />
+            </g>
+            {/* Bowler run-up arrow — right side, pointing left */}
+            <g stroke={lineSoft} strokeWidth={swThin}>
+              <line x1={lx+280} y1={ly+23} x2={lx+200} y2={ly+23} strokeDasharray="3 3" />
+              <line x1={lx+206} y1={ly+19} x2={lx+200} y2={ly+23} />
+              <line x1={lx+206} y1={ly+27} x2={lx+200} y2={ly+23} />
+            </g>
           </g>
-          {/* RIGHT popping crease — at 60% of lane length, leaving 40% for run-up */}
-          <line x1={c.x + 264} y1={c.y + 12} x2={c.x + 264} y2={c.y + 62} stroke={line} strokeWidth={sw} />
-          {/* RIGHT wickets — bowler's end, at the 60% mark */}
-          <g stroke={line} strokeWidth={sw}>
-            <line x1={c.x + 266} y1={c.y + 32} x2={c.x + 284} y2={c.y + 32} />
-            <line x1={c.x + 266} y1={c.y + 37} x2={c.x + 284} y2={c.y + 37} />
-            <line x1={c.x + 266} y1={c.y + 42} x2={c.x + 284} y2={c.y + 42} />
-          </g>
-          {/* Run-up arrow — subtle marker showing the bowler approaches
-              from the right, runs left, releases at the right popping crease */}
-          <g stroke={lineSoft} strokeWidth={swThin}>
-            <line x1={c.x + 420} y1={c.y + 37} x2={c.x + 290} y2={c.y + 37} strokeDasharray="3 4" />
-            <line x1={c.x + 296} y1={c.y + 33} x2={c.x + 290} y2={c.y + 37} />
-            <line x1={c.x + 296} y1={c.y + 41} x2={c.x + 290} y2={c.y + 37} />
-          </g>
-        </g>
-      ))}
+        );
+      })}
 
       {/* ──────── ZONE 4 — bottom-right, LOCKERS + ENTRANCE ALLEY ──────── */}
       <text x="478" y="234" fill={lbl} fontSize="9" fontFamily="var(--font-body)" letterSpacing="2" fontWeight="700">
@@ -279,12 +275,12 @@ function FloorPlan() {
 
       {/* ──────── PEOPLE — animated overlay (SMIL, additive="sum") ──────── */}
 
-      {/* SQUASH (left zone) — pink smileys. 4 courts, 68×120px each. */}
-      {[19, 90, 161, 232].map((cx, i) => {
+      {/* SQUASH (left zone) — pink smileys. 4 courts, 74×120px each. */}
+      {[16, 92, 168, 244].map((cx, i) => {
         const cy = 48; const ch = 120;
         const tY = cy + ch * 0.55;
         const bY = cy + ch * 0.85;
-        const px = cx + 34;
+        const px = cx + 37;
         const d = i * 0.7;
         return (
           <g key={`sq-${i}`}>
@@ -298,13 +294,13 @@ function FloorPlan() {
         );
       })}
 
-      {/* BADMINTON (right zone) — yellow smileys. 3 courts, 80×150px, all doubles. */}
-      {[320, 406, 492].map((cx, i) => {
+      {/* BADMINTON (right zone) — yellow smileys. 3 courts, 64×150px, all doubles. */}
+      {[336, 420, 504].map((cx, i) => {
         const cy = 46;
         const ch = 150;
         const topY = cy + ch * 0.30;
         const botY = cy + ch * 0.70;
-        const px = cx + 40;
+        const px = cx + 32;
         const d = i * 0.55;
         const isDoubles = true;
 
@@ -350,24 +346,25 @@ function FloorPlan() {
       {/* CRICKET — orange bowler runs up and back; blue batsman holds position with bat swing */}
       {[
         { x: 22, y: 246 },
-        { x: 22, y: 326 },
+        { x: 22, y: 298 },
+        { x: 22, y: 350 },
       ].map((c, i) => {
-        const midY = c.y + 36;
-        const bowlerStartX = c.x + 400;
-        const batsmanX = c.x + 60;
+        const midY = c.y + 23;
+        const bowlerStartX = c.x + 280;
+        const batsmanX = c.x + 40;
         const d = i * 1.4;
         return (
           <g key={`cri-${i}`}>
             {/* Far-left fielder — stands behind the batsman's end wall */}
             <Smiley x={c.x + 10} y={midY} color="#6BCEF5"
-              values="0,0; 2,-4; -2,3; 1,-2; 0,0"
+              values="0,0; 2,-3; -2,2; 1,-2; 0,0"
               dur={5.8} delay={d + 0.8} phase={i * 4 + 13} />
             <Smiley x={batsmanX} y={midY} color="#6BCEF5"
-              values="0,0; 0,0; 0,0; -3,-3; 0,0; 0,0"
+              values="0,0; 0,0; 0,0; -2,-2; 0,0; 0,0"
               keyTimes="0; 0.5; 0.7; 0.78; 0.84; 1"
               dur={4.6} delay={d} phase={i * 4 + 2} />
             <Smiley x={bowlerStartX} y={midY} color="#FFB259"
-              values="0,0; -130,0; -135,-2; -135,2; -100,0; -50,0; 0,0"
+              values="0,0; -88,0; -92,-2; -92,2; -68,0; -34,0; 0,0"
               keyTimes="0; 0.45; 0.48; 0.51; 0.65; 0.82; 1"
               dur={4.6} delay={d} phase={i * 4 + 9} />
           </g>
