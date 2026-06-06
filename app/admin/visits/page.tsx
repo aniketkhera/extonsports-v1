@@ -44,8 +44,17 @@ type Signup = {
   referrer: string | null
   utm_source: string | null
   region: string | null
+  country: string | null
   tags: string[]
   subscribed_at: string
+}
+
+// Region label: bare code for US (home country — keep it clean), else
+// "<code> · <country>" so foreign ISO-3166-2 subdivision codes (QC·CA,
+// ALX·EG, numeric ones) aren't mistaken for US states.
+function regionLabel(r: { region: string | null; country: string | null }): string {
+  if (!r.region) return '—'
+  return r.country && r.country !== 'US' ? `${r.region} · ${r.country}` : r.region
 }
 
 // Signups in the same 30-day window. Filtered to source='homepage' —
@@ -58,7 +67,7 @@ async function loadSignups(): Promise<Signup[]> {
   try {
     const since = new Date(Date.now() - 30 * 24 * 3600_000).toISOString()
     return await selectRows<Signup>('subscribers', {
-      select: 'referrer,utm_source,region,tags,subscribed_at',
+      select: 'referrer,utm_source,region,country,tags,subscribed_at',
       filters: { property: `eq.${PROPERTY}`, source: 'eq.homepage', subscribed_at: `gte.${since}` },
       limit: 10000,
     })
@@ -140,7 +149,7 @@ export default async function VisitsPage() {
   const last7 = within(7 * 24 * 3600_000)
   const last30 = visits.length
 
-  const byRegion   = tally(visits, v => v.region)
+  const byRegion   = tally(visits, regionLabel)
   const byReferrer = tally(visits, v => refHost(v.referrer))
   const byDevice   = tally(visits, v => v.device)
   const byCampaign = tally(visits.filter(v => v.utm_source), v => v.utm_source)
@@ -159,7 +168,7 @@ export default async function VisitsPage() {
 
   // Conversion: visits vs signups, matched by normalized source + region.
   const convBySource = buildConversion(visits, signups, v => refHost(v.referrer), s => refHost(s.referrer))
-  const convByRegion = buildConversion(visits, signups, v => v.region || '—', s => s.region || '—')
+  const convByRegion = buildConversion(visits, signups, regionLabel, regionLabel)
   const overallRate  = last30 > 0 ? signups.length / last30 : null
 
   return (
@@ -188,7 +197,7 @@ export default async function VisitsPage() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 14, marginBottom: 14 }}>
-              <BarCard title="By region (state)" rows={byRegion} total={last30} />
+              <BarCard title="By region (US state · else country)" rows={byRegion} total={last30} />
               <BarCard title="Where they came from" rows={byReferrer} total={last30} />
               <BarCard title="Device" rows={byDevice} total={last30} />
               <BarCard title="Campaign (utm_source)" rows={byCampaign} total={byCampaign.reduce((s, r) => s + r.count, 0)} emptyHint="Tag your shared links with ?utm_source=… to see campaigns here." />
