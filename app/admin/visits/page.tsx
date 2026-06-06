@@ -49,12 +49,12 @@ type Signup = {
   subscribed_at: string
 }
 
-// Region label: bare code for US (home country — keep it clean), else
-// "<code> · <country>" so foreign ISO-3166-2 subdivision codes (QC·CA,
-// ALX·EG, numeric ones) aren't mistaken for US states.
+// Region label: always "<code> · <country>" when both resolve (NJ · US,
+// QC · CA, ALX · EG) so every row is uniformly qualified. Region alone if
+// no country; "—" if no region.
 function regionLabel(r: { region: string | null; country: string | null }): string {
   if (!r.region) return '—'
-  return r.country && r.country !== 'US' ? `${r.region} · ${r.country}` : r.region
+  return r.country ? `${r.region} · ${r.country}` : r.region
 }
 
 // Signups in the same 30-day window. Filtered to source='homepage' —
@@ -197,7 +197,7 @@ export default async function VisitsPage() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 14, marginBottom: 14 }}>
-              <BarCard title="By region (US state · else country)" rows={byRegion} total={last30} />
+              <BarCard title="By region (state · country)" rows={byRegion} total={last30} />
               <BarCard title="Where they came from" rows={byReferrer} total={last30} />
               <BarCard title="Device" rows={byDevice} total={last30} />
               <BarCard title="Campaign (utm_source)" rows={byCampaign} total={byCampaign.reduce((s, r) => s + r.count, 0)} emptyHint="Tag your shared links with ?utm_source=… to see campaigns here." />
