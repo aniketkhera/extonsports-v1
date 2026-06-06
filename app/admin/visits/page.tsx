@@ -130,7 +130,13 @@ export default async function VisitsPage() {
   const [visits, signups] = await Promise.all([loadVisits(), loadSignups()])
   const now = Date.now()
   const within = (ms: number) => visits.filter(v => now - new Date(v.created_at).getTime() <= ms).length
-  const today = within(24 * 3600_000)
+  // "Today" = calendar day in Eastern time (resets at midnight ET), not a
+  // rolling 24h window. Compare each visit's ET calendar date to today's —
+  // DST-proof, no offset math. last7/last30 stay rolling (labels say "last N days").
+  const etDate = (d: string | number) =>
+    new Date(d).toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+  const todayET = etDate(now)
+  const today = visits.filter(v => etDate(v.created_at) === todayET).length
   const last7 = within(7 * 24 * 3600_000)
   const last30 = visits.length
 
