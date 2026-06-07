@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { insertRow, selectOne, updateRows, supabaseConfigured, PROPERTY } from '../../../lib/supabase'
-import { sendOne } from '../../../lib/send-mailer'
+import { sendOne, unsubscribeUrl } from '../../../lib/send-mailer'
+import { renderEmailHtml } from '../../../lib/email-template'
+import { markdownToEmailHtml } from '../../../lib/markdown'
 import { deriveSport, sportTag, sportLabel } from '../../../lib/sports'
 
 // POST /api/waitlist  { name, email, referrer?, utm_source?, utm_medium?, utm_campaign?, sport? }
@@ -82,7 +84,7 @@ export async function POST(req: NextRequest) {
         }
         // Already active — no-op (don't overwrite acquisition data)
       } else {
-        await insertRow('subscribers', {
+        const inserted = await insertRow<{ unsubscribe_token: string | null }>('subscribers', {
           property: PROPERTY,
           email,
           first_name,
@@ -96,7 +98,9 @@ export async function POST(req: NextRequest) {
           country,
           region,
           city,
-        }, 'return=minimal')
+        })
+        // Brand-new subscriber → send the admin-configured welcome email if enabled.
+        await sendWelcomeIfEnabled(email, inserted?.unsubscribe_token || null)
       }
     } catch (e) {
       console.error('[waitlist] subscribers write failed:', e instanceof Error ? e.message : e)
@@ -144,4 +148,22 @@ function clean(v: unknown): string | null {
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+// Send the admin-configured welcome email to a brand-new subscriber, if enabled.
+async function sendWelcomeIfEnabled(email: string, token: string | null): Promise<void> {
+  try {
+    const w = await selectOne<{ subject: string; body_md: string; enabled: boolean }>('welcome_emails', {
+      select: 'subject,body_md,enabled', filters: { property: `eq.${PROPERTY}` },
+    })
+    if (!w || !w.enabled || !w.subject?.trim() || !w.body_md?.trim()) return
+    const html = renderEmailHtml({
+      subject: w.subject,
+      bodyHtml: markdownToEmailHtml(w.body_md),
+      unsubscribeUrl: token ? unsubscribeUrl(token) : '#',
+    })
+    await sendOne({ to: email, subject: w.subject, html })
+  } catch (e) {
+    console.error('[waitlist] welcome email failed:', e instanceof Error ? e.message : e)
+  }
 }

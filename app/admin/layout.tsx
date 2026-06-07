@@ -39,7 +39,7 @@ export default async function AdminLayout({
 
 // Shared nav rendered by authenticated admin pages (not the login
 // page). Exported separately so /admin/login can skip it.
-export async function AdminNav({ active }: { active: 'dashboard' | 'subscribers' | 'compose' | 'sends' | 'visits' }) {
+export async function AdminNav({ active }: { active: 'dashboard' | 'subscribers' | 'compose' | 'welcome' | 'sends' | 'visits' }) {
   const session = await getAdminSession()
   if (!session) return null
 
@@ -47,6 +47,7 @@ export async function AdminNav({ active }: { active: 'dashboard' | 'subscribers'
     { key: 'dashboard',   label: 'Dashboard',   href: '/admin' },
     { key: 'subscribers', label: 'Subscribers', href: '/admin/subscribers' },
     { key: 'compose',     label: 'Compose',     href: '/admin/compose' },
+    { key: 'welcome',     label: 'Welcome',     href: '/admin/welcome' },
     { key: 'sends',       label: 'Sends',       href: '/admin/sends' },
     { key: 'visits',      label: 'Traffic',     href: '/admin/visits' },
   ]
