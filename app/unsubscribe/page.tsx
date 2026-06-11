@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { selectOne, updateRows } from '../../lib/supabase'
 import ResubscribeForm from './ResubscribeForm'
 
@@ -10,6 +11,13 @@ import ResubscribeForm from './ResubscribeForm'
 // explicit — requires a button click that POSTs to /api/resubscribe.
 
 export const dynamic = 'force-dynamic'
+
+// Keep this page (and its token-bearing URLs) out of search indices.
+export const metadata: Metadata = {
+  title: 'Unsubscribe',
+  description: 'Manage your email subscription to Exton Sports Center.',
+  robots: { index: false, follow: false, nocache: true },
+}
 
 type SubscriberRow = {
   id: string
