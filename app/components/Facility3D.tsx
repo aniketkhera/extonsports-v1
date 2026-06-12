@@ -332,6 +332,7 @@ export default function Facility3D() {
     observer.observe(container);
 
     function onResize() {
+      if (!container) return;
       const w = container.clientWidth;
       const h = container.clientHeight || 420;
       camera.aspect = w / h;
