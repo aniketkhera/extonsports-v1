@@ -12,7 +12,7 @@
     "@types/three": "^0.184.1",
     "@vercel/analytics": "^2.0.1",
     "framer-motion": "^11.18.0",
-    "mailer-admin": "git+https://github.com/aniketkhera/mailer-admin.git#7000648b0041f8fbc131ed6bde22f08d76d86e29",
+    "mailer-admin": "git+https://github.com/aniketkhera/mailer-admin.git#a78c03c1fa94e3826a3c3221bb2cfae1e7791880",
     "next": "16.2.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
