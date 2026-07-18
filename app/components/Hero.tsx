@@ -28,7 +28,7 @@ export default function Hero() {
   return (
     <section
       id="top"
-      className={`relative pt-[52px] md:pt-0 ${isMobile ? "flex-col" : "flex"}`}
+      className={`relative ${isMobile ? "flex-col" : "flex"}`}
       style={
         isMobile
           ? { marginTop: 64 }
@@ -40,29 +40,6 @@ export default function Hero() {
             }
       }
     >
-      {/* Coming-soon eyebrow — a centered chip straddling the top seam of the
-          Split-C. Informational only (pointer-events-none) so it never steals
-          the panels' hover-expand. On mobile it sits in the pt-[52px] top band. */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-        className="absolute top-3 md:top-5 left-1/2 -translate-x-1/2 z-20 pointer-events-none"
-      >
-        <div className="flex items-center gap-2.5 px-4 py-2 border border-[var(--color-ember)]/55 bg-[#0A1019]/85 backdrop-blur-md whitespace-nowrap shadow-lg">
-          <span className="relative flex h-[7px] w-[7px]">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-[var(--color-ember)] opacity-75 animate-ping" />
-            <span className="relative inline-flex rounded-full h-[7px] w-[7px] bg-[var(--color-ember)]" />
-          </span>
-          <span className="text-cond-md text-[var(--color-ember)] text-[0.72rem] sm:text-[0.82rem]" style={{ letterSpacing: "0.14em" }}>
-            Opening Mid-August 2026
-          </span>
-          <span className="hidden sm:inline text-cond-md text-white/45 text-[0.82rem]" style={{ letterSpacing: "0.14em" }}>
-            · Badminton · Cricket · Turf
-          </span>
-        </div>
-      </motion.div>
-
       {/* LEFT: Recreation */}
       <Panel
         kind="recreation"

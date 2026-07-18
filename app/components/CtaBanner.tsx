@@ -23,9 +23,18 @@ export default function CtaBanner() {
   const [state, setState] = useState<"idle" | "sending" | "ok" | "err">("idle");
   const scrollDir = useScrollDirection();
 
-  // Collapse the copy text on mobile when scrolling up —
-  // keeps just the form row visible. Desktop always shows full.
-  const copyCollapsed = scrollDir === "up";
+  // Collapse the copy text on mobile when scrolling up — keeps just the form row
+  // visible. Desktop must ALWAYS show the copy (otherwise the wide ember bar goes
+  // blank on scroll-up), so gate the collapse to narrow screens only.
+  const [isNarrow, setIsNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const on = () => setIsNarrow(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  const copyCollapsed = isNarrow && scrollDir === "up";
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -83,7 +92,7 @@ export default function CtaBanner() {
           Be the first to know when we open Badminton, Cricket &amp; Turf.
         </p>
         <p className="text-black/65 text-[0.8rem] sm:text-[0.88rem] mt-1 font-semibold tracking-wide">
-          Badminton, Cricket, and Turf opening mid-August 2026. Stay tuned for membership options.
+          Badminton, Cricket &amp; Turf <span className="text-black font-bold">opening mid-August 2026</span>. Stay tuned for membership options.
         </p>
       </div>
 

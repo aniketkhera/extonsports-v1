@@ -18,18 +18,36 @@ export default function Nav() {
         backdropFilter: "blur(16px)",
       }}
     >
-      <a href="#top" className="brand-wordmark text-[1.45rem]">
-        <img
-          src="/logo.png"
-          alt="Exton Sports Center"
-          width={38}
-          height={38}
-          style={{ display: "block", flexShrink: 0 }}
-        />
-        <span>
-          EXTON <span className="brand-accent">SPORTS CENTER</span>
-        </span>
-      </a>
+      <div className="flex items-center gap-4 min-w-0">
+        <a href="#top" className="brand-wordmark text-[1.45rem]">
+          <img
+            src="/logo.png"
+            alt="Exton Sports Center"
+            width={38}
+            height={38}
+            style={{ display: "block", flexShrink: 0 }}
+          />
+          <span>
+            EXTON <span className="brand-accent">SPORTS CENTER</span>
+          </span>
+        </a>
+
+        {/* Coming-soon chip beside the title — persistent (nav is sticky) and
+            links to the waitlist form. Hidden on the narrowest screens so it
+            never crowds the wordmark; the bottom CTA carries the date there. */}
+        <a
+          href="#waitlist"
+          className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 border border-[var(--color-ember)]/45 hover:border-[var(--color-ember)] hover:bg-[var(--color-ember)]/10 transition-colors whitespace-nowrap shrink-0"
+        >
+          <span className="relative flex h-[6px] w-[6px]">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-[var(--color-ember)] opacity-70 animate-ping" />
+            <span className="relative inline-flex rounded-full h-[6px] w-[6px] bg-[var(--color-ember)]" />
+          </span>
+          <span className="text-mono text-[0.6rem] text-[var(--color-ember)]">
+            Opening Mid-Aug 2026
+          </span>
+        </a>
+      </div>
 
       <ul className="hidden md:flex items-stretch list-none">
         {navLinks.map((l, i) => (
