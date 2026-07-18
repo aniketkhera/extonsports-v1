@@ -83,7 +83,7 @@ export default function CtaBanner() {
           Be the first to know when we open Badminton, Cricket &amp; Turf.
         </p>
         <p className="text-black/65 text-[0.8rem] sm:text-[0.88rem] mt-1 font-semibold tracking-wide">
-          Badminton, Cricket, and Turf Opening July 2026. Stay tuned for membership options.
+          Badminton, Cricket, and Turf opening mid-August 2026. Stay tuned for membership options.
         </p>
       </div>
 

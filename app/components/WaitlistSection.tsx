@@ -123,7 +123,7 @@ export default function WaitlistSection() {
         >
           <div className="mx-auto max-w-[760px] px-4 py-6 sm:py-12 text-center">
             <p className="hidden sm:block text-cond text-[var(--color-ember)] text-[0.75rem] tracking-[0.22em] mb-3">
-              OPENING JULY 2026 · EXTON, PA
+              OPENING MID-AUGUST 2026 · EXTON, PA
             </p>
             <h2
               className="text-cond text-white mb-2 sm:mb-4"
