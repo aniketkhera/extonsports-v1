@@ -308,10 +308,19 @@ export default function Facility3D() {
     const LANE_W = 64;
     const PITCH_W = LANE_W * 0.4;      // matting strip
     const CREASE_L = LANE_W * 0.667;   // crease line length
-    // Both lanes sit high in the 202..392 zone: past z ~330 the 78-tall front
-    // wall occludes the floor at the hero camera angle, and with only two
-    // lanes, losing one behind the wall reads as a single lane.
-    [214, 290].forEach((lz) => {
+    // Both lanes sit high in the 202..392 zone so the 78-tall south wall can't
+    // swallow one — with only two lanes, losing one behind the wall reads as a
+    // single lane while the rest of the page says two.
+    //
+    // The camera orbits, so the occlusion boundary moves. A floor point at z is
+    // hidden when z > (camHeight * 389 - 78 * zc) / (camHeight - 78), where
+    // zc = cz + camDist * sin(angle). That bottoms out at z = 305.4 when the
+    // camera swings side-on (zc = 1056) — NOT the ~337 you get at the hero
+    // angle alone. Two 64-wide lanes need 128 units but only ~103 sit above
+    // 305.4, so both cannot be fully visible at every angle; these positions
+    // instead guarantee lane 2's matting is never *entirely* hidden (worst case
+    // ~17% clipped), which is what preserves the two-lane read.
+    [206, 276].forEach((lz) => {
       addStripe(8, lz, 290, 1.2, 0xc9876a);
       addStripe(8, lz + LANE_W - 1, 290, 1.2, 0xc9876a);
       addStripe(8, lz, 1.2, LANE_W, 0xc9876a);
