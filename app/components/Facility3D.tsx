@@ -7,11 +7,11 @@ import * as THREE from "three";
  * Facility3D — rotating 3D rendering of the Exton Sports Center.
  *
  * Replaces the older animated-smiley SVG floor plan with an actual
- * isometric building view: outer shell, 4 squash courts with slanting
- * translucent side walls and glass front + back walls (door on the back
- * facing the cricket lanes), 3 badminton courts with standing nets and
- * regulation court markings, 3 cricket pitches with stumps + bails, and
- * a small locker counter cluster.
+ * isometric building view: outer shell, 3 squash courts on the right with
+ * slanting translucent side walls and glass front + back walls (door on the
+ * back, facing the fitness and locker zones), 4 badminton courts on the left
+ * with standing nets and regulation court markings, 2 cricket lanes with
+ * stumps + bails, and a small locker counter cluster.
  *
  * The canvas is transparent so the parent container's salmon + green
  * gradient backdrop reads through the floor.
@@ -87,8 +87,8 @@ export default function Facility3D() {
       scene.add(m);
       meshes.push(m);
     }
-    addZoneFloor(0,   0,   306, 202, C.squash);
-    addZoneFloor(306, 0,   266, 202, C.badminton);
+    addZoneFloor(0,   0,   306, 202, C.badminton);
+    addZoneFloor(306, 0,   266, 202, C.squash);
     addZoneFloor(0,   202, 306, 190, C.cricket);
     addZoneFloor(306, 202, 150, 190, C.fitness);
     addZoneFloor(456, 202, 116, 190, C.locker);
@@ -123,8 +123,8 @@ export default function Facility3D() {
       meshes.push(m);
     }
 
-    // ── SQUASH ──
-    const SQ_X = [2, 78, 154, 230];
+    // ── SQUASH ── 3 courts, right-hand zone (x 306..572), centred in the bay
+    const SQ_X = [322, 398, 474];
     const COURT_FRONT_Z = 34;
     const COURT_BACK_Z = 154;
     const COURT_DEPTH = 120;
@@ -161,7 +161,9 @@ export default function Facility3D() {
       scene.add(line);
       lines.push(line);
     }
-    [2, 78, 154, 230, 304].forEach(addSlantedSide);
+    // One side wall per court plus a closing wall on the right, derived from
+    // SQ_X so the two can't drift apart when the court count changes.
+    [...SQ_X, SQ_X[SQ_X.length - 1] + 76].forEach(addSlantedSide);
 
     SQ_X.forEach((x) => {
       addStripe(x + 1, 34, 72, 1.5, C.line);
@@ -239,8 +241,9 @@ export default function Facility3D() {
       scene.add(topRail); meshes.push(topRail);
     });
 
-    // ── BADMINTON ── dark green lines, complete doubles markings, 3D nets
-    const BD_X = [322, 406, 490];
+    // ── BADMINTON ── 4 courts, left-hand zone (x 0..306). Dark green lines,
+    // complete doubles markings, 3D nets.
+    const BD_X = [10, 84, 158, 232];
     BD_X.forEach((bx) => {
       addStripe(bx, 32, 64, 2.0, C.bdLine);
       addStripe(bx, 180, 64, 2.0, C.bdLine);
@@ -300,15 +303,23 @@ export default function Facility3D() {
       }
     }
 
-    [232, 284, 336].forEach((lz) => {
+    // Lane width drives the matting, creases and wicket line together — they
+    // used to be seven independent literals that could silently desync.
+    const LANE_W = 64;
+    const PITCH_W = LANE_W * 0.4;      // matting strip
+    const CREASE_L = LANE_W * 0.667;   // crease line length
+    // Both lanes sit high in the 202..392 zone: past z ~330 the 78-tall front
+    // wall occludes the floor at the hero camera angle, and with only two
+    // lanes, losing one behind the wall reads as a single lane.
+    [214, 290].forEach((lz) => {
       addStripe(8, lz, 290, 1.2, 0xc9876a);
-      addStripe(8, lz + 44, 290, 1.2, 0xc9876a);
-      addStripe(8, lz, 1.2, 45, 0xc9876a);
-      addStripe(297, lz, 1.2, 45, 0xc9876a);
-      addStripe(24, lz + 14, 162, 18, C.tin);
-      addStripe(40, lz + 8, 1.6, 30, C.line);
-      addStripe(184, lz + 8, 1.6, 30, C.line);
-      const pitchZ = lz + 23;
+      addStripe(8, lz + LANE_W - 1, 290, 1.2, 0xc9876a);
+      addStripe(8, lz, 1.2, LANE_W, 0xc9876a);
+      addStripe(297, lz, 1.2, LANE_W, 0xc9876a);
+      addStripe(24, lz + (LANE_W - PITCH_W) / 2, 162, PITCH_W, C.tin);
+      addStripe(40, lz + (LANE_W - CREASE_L) / 2, 1.6, CREASE_L, C.line);
+      addStripe(184, lz + (LANE_W - CREASE_L) / 2, 1.6, CREASE_L, C.line);
+      const pitchZ = lz + LANE_W / 2;
       addWicketSet(40, pitchZ);
       addWicketSet(184, pitchZ);
     });

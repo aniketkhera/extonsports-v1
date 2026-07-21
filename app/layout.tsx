@@ -121,9 +121,9 @@ const sportsClubLd = {
   openingHours: "Mo-Su 00:00-23:59",
   sport: ["Squash", "Badminton", "Cricket", "Fitness"],
   amenityFeature: [
-    { "@type": "LocationFeatureSpecification", name: "4 all-glass squash courts", value: true },
-    { "@type": "LocationFeatureSpecification", name: "3 badminton courts", value: true },
-    { "@type": "LocationFeatureSpecification", name: "3 cricket lanes", value: true },
+    { "@type": "LocationFeatureSpecification", name: "3 all-glass squash courts", value: true },
+    { "@type": "LocationFeatureSpecification", name: "4 badminton courts", value: true },
+    { "@type": "LocationFeatureSpecification", name: "2 cricket lanes", value: true },
     { "@type": "LocationFeatureSpecification", name: "Fitness studio", value: true },
     { "@type": "LocationFeatureSpecification", name: "Pro shop", value: true },
     { "@type": "LocationFeatureSpecification", name: "Locker rooms", value: true },
