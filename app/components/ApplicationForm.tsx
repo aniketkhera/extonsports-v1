@@ -196,7 +196,7 @@ export default function ApplicationForm({ role }: { role: string }) {
         className="mt-6 inline-flex items-center gap-2.5 bg-[var(--color-ember)] hover:bg-[var(--color-ember-hi)] disabled:opacity-60 text-black text-cond text-[1rem] px-8 py-3.5 transition-colors"
         style={{ letterSpacing: "0.02em" }}
       >
-        {state === "sending" ? "Sending…" : "Submit application →"}
+        {state === "sending" ? "Sending…" : "Submit application"}
       </button>
     </form>
   );

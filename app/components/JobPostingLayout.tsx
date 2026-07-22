@@ -171,7 +171,7 @@ function ApplyButton({ href }: { href: string }) {
       className="inline-flex items-center gap-2.5 bg-[var(--color-ember)] hover:bg-[var(--color-ember-hi)] text-black text-cond text-[1rem] no-underline transition-colors"
       style={{ padding: "13px 30px", letterSpacing: "0.02em" }}
     >
-      Apply now →
+      Apply now
     </a>
   );
 }
