@@ -26,7 +26,7 @@ const openings: Opening[] = [
     brand: "excelcricket",
     brandSize: "text-[1.6rem]",
     type: "Full-time · Exempt",
-    location: "Philadelphia, PA · On-site",
+    location: "Exton, PA · On-site",
     comp: "$55,000–$70,000 / yr + incentives",
     tags: ["Founding role", "Visa sponsorship available", "High-performance"],
     blurb:
@@ -39,7 +39,7 @@ const openings: Opening[] = [
     brand: "smashshuttler",
     brandSize: "text-[2.1rem]",
     type: "Full-time · Exempt",
-    location: "Philadelphia, PA · On-site",
+    location: "Exton, PA · On-site",
     comp: "$55,000–$70,000 / yr + incentives",
     tags: ["Founding role", "Visa sponsorship available", "High-performance"],
     blurb:

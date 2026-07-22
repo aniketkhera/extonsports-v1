@@ -6,12 +6,12 @@ import JobPostingLayout, {
 export const metadata: Metadata = {
   title: "Head Badminton Coach — Careers",
   description:
-    "Founding Head Badminton Coach for a brand-new youth badminton academy in the Greater Philadelphia area. Full-time, $55,000–$70,000/yr + incentives, visa sponsorship available.",
+    "Founding Head Badminton Coach for a brand-new youth badminton academy in Exton, PA. Full-time, $55,000–$70,000/yr + incentives, visa sponsorship available.",
   alternates: { canonical: "/careers/head-badminton-coach" },
   openGraph: {
     title: "Head Badminton Coach — SmashShuttler Badminton Academy",
     description:
-      "Found a brand-new youth badminton academy from zero in Greater Philadelphia. Full-time · $55,000–$70,000/yr + incentives · visa sponsorship available.",
+      "Found a brand-new youth badminton academy from zero in Exton, PA. Full-time · $55,000–$70,000/yr + incentives · visa sponsorship available.",
     url: "https://extonsports.com/careers/head-badminton-coach",
     type: "website",
   },
@@ -25,7 +25,7 @@ const jobPostingLd = {
   "@type": "JobPosting",
   title: "Head Badminton Coach",
   description:
-    "Founding Head Badminton Coach to build a brand-new youth badminton academy in the Greater Philadelphia area from the ground up — establishing curriculum, recruiting the first cohort, completing USA Badminton club affiliation and sanctioning, and entering local and regional tournaments from year one.",
+    "Founding Head Badminton Coach to build a brand-new youth badminton academy in Exton, PA from the ground up — establishing curriculum, recruiting the first cohort, completing USA Badminton club affiliation and sanctioning, and entering local and regional tournaments from year one.",
   employmentType: "FULL_TIME",
   datePosted: "2026-07-22",
   hiringOrganization: {
@@ -38,7 +38,7 @@ const jobPostingLd = {
     "@type": "Place",
     address: {
       "@type": "PostalAddress",
-      addressLocality: "Philadelphia",
+      addressLocality: "Exton",
       addressRegion: "PA",
       addressCountry: "US",
     },
@@ -65,7 +65,7 @@ const data: JobPostingData = {
   eoeOrg: "SmashShuttler Badminton Academy",
   jsonLd: jobPostingLd,
   meta: [
-    { k: "Location", v: "Philadelphia, PA (on-site)" },
+    { k: "Location", v: "Exton, PA (on-site)" },
     { k: "Employment type", v: "Full-time · Exempt" },
     { k: "Reports to", v: "Academy Director / Board of Directors" },
     {
@@ -74,7 +74,7 @@ const data: JobPostingData = {
     },
   ],
   about: [
-    "We are launching a new youth badminton academy in the Greater Philadelphia area and are seeking a founding Head Badminton Coach to build the program from the ground up. This is a rare opportunity to establish a brand-new academy's identity, curriculum, and competitive standing rather than step into an existing structure — you will be the first technical hire and a defining voice in how the program takes shape.",
+    "We are launching a new youth badminton academy in Exton, PA and are seeking a founding Head Badminton Coach to build the program from the ground up. This is a rare opportunity to establish a brand-new academy's identity, curriculum, and competitive standing rather than step into an existing structure — you will be the first technical hire and a defining voice in how the program takes shape.",
     "You will seed the academy from zero: recruiting the first cohort of players, standing up training infrastructure, and getting the academy formally plugged into the USA Badminton ecosystem (club affiliation, sanctioning, and pathway alignment), while also driving enrollment and securing entry into local and regional tournaments from year one.",
     "This is a hands-on, entrepreneurial leadership role for someone who loves developing young athletes, is energized by building something new rather than maintaining something established, communicates well with parents and players, and wants to help grow competitive badminton in a fast-expanding U.S. market. High-performance coaching experience is a must. Visa sponsorship is available for the right candidate.",
   ],
@@ -113,7 +113,7 @@ const data: JobPostingData = {
       items: [
         "Serve as the primary point of contact for players and parents on athletic development.",
         "Foster a positive, inclusive, and disciplined team culture rooted in sportsmanship and respect.",
-        "Represent the academy at local leagues, tournaments, and community events, and help grow participation in the Philadelphia area.",
+        "Represent the academy at local leagues, tournaments, and community events, and help grow participation in the Exton area.",
       ],
     },
     {
