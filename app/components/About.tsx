@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Facility3D from "./Facility3D";
+import WhatsAppButton from "./WhatsAppButton";
 
 export default function About() {
   return (
@@ -64,15 +65,21 @@ export default function About() {
             </dd>
           </dl>
 
-          <a
-            href="https://maps.app.goo.gl/t35BeZFRtdmZeLuo9"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2.5 mt-7 border-2 border-white/30 hover:border-[var(--color-ember)] text-white text-cond-md text-[0.85rem] no-underline transition"
-            style={{ padding: "10px 24px" }}
-          >
-            Get directions →
-          </a>
+          <div className="flex flex-wrap items-center gap-3 mt-7">
+            <a
+              href="https://maps.app.goo.gl/t35BeZFRtdmZeLuo9"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2.5 border-2 border-white/30 hover:border-[var(--color-ember)] text-white text-cond-md text-[0.85rem] no-underline transition"
+              style={{ padding: "10px 24px" }}
+            >
+              Get directions →
+            </a>
+            <WhatsAppButton />
+          </div>
+          <p className="text-white/40 text-[0.8rem] mt-3">
+            Follow our WhatsApp channel for events, court news &amp; updates.
+          </p>
 
         </motion.div>
 

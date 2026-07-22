@@ -1,3 +1,5 @@
+import { WHATSAPP_CHANNEL_URL } from "./WhatsAppButton";
+
 export default function Footer() {
   const year = new Date().getFullYear();
   return (
@@ -12,6 +14,7 @@ export default function Footer() {
           links={[
             { label: "Sports", href: "/#sports" },
             { label: "Careers", href: "/#careers" },
+            { label: "WhatsApp updates", href: WHATSAPP_CHANNEL_URL },
             { label: "Get directions", href: "https://maps.app.goo.gl/pX53mpfkSt81DBnh6" },
           ]}
         />
