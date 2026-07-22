@@ -25,6 +25,17 @@ const openings: Opening[] = [
     blurb:
       "Found a brand-new youth cricket academy from zero — build the curriculum, recruit the first cohort, and get the program plugged into the USA Cricket ecosystem and competing from year one.",
   },
+  {
+    slug: "head-badminton-coach",
+    title: "Head Badminton Coach",
+    academy: "SmashShuttler Badminton Academy",
+    type: "Full-time · Exempt",
+    location: "Philadelphia, PA · On-site",
+    comp: "$55,000–$70,000 / yr + incentives",
+    tags: ["Founding role", "Visa sponsorship available", "High-performance"],
+    blurb:
+      "Found a brand-new youth badminton academy from zero — build the curriculum, recruit the first cohort, and get the program plugged into the USA Badminton ecosystem and competing from year one.",
+  },
 ];
 
 export default function Careers() {
