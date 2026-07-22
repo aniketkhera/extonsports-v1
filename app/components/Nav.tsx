@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
+
 const navLinks = [
-  { label: "Sports", href: "#sports" },
-  { label: "Academies", href: "#top" },
-  { label: "About", href: "#about" },
-  { label: "Visit", href: "#about" },
+  { label: "Sports", href: "/#sports" },
+  { label: "About", href: "/#about" },
+  { label: "Careers", href: "/#careers" },
+  { label: "Visit", href: "/#about" },
 ];
 
 export default function Nav() {
@@ -19,7 +21,7 @@ export default function Nav() {
       }}
     >
       <div className="flex items-center gap-4 min-w-0">
-        <a href="#top" className="brand-wordmark text-[1.45rem]">
+        <Link href="/" className="brand-wordmark text-[1.45rem]">
           <img
             src="/logo.png"
             alt="Exton Sports Center"
@@ -30,13 +32,13 @@ export default function Nav() {
           <span>
             EXTON <span className="brand-accent">SPORTS CENTER</span>
           </span>
-        </a>
+        </Link>
 
         {/* Coming-soon chip beside the title — persistent (nav is sticky) and
             links to the waitlist form. Hidden on the narrowest screens so it
             never crowds the wordmark; the bottom CTA carries the date there. */}
-        <a
-          href="#waitlist"
+        <Link
+          href="/#waitlist"
           className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 border border-[var(--color-ember)]/45 hover:border-[var(--color-ember)] hover:bg-[var(--color-ember)]/10 transition-colors whitespace-nowrap shrink-0"
         >
           <span className="relative flex h-[6px] w-[6px]">
@@ -46,13 +48,13 @@ export default function Nav() {
           <span className="text-mono text-[0.6rem] text-[var(--color-ember)]">
             Opening Mid-Aug 2026
           </span>
-        </a>
+        </Link>
       </div>
 
       <ul className="hidden md:flex items-stretch list-none">
         {navLinks.map((l, i) => (
           <li key={l.label}>
-            <a
+            <Link
               href={l.href}
               className={`block px-[18px] text-[0.74rem] font-semibold text-mono text-white/60 hover:text-white hover:bg-white/[0.04] transition border-r border-white/[0.06] ${
                 i === 0 ? "border-l border-white/[0.06]" : ""
@@ -60,7 +62,7 @@ export default function Nav() {
               style={{ lineHeight: "64px" }}
             >
               {l.label}
-            </a>
+            </Link>
           </li>
         ))}
       </ul>

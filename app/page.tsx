@@ -5,6 +5,7 @@ import CtaBanner from "./components/CtaBanner";
 import TrustStrip from "./components/TrustStrip";
 import Sports from "./components/Sports";
 import About from "./components/About";
+import Careers from "./components/Careers";
 import Footer from "./components/Footer";
 
 export const metadata: Metadata = {
@@ -26,6 +27,7 @@ export default function Home() {
         <TrustStrip />
         <Sports />
         <About />
+        <Careers />
       </main>
       <Footer />
       {/* CtaBanner is position:fixed — rendered outside main so it

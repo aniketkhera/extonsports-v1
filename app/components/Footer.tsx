@@ -10,17 +10,18 @@ export default function Footer() {
         <FooterCol
           title="Explore"
           links={[
-            { label: "Sports", href: "#sports" },
+            { label: "Sports", href: "/#sports" },
+            { label: "Careers", href: "/#careers" },
             { label: "Get directions", href: "https://maps.app.goo.gl/pX53mpfkSt81DBnh6" },
           ]}
         />
         <FooterCol
           title="Membership"
           links={[
-            { label: "Guest access", href: "#waitlist" },
-            { label: "Adult membership", href: "#waitlist" },
-            { label: "Junior membership", href: "#waitlist" },
-            { label: "Add-on / household", href: "#waitlist" },
+            { label: "Guest access", href: "/#waitlist" },
+            { label: "Adult membership", href: "/#waitlist" },
+            { label: "Junior membership", href: "/#waitlist" },
+            { label: "Add-on / household", href: "/#waitlist" },
           ]}
         />
         <FooterCol
