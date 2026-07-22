@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Nav from "./Nav";
 import Footer from "./Footer";
+import ApplicationForm from "./ApplicationForm";
 
 export type JobPostingData = {
   /** Small ember eyebrow above the title, e.g. "Excel Cricket Academy" */
@@ -74,13 +75,13 @@ export default function JobPostingLayout({ data }: { data: JobPostingData }) {
             ))}
           </dl>
 
-          {/* Apply CTA (top) */}
+          {/* Apply CTA (top) — jumps to the application form below */}
           <div className="mt-8 flex flex-wrap items-center gap-4">
-            <ApplyButton href={data.applyMailto} />
+            <ApplyButton href="#apply" />
             <span className="text-white/45 text-[0.82rem]">
-              Email{" "}
+              or email{" "}
               <a
-                href={`mailto:${data.applyEmail}`}
+                href={data.applyMailto}
                 className="text-[var(--color-ember)] hover:text-[var(--color-ember-hi)] transition-colors"
               >
                 {data.applyEmail}
@@ -131,20 +132,23 @@ export default function JobPostingLayout({ data }: { data: JobPostingData }) {
             <BulletList items={data.offer} />
           </Section>
 
-          <Section title="How to Apply">
+          <Section title="How to Apply" id="apply">
             <p className="mb-6">
-              Please submit a resume, a brief cover letter describing your coaching
-              philosophy, and two professional references to{" "}
+              Attach your résumé, add a short cover letter describing your coaching
+              philosophy, and tell us how to reach you. Applications are reviewed on
+              a rolling basis until the position is filled.
+            </p>
+            <ApplicationForm role={data.title} />
+            <p className="mt-4 text-white/45 text-[0.82rem]">
+              Prefer email? Send your résumé and cover letter to{" "}
               <a
-                href={`mailto:${data.applyEmail}`}
+                href={data.applyMailto}
                 className="text-[var(--color-ember)] hover:text-[var(--color-ember-hi)] transition-colors"
               >
                 {data.applyEmail}
               </a>
-              . Applications are reviewed on a rolling basis until the position is
-              filled.
+              .
             </p>
-            <ApplyButton href={data.applyMailto} />
           </Section>
 
           {/* EOE */}
@@ -174,13 +178,15 @@ function ApplyButton({ href }: { href: string }) {
 
 function Section({
   title,
+  id,
   children,
 }: {
   title: string;
+  id?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="mt-12">
+    <section id={id} className="mt-12 scroll-mt-24">
       <h2
         className="text-cond text-white mb-5"
         style={{ fontSize: "clamp(1.7rem, 3vw, 2.2rem)" }}
