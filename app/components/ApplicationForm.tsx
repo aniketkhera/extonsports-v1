@@ -142,7 +142,7 @@ export default function ApplicationForm({ role }: { role: string }) {
             onClick={() => fileRef.current?.click()}
             className="inline-flex items-center gap-2 border border-[var(--color-line-2)] hover:border-[var(--color-ember)] text-white/80 hover:text-white text-cond-md text-[0.72rem] px-4 py-2.5 transition-colors"
           >
-            ↑ Choose file
+            Choose file
           </button>
           <span className="text-[0.82rem] text-white/55 truncate max-w-[220px]">
             {fileName || "PDF, Word or text · max 4 MB"}
