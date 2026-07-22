@@ -1,11 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { BrandWordmark } from "./BrandWordmarks";
 
 type Opening = {
   slug: string;
   title: string;
   academy: string;
+  /** Partner-academy brand — rendered as its real logo wordmark */
+  brand: "excelcricket" | "smashshuttler";
+  /** Tailwind font-size class for the logo (fonts scale differently) */
+  brandSize: string;
   type: string;
   location: string;
   comp: string;
@@ -18,6 +23,8 @@ const openings: Opening[] = [
     slug: "head-cricket-coach",
     title: "Head Cricket Coach",
     academy: "Excel Cricket Academy",
+    brand: "excelcricket",
+    brandSize: "text-[1.6rem]",
     type: "Full-time · Exempt",
     location: "Philadelphia, PA · On-site",
     comp: "$55,000–$70,000 / yr + incentives",
@@ -29,6 +36,8 @@ const openings: Opening[] = [
     slug: "head-badminton-coach",
     title: "Head Badminton Coach",
     academy: "SmashShuttler Badminton Academy",
+    brand: "smashshuttler",
+    brandSize: "text-[2.1rem]",
     type: "Full-time · Exempt",
     location: "Philadelphia, PA · On-site",
     comp: "$55,000–$70,000 / yr + incentives",
@@ -91,8 +100,12 @@ export default function Careers() {
               <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 md:gap-10 md:items-center">
                 {/* Left — role details */}
                 <div>
-                  <div className="text-mono text-[0.68rem] text-[var(--color-ember)] mb-2.5">
-                    {o.academy}
+                  <div className="mb-3.5">
+                    <BrandWordmark
+                      brand={o.brand}
+                      title={o.academy}
+                      className={o.brandSize}
+                    />
                   </div>
                   <h3
                     className="text-cond text-white mb-3 group-hover:text-[var(--color-ember)] transition-colors"
