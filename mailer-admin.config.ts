@@ -25,6 +25,7 @@ export const config = defineConfig({
     replyTo: 'info@extonsports.com',
     contactEmail: 'info@extonsports.com',
     signupContext: 'you signed up at extonsports.com',
+    logoUrl: 'https://extonsports.com/logo.png',
   },
   theme: {
     accent: '#F37A4A',
