@@ -146,7 +146,7 @@ export default function Careers() {
                     className="inline-flex items-center gap-2.5 border-2 border-white/30 group-hover:border-[var(--color-ember)] group-hover:bg-[var(--color-ember)] group-hover:text-black text-white text-cond-md text-[0.82rem] transition-colors"
                     style={{ padding: "11px 24px" }}
                   >
-                    View role &amp; apply →
+                    View role &amp; apply
                   </span>
                 </div>
               </div>
