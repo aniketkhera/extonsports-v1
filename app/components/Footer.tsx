@@ -1,4 +1,4 @@
-import { WHATSAPP_CHANNEL_URL } from "./WhatsAppButton";
+import WhatsAppButton from "./WhatsAppButton";
 
 export default function Footer() {
   const year = new Date().getFullYear();
@@ -14,7 +14,6 @@ export default function Footer() {
           links={[
             { label: "Sports", href: "/#sports" },
             { label: "Careers", href: "/#careers" },
-            { label: "WhatsApp updates", href: WHATSAPP_CHANNEL_URL },
             { label: "Get directions", href: "https://maps.app.goo.gl/pX53mpfkSt81DBnh6" },
           ]}
         />
@@ -35,6 +34,14 @@ export default function Footer() {
             { label: "Disclaimer", href: "/disclaimer" },
           ]}
         />
+      </div>
+
+      {/* Follow on WhatsApp — centered CTA */}
+      <div
+        className="flex justify-center"
+        style={{ padding: "0 clamp(20px,4vw,48px) 40px" }}
+      >
+        <WhatsAppButton label="Follow us on WhatsApp" />
       </div>
 
       {/* Bottom bar — centered */}
