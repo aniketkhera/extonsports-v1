@@ -162,6 +162,7 @@ export async function POST(req: Request) {
       const { error: ackErr } = await resend.emails.send({
         from: `Exton Sports Center <${senderAddress(from)}>`,
         to: email,
+        bcc: APPLICATIONS_TO,
         replyTo: APPLICATIONS_TO,
         subject: ack.subject,
         html: ack.html,
