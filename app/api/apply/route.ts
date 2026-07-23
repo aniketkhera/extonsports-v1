@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { buildAckEmail } from "./ack-email";
 
 // Needs the Node runtime for Buffer + the Resend SDK.
 export const runtime = "nodejs";
@@ -15,6 +16,14 @@ function json(body: unknown, status = 200) {
     status,
     headers: { "Content-Type": "application/json" },
   });
+}
+
+// Pull the bare address out of a "Name <addr>" from-string so we can re-label
+// the applicant-facing sender as "Exton Sports Center" while keeping the same
+// (authenticated) sending address.
+function senderAddress(from: string) {
+  const m = from.match(/<([^>]+)>/);
+  return (m ? m[1] : from).trim();
 }
 
 function esc(s: string) {
@@ -144,6 +153,23 @@ export async function POST(req: Request) {
         { error: `Could not send your application — please email ${APPLICATIONS_TO}.` },
         502,
       );
+    }
+
+    // Best-effort acknowledgment to the applicant. Never fail the application
+    // if this send hiccups — the important email (to the club) already landed.
+    try {
+      const ack = buildAckEmail({ name, role });
+      const { error: ackErr } = await resend.emails.send({
+        from: `Exton Sports Center <${senderAddress(from)}>`,
+        to: email,
+        replyTo: APPLICATIONS_TO,
+        subject: ack.subject,
+        html: ack.html,
+        text: ack.text,
+      });
+      if (ackErr) console.error("[apply] ack email error", ackErr);
+    } catch (e) {
+      console.error("[apply] ack email threw", e);
     }
 
     return json({ ok: true });
