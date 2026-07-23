@@ -53,10 +53,10 @@ export function buildAckEmail(args: { name: string; role: string }): {
   <meta name="supported-color-schemes" content="light only" />
   <title>${esc(subject)}</title>
 </head>
-<body style="margin:0;padding:0;background:#FDF4EE;">
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#FDF4EE;">
-    <tr><td align="center" style="padding:28px 12px;">
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;width:100%;background:#FFFFFF;border:1px solid #E8D5C8;border-radius:14px;overflow:hidden;">
+<body style="margin:0;padding:0;background:#0E1825;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#0E1825;">
+    <tr><td align="center" style="padding:32px 12px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;width:100%;background:#FFFFFF;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.35);">
 
         <tr><td align="center" style="padding:28px 32px 14px 32px;border-bottom:1px solid #F4E8DD;">
           <img src="${LOGO_URL}" width="64" height="64" alt="Exton Sports Center" style="display:block;border:0;outline:none;text-decoration:none;width:64px;height:64px;border-radius:50%;margin:0 auto 10px auto;" />
@@ -70,13 +70,13 @@ export function buildAckEmail(args: { name: string; role: string }): {
           <p style="margin:0;font:16px/1.6 Arial,Helvetica,sans-serif;color:#222222;">Thanks again for your interest in helping us build something new.</p>
         </td></tr>
 
-        <tr><td style="padding:22px 32px 26px 32px;border-top:1px solid #F4E8DD;background:#FDF4EE;">
+        <tr><td style="padding:22px 32px 26px 32px;background:#F89B72;">
           <p style="margin:0 0 6px 0;font:700 14px Arial,Helvetica,sans-serif;color:#0D0D0D;">&mdash; The Exton Sports Center Team</p>
-          <p style="margin:0;font:12px/1.65 Arial,Helvetica,sans-serif;color:#777777;">
+          <p style="margin:0;font:12px/1.65 Arial,Helvetica,sans-serif;color:rgba(0,0,0,0.62);">
             ${esc(ADDRESS)}<br />
-            <a href="https://extonsports.com" style="color:#777777;text-decoration:underline;">extonsports.com</a>
+            <a href="https://extonsports.com" style="color:rgba(0,0,0,0.72);text-decoration:underline;">extonsports.com</a>
             &nbsp;&middot;&nbsp;
-            <a href="mailto:${CONTACT_EMAIL}" style="color:#777777;text-decoration:underline;">${CONTACT_EMAIL}</a>
+            <a href="mailto:${CONTACT_EMAIL}" style="color:rgba(0,0,0,0.72);text-decoration:underline;">${CONTACT_EMAIL}</a>
           </p>
         </td></tr>
 
