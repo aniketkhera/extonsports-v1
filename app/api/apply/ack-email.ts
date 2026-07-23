@@ -53,14 +53,14 @@ export function buildAckEmail(args: { name: string; role: string }): {
   <meta name="supported-color-schemes" content="light only" />
   <title>${esc(subject)}</title>
 </head>
-<body style="margin:0;padding:0;background:#0E1825;">
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#0E1825;">
+<body style="margin:0;padding:0;background:#E8EAED;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#E8EAED;">
     <tr><td align="center" style="padding:32px 12px;">
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;width:100%;background:#FFFFFF;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.35);">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;width:100%;background:#FFFFFF;border:1px solid #DDDFE3;border-radius:14px;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,0.08);">
 
-        <tr><td align="center" style="padding:28px 32px 14px 32px;border-bottom:1px solid #F4E8DD;">
+        <tr><td align="center" style="padding:28px 32px 18px 32px;background:#F89B72;">
           <img src="${LOGO_URL}" width="64" height="64" alt="Exton Sports Center" style="display:block;border:0;outline:none;text-decoration:none;width:64px;height:64px;border-radius:50%;margin:0 auto 10px auto;" />
-          <div style="font:800 13px/1 Arial,Helvetica,sans-serif;letter-spacing:0.16em;text-transform:uppercase;color:#F37A4A;">Exton Sports Center</div>
+          <div style="font:800 13px/1 Arial,Helvetica,sans-serif;letter-spacing:0.16em;text-transform:uppercase;color:#0D0D0D;">Exton Sports Center</div>
         </td></tr>
 
         <tr><td style="padding:26px 32px 8px 32px;">
