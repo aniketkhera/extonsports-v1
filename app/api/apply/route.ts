@@ -10,6 +10,15 @@ export const dynamic = "force-dynamic";
 const MAX_BYTES = 4 * 1024 * 1024;
 const ALLOWED_EXT = ["pdf", "doc", "docx", "rtf", "txt", "odt", "pages"];
 const APPLICATIONS_TO = process.env.APPLICATIONS_EMAIL || "info@extonsports.com";
+// Paul is copied on every application (badminton + cricket both post here).
+// Kept SEPARATE from APPLICATIONS_TO so the user-facing "please email …"
+// fallbacks and the acknowledgment's reply-to stay one canonical address.
+const APPLICATIONS_CC = process.env.APPLICATIONS_CC_EMAIL || "paul@extonsports.com";
+// De-duped so a custom APPLICATIONS_EMAIL that already names Paul can't
+// deliver the same résumé twice.
+const APPLICATIONS_RECIPIENTS = Array.from(
+  new Set([APPLICATIONS_TO, APPLICATIONS_CC].filter(Boolean)),
+);
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -139,7 +148,7 @@ export async function POST(req: Request) {
 
     const { error } = await resend.emails.send({
       from,
-      to: APPLICATIONS_TO,
+      to: APPLICATIONS_RECIPIENTS,
       replyTo: email,
       subject: `Application: ${role} — ${name}`,
       html,
