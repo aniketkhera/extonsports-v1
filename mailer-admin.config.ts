@@ -44,6 +44,6 @@ export const config = defineConfig({
     { key: 'sport', namespace: 'sport:', label: 'Sport', values: ['cricket', 'squash', 'badminton', 'turf', 'fitness'] },
   ],
   timezone: 'America/New_York',
-  notifyEmail: 'info@extonsports.com',
+  notifyEmail: ['info@extonsports.com', 'aniket@orangish.io', 'paul@orangish.io'],
   welcomeEmails: true,
 })
