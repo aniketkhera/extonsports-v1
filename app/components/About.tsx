@@ -49,6 +49,13 @@ export default function About() {
               >
                 609-906-4271
               </a>
+              <span className="text-white/35"> · </span>
+              <a
+                href="tel:6097214299"
+                className="hover:text-[var(--color-ember)] transition"
+              >
+                609-721-4299
+              </a>
             </dd>
             <dt className="text-mono text-[0.7rem] text-white/35">Email</dt>
             <dd className="text-white/80 text-[0.92rem]">
