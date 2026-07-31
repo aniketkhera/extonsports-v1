@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Barlow, Oswald, Comfortaa, Caveat, Exo_2 } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
-import TrackBeacon from "./components/TrackBeacon";
+import TrackBeacon from "mailer-admin/TrackBeacon";
 import WhatsAppFab from "./components/WhatsAppFab";
 import "./globals.css";
 
