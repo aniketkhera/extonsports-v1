@@ -108,7 +108,7 @@ const sportsClubLd = {
   logo: "https://extonsports.com/logo.png",
   image: "https://extonsports.com/logo.png",
   email: "info@extonsports.com",
-  telephone: "+1-609-906-4271",
+  telephone: "+1-609-619-0999",
   description:
     "Members-only multi-sport club in Exton, PA with squash, badminton, cricket, indoor turf, fitness and a pro shop. Open 24/7.",
   address: {
