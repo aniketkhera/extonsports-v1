@@ -36,17 +36,19 @@ export default function Nav() {
 
         {/* Coming-soon chip beside the title — persistent (nav is sticky) and
             links to the waitlist form. Hidden on the narrowest screens so it
-            never crowds the wordmark; the bottom CTA carries the date there. */}
+            never crowds the wordmark; the bottom CTA carries the date there.
+            The ember breath (.opening-glow) drives border-color, so the border
+            utility here is only the width/style — hover keeps the fill tint. */}
         <Link
           href="/#waitlist"
-          className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 border border-[var(--color-ember)]/45 hover:border-[var(--color-ember)] hover:bg-[var(--color-ember)]/10 transition-colors whitespace-nowrap shrink-0"
+          className="opening-glow hidden sm:inline-flex items-center gap-2 px-3 py-1.5 border border-[var(--color-ember)]/45 hover:bg-[var(--color-ember)]/10 transition-colors whitespace-nowrap shrink-0"
         >
           <span className="relative flex h-[6px] w-[6px]">
             <span className="absolute inline-flex h-full w-full rounded-full bg-[var(--color-ember)] opacity-70 animate-ping" />
             <span className="relative inline-flex rounded-full h-[6px] w-[6px] bg-[var(--color-ember)]" />
           </span>
-          <span className="text-mono text-[0.6rem] text-[var(--color-ember)]">
-            Opening Mid-Aug 2026
+          <span className="opening-glow-text text-mono text-[0.6rem] text-[var(--color-ember)]">
+            Opening Late-Aug 2026
           </span>
         </Link>
       </div>
