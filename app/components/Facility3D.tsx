@@ -7,11 +7,11 @@ import * as THREE from "three";
  * Facility3D — rotating 3D rendering of the Exton Sports Center.
  *
  * Replaces the older animated-smiley SVG floor plan with an actual
- * isometric building view: outer shell, 3 squash courts on the right with
- * slanting translucent side walls and glass front + back walls (door on the
- * back, facing the fitness and locker zones), 4 badminton courts on the left
- * with standing nets and regulation court markings, 2 cricket lanes with
- * stumps + bails, and a small locker counter cluster.
+ * isometric building view: outer shell, 4 squash courts with slanting
+ * translucent side walls and glass front + back walls (door on the back
+ * facing the cricket lanes), 3 badminton courts with standing nets and
+ * regulation court markings, 3 cricket pitches with stumps + bails, and
+ * a small locker counter cluster.
  *
  * The canvas is transparent so the parent container's salmon + green
  * gradient backdrop reads through the floor.
@@ -87,8 +87,8 @@ export default function Facility3D() {
       scene.add(m);
       meshes.push(m);
     }
-    addZoneFloor(0,   0,   306, 202, C.badminton);
-    addZoneFloor(306, 0,   266, 202, C.squash);
+    addZoneFloor(0,   0,   306, 202, C.squash);
+    addZoneFloor(306, 0,   266, 202, C.badminton);
     addZoneFloor(0,   202, 306, 190, C.cricket);
     addZoneFloor(306, 202, 150, 190, C.fitness);
     addZoneFloor(456, 202, 116, 190, C.locker);
@@ -123,8 +123,9 @@ export default function Facility3D() {
       meshes.push(m);
     }
 
-    // ── SQUASH ── 3 courts, right-hand zone (x 306..572), centred in the bay
-    const SQ_X = [322, 398, 474];
+    // ── SQUASH ── 4 courts, left-hand zone (x 0..306) at the far end, directly
+    // opposite the cricket lanes so the back-wall doors open toward them.
+    const SQ_X = [2, 78, 154, 230];
     const COURT_FRONT_Z = 34;
     const COURT_BACK_Z = 154;
     const COURT_DEPTH = 120;
@@ -162,8 +163,10 @@ export default function Facility3D() {
       lines.push(line);
     }
     // One side wall per court plus a closing wall on the right, derived from
-    // SQ_X so the two can't drift apart when the court count changes.
-    [...SQ_X, SQ_X[SQ_X.length - 1] + 76].forEach(addSlantedSide);
+    // SQ_X so the two can't drift apart when the court count changes. The
+    // closing wall sits 2 units inside the 76-unit court pitch so it stays
+    // within the squash bay (x 0..306) instead of straddling the badminton floor.
+    [...SQ_X, SQ_X[SQ_X.length - 1] + 74].forEach(addSlantedSide);
 
     SQ_X.forEach((x) => {
       addStripe(x + 1, 34, 72, 1.5, C.line);
@@ -241,9 +244,9 @@ export default function Facility3D() {
       scene.add(topRail); meshes.push(topRail);
     });
 
-    // ── BADMINTON ── 4 courts, left-hand zone (x 0..306). Dark green lines,
-    // complete doubles markings, 3D nets.
-    const BD_X = [10, 84, 158, 232];
+    // ── BADMINTON ── 3 courts, right-hand zone (x 306..572) by the entrance.
+    // Dark green lines, complete doubles markings, 3D nets.
+    const BD_X = [322, 406, 490];
     BD_X.forEach((bx) => {
       addStripe(bx, 32, 64, 2.0, C.bdLine);
       addStripe(bx, 180, 64, 2.0, C.bdLine);
@@ -305,22 +308,25 @@ export default function Facility3D() {
 
     // Lane width drives the matting, creases and wicket line together — they
     // used to be seven independent literals that could silently desync.
-    const LANE_W = 64;
+    const LANE_W = 45;
     const PITCH_W = LANE_W * 0.4;      // matting strip
     const CREASE_L = LANE_W * 0.667;   // crease line length
-    // Both lanes sit high in the 202..392 zone so the 78-tall south wall can't
-    // swallow one — with only two lanes, losing one behind the wall reads as a
-    // single lane while the rest of the page says two.
+    // All three lanes sit as high in the 202..392 zone as they fit, so the
+    // 78-tall south wall can't swallow one — losing a lane behind the wall
+    // reads as two while the stat tiles, Sports copy and JSON-LD all say three.
     //
     // The camera orbits, so the occlusion boundary moves. A floor point at z is
     // hidden when z > (camHeight * 389 - 78 * zc) / (camHeight - 78), where
-    // zc = cz + camDist * sin(angle). That bottoms out at z = 305.4 when the
-    // camera swings side-on (zc = 1056) — NOT the ~337 you get at the hero
-    // angle alone. Two 64-wide lanes need 128 units but only ~103 sit above
-    // 305.4, so both cannot be fully visible at every angle; these positions
-    // instead guarantee lane 2's matting is never *entirely* hidden (worst case
-    // ~17% clipped), which is what preserves the two-lane read.
-    [206, 276].forEach((lz) => {
+    // zc = cz + camDist * sin(angle). It bottoms out at z = 305.4 with the
+    // camera due south (zc = 1056) and sits at 336.9 at the hero angle — which
+    // is why the old 232/284/336 spacing rendered as TWO lanes even head-on:
+    // lane 3 started exactly at the hero boundary and never cleared it.
+    //
+    // Three 45-wide lanes need 135 units and only ~103 sit above 305.4, so they
+    // cannot all be whole at every angle. A 48-unit pitch from z 206 keeps lanes
+    // 1 and 2 clear through the entire orbit and starts lane 3 at 302, so all
+    // three read at the hero angle and lane 3 is never *entirely* gone.
+    [206, 254, 302].forEach((lz) => {
       addStripe(8, lz, 290, 1.2, 0xc9876a);
       addStripe(8, lz + LANE_W - 1, 290, 1.2, 0xc9876a);
       addStripe(8, lz, 1.2, LANE_W, 0xc9876a);

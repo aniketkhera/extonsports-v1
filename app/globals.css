@@ -165,6 +165,42 @@ html { scroll-behavior: smooth; }
   100% { transform: translate(35px, 0px); opacity: 0; }
 }
 
+/* Opening-date chip — a slow ember breath so the launch date catches the eye
+   without competing with the nav wordmark. The halo lives on box-shadow and the
+   text on text-shadow so both the border and the type glow together. */
+@keyframes ember-breathe {
+  0%, 100% {
+    box-shadow: 0 0 6px rgba(248, 155, 114, 0.25), 0 0 14px rgba(248, 155, 114, 0.10);
+    border-color: rgba(248, 155, 114, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(248, 155, 114, 0.65), 0 0 28px rgba(248, 155, 114, 0.30);
+    border-color: rgba(248, 155, 114, 1);
+  }
+}
+@keyframes ember-breathe-text {
+  0%, 100% { text-shadow: 0 0 5px rgba(248, 155, 114, 0.30); }
+  50%      { text-shadow: 0 0 11px rgba(248, 155, 114, 0.85); }
+}
+.opening-glow {
+  animation: ember-breathe 2.8s ease-in-out infinite;
+}
+.opening-glow-text {
+  animation: ember-breathe-text 2.8s ease-in-out infinite;
+}
+/* Respect users who ask for less motion: keep the glow, drop the pulse. */
+@media (prefers-reduced-motion: reduce) {
+  .opening-glow {
+    animation: none;
+    box-shadow: 0 0 10px rgba(248, 155, 114, 0.45), 0 0 22px rgba(248, 155, 114, 0.20);
+    border-color: rgba(248, 155, 114, 0.85);
+  }
+  .opening-glow-text {
+    animation: none;
+    text-shadow: 0 0 8px rgba(248, 155, 114, 0.55);
+  }
+}
+
 /* ── Shared chrome utilities ───────────────────────────────────── */
 .label-chip {
   display: inline-flex;
