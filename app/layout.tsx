@@ -3,6 +3,7 @@ import { Barlow, Oswald, Comfortaa, Caveat, Exo_2 } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 import TrackBeacon from "mailer-admin/TrackBeacon";
 import WhatsAppFab from "./components/WhatsAppFab";
+import { LEGAL_NAME } from "@/lib/legal";
 import "./globals.css";
 
 const cond = Oswald({
@@ -104,6 +105,12 @@ const sportsClubLd = {
   "@context": "https://schema.org",
   "@type": "SportsClub",
   name: "Exton Sports Center",
+  // The operating company. Present here so a reviewer viewing source can tie this domain
+  // to the entity on the messaging Brand record without it appearing anywhere visible on
+  // the homepage. `address` below stays the FACILITY — that is what a SportsClub's
+  // address means — while the company's registered address is on the legal pages.
+  // See lib/legal.ts.
+  legalName: LEGAL_NAME,
   url: "https://extonsports.com",
   logo: "https://extonsports.com/logo.png",
   image: "https://extonsports.com/logo.png",
