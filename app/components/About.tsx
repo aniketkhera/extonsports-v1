@@ -1,8 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
 import Facility3D from "./Facility3D";
 import WhatsAppButton from "./WhatsAppButton";
+import { LEGAL_NAME, CONTACT_PHONE, CONTACT_PHONE_E164 } from "@/lib/legal";
 
 export default function About() {
   return (
@@ -44,11 +46,42 @@ export default function About() {
             <dt className="text-mono text-[0.7rem] text-white/35">Phone</dt>
             <dd className="text-white/80 text-[0.92rem]">
               <a
-                href="tel:4842522523"
+                href={`tel:${CONTACT_PHONE_E164}`}
                 className="hover:text-[var(--color-ember)] transition"
               >
-                484-252-2523
+                {CONTACT_PHONE}
               </a>
+              {/*
+                ⚠️ A2P 10DLC DISCLOSURE — THIS MUST STAY BESIDE THE NUMBER.
+                Twilio's campaign pre-check refused the sibling SquashTigers registration
+                until the consent language sat on the page where the number is ADVERTISED,
+                not only on /sms. A reviewer opens the homepage, finds the number, and
+                looks for consent right there. Moving this into a footer or behind a link
+                re-breaks the registration.
+
+                Every clause below is load-bearing and matches app/sms/page.tsx word for
+                word: agreeing to receive texts, the named entity, what we send, frequency,
+                cost, STOP and HELP. Change them together or not at all.
+
+                Note the explicit space expression after LEGAL_NAME. JSX drops the literal
+                space that follows an expression, which first rendered "EXTON LLCabout".
+                For the same reason, do not move this note inside the paragraph: an
+                expression container eats the whitespace on BOTH sides of itself, and a
+                comment placed mid-sentence turned "text message replies" into
+                "text messagereplies".
+              */}
+              <p className="mt-2 text-white/40 text-[0.72rem] leading-[1.55] max-w-[46ch]">
+                By calling or texting this number you are agreeing to receive text message
+                replies from {LEGAL_NAME}{" "}
+                about membership, visits and court availability, at the number you
+                contacted us from. We only reply and never text first.
+                Message frequency varies. Msg &amp; data rates may apply. Reply STOP to opt
+                out, or HELP for help. See our{" "}
+                <Link href="/sms" className="underline hover:text-[var(--color-ember)] transition">
+                  SMS Terms
+                </Link>
+                .
+              </p>
             </dd>
             <dt className="text-mono text-[0.7rem] text-white/35">Email</dt>
             <dd className="text-white/80 text-[0.92rem]">
