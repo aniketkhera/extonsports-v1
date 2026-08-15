@@ -12,7 +12,13 @@ import { LEGAL_NAME, LEGAL_ADDRESS_LINE, CONTACT_PHONE, CONTACT_EMAIL } from '@/
 // own right, and it is also the shape of failure that contributed to Orangish's
 // "unverifiable website" rejection, where /about and /contact were dead links.
 
-export type Section = { title: string; body: string }
+// `samples` renders as message bubbles rather than prose. They exist for the same two
+// audiences as everything else here: a customer seeing what to expect, and a reviewer
+// checking that the sample messages filed with the campaign are the ones actually
+// published. THEY MUST STAY WORD FOR WORD IDENTICAL TO THE CAMPAIGN SUBMISSION —
+// comparing the two is a mechanical check a reviewer can run in seconds, and a mismatch
+// is precisely what "unverifiable website" (error 30891) means.
+export type Section = { title: string; body?: string; samples?: string[] }
 
 export default function LegalPage({
   title, intro, updated, sections,
@@ -43,7 +49,18 @@ export default function LegalPage({
         {sections.map((s, i) => (
           <section key={i} className="mb-9">
             <h2 className="text-[1.05rem] font-semibold mb-3 text-white/90">{s.title}</h2>
-            <p className="text-white/55 text-[0.92rem] leading-[1.8] whitespace-pre-line">{s.body}</p>
+            {s.body && (
+              <p className="text-white/55 text-[0.92rem] leading-[1.8] whitespace-pre-line">{s.body}</p>
+            )}
+            {s.samples?.map((msg, j) => (
+              <p
+                key={j}
+                className="text-white/70 text-[0.9rem] leading-[1.7] bg-[#111] border border-[#1f1f1f] rounded-xl mt-3"
+                style={{ padding: '13px 16px' }}
+              >
+                {msg}
+              </p>
+            ))}
           </section>
         ))}
 
