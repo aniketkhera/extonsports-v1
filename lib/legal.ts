@@ -7,7 +7,19 @@
 //
 // ⚠️ LEGAL_NAME MUST MATCH THE IRS RECORD EXACTLY — TCR matches the string, and a Brand
 // cannot be edited after registration.
-export const LEGAL_NAME = 'SQUASH TIGERS EXTON, LLC'
+//
+// NO COMMA, NO TRAILING PERIOD. Read off the CP 575 EIN confirmation letter on
+// 2026-08-15, which prints it as a single line: SQUASH TIGERS EXTON LLC.
+//
+// The comma form was here first and was wrong. Twilio's own field help is the rule to
+// follow — "enter the exact Legal Company Name as shown on your CP 575" — so check the
+// letter rather than the sibling site or this comment before changing it. The related
+// entity behind squashtigers.com had the identical mistake, in the identical place, and
+// its letter reads SQUASH TIGERS LLC.
+//
+// Unlike squashtigers.com, this value has one definition and no second copy: the
+// Organization JSON-LD in app/layout.tsx imports it rather than repeating the string.
+export const LEGAL_NAME = 'SQUASH TIGERS EXTON LLC'
 
 // Registered address of the entity, NOT the facility.
 //
