@@ -29,6 +29,23 @@ const SECTIONS: Section[] = [
     body: `By contacting us first. Calling or texting ${CONTACT_PHONE} is what tells us you would like a reply, and a reply is all we send.\n\nThere is no sign-up form, no keyword to text in, and no box to tick. We never add a number that has not contacted us, we never buy or rent phone numbers, and we never accept numbers collected by anyone else on our behalf.`,
   },
   {
+    // ⚠️ THESE THREE ARE THE SAMPLE MESSAGES FILED WITH THE A2P CAMPAIGN. A reviewer
+    // compares the submission against this page, so they must stay word for word
+    // identical to what was filed — edit here and the campaign has to be resubmitted to
+    // match, not the other way round.
+    //
+    // Each is a REPLY, because that is the whole consent model: nothing goes out to
+    // anyone who did not contact us first. A sample that reads like an announcement
+    // would contradict the Message Flow on the same page.
+    title: 'What our messages look like',
+    body: 'Every message we send is an answer to something you asked. Real examples:',
+    samples: [
+      `Hi — thanks for asking about Exton Sports Center. We open in late August with badminton, cricket and squash at 4 Tabas Lane. Happy to answer anything before then. Reply STOP to opt out.`,
+      `Yes, we can show you around before we open — Saturday mornings work best. Tell me a time that suits and I'll meet you at 4 Tabas Lane. Reply STOP to opt out.`,
+      `Thanks for calling — sorry I missed you. Call back on ${CONTACT_PHONE} whenever suits, or reply here and I'll pick it up. Reply STOP to opt out.`,
+    ],
+  },
+  {
     title: 'How often we message',
     body: 'Only in response to you. Message frequency varies and depends entirely on the conversation you started — most enquiries are answered in one or two messages.',
   },
