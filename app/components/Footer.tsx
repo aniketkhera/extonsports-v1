@@ -1,9 +1,139 @@
 import WhatsAppButton from "./WhatsAppButton";
+import { CONTACT_EMAIL } from "../../lib/legal";
+import { RATE_BANDS, BAND_BLURB, capFor, CAP_HOURS, SPORT_ORDER } from "../../lib/rates";
+import { playerCapsOrFallback } from "../../lib/club-pricing";
 
-export default function Footer() {
+export default async function Footer() {
   const year = new Date().getFullYear();
+  // Read from the platform, which owns these rows. Falls back to the local
+  // copy when it cannot be reached — see lib/club-pricing.ts.
+  const { caps } = await playerCapsOrFallback();
+  const sports = SPORT_ORDER.filter((s) => caps[s]);
   return (
-    <footer className="bg-[#050505] border-t border-[#161616]">
+    <footer className="bg-[var(--footer-bg)] border-t border-[var(--footer-line)]">
+      {/* ── HOW PRICING WORKS ────────────────────────────────────────────
+          The band hours live here, not in the hero, and not under the price
+          table's column headings where they were tried first. A price table is
+          scanned — "what does squash cost" — and six time windows wedged into
+          its header made that harder, not easier. Down here there is room to
+          say what a band IS rather than just when it runs, which is the part a
+          first-time visitor actually needs.
+
+          Everything is derived from lib/rates.ts, so the hours, the caps and
+          the hero's table cannot disagree with each other. They already did
+          once: this page advertised weekday peak as 4–9pm while the club
+          charged peak until 10pm, and weekend peak as 8am–4pm against an
+          actual 8am–8pm. Every gap under-stated the price. */}
+      <section
+        className="mx-auto max-w-[1280px] border-b border-[var(--footer-line)]"
+        style={{ padding: "48px clamp(20px,4vw,48px) 44px" }}
+        aria-labelledby="pricing-explainer"
+      >
+        <h3
+          id="pricing-explainer"
+          className="text-mono text-[0.65rem] text-white/35 mb-4 tracking-widest uppercase"
+        >
+          How pricing works
+        </h3>
+        <p className="text-white/55 text-sm max-w-[62ch] mb-4 leading-relaxed">
+          Courts are booked by the hour and priced by when you play. One rate
+          covers the whole court — nobody pays separately, up to the limit for
+          that time.
+        </p>
+        {/* Sits with the pricing rather than buried in the legal pages. It is a
+            condition of playing, and somebody reading "one rate covers the
+            whole court" should learn about it here rather than at the door. */}
+        <p className="text-white/55 text-sm max-w-[62ch] mb-8 leading-relaxed">
+          <span className="text-white/80">Everyone playing needs their own profile.</span>{" "}
+          Add them when you book and they get a link to set one up — it takes a
+          minute. It is how the club knows who was on court, and how everyone
+          signs the same waiver, which is what protects all of you if somebody
+          gets hurt.
+        </p>
+
+        <dl className="grid gap-x-10 gap-y-7 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+          {RATE_BANDS.map((b) => (
+            <div key={b.key}>
+              <dt className="text-mono text-[0.62rem] tracking-widest uppercase text-white/45 mb-2">
+                {b.label}
+              </dt>
+              <dd className="m-0">
+                <span className="block text-white/70 text-sm">
+                  Mon&ndash;Fri {b.weekday}
+                </span>
+                <span className="block text-white/70 text-sm">
+                  Sat/Sun {b.weekend}
+                </span>
+                <span className="block text-white/40 text-[0.78rem] mt-2 leading-relaxed">
+                  {BAND_BLURB[b.key]}
+                </span>
+              </dd>
+            </div>
+          ))}
+        </dl>
+
+        <div className="flex flex-col gap-3 text-[0.82rem] text-white/45 max-w-[68ch] leading-relaxed">
+          <p className="m-0">
+            <span className="text-white/65">Friday and Saturday nights are different.</span>{" "}
+            From 10pm to midnight those two nights are charged at the off-peak
+            rate rather than late night.
+          </p>
+          <p className="m-0">
+            <span className="text-white/65">How many can share a court depends on the band and on how long you book.</span>{" "}
+            A longer booking is people rotating on and off, so it takes more of
+            them. The person who books counts towards the total.
+          </p>
+
+          {/* A table, not a sentence. The rule has two dimensions now — band and
+              duration — and the prose version had to say "that doubles", which
+              was true of squash and of nothing else. */}
+          <div className="overflow-x-auto -mx-1 px-1">
+            <table className="w-full max-w-[430px] border-collapse text-[0.8rem]">
+              <caption className="text-left text-mono text-[0.56rem] tracking-widest uppercase text-white/35 pb-2">
+                Players per court, including you
+              </caption>
+              <thead>
+                <tr className="text-white/45">
+                  <th scope="col" className="text-left font-normal py-1 pr-3" />
+                  {CAP_HOURS.map((h) => (
+                    <th key={h} scope="col" className="text-right font-normal py-1 px-2 tabular-nums">
+                      {h} hr{h > 1 ? "s" : ""}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {sports.map((sport) => (
+                  <tr key={sport} className="border-t border-[var(--footer-line)]">
+                    <th scope="row" className="text-left font-normal text-white/65 py-[5px] pr-3 whitespace-nowrap">
+                      {sport}
+                    </th>
+                    {CAP_HOURS.map((h) => (
+                      <td key={h} className="text-right py-[5px] px-2 tabular-nums text-white/70">
+                        {capFor(caps[sport].offPeak, h)}
+                        <span className="text-white/30"> ({capFor(caps[sport].peak, h)})</span>
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="m-0 text-white/35 text-[0.76rem]">
+            Off-peak and late night, with <span className="text-white/50">peak in brackets</span>.
+          </p>
+
+          {/* A prohibition, not a nicety — so it is set apart rather than folded
+              into the paragraph above it. Court hire is recreational play;
+              coaching is what the academies sell, and someone running a paid
+              session on a hired court is competing with the club's own
+              programme on the club's own floor. */}
+          <p className="m-0 mt-2 pt-4 border-t border-[var(--footer-line)] text-white/80 font-semibold uppercase tracking-[0.06em] text-[0.78rem] leading-[1.5]">
+            Absolutely no coaching of any kind. Recreational play only.
+          </p>
+        </div>
+      </section>
+
       {/* Three centered columns */}
       <div
         className="mx-auto max-w-[1280px] flex flex-wrap justify-center gap-16 md:gap-24"
@@ -18,12 +148,12 @@ export default function Footer() {
           ]}
         />
         <FooterCol
-          title="Membership"
+          title="Play"
           links={[
-            { label: "Guest access", href: "/#waitlist" },
-            { label: "Adult membership", href: "/#waitlist" },
-            { label: "Junior membership", href: "/#waitlist" },
-            { label: "Add-on / household", href: "/#waitlist" },
+            { label: "Court rates", href: "/#top" },
+            { label: "Book a court", href: "/#top" },
+            { label: "Bulk & block bookings", href: `mailto:${CONTACT_EMAIL}` },
+            { label: "Academies & juniors", href: "/#top" },
           ]}
         />
         <FooterCol
@@ -47,7 +177,7 @@ export default function Footer() {
 
       {/* Bottom bar — centered */}
       <div
-        className="border-t border-[#161616] flex items-center justify-center"
+        className="border-t border-[var(--footer-line)] flex items-center justify-center"
         style={{ padding: "18px clamp(20px,4vw,48px)" }}
       >
         <p className="text-[0.7rem] text-white/25 text-center">

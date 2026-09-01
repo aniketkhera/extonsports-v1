@@ -21,7 +21,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Open coaching roles — these drive recruiting traffic, so they are
     // indexed. Drop the entry once a role is filled and the page comes down.
     { path: '/careers/head-badminton-coach', changeFrequency: 'weekly', priority: 0.8 },
-    { path: '/careers/head-cricket-coach', changeFrequency: 'weekly', priority: 0.8 },
   ]
 
   return routes.map(({ path, changeFrequency, priority }) => ({

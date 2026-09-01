@@ -29,7 +29,7 @@ export default function LegalPage({
   sections: Section[]
 }) {
   return (
-    <div className="bg-[#050505] min-h-screen text-white">
+    <div className="bg-[var(--legal-bg)] min-h-screen text-white">
       <div className="mx-auto max-w-[760px]" style={{ padding: '64px clamp(20px,5vw,48px) 80px' }}>
         <Link
           href="/"
@@ -55,7 +55,7 @@ export default function LegalPage({
             {s.samples?.map((msg, j) => (
               <p
                 key={j}
-                className="text-white/70 text-[0.9rem] leading-[1.7] bg-[#111] border border-[#1f1f1f] rounded-xl mt-3"
+                className="text-white/70 text-[0.9rem] leading-[1.7] bg-[var(--legal-surface)] border border-[var(--legal-line)] rounded-xl mt-3"
                 style={{ padding: '13px 16px' }}
               >
                 {msg}
@@ -67,7 +67,7 @@ export default function LegalPage({
         {/* The operating entity. Kept to the legal pages by choice — deliberately absent
             from the homepage — but reachable, because a messaging reviewer has to be able
             to tie this domain to the company on the Brand record. */}
-        <div className="border-t border-[#1a1a1a] pt-6 mt-12">
+        <div className="border-t border-[var(--legal-surface-2)] pt-6 mt-12">
           <p className="text-white/35 text-[0.78rem] leading-[1.8]">
             Exton Sports Center is a trading name of {LEGAL_NAME}.<br />
             {LEGAL_ADDRESS_LINE}<br />

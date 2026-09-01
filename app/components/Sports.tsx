@@ -21,7 +21,7 @@ const sports: Sport[] = [
     count: "3",
     unit: "lanes",
     spec: "Indoor practice lanes · full bowler run-up",
-    body: "Three full-length indoor lanes with leather ball, ball machines and full run-up — open to members at any hour.",
+    body: "Three full-length indoor lanes with leather ball, ball machines and full run-up — bookable by the hour, at any hour.",
     decoration: "cricket",
   },
   {
@@ -59,7 +59,7 @@ const sports: Sport[] = [
     unit: "",
     prefix: "Studio",
     spec: "Rowers · weights · cable",
-    body: "Dedicated fitness studio with rowing machines, free weights, and cable training — included with every membership.",
+    body: "Dedicated fitness studio with rowing machines, free weights, and cable training — included with any court booking.",
     decoration: "fitness",
   },
 ];
@@ -94,9 +94,9 @@ export default function Sports() {
             </h2>
           </div>
           <p className="text-white/60 text-[0.94rem] leading-[1.7] max-w-[44ch]">
-            One booking per day, per member — squash today, badminton
-            tomorrow, cricket the day after. No upcharges, no per-sport
-            fees, no separate memberships.
+            Squash today, badminton tomorrow, cricket the day after. Book
+            whichever court you want by the hour — no membership, no joining
+            fee, and the rate covers everyone you bring.
           </p>
         </motion.div>
 

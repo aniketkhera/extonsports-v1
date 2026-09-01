@@ -25,7 +25,7 @@ const item = {
 export default function TrustStrip() {
   return (
     <div
-      className="relative bg-[#0A0A0A] border-b border-[var(--color-line)] overflow-hidden"
+      className="relative bg-[var(--strip-bg)] border-b border-[var(--color-line)] overflow-hidden"
       style={{ padding: "26px 24px", paddingInline: "clamp(24px, 4vw, 48px)" }}
     >
       {/* Animated orange sweep line across the top */}
@@ -66,7 +66,7 @@ export default function TrustStrip() {
                 className="text-cond leading-none"
                 style={{
                   fontSize: "clamp(1.8rem, 2.6vw, 2.2rem)",
-                  color: "var(--color-ember)",
+                  color: "var(--ember-ink)",
                   textShadow: "0 0 28px rgba(243,122,74,0.0)",
                 }}
                 initial={{ opacity: 0, scale: 0.5 }}

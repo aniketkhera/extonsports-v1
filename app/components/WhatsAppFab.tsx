@@ -41,7 +41,7 @@ export default function WhatsAppFab() {
         bottom,
         width: 56,
         height: 56,
-        boxShadow: "0 6px 20px rgba(0,0,0,0.35)",
+        boxShadow: "var(--fab-shadow)",
       }}
     >
       <WhatsAppIcon className="w-7 h-7" />

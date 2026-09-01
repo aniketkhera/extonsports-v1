@@ -94,7 +94,7 @@ export default function About() {
             </dd>
             <dt className="text-mono text-[0.7rem] text-white/35">Hours</dt>
             <dd className="text-white/80 text-[0.92rem]">
-              Open 24/7 · members and guests only
+              Open 24/7 · anyone can book
             </dd>
           </dl>
 
@@ -125,8 +125,7 @@ export default function About() {
           className="relative border border-[var(--color-line-2)] overflow-hidden"
           style={{
             height: "min(420px, 80vw)",
-            background:
-              "linear-gradient(135deg, rgba(248,155,114,0.16) 0%, rgba(0,0,0,0) 60%), radial-gradient(120% 80% at 100% 100%, rgba(66,181,77,0.16) 0%, transparent 70%), #0C1623",
+            background: "var(--scene-bg)",
           }}
         >
           <Facility3D />

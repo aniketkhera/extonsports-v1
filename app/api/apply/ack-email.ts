@@ -2,8 +2,10 @@
 // Pure string builder — no Resend / Next imports — so both the /api/apply
 // route and the send-test-ack script can share the exact same output.
 
+// Head Cricket Coach is no longer advertised, but the entry stays so that
+// acknowledgements for applications already in flight still name the academy.
 const ACADEMY_BY_ROLE: Record<string, string> = {
-  "Head Cricket Coach": "Excel Cricket Academy",
+  "Head Cricket Coach": "Chester County Cricket Academy",
   "Head Badminton Coach": "SmashShuttler Badminton Academy",
 };
 

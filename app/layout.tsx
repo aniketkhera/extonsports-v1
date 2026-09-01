@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Barlow, Oswald, Comfortaa, Caveat, Exo_2 } from "next/font/google";
+import { Barlow, Oswald, Caveat, Exo_2 } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 import TrackBeacon from "mailer-admin/TrackBeacon";
 import WhatsAppFab from "./components/WhatsAppFab";
@@ -20,13 +20,9 @@ const body = Barlow({
   display: "swap",
 });
 
-// Academy partner logo fonts
-const comfortaa = Comfortaa({
-  subsets: ["latin"],
-  variable: "--font-comfortaa",
-  weight: ["700"],
-  display: "swap",
-});
+// Academy partner logo fonts. Comfortaa went with ExcelCricket — Chester
+// County Cricket Academy's mark is artwork plus the site's own condensed face,
+// so there is no third brand webfont to load.
 const caveat = Caveat({
   subsets: ["latin"],
   variable: "--font-caveat",
@@ -44,11 +40,11 @@ const exo2 = Exo_2({
 export const metadata: Metadata = {
   metadataBase: new URL("https://extonsports.com"),
   title: {
-    default: "Exton Sports Center — Members-only multi-sport club · open 24/7",
+    default: "Exton Sports Center — pay-to-play multi-sport club · open 24/7",
     template: "%s · Exton Sports Center",
   },
   description:
-    "Cricket, squash, badminton and indoor turf — under one roof in Exton, PA. Members-only, open 24/7, unlimited court access. Coaching delivered through Orangish.",
+    "Cricket, squash, badminton and indoor turf — under one roof in Exton, PA. Book a court by the hour, no membership required. Open 24/7. Coaching delivered through Orangish.",
   alternates: { canonical: "/" },
   keywords: [
     "Exton Sports Center",
@@ -64,9 +60,9 @@ export const metadata: Metadata = {
     "pro shop Exton",
   ],
   openGraph: {
-    title: "Exton Sports Center — Members-only multi-sport club · open 24/7",
+    title: "Exton Sports Center — pay-to-play multi-sport club · open 24/7",
     description:
-      "Cricket, squash, badminton and indoor turf in Exton, PA. Members-only. Open 24/7.",
+      "Cricket, squash, badminton and indoor turf in Exton, PA. Pay by the hour, no membership. Open 24/7.",
     url: "https://extonsports.com",
     siteName: "Exton Sports Center",
     type: "website",
@@ -82,9 +78,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Exton Sports Center — Members-only multi-sport club · open 24/7",
+    title: "Exton Sports Center — pay-to-play multi-sport club · open 24/7",
     description:
-      "Cricket, squash, badminton and indoor turf in Exton, PA. Members-only. Open 24/7.",
+      "Cricket, squash, badminton and indoor turf in Exton, PA. Pay by the hour, no membership. Open 24/7.",
     images: ["/logo.png"],
   },
   robots: {
@@ -117,7 +113,7 @@ const sportsClubLd = {
   email: "info@extonsports.com",
   telephone: "+1-484-252-2523",
   description:
-    "Members-only multi-sport club in Exton, PA with squash, badminton, cricket, indoor turf, fitness and a pro shop. Open 24/7.",
+    "Pay-to-play multi-sport club in Exton, PA with squash, badminton, cricket, indoor turf, fitness and a pro shop. Book courts by the hour, no membership required. Open 24/7.",
   address: {
     "@type": "PostalAddress",
     streetAddress: "4 Tabas Lane, Building 2",
@@ -144,8 +140,23 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${cond.variable} ${body.variable} ${comfortaa.variable} ${caveat.variable} ${exo2.variable} h-full antialiased`}
+      // The theme script below writes data-theme onto this element before
+      // React hydrates, so the server markup and the DOM legitimately differ.
+      suppressHydrationWarning
+      className={`${cond.variable} ${body.variable} ${caveat.variable} ${exo2.variable} h-full antialiased`}
     >
+      <head>
+        {/* Theme, applied before first paint. This has to be a blocking
+            inline script in <head>: anything deferred to React would let the
+            browser paint the dark default first, and a light-mode visitor
+            would see the whole page flash navy on every navigation.
+            Keep the fallback in step with readTheme() in ThemeToggle.tsx. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{document.documentElement.dataset.theme=localStorage.getItem("exton-theme")==="light"?"light":"dark"}catch(e){document.documentElement.dataset.theme="dark"}`,
+          }}
+        />
+      </head>
       <body className="min-h-full">
         {/* Server-rendered JSON-LD. Next.js App Router hoists this
             script tag into <head>; safe because content is a

@@ -4,8 +4,8 @@
     {
       "name": "extonsports-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 3000
+      "runtimeArgs": ["run", "dev", "--", "--port", "3007"],
+      "port": 3007
     }
   ]
 }

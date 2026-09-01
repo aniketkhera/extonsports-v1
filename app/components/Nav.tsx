@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { OPENING_SHORT } from "../../lib/opening";
+import ThemeToggle from "./ThemeToggle";
 
 const navLinks = [
   { label: "Sports", href: "/#sports" },
@@ -16,7 +18,7 @@ export default function Nav() {
       style={{
         height: 64,
         padding: "0 44px",
-        background: "rgba(0,0,0,0.88)",
+        background: "var(--nav-bg)",
         backdropFilter: "blur(16px)",
       }}
     >
@@ -48,26 +50,32 @@ export default function Nav() {
             <span className="relative inline-flex rounded-full h-[6px] w-[6px] bg-[var(--color-ember)]" />
           </span>
           <span className="opening-glow-text text-mono text-[0.6rem] text-[var(--color-ember)]">
-            Opening Late-Aug 2026
+            Opening {OPENING_SHORT}
           </span>
         </Link>
       </div>
 
-      <ul className="hidden md:flex items-stretch list-none">
-        {navLinks.map((l, i) => (
-          <li key={l.label}>
-            <Link
-              href={l.href}
-              className={`block px-[18px] text-[0.74rem] font-semibold text-mono text-white/60 hover:text-white hover:bg-white/[0.04] transition border-r border-white/[0.06] ${
-                i === 0 ? "border-l border-white/[0.06]" : ""
-              }`}
-              style={{ lineHeight: "64px" }}
-            >
-              {l.label}
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <div className="flex items-center shrink-0">
+        <ul className="hidden md:flex items-stretch list-none">
+          {navLinks.map((l, i) => (
+            <li key={l.label}>
+              <Link
+                href={l.href}
+                className={`block px-[18px] text-[0.74rem] font-semibold text-mono text-white/60 hover:text-white hover:bg-white/[0.04] transition border-r border-white/[0.06] ${
+                  i === 0 ? "border-l border-white/[0.06]" : ""
+                }`}
+                style={{ lineHeight: "64px" }}
+              >
+                {l.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+
+        {/* Theme switch sits outside the link list so it survives the md:
+            breakpoint — the links collapse on mobile, the switch does not. */}
+        <ThemeToggle className="ml-3 mr-1 md:ml-4 md:mr-0" />
+      </div>
     </header>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { OPENING_LONG } from "../../lib/opening";
 
 function useScrollDirection() {
   const [dir, setDir] = useState<"up" | "down">("down");
@@ -92,7 +93,7 @@ export default function CtaBanner() {
           Be the first to know when we open Badminton, Cricket &amp; Turf.
         </p>
         <p className="text-black/65 text-[0.8rem] sm:text-[0.88rem] mt-1 font-semibold tracking-wide">
-          Badminton, Cricket &amp; Turf <span className="text-black font-bold">opening late-August 2026</span>. Stay tuned for membership options.
+          Badminton, Cricket &amp; Turf <span className="text-black font-bold">opening {OPENING_LONG}</span>. Pay by the hour — no membership needed.
         </p>
       </div>
 

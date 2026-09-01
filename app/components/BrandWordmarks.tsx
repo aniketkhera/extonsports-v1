@@ -1,13 +1,21 @@
 /* Brand wordmarks for the partner academies, reproduced in each brand's
-   real logo font (as rendered on excelcricket.com / smashshuttler.com):
-     ExcelCricket  — Comfortaa 700, "excel" ember · "cricket" white
+   real logo font (as rendered on smashshuttler.com):
      SmashShuttler — Caveat 700 cursive, "smash!" ember · "shuttler" white
-   Fonts are loaded globally in layout.tsx (--font-comfortaa / --font-caveat).
+   Fonts are loaded globally in layout.tsx (--font-caveat).
+
+   Chester County Cricket Academy is the exception: it ships a crest, not a
+   wordmark, and cccricketacademy.com uses no brand webface at all. So its mark
+   is the shield artwork plus the name set in the site's own condensed face.
+   Everything is sized in `em` so the same `className` font-size call sites use
+   for the type wordmarks also scales the crest.
+
    Pass `className` to size the logo at the call site (font-size + margins). */
 
-export function ExcelCricketWordmark({
+import Image from "next/image";
+
+export function ChesterCountyCricketWordmark({
   className = "",
-  title = "ExcelCricket",
+  title = "Chester County Cricket Academy",
 }: {
   className?: string;
   title?: string;
@@ -18,15 +26,29 @@ export function ExcelCricketWordmark({
       aria-label={title}
       className={className}
       style={{
-        fontFamily: "var(--font-comfortaa), cursive",
-        fontWeight: 700,
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "0.4em",
         lineHeight: 1,
-        letterSpacing: "-0.01em",
         whiteSpace: "nowrap",
       }}
     >
-      <span style={{ color: "var(--color-ember)" }}>excel</span>
-      <span style={{ color: "#FFFFFF" }}>cricket</span>
+      <Image
+        src="/academies/ccca-shield.png"
+        alt=""
+        width={360}
+        height={239}
+        style={{ height: "1.15em", width: "auto" }}
+      />
+      <span
+        className="text-cond"
+        style={{ fontSize: "0.46em", letterSpacing: "0.04em", lineHeight: 1.05 }}
+      >
+        <span style={{ display: "block", color: "var(--ember-ink)" }}>
+          Chester County
+        </span>
+        <span style={{ display: "block", color: "var(--on-tile)" }}>Cricket Academy</span>
+      </span>
     </span>
   );
 }
@@ -50,8 +72,8 @@ export function SmashShuttlerWordmark({
         whiteSpace: "nowrap",
       }}
     >
-      <span style={{ color: "var(--color-ember)" }}>smash!</span>
-      <span style={{ color: "#FFFFFF" }}>shuttler</span>
+      <span style={{ color: "var(--ember-ink)" }}>smash!</span>
+      <span style={{ color: "var(--on-tile)" }}>shuttler</span>
     </span>
   );
 }
@@ -62,12 +84,12 @@ export function BrandWordmark({
   className = "",
   title,
 }: {
-  brand: "excelcricket" | "smashshuttler";
+  brand: "ccca" | "smashshuttler";
   className?: string;
   title?: string;
 }) {
-  return brand === "excelcricket" ? (
-    <ExcelCricketWordmark className={className} title={title} />
+  return brand === "ccca" ? (
+    <ChesterCountyCricketWordmark className={className} title={title} />
   ) : (
     <SmashShuttlerWordmark className={className} title={title} />
   );

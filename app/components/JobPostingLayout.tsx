@@ -4,7 +4,7 @@ import Footer from "./Footer";
 import ApplicationForm from "./ApplicationForm";
 
 export type JobPostingData = {
-  /** Small ember eyebrow above the title, e.g. "Excel Cricket Academy" */
+  /** Small ember eyebrow above the title, e.g. "Chester County Cricket Academy" */
   academyLabel: string;
   title: string;
   /** Key/value facts shown in the meta grid (Location, Employment type, …) */
