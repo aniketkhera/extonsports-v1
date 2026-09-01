@@ -128,8 +128,16 @@ export default async function Footer() {
               coaching is what the academies sell, and someone running a paid
               session on a hired court is competing with the club's own
               programme on the club's own floor. */}
+          {/* ⛔ SCOPED TO HIRED COURTS, and the scope is load-bearing. The club
+              runs three academies and advertises them in the hero of this very
+              page; a blanket "no coaching of any kind" reads as contradicting
+              them. The rule is that a court you hire is not a teaching slot —
+              coaching is what the academy programme sells. */}
           <p className="m-0 mt-2 pt-4 border-t border-[var(--footer-line)] text-white/80 font-semibold uppercase tracking-[0.06em] text-[0.78rem] leading-[1.5]">
-            Absolutely no coaching of any kind. Recreational play only.
+            Absolutely no coaching on hired courts — recreational play only.
+          </p>
+          <p className="m-0 text-white/35 text-[0.76rem]">
+            Coaching runs through the club&apos;s academies.
           </p>
         </div>
       </section>
