@@ -4,7 +4,8 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import type { AvailabilityPayload } from "../api/availability/route";
-import type { SchedulePayload, ProgramSchedule } from "../api/schedule/route";
+import type { SchedulePayload } from "../api/schedule/route";
+import type { ProgramSchedule } from "@/lib/club-schedule";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, RATE_FEES_NOTE } from "../../lib/rates";
 import { BOOK_COURTS_URL, bookingTarget } from "../../lib/booking";
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_E164 } from "../../lib/legal";
@@ -453,12 +454,14 @@ function RosterDetail({
   schedule: SchedulePayload["programs"];
 }) {
   const ac = ACADEMY_PARTNERS.find((a) => a.name === id);
-  /* Matched on the PLATFORM's program name, which is the studio class name
-     today and has no academy counterpart yet — squad_programs has exactly one
-     active row at Exton. Academies therefore render no schedule until someone
-     creates their programs, which is the correct empty state, not a bug. */
-  const forCricketEtc = ac ? schedule.find((p) => p.program === ac.short) : undefined;
-  if (ac) return <AcademyDetail ac={ac} schedule={forCricketEtc ?? null} />;
+  if (ac) {
+    /* Platform first, local copy second. Matched on the PLATFORM's programme
+       name; no academy has one yet, so today every academy falls through to
+       whatever `schedule` it carries in the data below. The moment a programme
+       is created the live feed wins and the local line stops being used. */
+    const live = schedule.find((p) => p.program === ac.short);
+    return <AcademyDetail ac={ac} schedule={live ?? localSchedule(ac) ?? null} />;
+  }
   const c = STUDIO_CLASSES.find((x) => x.name === id);
   if (!c) return null;
   return <ClassDetail c={c} schedule={schedule.find((p) => p.program === c.name) ?? null} />;
@@ -500,13 +503,33 @@ function DetailBody({
   );
 }
 
+/* Local timetable copy, widened to the shape the platform feed produces so
+   ScheduleLine does not need to know which one it is holding. Everything the
+   platform supplies and a hand-written line cannot — price, duration, capacity
+   — stays null, and ScheduleLine simply omits it. */
+function localSchedule(
+  ac: (typeof ACADEMY_PARTNERS)[number],
+): ProgramSchedule | null {
+  const local = "schedule" in ac ? (ac as { schedule?: { startsOn?: string; when?: string } }).schedule : undefined;
+  if (!local) return null;
+  return {
+    program: ac.short,
+    when: local.when ?? null,
+    duration: null,
+    price: null,
+    upcoming: 0,
+    full: false,
+    startsOn: local.startsOn ?? null,
+  };
+}
+
 /* The live timetable line. Renders NOTHING when the platform has no sessions —
    never a placeholder, never a hardcoded time. app/api/featured/route.ts
    already encodes this rule ("omit its schedule line rather than inventing
    one"); the hero previously broke it by printing the same opening date three
    times, a placeholder dressed as a feed. */
 function ScheduleLine({ schedule }: { schedule: ProgramSchedule | null }) {
-  if (!schedule || !schedule.when) return null;
+  if (!schedule || (!schedule.when && !schedule.startsOn)) return null;
   const meta = [schedule.duration, schedule.price].filter(Boolean).join(" · ");
   return (
     <div className="shrink-0 min-w-[15rem] border-l border-white/10 pl-9">
@@ -526,12 +549,14 @@ function ScheduleLine({ schedule }: { schedule: ProgramSchedule | null }) {
           .text-white/85 rule, so an /85 stayed rgba(255,255,255,0.85) and the
           schedule rendered white-on-white in light mode. Only use an opacity
           that block actually lists. */}
-      <div
-        className="text-white/90 leading-[1.35]"
-        style={{ fontSize: "clamp(1.05rem, 1vw, 1.4rem)" }}
-      >
-        {schedule.when}
-      </div>
+      {schedule.when && (
+        <div
+          className="text-white/90 leading-[1.35]"
+          style={{ fontSize: "clamp(1.05rem, 1vw, 1.4rem)" }}
+        >
+          {schedule.when}
+        </div>
+      )}
       {meta && <div className="text-white/50 text-[0.85rem] mt-1.5">{meta}</div>}
       {schedule.full && (
         <div className="text-[var(--color-ember)] text-mono text-[0.62rem] mt-2">
@@ -1053,7 +1078,13 @@ const ACADEMY_PARTNERS = [
     href: "https://cccricketacademy.com",
     short: "Cricket",
     sport: "Cricket academy",
-    desc: "Coming Sep 28th",
+    /* No platform programme exists for cricket yet — squad_programs has one
+       active row at Exton and it is the dance class — so this row's timetable
+       is local copy. It uses the same shape the platform feed produces, so the
+       day cricket IS entered in /admin/squads the live data takes over with no
+       markup change. The date is Exton's own announcement: CCCA publishes
+       nothing about this building. */
+    schedule: { startsOn: "Sep 28", when: "7 days a week" },
     /* Near-verbatim from cccricketacademy.com. Deliberately NOT saying more:
        their site gives no founding year, and its published indoor season runs
        Oct-Mar at All-Star Sports Academy in Downingtown with outdoor sessions
