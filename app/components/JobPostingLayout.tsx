@@ -40,10 +40,10 @@ export default function JobPostingLayout({ data }: { data: JobPostingData }) {
           {/* Breadcrumb */}
           <div className="text-mono text-[0.68rem] text-white/40 mb-8">
             <Link
-              href="/#careers"
+              href="/"
               className="hover:text-[var(--color-ember)] transition-colors"
             >
-              ← Careers
+              ← Exton Sports Center
             </Link>
           </div>
 
