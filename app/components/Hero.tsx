@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import type { AvailabilityPayload } from "../api/availability/route";
+import type { SchedulePayload, ProgramSchedule } from "../api/schedule/route";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, RATE_FEES_NOTE } from "../../lib/rates";
 import { BOOK_COURTS_URL, bookingTarget } from "../../lib/booking";
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_E164 } from "../../lib/legal";
@@ -103,6 +104,23 @@ function Panel({
      the panel, so the detail does not flicker while the pointer crosses the gap
      between the two columns. */
   const [activeItem, setActiveItem] = useState<string | null>(null);
+
+  /* The timetable, per program name. Client-side and best-effort: the panel
+     renders complete without it, and every row whose program has no sessions
+     simply shows no schedule line rather than an empty placeholder. Only the
+     academies panel asks. */
+  const [schedule, setSchedule] = useState<SchedulePayload["programs"]>([]);
+  useEffect(() => {
+    if (kind !== "academies") return;
+    let live = true;
+    fetch("/api/schedule")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: SchedulePayload | null) => live && setSchedule(d?.programs ?? []))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [kind]);
 
   return (
     <motion.div
@@ -242,7 +260,7 @@ function Panel({
                   </div>
                   <div className="flex flex-col gap-5">
                     {g.items.map((it) => (
-                      <RosterDetail key={it.id} id={it.id} />
+                      <RosterDetail key={it.id} id={it.id} schedule={schedule} />
                     ))}
                   </div>
                 </div>
@@ -362,7 +380,7 @@ function Panel({
                   {ROSTER_GROUPS.flatMap((g) =>
                     g.items.map((it) => (
                       <DetailLayer key={it.id} show={activeItem === it.id}>
-                        <RosterDetail id={it.id} />
+                        <RosterDetail id={it.id} schedule={schedule} />
                       </DetailLayer>
                     )),
                   )}
@@ -421,16 +439,77 @@ function DetailLayer({
 
 /* One roster row's detail, looked up by id. Both groups render through here so
    the desktop column and the mobile stack cannot drift apart. */
-function RosterDetail({ id }: { id: string }) {
+function RosterDetail({
+  id,
+  schedule,
+}: {
+  id: string;
+  schedule: SchedulePayload["programs"];
+}) {
   const ac = ACADEMY_PARTNERS.find((a) => a.name === id);
-  if (ac) return <AcademyDetail ac={ac} />;
+  /* Matched on the PLATFORM's program name, which is the studio class name
+     today and has no academy counterpart yet — squad_programs has exactly one
+     active row at Exton. Academies therefore render no schedule until someone
+     creates their programs, which is the correct empty state, not a bug. */
+  const forCricketEtc = ac ? schedule.find((p) => p.program === ac.short) : undefined;
+  if (ac) return <AcademyDetail ac={ac} schedule={forCricketEtc ?? null} />;
   const c = STUDIO_CLASSES.find((x) => x.name === id);
-  return c ? <ClassDetail c={c} /> : null;
+  if (!c) return null;
+  return <ClassDetail c={c} schedule={schedule.find((p) => p.program === c.name) ?? null} />;
+}
+
+/* The live timetable line. Renders NOTHING when the platform has no sessions —
+   never a placeholder, never a hardcoded time. app/api/featured/route.ts
+   already encodes this rule ("omit its schedule line rather than inventing
+   one"); the hero previously broke it by printing the same opening date three
+   times, a placeholder dressed as a feed. */
+function ScheduleLine({ schedule }: { schedule: ProgramSchedule | null }) {
+  if (!schedule || !schedule.when) return null;
+  const meta = [schedule.duration, schedule.price].filter(Boolean).join(" · ");
+  return (
+    <div className="mt-3.5 pt-3 border-t border-white/10">
+      <div className="text-mono text-[0.54rem] tracking-[0.2em] uppercase text-white/35 mb-1.5">
+        Schedule
+      </div>
+      <div className="text-white/75 text-[0.8rem] leading-[1.5]">{schedule.when}</div>
+      {meta && <div className="text-white/45 text-[0.74rem] mt-0.5">{meta}</div>}
+      {schedule.full && (
+        <div className="text-[var(--color-ember)] text-mono text-[0.58rem] mt-1.5">
+          Currently full
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* The one CTA per row. Every destination is somewhere that actually accepts the
+   thing its label promises — see the per-row comments in the data below. */
+function DetailAction({ action }: { action?: { label: string; href: string } }) {
+  if (!action) return null;
+  const external = action.href.startsWith("http");
+  return (
+    <a
+      href={action.href}
+      target={external ? "_blank" : undefined}
+      rel={external ? "noreferrer" : undefined}
+      className="inline-block mt-4 text-[var(--color-ember)] hover:text-white text-mono text-[0.6rem] transition-colors"
+    >
+      <span className="border border-[var(--color-ember)]/50 px-3 py-1.5">
+        {action.label} &rarr;
+      </span>
+    </a>
+  );
 }
 
 /* A studio class. No logo and no outbound link — these are the club's own, and
    there is no page to send anyone to yet. */
-function ClassDetail({ c }: { c: (typeof STUDIO_CLASSES)[number] }) {
+function ClassDetail({
+  c,
+  schedule,
+}: {
+  c: (typeof STUDIO_CLASSES)[number];
+  schedule: ProgramSchedule | null;
+}) {
   return (
     <div>
       <span className="block text-cond text-white text-[1.5rem] leading-none mb-2.5">
@@ -440,53 +519,42 @@ function ClassDetail({ c }: { c: (typeof STUDIO_CLASSES)[number] }) {
         {c.when}
       </span>
       <p className="text-white/60 text-[0.79rem] leading-[1.55] mt-2 mb-0 max-w-[46ch]">
-        {c.desc}
+        {c.blurb ?? c.desc}
       </p>
+      <ScheduleLine schedule={schedule} />
+      <DetailAction action={c.action} />
     </div>
   );
 }
 
-function AcademyDetail({ ac }: { ac: (typeof ACADEMY_PARTNERS)[number] }) {
-  const email = "email" in ac ? (ac as { email?: string }).email : undefined;
-  const cta = "cta" in ac ? (ac as { cta?: string }).cta : undefined;
+function AcademyDetail({
+  ac,
+  schedule,
+}: {
+  ac: (typeof ACADEMY_PARTNERS)[number];
+  schedule: ProgramSchedule | null;
+}) {
+  const blurb = "blurb" in ac ? (ac as { blurb?: string }).blurb : undefined;
   const desc = "desc" in ac ? (ac as { desc?: string }).desc : undefined;
+  const action = "action" in ac ? (ac as { action?: { label: string; href: string } }).action : undefined;
   return (
     <div>
       <span className="block leading-none mb-3">{ac.logo}</span>
       <span className="block text-mono text-[0.58rem] tracking-[0.18em] uppercase text-[var(--color-ember)]">
         {ac.sport}
       </span>
-      {desc && (
-        <p className="text-white/60 text-[0.79rem] leading-[1.55] mt-2 mb-0 max-w-[46ch]">
-          {desc}
+      {/* Status first and small — "Coming Sep 28th" is a fact about timing, not
+          a description — then the blurb underneath it. */}
+      {desc && desc !== blurb && (
+        <p className="text-white/45 text-[0.74rem] leading-[1.5] mt-1.5 mb-0">{desc}</p>
+      )}
+      {blurb && (
+        <p className="text-white/65 text-[0.82rem] leading-[1.55] mt-2.5 mb-0 max-w-[48ch]">
+          {blurb}
         </p>
       )}
-      {(email || cta) && (
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-3.5">
-          {/* Shown as the ADDRESS rather than a button: a reader who can see it
-              can write it down, forward it, or mail it from their phone. */}
-          {email && (
-            <a
-              href={`mailto:${email}`}
-              className="text-[var(--color-ember)] hover:text-white text-mono text-[0.6rem] transition-colors break-all"
-            >
-              {email}
-            </a>
-          )}
-          {cta && (
-            <a
-              href={ac.href}
-              target="_blank"
-              rel="noreferrer"
-              className="text-[var(--color-ember)] hover:text-white text-mono text-[0.6rem] transition-colors"
-            >
-              <span className="border border-[var(--color-ember)]/50 px-3 py-1">
-                {cta} &rarr;
-              </span>
-            </a>
-          )}
-        </div>
-      )}
+      <ScheduleLine schedule={schedule} />
+      <DetailAction action={action} />
     </div>
   );
 }
@@ -815,14 +883,15 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
 
 /* ─── Content config ───────────────────────────────────────────── */
 
-/* One panel for both halves now. "Train. / Move." keeps the two-word verb
-   pattern the other panel sets while covering the academies and the studio —
-   "Compete." spoke only for the academies, "Dance." only for the studio. */
+/* One panel for both halves. Four verbs across two lines: the studio's two
+   first, then the academies' two, so the line that lands in ember is the
+   competitive half. "Train. / Move." alone spoke for the studio and left the
+   academies' point — that these are pathways, not drop-ins — unsaid. */
 const ACADEMIES = {
   bigWord: "EXTON",
   bg: "var(--hero-aca-bg)",
   label: "Academies · Studio",
-  headline: { line1: "Train.", line2: "Move." },
+  headline: { line1: "Train. Move.", line2: "Learn. Compete." },
   body: "Structured coaching in cricket, squash and badminton. Dance and fitness on the studio floor. All levels, no partner needed.",
   cta: "Explore academies",
 };
@@ -830,9 +899,23 @@ const ACADEMIES = {
 /* Bollywood is real and dated; the rest is honestly labelled as not yet
    running. Saying "coming soon" beats inventing a timetable, and it matches
    how the academies panel already handles its two unlaunched partners. */
-const STUDIO_CLASSES = [
+const STUDIO_CLASSES: {
+  name: string
+  when: string
+  desc: string
+  blurb?: string
+  action?: { label: string; href: string }
+}[] = [
   { name: "Bollywood Dance", when: "New this season",
-    desc: "Filmi routines and bhangra footwork, with a proper warm-up. All levels, no partner needed." },
+    desc: "Filmi routines and bhangra footwork, with a proper warm-up. All levels, no partner needed.",
+    /* The club's own copy about its own studio, so it needs no external source.
+       This is also the ONLY row with live platform sessions behind it. */
+    blurb:
+      "High-energy Bollywood choreography on the studio floor. No partner needed and no experience assumed.",
+    /* NOT a deep link into the platform. Anonymous enrolment 401s, and Exton is
+       public_join:false with access_paused:true, so even a signed-in stranger
+       cannot join yet. The waitlist is the only thing that actually works. */
+    action: { label: "Join the waitlist", href: "/#waitlist" } },
   { name: "Studio Fitness", when: "Coming soon",
     desc: "Strength, mobility and conditioning on the studio floor." },
   { name: "Kids' Dance", when: "Coming soon",
@@ -860,7 +943,7 @@ const RECREATION = {
    read off the entries below rather than invented: cricket has a date, squash
    takes trials today, badminton has a brand and no date yet. */
 const ROSTER_INTRO =
-  "Coaching runs through three partner academies rather than the club itself — cricket opens Sep 28th, squash takes trials now, badminton follows. The studio floor is the club's own: dance and fitness, all levels.";
+  "Coaching runs through three academies rather than the club itself — cricket opens Sep 28th, squash takes trials now, badminton follows. The studio floor is the club's own: dance and fitness, all levels.";
 
 const ACADEMY_PARTNERS = [
   {
@@ -869,6 +952,16 @@ const ACADEMY_PARTNERS = [
     short: "Cricket",
     sport: "Cricket academy",
     desc: "Coming Sep 28th",
+    /* Near-verbatim from cccricketacademy.com. Deliberately NOT saying more:
+       their site gives no founding year, and its published indoor season runs
+       Oct-Mar at All-Star Sports Academy in Downingtown with outdoor sessions
+       at Exton Park in MALVERN — which is not this building. "Coming Sep 28th"
+       is Exton's own announcement, so it stays framed as ours. */
+    blurb:
+      "High-quality cricket coaching for aspiring cricketers of all ages and skill levels, with junior enrolments open for girls and boys.",
+    /* No trial: the platform has no trial concept at all, and CCCA runs its own
+       enrolment. The address is the honest ask. */
+    action: { label: "Register interest", href: "mailto:cricket@extonsports.com?subject=Cricket%20academy%20enquiry" },
     // No cta: the site link lives on the logo and there is nothing else to
     // send a reader to until the academy opens, so the tile offers the
     // address instead of a button.
@@ -901,7 +994,14 @@ const ACADEMY_PARTNERS = [
     short: "Squash",
     sport: "Squash academy",
     desc: "High performance junior squash academy with locations in NJ, PA and CT (forthcoming).",
-    cta: "Book a Trial",
+    /* The one row with a real trial behind it. Both sentences are sourced from
+       squashtigers.com — the second is their FAQ answer almost verbatim. */
+    blurb:
+      "A year-round junior squash academy across NJ, PA and CT, with Exton as its Pennsylvania home. A free trial gets the player assessed and placed in a group.",
+    /* Deep-links to the FORM, not the homepage, which is where the old CTA
+       landed. That form carries an "Exton, PA" location checkbox, so someone
+       arriving from here can say where they mean in one click. */
+    action: { label: "Register for a Trial", href: "https://www.squashtigers.com/#contact" },
     logo: (
       <span
         style={{
@@ -923,7 +1023,12 @@ const ACADEMY_PARTNERS = [
     short: "Badminton",
     sport: "Badminton academy",
     desc: "Coming Soon",
-    cta: "Learn More",
+    /* Everything here is from smashshuttler.com. It is NOT yet running, so
+       there is no trial to offer and nothing may be claimed about which courts
+       it will use — no source links SmashShuttler to this building's three. */
+    blurb:
+      "A high-performance junior badminton academy — footwork, speed and shot-making.",
+    action: { label: "Get notified", href: "https://smashshuttler.com" },
     logo: (
       <span
         style={{
