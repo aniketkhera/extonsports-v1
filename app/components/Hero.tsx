@@ -373,7 +373,13 @@ function Panel({
                     detail column outside the server-rendered HTML. */}
                 <div className="grid">
                   <DetailLayer show={!activeItem}>
-                    <p className="text-white/55 text-[0.82rem] leading-[1.6] max-w-[46ch] m-0">
+                    {/* Matches the detail blurb it introduces. At 0.82rem it
+                        was the smallest text in the panel despite being the
+                        first thing anyone reads in it. */}
+                    <p
+                      className="text-white/60 leading-[1.6] max-w-[56ch] m-0"
+                      style={{ fontSize: "clamp(1rem, 0.95vw, 1.3rem)" }}
+                    >
                       {ROSTER_INTRO}
                     </p>
                   </DetailLayer>
@@ -507,8 +513,13 @@ function ScheduleLine({ schedule }: { schedule: ProgramSchedule | null }) {
       <div className="text-mono text-[0.58rem] tracking-[0.2em] uppercase text-white/35 mb-2">
         Schedule
       </div>
+      {/* /90, not /85. The light theme remaps these utilities BY NAME
+          (globals.css:372-387) and that set is 20-80 plus 90 — there is no
+          .text-white/85 rule, so an /85 stayed rgba(255,255,255,0.85) and the
+          schedule rendered white-on-white in light mode. Only use an opacity
+          that block actually lists. */}
       <div
-        className="text-white/85 leading-[1.35]"
+        className="text-white/90 leading-[1.35]"
         style={{ fontSize: "clamp(1.05rem, 1vw, 1.4rem)" }}
       >
         {schedule.when}
@@ -553,11 +564,12 @@ function ClassDetail({
 }) {
   return (
     <div>
+      {c.logo && <span className="block leading-none mb-3.5">{c.logo}</span>}
       <span
         className="block text-cond text-white leading-[0.95] mb-3"
         style={{ fontSize: "clamp(2.4rem, 3.2vw, 4.2rem)" }}
       >
-        {c.name}
+        {c.title ?? c.name}
       </span>
       <span className="block text-mono text-[0.64rem] tracking-[0.18em] uppercase text-[var(--color-ember)]">
         {c.when}
@@ -941,22 +953,65 @@ const ACADEMIES = {
    running. Saying "coming soon" beats inventing a timetable, and it matches
    how the academies panel already handles its two unlaunched partners. */
 const STUDIO_CLASSES: {
+  /** Also the PLATFORM's squad_programs.name — the schedule is matched on it,
+      so this string may not be renamed without breaking the timetable. */
   name: string
+  /** Display headline, when the class is branded differently from the row. */
+  title?: string
+  logo?: React.ReactNode
   when: string
   desc: string
   blurb?: string
   action?: { label: string; href: string }
 }[] = [
-  { name: "Bollywood Dance", when: "New this season",
+  { name: "Bollywood Dance",
+    /* The row stays "Bollywood Dance" — it is what the platform calls the
+       program AND what a reader scanning a roster understands. The brand goes
+       in the detail, exactly as the academies do it: roster says CRICKET, the
+       panel says Chester County Cricket. */
+    title: "Bombay Jam",
+    when: "Tue & Thu · all levels",
     desc: "Filmi routines and bhangra footwork, with a proper warm-up. All levels, no partner needed.",
-    /* The club's own copy about its own studio, so it needs no external source.
-       This is also the ONLY row with live platform sessions behind it. */
+    /* Every clause is off SeRa Fitness's own class flyer: "A FUN BOLLYWOOD
+       INSPIRED DANCE FITNESS WORKOUT", "High energy. Easy to follow. All
+       fitness levels welcome!", and "COME FOR THE WORKOUT, STAY FOR THE
+       VIBES!". Nothing here is invented. */
     blurb:
-      "High-energy Bollywood choreography on the studio floor. No partner needed and no experience assumed.",
-    /* NOT a deep link into the platform. Anonymous enrolment 401s, and Exton is
-       public_join:false with access_paused:true, so even a signed-in stranger
-       cannot join yet. The waitlist is the only thing that actually works. */
-    action: { label: "Join the waitlist", href: "/#waitlist" } },
+      "A fun, Bollywood-inspired dance fitness workout from SeRa Fitness. High energy, easy to follow, and all fitness levels are welcome — come for the workout, stay for the vibes.",
+    /* The flyer's own registration route ("CALL TO REGISTER"), which beats the
+       waitlist: it is a line that actually takes bookings today. Still not a
+       platform deep-link — anonymous enrolment 401s and Exton is
+       public_join:false with access_paused:true. */
+    action: { label: "Call to register", href: "tel:+12019252710" },
+    /* A wordmark in the site's own materials rather than the flyer artwork: the
+       flyer is a portrait raster with a photograph in it and would not survive
+       being dropped into a dark panel at 84px. Caveat is already loaded for
+       smash!shuttler, and the script/caps split mirrors how the flyer sets it. */
+    logo: (
+      <span className="flex items-baseline gap-[9px]">
+        <span
+          style={{
+            fontFamily: "var(--font-caveat), cursive",
+            fontWeight: 700,
+            fontSize: "clamp(2.1rem, 2.7vw, 3.6rem)",
+            lineHeight: 1,
+            color: "var(--ember-ink)",
+          }}
+        >
+          SeRa
+        </span>
+        <span
+          className="text-cond"
+          style={{
+            fontSize: "clamp(0.78rem, 0.95vw, 1.15rem)",
+            letterSpacing: "0.26em",
+            color: "var(--on-tile)",
+          }}
+        >
+          FITNESS
+        </span>
+      </span>
+    ) },
   { name: "Studio Fitness", when: "Coming soon",
     desc: "Strength, mobility and conditioning on the studio floor." },
   { name: "Kids' Dance", when: "Coming soon",
