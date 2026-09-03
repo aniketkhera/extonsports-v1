@@ -365,7 +365,7 @@ function Panel({
                   x: hovered || activeItem ? 0 : -8,
                 }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
-                className="min-w-0 flex-1 border-l border-white/10 pl-9 min-h-[150px]"
+                className="min-w-0 flex-1 border-l border-white/10 pl-9 min-h-[190px]"
                 aria-hidden={!(hovered || activeItem)}
               >
                 {/* Every layer is RENDERED and only one is visible — see
@@ -458,6 +458,42 @@ function RosterDetail({
   return <ClassDetail c={c} schedule={schedule.find((p) => p.program === c.name) ?? null} />;
 }
 
+/* Blurb and schedule SIDE BY SIDE, not stacked.
+
+   Stacked, this column used 38% of its width at 2560px — 900px of empty panel
+   beside a 542px paragraph. Widening the measure is not the fix: a 1400px line
+   is unreadable. Two columns spend the width on a second thing instead.
+
+   flex-wrap, so it stacks again on a narrow panel rather than crushing both.
+   The blurb keeps a real measure (56ch) instead of stretching. Rows with no
+   schedule simply have no second column, which is most of them today. */
+function DetailBody({
+  blurb,
+  schedule,
+  action,
+}: {
+  blurb?: string;
+  schedule: ProgramSchedule | null;
+  action?: { label: string; href: string };
+}) {
+  return (
+    <div className="mt-4 flex flex-wrap items-start gap-x-14 gap-y-7">
+      <div className="min-w-[28ch] max-w-[56ch] flex-1">
+        {blurb && (
+          <p
+            className="text-white/70 leading-[1.6] m-0"
+            style={{ fontSize: "clamp(1rem, 0.95vw, 1.3rem)" }}
+          >
+            {blurb}
+          </p>
+        )}
+        <DetailAction action={action} />
+      </div>
+      <ScheduleLine schedule={schedule} />
+    </div>
+  );
+}
+
 /* The live timetable line. Renders NOTHING when the platform has no sessions —
    never a placeholder, never a hardcoded time. app/api/featured/route.ts
    already encodes this rule ("omit its schedule line rather than inventing
@@ -467,14 +503,19 @@ function ScheduleLine({ schedule }: { schedule: ProgramSchedule | null }) {
   if (!schedule || !schedule.when) return null;
   const meta = [schedule.duration, schedule.price].filter(Boolean).join(" · ");
   return (
-    <div className="mt-3.5 pt-3 border-t border-white/10">
-      <div className="text-mono text-[0.54rem] tracking-[0.2em] uppercase text-white/35 mb-1.5">
+    <div className="shrink-0 min-w-[15rem] border-l border-white/10 pl-9">
+      <div className="text-mono text-[0.58rem] tracking-[0.2em] uppercase text-white/35 mb-2">
         Schedule
       </div>
-      <div className="text-white/75 text-[0.8rem] leading-[1.5]">{schedule.when}</div>
-      {meta && <div className="text-white/45 text-[0.74rem] mt-0.5">{meta}</div>}
+      <div
+        className="text-white/85 leading-[1.35]"
+        style={{ fontSize: "clamp(1.05rem, 1vw, 1.4rem)" }}
+      >
+        {schedule.when}
+      </div>
+      {meta && <div className="text-white/50 text-[0.85rem] mt-1.5">{meta}</div>}
       {schedule.full && (
-        <div className="text-[var(--color-ember)] text-mono text-[0.58rem] mt-1.5">
+        <div className="text-[var(--color-ember)] text-mono text-[0.62rem] mt-2">
           Currently full
         </div>
       )}
@@ -492,9 +533,9 @@ function DetailAction({ action }: { action?: { label: string; href: string } }) 
       href={action.href}
       target={external ? "_blank" : undefined}
       rel={external ? "noreferrer" : undefined}
-      className="inline-block mt-4 text-[var(--color-ember)] hover:text-white text-mono text-[0.6rem] transition-colors"
+      className="inline-block mt-5 text-[var(--color-ember)] hover:text-white text-mono text-[0.7rem] transition-colors"
     >
-      <span className="border border-[var(--color-ember)]/50 px-3 py-1.5">
+      <span className="border border-[var(--color-ember)]/50 px-5 py-2.5">
         {action.label} &rarr;
       </span>
     </a>
@@ -512,17 +553,20 @@ function ClassDetail({
 }) {
   return (
     <div>
-      <span className="block text-cond text-white text-[1.5rem] leading-none mb-2.5">
+      <span
+        className="block text-cond text-white leading-[0.95] mb-3"
+        style={{ fontSize: "clamp(2.4rem, 3.2vw, 4.2rem)" }}
+      >
         {c.name}
       </span>
-      <span className="block text-mono text-[0.58rem] tracking-[0.18em] uppercase text-[var(--color-ember)]">
+      <span className="block text-mono text-[0.64rem] tracking-[0.18em] uppercase text-[var(--color-ember)]">
         {c.when}
       </span>
-      <p className="text-white/60 text-[0.79rem] leading-[1.55] mt-2 mb-0 max-w-[46ch]">
-        {c.blurb ?? c.desc}
-      </p>
-      <ScheduleLine schedule={schedule} />
-      <DetailAction action={c.action} />
+      <DetailBody
+        blurb={c.blurb ?? c.desc}
+        schedule={schedule}
+        action={c.action}
+      />
     </div>
   );
 }
@@ -539,22 +583,19 @@ function AcademyDetail({
   const action = "action" in ac ? (ac as { action?: { label: string; href: string } }).action : undefined;
   return (
     <div>
-      <span className="block leading-none mb-3">{ac.logo}</span>
-      <span className="block text-mono text-[0.58rem] tracking-[0.18em] uppercase text-[var(--color-ember)]">
+      <span className="block leading-none mb-4">{ac.logo}</span>
+      <span className="block text-mono text-[0.64rem] tracking-[0.18em] uppercase text-[var(--color-ember)]">
         {ac.sport}
       </span>
       {/* Status first and small — "Coming Sep 28th" is a fact about timing, not
           a description — then the blurb underneath it. */}
       {desc && desc !== blurb && (
-        <p className="text-white/45 text-[0.74rem] leading-[1.5] mt-1.5 mb-0">{desc}</p>
+        <p className="text-white/45 text-[0.82rem] leading-[1.5] mt-2 mb-0">{desc}</p>
       )}
-      {blurb && (
-        <p className="text-white/65 text-[0.82rem] leading-[1.55] mt-2.5 mb-0 max-w-[48ch]">
-          {blurb}
-        </p>
-      )}
-      <ScheduleLine schedule={schedule} />
-      <DetailAction action={action} />
+      {/* 60ch, not 48. The column is far wider than the tile this copy was
+          sized for, and a short measure in a wide box is what was leaving half
+          the panel empty. 60ch is still inside the 45-75 readable range. */}
+      <DetailBody blurb={blurb} schedule={schedule} action={action} />
     </div>
   );
 }
@@ -973,14 +1014,15 @@ const ACADEMY_PARTNERS = [
           alt=""
           width={360}
           height={239}
-          className="h-[26px] w-auto shrink-0"
+          className="w-auto shrink-0"
+          style={{ height: "clamp(46px, 3vw, 84px)" }}
           priority
         />
         {/* "Academy" is left off deliberately — the tile's own sport label
             directly below already says "Cricket academy". */}
         <span
           className="text-cond leading-[1.05]"
-          style={{ fontSize: "0.72rem", letterSpacing: "0.04em" }}
+          style={{ fontSize: "clamp(1.15rem, 1.5vw, 2rem)", letterSpacing: "0.04em" }}
         >
           <span className="block text-[var(--color-ember)]">Chester County</span>
           <span className="block text-white">Cricket</span>
@@ -1008,7 +1050,7 @@ const ACADEMY_PARTNERS = [
           fontFamily: "var(--font-exo2), sans-serif",
           fontWeight: 800,
           fontStyle: "italic",
-          fontSize: "1.1rem",
+          fontSize: "clamp(1.85rem, 2.4vw, 3.2rem)",
           letterSpacing: "0.06em",
         }}
       >
@@ -1034,7 +1076,7 @@ const ACADEMY_PARTNERS = [
         style={{
           fontFamily: "var(--font-caveat), cursive",
           fontWeight: 700,
-          fontSize: "1.35rem",
+          fontSize: "clamp(2.3rem, 3vw, 4rem)",
           lineHeight: 1.1,
         }}
       >
