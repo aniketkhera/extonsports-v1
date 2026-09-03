@@ -6,7 +6,7 @@ import { WHATSAPP_CHANNEL_URL, WhatsAppIcon } from "./WhatsAppButton";
 // Floating WhatsApp bubble, rendered site-wide from the root layout.
 // It parks itself just above the sticky waitlist banner on pages that have
 // one (the home page), and drops to the normal bottom-right corner on pages
-// that don't (e.g. the careers pages). The banner's height animates as it
+// that don't (e.g. /privacy, /terms). The banner's height animates as it
 // collapses on scroll, so we recompute on scroll + resize.
 export default function WhatsAppFab() {
   const [bottom, setBottom] = useState(24);

@@ -126,7 +126,7 @@ export async function POST(req: Request) {
 
     const html = `<div style="max-width:640px;margin:0 auto;font-family:system-ui,-apple-system,sans-serif">
       <h2 style="font:700 20px system-ui;color:#0D0D0D;margin:0 0 4px">New application — ${esc(role)}</h2>
-      <p style="font:14px system-ui;color:#8C7B6E;margin:0 0 20px">Submitted via extonsports.com/careers</p>
+      <p style="font:14px system-ui;color:#8C7B6E;margin:0 0 20px">Submitted via extonsports.com</p>
       <table style="border-collapse:collapse">${tableHtml}</table>
       ${coverHtml}
       <p style="font:13px system-ui;color:#8C7B6E;margin:24px 0 0">Résumé attached. Reply to this email to reach ${esc(

@@ -151,7 +151,6 @@ export default async function Footer() {
           title="Explore"
           links={[
             { label: "Sports", href: "/#sports" },
-            { label: "Careers", href: "/#careers" },
             { label: "Get directions", href: "https://maps.app.goo.gl/pX53mpfkSt81DBnh6" },
           ]}
         />
