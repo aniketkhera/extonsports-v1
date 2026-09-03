@@ -464,7 +464,8 @@ function RosterDetail({
   }
   const c = STUDIO_CLASSES.find((x) => x.name === id);
   if (!c) return null;
-  return <ClassDetail c={c} schedule={schedule.find((p) => p.program === c.name) ?? null} />;
+  const live = schedule.find((p) => p.program === c.name);
+  return <ClassDetail c={c} schedule={live ?? localSchedule(c) ?? null} />;
 }
 
 /* Blurb and schedule SIDE BY SIDE, not stacked.
@@ -482,7 +483,7 @@ function DetailBody({
   action,
 }: {
   blurb?: string;
-  schedule: ProgramSchedule | null;
+  schedule: DetailSchedule | null;
   action?: { label: string; href: string };
 }) {
   return (
@@ -503,23 +504,32 @@ function DetailBody({
   );
 }
 
+/* What the schedule block can lead with. The platform only ever supplies a
+   start date; local copy may instead carry a status — squash is enrolling now
+   and has no published Exton timetable, so "Starts ..." would be the wrong
+   sentence and a date would be an invented one. */
+type DetailSchedule = ProgramSchedule & { status?: string | null };
+
 /* Local timetable copy, widened to the shape the platform feed produces so
    ScheduleLine does not need to know which one it is holding. Everything the
    platform supplies and a hand-written line cannot — price, duration, capacity
    — stays null, and ScheduleLine simply omits it. */
-function localSchedule(
-  ac: (typeof ACADEMY_PARTNERS)[number],
-): ProgramSchedule | null {
-  const local = "schedule" in ac ? (ac as { schedule?: { startsOn?: string; when?: string } }).schedule : undefined;
+function localSchedule(item: {
+  name: string;
+  short?: string;
+  schedule?: { startsOn?: string; when?: string; status?: string };
+}): DetailSchedule | null {
+  const local = item.schedule;
   if (!local) return null;
   return {
-    program: ac.short,
+    program: item.short ?? item.name,
     when: local.when ?? null,
     duration: null,
     price: null,
     upcoming: 0,
     full: false,
     startsOn: local.startsOn ?? null,
+    status: local.status ?? null,
   };
 }
 
@@ -528,8 +538,8 @@ function localSchedule(
    already encodes this rule ("omit its schedule line rather than inventing
    one"); the hero previously broke it by printing the same opening date three
    times, a placeholder dressed as a feed. */
-function ScheduleLine({ schedule }: { schedule: ProgramSchedule | null }) {
-  if (!schedule || (!schedule.when && !schedule.startsOn)) return null;
+function ScheduleLine({ schedule }: { schedule: DetailSchedule | null }) {
+  if (!schedule || (!schedule.when && !schedule.startsOn && !schedule.status)) return null;
   const meta = [schedule.duration, schedule.price].filter(Boolean).join(" · ");
   return (
     <div className="shrink-0 min-w-[15rem] border-l border-white/10 pl-9">
@@ -539,9 +549,9 @@ function ScheduleLine({ schedule }: { schedule: ProgramSchedule | null }) {
       {/* Only present until the first session passes — see startsOn in
           app/api/schedule/route.ts. It leads, because "when does it begin" is
           the question a recurring pattern does not answer. */}
-      {schedule.startsOn && (
+      {(schedule.status || schedule.startsOn) && (
         <div className="text-[var(--color-ember)] text-mono text-[0.68rem] tracking-[0.08em] mb-1.5">
-          Starts {schedule.startsOn}
+          {schedule.status ?? `Starts ${schedule.startsOn}`}
         </div>
       )}
       {/* /90, not /85. The light theme remaps these utilities BY NAME
@@ -593,7 +603,7 @@ function ClassDetail({
   schedule,
 }: {
   c: (typeof STUDIO_CLASSES)[number];
-  schedule: ProgramSchedule | null;
+  schedule: DetailSchedule | null;
 }) {
   return (
     <div>
@@ -604,9 +614,11 @@ function ClassDetail({
       >
         {c.title ?? c.name}
       </span>
-      <span className="block text-mono text-[0.64rem] tracking-[0.18em] uppercase text-[var(--color-ember)]">
-        {c.when}
-      </span>
+      {c.when && (
+        <span className="block text-mono text-[0.64rem] tracking-[0.18em] uppercase text-[var(--color-ember)]">
+          {c.when}
+        </span>
+      )}
       <DetailBody
         blurb={c.blurb ?? c.desc}
         schedule={schedule}
@@ -621,7 +633,7 @@ function AcademyDetail({
   schedule,
 }: {
   ac: (typeof ACADEMY_PARTNERS)[number];
-  schedule: ProgramSchedule | null;
+  schedule: DetailSchedule | null;
 }) {
   const blurb = "blurb" in ac ? (ac as { blurb?: string }).blurb : undefined;
   const desc = "desc" in ac ? (ac as { desc?: string }).desc : undefined;
@@ -992,10 +1004,13 @@ const STUDIO_CLASSES: {
   /** Display headline, when the class is branded differently from the row. */
   title?: string
   logo?: React.ReactNode
-  when: string
+  /** Qualitative eyebrow ("All levels · no experience needed"). Timing belongs
+      in `schedule`, which renders in the right-hand column. */
+  when?: string
   desc: string
   blurb?: string
   action?: { label: string; href: string }
+  schedule?: { startsOn?: string; when?: string; status?: string }
 }[] = [
   { name: "Bollywood Dance",
     /* The row stays "Bollywood Dance" — it is what the platform calls the
@@ -1045,8 +1060,13 @@ const STUDIO_CLASSES: {
         </span>
       </span>
     ) },
-  { name: "Kids' Dance", when: "Coming soon",
-    desc: "After-school classes for younger movers." },
+  /* "Coming soon" is a timing statement, so it belongs in the schedule column
+     beside Bombay Jam's start date rather than as an eyebrow. There is nothing
+     qualitative to say about this class yet — its one line is the whole
+     record — so it carries no eyebrow at all. */
+  { name: "Kids' Dance",
+    desc: "After-school classes for younger movers.",
+    schedule: { status: "Coming soon" } },
 ];
 
 
@@ -1133,6 +1153,11 @@ const ACADEMY_PARTNERS = [
     short: "Squash",
     sport: "Squash academy",
     desc: "High performance junior squash academy with locations in NJ, PA and CT (forthcoming).",
+    /* No timetable: squashtigers.com's session pattern is a GROUP-WIDE
+       statement across NJ/PA/CT and qualified with "when school is in session",
+       so publishing it as an Exton schedule would be wrong. The status is what
+       is true and useful. */
+    schedule: { status: "Enrolling now" },
     /* The one row with a real trial behind it. Both sentences are sourced from
        squashtigers.com — the second is their FAQ answer almost verbatim. */
     blurb:
@@ -1161,7 +1186,10 @@ const ACADEMY_PARTNERS = [
     href: "https://smashshuttler.com",
     short: "Badminton",
     sport: "Badminton academy",
-    desc: "Coming Soon",
+    /* Same move as the other rows: "Coming soon" is timing, so it sits in the
+       schedule column. smashshuttler.com still says "Coming Summer 2026", so no
+       firmer date may be published here than they publish themselves. */
+    schedule: { status: "Coming soon" },
     /* Everything here is from smashshuttler.com. It is NOT yet running, so
        there is no trial to offer and nothing may be claimed about which courts
        it will use — no source links SmashShuttler to this building's three. */
