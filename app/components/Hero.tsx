@@ -8,7 +8,7 @@ import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, RATE_FEES_NOTE } from "../../li
 import { BOOK_COURTS_URL, bookingTarget } from "../../lib/booking";
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_E164 } from "../../lib/legal";
 
-type PanelKey = "academies" | "recreation" | "studio";
+type PanelKey = "academies" | "recreation";
 
 export default function Hero() {
   const [hovered, setHovered] = useState<PanelKey | null>(null);
@@ -59,7 +59,11 @@ export default function Hero() {
         isMobile={isMobile}
       />
 
-      {/* MIDDLE: Academies */}
+      {/* RIGHT: Academies and studio. These were two panels. Three columns
+          left each one too narrow to say anything, and the studio's three
+          classes and the three academies are the same shape of thing — a list
+          of programmes you sign up for, as opposed to a court you rent by the
+          hour. They share one roster now. */}
       <Panel
         kind="academies"
         flex={flexFor("academies")}
@@ -70,18 +74,6 @@ export default function Hero() {
         isMobile={isMobile}
       />
 
-      {/* RIGHT: Studio — dance and floor classes. The third thing the building
-          does, and the only one that is neither a court booking nor a junior
-          academy, so it earns its own panel rather than a row inside one. */}
-      <Panel
-        kind="studio"
-        flex={flexFor("studio")}
-        onEnter={() => !isMobile && setHovered("studio")}
-        onLeave={() => !isMobile && setHovered(null)}
-        hovered={isMobile ? true : hovered === "studio"}
-        anyHovered={isMobile ? true : hovered !== null}
-        isMobile={isMobile}
-      />
     </section>
   );
 }
@@ -105,13 +97,12 @@ function Panel({
   anyHovered: boolean;
   isMobile: boolean;
 }) {
-  const config = kind === "academies" ? ACADEMIES : kind === "studio" ? STUDIO : RECREATION;
-  /* Which academy the pointer is on. Panel-local: nothing outside this panel
-     cares, and lifting it would re-render the other two on every roster hover.
-     Cleared on leaving the ROSTER rather than the panel, so the detail does not
-     flicker while the pointer crosses the gap between the two columns. */
-  const [activeAcademy, setActiveAcademy] = useState<string | null>(null);
-  const active = ACADEMY_PARTNERS.find((a) => a.name === activeAcademy) ?? null;
+  const config = kind === "academies" ? ACADEMIES : RECREATION;
+  /* Which roster row the pointer is on, across both groups. Panel-local:
+     nothing outside this panel cares. Cleared on leaving the ROSTER rather than
+     the panel, so the detail does not flicker while the pointer crosses the gap
+     between the two columns. */
+  const [activeItem, setActiveItem] = useState<string | null>(null);
 
   return (
     <motion.div
@@ -122,10 +113,9 @@ function Panel({
       className={`relative cursor-pointer ${
         isMobile ? "overflow-visible" : "overflow-hidden"
       } ${
-        /* The rule is "every panel except the last", not "the recreation
-           panel". It was keyed on recreation while there were only two, so
-           adding a third left the academies/studio seam with no line. */
-        kind !== "studio"
+        /* "Every panel except the last", not a named panel. Keying it on a
+           name is what broke it the last two times the panel count changed. */
+        kind !== "academies"
           ? isMobile
             ? "border-b-2 border-[var(--color-ember)]"
             : "border-r-2 border-[var(--color-ember)]"
@@ -144,7 +134,12 @@ function Panel({
         style={{ background: "var(--hero-dim)" }}
       />
 
-      {/* Big background letter */}
+      {/* Big background wordmark. Was a single initial per panel — "R" and
+          "A" — which read as stray letters rather than as anything, and had to
+          be re-chosen every time a panel was renamed. It is the club's name on
+          both panels now. Sized in vw so it scales with the panel rather than
+          the text, and it still bleeds off the edge: it is texture, not a
+          heading, and the crop is what keeps it from competing with one. */}
       <motion.span
         aria-hidden
         animate={{
@@ -155,16 +150,19 @@ function Panel({
         className="absolute pointer-events-none select-none text-cond"
         style={{
           color: "var(--hero-glyph)",
-          fontSize: isMobile ? "clamp(10rem, 45vw, 16rem)" : "clamp(22rem, 38vw, 52rem)",
+          /* Five letters, not one, so the type is far smaller than the
+             initial it replaces — roughly 2.6em wide in this condensed face. */
+          fontSize: isMobile ? "clamp(3rem, 20vw, 6rem)" : "clamp(4.5rem, 13vw, 17rem)",
           lineHeight: 0.78,
           letterSpacing: "-0.04em",
-          top: kind === "academies" || kind === "studio" ? "-12%" : undefined,
-          bottom: kind === "recreation" ? "-18%" : undefined,
-          left: kind === "academies" ? "-10%" : kind === "studio" ? "-6%" : undefined,
-          right: kind === "recreation" ? "-12%" : undefined,
+          whiteSpace: "nowrap",
+          top: kind === "academies" ? "-4%" : undefined,
+          bottom: kind === "recreation" ? "-6%" : undefined,
+          left: kind === "academies" ? "-3%" : undefined,
+          right: kind === "recreation" ? "-4%" : undefined,
         }}
       >
-        {config.bigLetter}
+        {config.bigWord}
       </motion.span>
 
 
@@ -221,183 +219,153 @@ function Panel({
           <RateCard open={SHOW_NEXT_SLOT && !isMobile && hovered} stacked={isMobile} />
         )}
 
-        {/* Studio classes — the same stacked-tile shape the academies use, so
-            the two right-hand panels read as siblings rather than two
-            different designs sharing a hero. */}
-        {kind === "studio" && (
-          <motion.div
-            className="w-full flex flex-col gap-2 mt-3"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "0px" }}
-            variants={{
-              hidden: {},
-              visible: { transition: { staggerChildren: 0.13, delayChildren: 0.08 } },
-            }}
-          >
-            {STUDIO_CLASSES.map((c) => (
-              <motion.div
-                key={c.name}
-                className="h-full w-full min-w-0"
-                variants={{
-                  hidden: { opacity: 0, y: 24, scale: 0.94 },
-                  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
-                }}
-              >
-                <motion.div
-                  animate={
-                    isMobile
-                      ? { paddingTop: 12, paddingBottom: 12, backgroundColor: "var(--tile-bg)" }
-                      : {
-                          paddingTop: hovered ? 12 : 5,
-                          paddingBottom: hovered ? 12 : 5,
-                          backgroundColor: hovered ? "var(--tile-bg)" : "var(--tile-bg-quiet)",
-                        }
-                  }
-                  transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                  className="border border-white/10 flex flex-col px-4 py-3 h-full w-full"
-                >
-                  <span
-                    className="text-cond leading-[1.05]"
-                    style={{ fontSize: "0.95rem", letterSpacing: "0.02em", color: "var(--on-tile)" }}
-                  >
-                    {c.name}
-                  </span>
-                  <span
-                    className="text-mono mt-[3px]"
-                    style={{ fontSize: "0.56rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-ember)" }}
-                  >
-                    {c.when}
-                  </span>
-                  <motion.div
-                    animate={
-                      isMobile
-                        ? { opacity: 0.4, height: "auto", marginTop: 6 }
-                        : {
-                            opacity: hovered ? 0.4 : 0,
-                            height: hovered ? "auto" : 0,
-                            marginTop: hovered ? 6 : 0,
-                          }
-                    }
-                    transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                    className="overflow-hidden"
-                  >
-                    <span className="text-[0.76rem] leading-[1.45]" style={{ color: "var(--on-tile)" }}>
-                      {c.desc}
-                    </span>
-                  </motion.div>
-                </motion.div>
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
+        {/* The roster — a LIST first, the detail second.
 
-        {/* Academy roster — a LIST first, the detail second.
+            Two groups in one column: partner academies, then the club's own
+            studio classes. They were separate panels; at three columns neither
+            had room to say anything, and both are the same kind of offer — a
+            programme you sign up for, not a court you rent.
 
-            This was three stacked tiles, each carrying a logo, a status line,
-            an address and a button whether or not anyone was looking at it. At
-            the panel's hovered width that left most of every tile empty and
-            pushed the third academy well down the page.
-
-            It now reads in three steps: the roster is always there, the panel's
-            own hover brings in a sentence about how coaching works here, and
-            pointing at one name swaps that sentence for the academy. Nothing is
-            newly hidden — the tiles' detail was already gated on `hovered`.
+            It reads in three steps: the roster is always there, the panel's own
+            hover brings in a sentence about how coaching works here, and
+            pointing at a row swaps that sentence for the thing itself.
 
             Mobile has no hover and plenty of column, so it skips the mechanism
-            and stacks all three details. */}
+            and stacks every detail. */}
         {kind === "academies" &&
           (isMobile ? (
-            <div className="w-full mt-3 flex flex-col gap-5">
-              {ACADEMY_PARTNERS.map((ac) => (
-                <AcademyDetail key={ac.name} ac={ac} />
+            <div className="w-full mt-3 flex flex-col gap-7">
+              {ROSTER_GROUPS.map((g) => (
+                <div key={g.label}>
+                  <div className="text-mono text-[0.54rem] tracking-[0.2em] uppercase text-white/35 mb-3">
+                    {g.label}
+                  </div>
+                  <div className="flex flex-col gap-5">
+                    {g.items.map((it) => (
+                      <RosterDetail key={it.id} id={it.id} />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           ) : (
             <div
               className="w-full mt-4 flex gap-9 items-start"
-              onMouseLeave={() => setActiveAcademy(null)}
+              onMouseLeave={() => setActiveItem(null)}
             >
               {/* The roster. Legible even at the panel's narrow width — it is
                   the one thing here that should never need a hover. */}
-              <ul className="list-none m-0 p-0 shrink-0 flex flex-col">
-                {ACADEMY_PARTNERS.map((ac) => {
-                  const on = activeAcademy === ac.name;
-                  return (
-                    <li
-                      key={ac.name}
-                      className="border-b border-white/10 last:border-b-0"
-                    >
-                      <a
-                        href={ac.href}
-                        target="_blank"
-                        rel="noreferrer"
-                        onMouseEnter={() => setActiveAcademy(ac.name)}
-                        /* Focus mirrors hover, so the detail is reachable by
-                           keyboard and not only by pointer. */
-                        onFocus={() => setActiveAcademy(ac.name)}
-                        className="flex items-center gap-3 py-2 pr-8 no-underline"
-                      >
-                        <motion.span
-                          aria-hidden
-                          animate={{ opacity: on ? 1 : 0.3, scaleX: on ? 1 : 0.4 }}
-                          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                          /* --ember-ink, NOT --color-ember: only the TEXT
-                             utility is remapped for light (globals.css:401),
-                             so an ember BACKGROUND stays pale salmon on white. */
-                          className="block h-px w-5 shrink-0 origin-left bg-[var(--ember-ink)]"
-                        />
-                        <span
-                          className={`text-cond text-[1.2rem] leading-none whitespace-nowrap transition-colors ${
-                            on ? "text-[var(--color-ember)]" : "text-white/80"
-                          }`}
-                        >
-                          {ac.short}
-                        </span>
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
+              <div className="shrink-0 flex flex-col gap-5">
+                {ROSTER_GROUPS.map((g) => (
+                  <div key={g.label}>
+                    <div className="text-mono text-[0.54rem] tracking-[0.2em] uppercase text-white/35 mb-1">
+                      {g.label}
+                    </div>
+                    <ul className="list-none m-0 p-0 flex flex-col">
+                      {g.items.map((it) => {
+                        const on = activeItem === it.id;
+                        const inner = (
+                          <>
+                            <motion.span
+                              aria-hidden
+                              animate={{ opacity: on ? 1 : 0.3, scaleX: on ? 1 : 0.4 }}
+                              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                              /* --ember-ink, NOT --color-ember: only the TEXT
+                                 utility is remapped for light
+                                 (globals.css:401), so an ember BACKGROUND
+                                 stays pale salmon on white. */
+                              className="block h-px w-5 shrink-0 origin-left bg-[var(--ember-ink)]"
+                            />
+                            <span
+                              className={`text-cond text-[1.15rem] leading-none whitespace-nowrap transition-colors ${
+                                on ? "text-[var(--color-ember)]" : "text-white/80"
+                              }`}
+                            >
+                              {it.short}
+                            </span>
+                          </>
+                        );
+                        /* Focus mirrors hover so the detail is reachable by
+                           keyboard, not only by pointer. */
+                        const shared = {
+                          onMouseEnter: () => setActiveItem(it.id),
+                          onFocus: () => setActiveItem(it.id),
+                          className:
+                            "flex items-center gap-3 py-2 pr-8 no-underline w-full text-left bg-transparent border-0 cursor-pointer",
+                        };
+                        return (
+                          <li
+                            key={it.id}
+                            className="border-b border-white/10 last:border-b-0"
+                          >
+                            {/* Academies are partner brands with their own
+                                sites, so their rows are links. Studio classes
+                                are run in-house and have nowhere to send
+                                anyone, so theirs are disclosure buttons rather
+                                than links to a page that does not exist. */}
+                            {it.href ? (
+                              <a
+                                href={it.href}
+                                target="_blank"
+                                rel="noreferrer"
+                                {...shared}
+                              >
+                                {inner}
+                              </a>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setActiveItem(it.id)}
+                                {...shared}
+                              >
+                                {inner}
+                              </button>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ))}
+              </div>
 
-              {/* The detail. Fades in with the panel, then swaps per academy. */}
-              {/* `hovered || active` rather than `hovered` alone. active is set
-                  on FOCUS as well as hover, so a keyboard tabbing through the
-                  roster opens the detail too — gating on the mouse would leave
-                  the onFocus handler above doing nothing visible, which is
-                  worse than not wiring it at all. */}
+              {/* The detail. Fades in with the panel, then swaps per row.
+
+                  `hovered || activeItem` rather than `hovered` alone: activeItem
+                  is set on FOCUS as well as hover, so a keyboard tabbing the
+                  roster opens the detail too. */}
               <motion.div
+                /* `initial` matters here, and is not decoration. framer applies
+                   `animate` only after hydration, so without it the column
+                   paints fully visible on first load and the intro spills out
+                   of the closed panel until JS runs — more obvious now that the
+                   whole detail set is server-rendered. An explicit initial gets
+                   opacity:0 into the SSR markup. */
+                initial={{ opacity: 0, x: -8 }}
                 animate={{
-                  opacity: hovered || active ? 1 : 0,
-                  x: hovered || active ? 0 : -8,
+                  opacity: hovered || activeItem ? 1 : 0,
+                  x: hovered || activeItem ? 0 : -8,
                 }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
-                className="min-w-0 flex-1 border-l border-white/10 pl-9 min-h-[132px]"
-                /* Hidden from assistive tech while it is visually gone —
-                   announcing an academy's details from a panel nobody opened is
-                   worse than silence. */
-                aria-hidden={!(hovered || active)}
+                className="min-w-0 flex-1 border-l border-white/10 pl-9 min-h-[150px]"
+                aria-hidden={!(hovered || activeItem)}
               >
-                {/* Every layer is RENDERED, and only one is visible. This used
-                    to mount just the active one through AnimatePresence, which
-                    read fine in the browser and was wrong on the wire: on the
-                    server `active` is null and `isMobile` is false, so the HTML
-                    went out with the roster and the intro and nothing else. The
-                    opening date, the squash blurb, the trial link and
-                    cricket@ were all client-only — invisible to crawlers and to
-                    anyone without JS. Stacking them costs a little markup and
-                    puts the content back in the document. */}
+                {/* Every layer is RENDERED and only one is visible — see
+                    DetailLayer. Mounting just the active one put the whole
+                    detail column outside the server-rendered HTML. */}
                 <div className="grid">
-                  <DetailLayer show={!active}>
+                  <DetailLayer show={!activeItem}>
                     <p className="text-white/55 text-[0.82rem] leading-[1.6] max-w-[46ch] m-0">
-                      {ACADEMY_INTRO}
+                      {ROSTER_INTRO}
                     </p>
                   </DetailLayer>
-                  {ACADEMY_PARTNERS.map((ac) => (
-                    <DetailLayer key={ac.name} show={active?.name === ac.name}>
-                      <AcademyDetail ac={ac} />
-                    </DetailLayer>
-                  ))}
+                  {ROSTER_GROUPS.flatMap((g) =>
+                    g.items.map((it) => (
+                      <DetailLayer key={it.id} show={activeItem === it.id}>
+                        <RosterDetail id={it.id} />
+                      </DetailLayer>
+                    )),
+                  )}
                 </div>
               </motion.div>
             </div>
@@ -422,8 +390,12 @@ function Panel({
    of both, while keeping them in the DOM — which is the whole point, since the
    markup is what the crawler reads.
 
-   Hiding delays visibility until the fade finishes; showing flips it at once so
-   there is something to fade in. */
+   The two states are SEQUENCED, not crossfaded. Every layer sits in the same
+   grid cell, so fading them simultaneously overlaps two blocks of text for the
+   duration — muddy and unreadable. The outgoing layer fades in 110ms and the
+   incoming one waits that long before starting, which is what AnimatePresence's
+   mode="wait" used to do here. Hiding also delays visibility until its fade
+   finishes; showing flips it at once so there is something to fade in. */
 function DetailLayer({
   show,
   children,
@@ -438,11 +410,38 @@ function DetailLayer({
         opacity: show ? 1 : 0,
         visibility: show ? "visible" : "hidden",
         transition: show
-          ? "opacity 220ms ease-out"
-          : "opacity 160ms ease-out, visibility 0s linear 160ms",
+          ? "opacity 170ms ease-out 110ms"
+          : "opacity 110ms ease-out, visibility 0s linear 110ms",
       }}
     >
       {children}
+    </div>
+  );
+}
+
+/* One roster row's detail, looked up by id. Both groups render through here so
+   the desktop column and the mobile stack cannot drift apart. */
+function RosterDetail({ id }: { id: string }) {
+  const ac = ACADEMY_PARTNERS.find((a) => a.name === id);
+  if (ac) return <AcademyDetail ac={ac} />;
+  const c = STUDIO_CLASSES.find((x) => x.name === id);
+  return c ? <ClassDetail c={c} /> : null;
+}
+
+/* A studio class. No logo and no outbound link — these are the club's own, and
+   there is no page to send anyone to yet. */
+function ClassDetail({ c }: { c: (typeof STUDIO_CLASSES)[number] }) {
+  return (
+    <div>
+      <span className="block text-cond text-white text-[1.5rem] leading-none mb-2.5">
+        {c.name}
+      </span>
+      <span className="block text-mono text-[0.58rem] tracking-[0.18em] uppercase text-[var(--color-ember)]">
+        {c.when}
+      </span>
+      <p className="text-white/60 text-[0.79rem] leading-[1.55] mt-2 mb-0 max-w-[46ch]">
+        {c.desc}
+      </p>
     </div>
   );
 }
@@ -816,19 +815,18 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
 
 /* ─── Content config ───────────────────────────────────────────── */
 
+/* One panel for both halves now. "Train. / Move." keeps the two-word verb
+   pattern the other panel sets while covering the academies and the studio —
+   "Compete." spoke only for the academies, "Dance." only for the studio. */
 const ACADEMIES = {
-  bigLetter: "A",
+  bigWord: "EXTON",
   bg: "var(--hero-aca-bg)",
-  label: "Academies · Juniors",
-  headline: { line1: "Train.", line2: "Compete." },
-  body: "Structured Coaching in Cricket, Squash and Badminton. Fitness and Agility on the Turf.",
+  label: "Academies · Studio",
+  headline: { line1: "Train.", line2: "Move." },
+  body: "Structured coaching in cricket, squash and badminton. Dance and fitness on the studio floor. All levels, no partner needed.",
   cta: "Explore academies",
 };
 
-/* The third panel. Named for what the room is rather than one class that runs
-   in it — Bollywood is the headline offering, not the whole offering, and a
-   panel called "Bollywood" would have to be renamed the moment a second class
-   lands. "Dance. / Move." keeps the verb pattern the other two panels set. */
 /* Bollywood is real and dated; the rest is honestly labelled as not yet
    running. Saying "coming soon" beats inventing a timetable, and it matches
    how the academies panel already handles its two unlaunched partners. */
@@ -841,17 +839,9 @@ const STUDIO_CLASSES = [
     desc: "After-school classes for younger movers." },
 ];
 
-const STUDIO = {
-  bigLetter: "S",
-  bg: "var(--hero-aca-bg)",
-  label: "Studio · All ages",
-  headline: { line1: "Dance.", line2: "Move." },
-  body: "Bollywood and bhangra choreography, plus fitness on the studio floor. All levels, no partner needed.",
-  cta: "Join the waitlist",
-};
 
 const RECREATION = {
-  bigLetter: "R",
+  bigWord: "EXTON",
   bg: "var(--hero-rec-bg)",
   label: "No membership required",
   headline: { line1: "Book a court.", line2: "Pay by the hour." },
@@ -866,11 +856,11 @@ const RECREATION = {
    has no brand webfont, so it is a cropped shield image plus the name set in
    the site's own condensed face. Cropping to the shield keeps all three marks
    at the same optical weight — the full badge is roughly twice as tall. */
-/* The line the detail column shows before you point at anything. Every claim in
-   it is read off the three entries below rather than invented: cricket has a
-   date, squash takes trials today, badminton has a brand and no date yet. */
-const ACADEMY_INTRO =
-  "Coaching here runs through three partner academies rather than the club itself. Cricket opens Sep 28th, squash is taking trials now, and badminton follows.";
+/* The line the detail column shows before you point at anything. Every claim is
+   read off the entries below rather than invented: cricket has a date, squash
+   takes trials today, badminton has a brand and no date yet. */
+const ROSTER_INTRO =
+  "Coaching runs through three partner academies rather than the club itself — cricket opens Sep 28th, squash takes trials now, badminton follows. The studio floor is the club's own: dance and fitness, all levels.";
 
 const ACADEMY_PARTNERS = [
   {
@@ -947,5 +937,29 @@ const ACADEMY_PARTNERS = [
         <span style={{ color: "var(--on-tile)" }}>shuttler</span>
       </span>
     ),
+  },
+];
+
+/* The roster, in the order it reads on the page. Built from the two sources
+   rather than duplicating them, so adding an academy or a class shows up in the
+   list, the detail column and the mobile stack at once.
+
+   `href` is what separates the groups behaviourally: academies have their own
+   sites to link to, studio classes do not. */
+const ROSTER_GROUPS: {
+  label: string;
+  items: { id: string; short: string; href?: string }[];
+}[] = [
+  {
+    label: "Academies",
+    items: ACADEMY_PARTNERS.map((a) => ({
+      id: a.name,
+      short: a.short,
+      href: a.href,
+    })),
+  },
+  {
+    label: "Studio",
+    items: STUDIO_CLASSES.map((c) => ({ id: c.name, short: c.name })),
   },
 ];
