@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import type { AvailabilityPayload } from "../api/availability/route";
@@ -106,6 +106,12 @@ function Panel({
   isMobile: boolean;
 }) {
   const config = kind === "academies" ? ACADEMIES : kind === "studio" ? STUDIO : RECREATION;
+  /* Which academy the pointer is on. Panel-local: nothing outside this panel
+     cares, and lifting it would re-render the other two on every roster hover.
+     Cleared on leaving the ROSTER rather than the panel, so the detail does not
+     flicker while the pointer crosses the gap between the two columns. */
+  const [activeAcademy, setActiveAcademy] = useState<string | null>(null);
+  const active = ACADEMY_PARTNERS.find((a) => a.name === activeAcademy) ?? null;
 
   return (
     <motion.div
@@ -286,101 +292,165 @@ function Panel({
           </motion.div>
         )}
 
-        {/* Academy logos — always visible; compact when not hovered, full when hovered */}
-        {kind === "academies" && (
-          <motion.div
-            /* Stacked, not a 3-up grid. With a third panel beside it there is
-               no longer width for three tiles side by side, and stacking also
-               lets each logo sit at a readable size instead of being squeezed. */
-            className="w-full flex flex-col gap-2 mt-3"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "0px" }}
-            variants={{
-              hidden: {},
-              visible: { transition: { staggerChildren: 0.13, delayChildren: 0.08 } },
-            }}
-          >
-            {/* No .reverse(): the array is authored Cricket, Badminton,
-                Squash and that is the order asked for. Reversing it was what
-                put Squash first on the page. */}
-            {ACADEMY_PARTNERS.map((ac) => (
+        {/* Academy roster — a LIST first, the detail second.
+
+            This was three stacked tiles, each carrying a logo, a status line,
+            an address and a button whether or not anyone was looking at it. At
+            the panel's hovered width that left most of every tile empty and
+            pushed the third academy well down the page.
+
+            It now reads in three steps: the roster is always there, the panel's
+            own hover brings in a sentence about how coaching works here, and
+            pointing at one name swaps that sentence for the academy. Nothing is
+            newly hidden — the tiles' detail was already gated on `hovered`.
+
+            Mobile has no hover and plenty of column, so it skips the mechanism
+            and stacks all three details. */}
+        {kind === "academies" &&
+          (isMobile ? (
+            <div className="w-full mt-3 flex flex-col gap-5">
+              {ACADEMY_PARTNERS.map((ac) => (
+                <AcademyDetail key={ac.name} ac={ac} />
+              ))}
+            </div>
+          ) : (
+            <div
+              className="w-full mt-4 flex gap-9 items-start"
+              onMouseLeave={() => setActiveAcademy(null)}
+            >
+              {/* The roster. Legible even at the panel's narrow width — it is
+                  the one thing here that should never need a hover. */}
+              <ul className="list-none m-0 p-0 shrink-0 flex flex-col">
+                {ACADEMY_PARTNERS.map((ac) => {
+                  const on = activeAcademy === ac.name;
+                  return (
+                    <li
+                      key={ac.name}
+                      className="border-b border-white/10 last:border-b-0"
+                    >
+                      <a
+                        href={ac.href}
+                        target="_blank"
+                        rel="noreferrer"
+                        onMouseEnter={() => setActiveAcademy(ac.name)}
+                        /* Focus mirrors hover, so the detail is reachable by
+                           keyboard and not only by pointer. */
+                        onFocus={() => setActiveAcademy(ac.name)}
+                        className="flex items-center gap-3 py-2 pr-8 no-underline"
+                      >
+                        <motion.span
+                          aria-hidden
+                          animate={{ opacity: on ? 1 : 0.3, scaleX: on ? 1 : 0.4 }}
+                          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                          /* --ember-ink, NOT --color-ember: only the TEXT
+                             utility is remapped for light (globals.css:401),
+                             so an ember BACKGROUND stays pale salmon on white. */
+                          className="block h-px w-5 shrink-0 origin-left bg-[var(--ember-ink)]"
+                        />
+                        <span
+                          className={`text-cond text-[1.2rem] leading-none whitespace-nowrap transition-colors ${
+                            on ? "text-[var(--color-ember)]" : "text-white/80"
+                          }`}
+                        >
+                          {ac.short}
+                        </span>
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {/* The detail. Fades in with the panel, then swaps per academy. */}
+              {/* `hovered || active` rather than `hovered` alone. active is set
+                  on FOCUS as well as hover, so a keyboard tabbing through the
+                  roster opens the detail too — gating on the mouse would leave
+                  the onFocus handler above doing nothing visible, which is
+                  worse than not wiring it at all. */}
               <motion.div
-                key={ac.name}
-                className="h-full w-full min-w-0"
-                variants={{
-                  hidden: { opacity: 0, y: 24, scale: 0.94 },
-                  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
+                animate={{
+                  opacity: hovered || active ? 1 : 0,
+                  x: hovered || active ? 0 : -8,
                 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="min-w-0 flex-1 border-l border-white/10 pl-9 min-h-[132px]"
+                /* Hidden from assistive tech while it is visually gone —
+                   announcing an academy's details from a panel nobody opened is
+                   worse than silence. */
+                aria-hidden={!(hovered || active)}
               >
-              <motion.a
-                href={ac.href}
-                target="_blank"
-                rel="noreferrer"
-                animate={
-                  isMobile
-                    ? {
-                        paddingTop: 12,
-                        paddingBottom: 12,
-                        backgroundColor: "var(--tile-bg)",
-                      }
-                    : {
-                        paddingTop: hovered ? 12 : 5,
-                        paddingBottom: hovered ? 12 : 5,
-                        backgroundColor: hovered ? "var(--tile-bg)" : "var(--tile-bg-quiet)",
-                      }
-                }
-                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                className={`border border-white/10 hover:border-[var(--color-ember)]/50 flex flex-col px-4 py-3 transition-colors h-full ${isMobile ? "w-full" : "w-full"}`}
-              >
-                <motion.div
-                  animate={isMobile ? { scale: 1, originX: 0 } : { scale: hovered ? 1 : 0.72, originX: 0 }}
-                  transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                  className="leading-none"
-                  style={{ transformOrigin: "left center" }}
-                >
-                  {ac.logo}
-                </motion.div>
-                <motion.div
-                  animate={
-                    isMobile
-                      ? { opacity: 0.4, height: "auto", marginTop: 6 }
-                      : {
-                          opacity: hovered ? 0.4 : 0,
-                          height: hovered ? "auto" : 0,
-                          marginTop: hovered ? 6 : 0,
-                        }
-                  }
-                  transition={{ duration: 0.35, ease: "easeOut" }}
-                  className="text-mono text-[0.58rem] text-white overflow-hidden"
-                >
-                  {ac.sport}
-                </motion.div>
-                {"desc" in ac && ac.desc && (
-                  <p className="text-white/55 mt-2 flex-1" style={{ fontSize: "0.72rem", lineHeight: 1.5 }}>
-                    {(ac as { desc: string }).desc}
-                  </p>
-                )}
-                {"cta" in ac && ac.cta && (
-                  <span className="inline-block mt-auto pt-3 text-[var(--color-ember)] hover:text-white text-mono text-[0.6rem] border border-[var(--color-ember)]/50 px-3 py-1 transition-colors">
-                    {(ac as { cta: string }).cta} →
-                  </span>
-                )}
-              </motion.a>
-              {"email" in ac && (ac as { email?: string }).email && (
-                <a
-                  href={`mailto:${(ac as { email: string }).email}`}
-                  className="block border border-t-0 border-white/10 hover:border-[var(--color-ember)]/50 px-4 py-[7px] text-mono text-[0.6rem] text-[var(--color-ember)] hover:text-white transition-colors"
-                >
-                  Email us →
-                </a>
-              )}
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={active ? active.name : "intro"}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                  >
+                    {active ? (
+                      <AcademyDetail ac={active} />
+                    ) : (
+                      <p className="text-white/55 text-[0.82rem] leading-[1.6] max-w-[46ch] m-0">
+                        {ACADEMY_INTRO}
+                      </p>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
               </motion.div>
-            ))}
-          </motion.div>
-        )}
+            </div>
+          ))}
       </div>
     </motion.div>
+  );
+}
+
+/* One academy, rendered the same way in both places — the desktop detail column
+   and the mobile stack. Kept as a component so the two cannot drift.
+
+   The logo is NOT a link here. On desktop the roster name already goes to the
+   academy's site and the CTA goes there too; a third link to the same URL in one
+   view is noise for anyone tabbing or listening rather than looking. */
+function AcademyDetail({ ac }: { ac: (typeof ACADEMY_PARTNERS)[number] }) {
+  const email = "email" in ac ? (ac as { email?: string }).email : undefined;
+  const cta = "cta" in ac ? (ac as { cta?: string }).cta : undefined;
+  const desc = "desc" in ac ? (ac as { desc?: string }).desc : undefined;
+  return (
+    <div>
+      <span className="block leading-none mb-3">{ac.logo}</span>
+      <span className="block text-mono text-[0.58rem] tracking-[0.18em] uppercase text-[var(--color-ember)]">
+        {ac.sport}
+      </span>
+      {desc && (
+        <p className="text-white/60 text-[0.79rem] leading-[1.55] mt-2 mb-0 max-w-[46ch]">
+          {desc}
+        </p>
+      )}
+      {(email || cta) && (
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-3.5">
+          {/* Shown as the ADDRESS rather than a button: a reader who can see it
+              can write it down, forward it, or mail it from their phone. */}
+          {email && (
+            <a
+              href={`mailto:${email}`}
+              className="text-[var(--color-ember)] hover:text-white text-mono text-[0.6rem] transition-colors break-all"
+            >
+              {email}
+            </a>
+          )}
+          {cta && (
+            <a
+              href={ac.href}
+              target="_blank"
+              rel="noreferrer"
+              className="text-[var(--color-ember)] hover:text-white text-mono text-[0.6rem] transition-colors"
+            >
+              <span className="border border-[var(--color-ember)]/50 px-3 py-1">
+                {cta} &rarr;
+              </span>
+            </a>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -758,13 +828,22 @@ const RECREATION = {
    has no brand webfont, so it is a cropped shield image plus the name set in
    the site's own condensed face. Cropping to the shield keeps all three marks
    at the same optical weight — the full badge is roughly twice as tall. */
+/* The line the detail column shows before you point at anything. Every claim in
+   it is read off the three entries below rather than invented: cricket has a
+   date, squash takes trials today, badminton has a brand and no date yet. */
+const ACADEMY_INTRO =
+  "Coaching here runs through three partner academies rather than the club itself. Cricket opens Sep 28th, squash is taking trials now, and badminton follows.";
+
 const ACADEMY_PARTNERS = [
   {
     name: "Chester County Cricket Academy",
     href: "https://cccricketacademy.com",
+    short: "Cricket",
     sport: "Cricket academy",
     desc: "Coming Sep 28th",
-    cta: "Learn More",
+    // No cta: the site link lives on the logo and there is nothing else to
+    // send a reader to until the academy opens, so the tile offers the
+    // address instead of a button.
     email: "cricket@extonsports.com",
     logo: (
       <span className="flex items-center gap-[9px]">
@@ -791,6 +870,7 @@ const ACADEMY_PARTNERS = [
   {
     name: "SmashShuttler",
     href: "https://smashshuttler.com",
+    short: "Badminton",
     sport: "Badminton academy",
     desc: "Coming Soon",
     cta: "Learn More",
@@ -811,6 +891,7 @@ const ACADEMY_PARTNERS = [
   {
     name: "SquashTigers",
     href: "https://squashtigers.com",
+    short: "Squash",
     sport: "Squash academy",
     desc: "High performance junior squash academy with locations in NJ, PA and CT (forthcoming).",
     cta: "Book a Trial",
