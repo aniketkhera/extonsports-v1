@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import type { AvailabilityPayload } from "../api/availability/route";
@@ -378,23 +378,27 @@ function Panel({
                    worse than silence. */
                 aria-hidden={!(hovered || active)}
               >
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.div
-                    key={active ? active.name : "intro"}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
-                  >
-                    {active ? (
-                      <AcademyDetail ac={active} />
-                    ) : (
-                      <p className="text-white/55 text-[0.82rem] leading-[1.6] max-w-[46ch] m-0">
-                        {ACADEMY_INTRO}
-                      </p>
-                    )}
-                  </motion.div>
-                </AnimatePresence>
+                {/* Every layer is RENDERED, and only one is visible. This used
+                    to mount just the active one through AnimatePresence, which
+                    read fine in the browser and was wrong on the wire: on the
+                    server `active` is null and `isMobile` is false, so the HTML
+                    went out with the roster and the intro and nothing else. The
+                    opening date, the squash blurb, the trial link and
+                    cricket@ were all client-only — invisible to crawlers and to
+                    anyone without JS. Stacking them costs a little markup and
+                    puts the content back in the document. */}
+                <div className="grid">
+                  <DetailLayer show={!active}>
+                    <p className="text-white/55 text-[0.82rem] leading-[1.6] max-w-[46ch] m-0">
+                      {ACADEMY_INTRO}
+                    </p>
+                  </DetailLayer>
+                  {ACADEMY_PARTNERS.map((ac) => (
+                    <DetailLayer key={ac.name} show={active?.name === ac.name}>
+                      <AcademyDetail ac={ac} />
+                    </DetailLayer>
+                  ))}
+                </div>
               </motion.div>
             </div>
           ))}
@@ -409,6 +413,40 @@ function Panel({
    The logo is NOT a link here. On desktop the roster name already goes to the
    academy's site and the CTA goes there too; a third link to the same URL in one
    view is noise for anyone tabbing or listening rather than looking. */
+/* One stacked layer of the detail column. All layers occupy the same grid cell,
+   so the column is as tall as its tallest child and nothing reflows on swap.
+
+   visibility, not just opacity, does the hiding. An element left at opacity 0 is
+   still focusable and still read aloud, so the three inactive academies would
+   sit in the tab order as invisible links. `visibility: hidden` takes them out
+   of both, while keeping them in the DOM — which is the whole point, since the
+   markup is what the crawler reads.
+
+   Hiding delays visibility until the fade finishes; showing flips it at once so
+   there is something to fade in. */
+function DetailLayer({
+  show,
+  children,
+}: {
+  show: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="[grid-area:1/1]"
+      style={{
+        opacity: show ? 1 : 0,
+        visibility: show ? "visible" : "hidden",
+        transition: show
+          ? "opacity 220ms ease-out"
+          : "opacity 160ms ease-out, visibility 0s linear 160ms",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 function AcademyDetail({ ac }: { ac: (typeof ACADEMY_PARTNERS)[number] }) {
   const email = "email" in ac ? (ac as { email?: string }).email : undefined;
   const cta = "cta" in ac ? (ac as { cta?: string }).cta : undefined;
@@ -868,27 +906,6 @@ const ACADEMY_PARTNERS = [
     ),
   },
   {
-    name: "SmashShuttler",
-    href: "https://smashshuttler.com",
-    short: "Badminton",
-    sport: "Badminton academy",
-    desc: "Coming Soon",
-    cta: "Learn More",
-    logo: (
-      <span
-        style={{
-          fontFamily: "var(--font-caveat), cursive",
-          fontWeight: 700,
-          fontSize: "1.35rem",
-          lineHeight: 1.1,
-        }}
-      >
-        <span style={{ color: "var(--ember-ink)" }}>smash!</span>
-        <span style={{ color: "var(--on-tile)" }}>shuttler</span>
-      </span>
-    ),
-  },
-  {
     name: "SquashTigers",
     href: "https://squashtigers.com",
     short: "Squash",
@@ -907,6 +924,27 @@ const ACADEMY_PARTNERS = [
       >
         <span style={{ color: "var(--on-tile)" }}>SQUASH</span>
         <span style={{ color: "var(--ember-ink)" }}>TIGERS</span>
+      </span>
+    ),
+  },
+  {
+    name: "SmashShuttler",
+    href: "https://smashshuttler.com",
+    short: "Badminton",
+    sport: "Badminton academy",
+    desc: "Coming Soon",
+    cta: "Learn More",
+    logo: (
+      <span
+        style={{
+          fontFamily: "var(--font-caveat), cursive",
+          fontWeight: 700,
+          fontSize: "1.35rem",
+          lineHeight: 1.1,
+        }}
+      >
+        <span style={{ color: "var(--ember-ink)" }}>smash!</span>
+        <span style={{ color: "var(--on-tile)" }}>shuttler</span>
       </span>
     ),
   },
