@@ -139,10 +139,9 @@ export const RATE_FOOTNOTE =
 /**
  * The fee disclosure, kept OUT of RATE_FOOTNOTE on purpose.
  *
- * The rate card is the base rate. Exton passes both fees on
- * (`fee_processing_mode` and `fee_platform_mode` are both 'pass' on the
- * platform), so a $40 court is $42.28 at checkout — $0.75 platform plus the
- * grossed-up Stripe fee. Appending that to the footnote would have buried a
+ * The rate card is the base rate. Exton passes the Stripe fee on
+ * (`fee_processing_mode` = 'pass'), so a $40 court is $41.50 at checkout once
+ * that fee is grossed up. Appending that to the footnote would have buried a
  * price disclosure at the end of a sentence about player caps; it gets its own
  * line so it reads as a term, not a footnote to a footnote.
  *
@@ -154,14 +153,20 @@ export const RATE_FOOTNOTE =
  * is 2.9% and 30c, NOT 2.5% — one global constant, no per-club override, so a
  * site quoting a lower rate under-states every single charge.
  *
- * The 75c is Exton's `platform_fee_fixed`, passed to the customer because
- * `fee_platform_mode` is 'pass'. Both verified live on 2026-09-01.
+ * ⛔ THE 75c PLATFORM FEE IS GONE as of 2026-09-03. Exton's
+ * `platform_fee_fixed` was set to 0.00 so ONE fee treatment covers courts and
+ * the new studio classes alike: fee treatment lives on the `locations` row and
+ * the platform has no per-product override, so a club-wide setting was the only
+ * way to price both without standing up a second club row. Exton now matches
+ * Princeton and Wyvern, which were always at zero. Stripe is still passed to
+ * the customer on both products (`fee_processing_mode` = 'pass'), which is what
+ * keeps the club whole on its 30% of every class.
  *
  * Retyped here, which is the same drift risk as the rates above. If they move,
  * the honest fix is to serve them from the club endpoint, not edit this string.
  */
 export const RATE_FEES_NOTE =
-  'Stripe fee (2.9% + 30¢) and platform fee (75¢) not included.'
+  'Stripe fee (2.9% + 30¢) not included.'
 
 /** A sentence per band for the footer, where there is space to say why. */
 export const BAND_BLURB: Record<BandKey, string> = {
