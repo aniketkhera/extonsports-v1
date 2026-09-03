@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import type { AvailabilityPayload } from "../api/availability/route";
@@ -106,6 +106,12 @@ function Panel({
      between the two columns. */
   const [activeItem, setActiveItem] = useState<string | null>(null);
 
+  /* The drifting wordmark is the hero's only continuous motion, and a very
+     large one. prefers-reduced-motion exists for exactly this, so the pan is
+     dropped entirely when it is set — the mark stays, it simply stops moving,
+     which is the same trade globals.css:191 makes for the ember pulse. */
+  const reduceMotion = useReducedMotion();
+
   /* The timetable, per program name. Client-side and best-effort: the panel
      renders complete without it, and every row whose program has no sessions
      simply shows no schedule line rather than an empty placeholder. Only the
@@ -153,32 +159,66 @@ function Panel({
         style={{ background: "var(--hero-dim)" }}
       />
 
-      {/* Big background wordmark. Was a single initial per panel — "R" and
-          "A" — which read as stray letters rather than as anything, and had to
-          be re-chosen every time a panel was renamed. It is the club's name on
-          both panels now. Sized in vw so it scales with the panel rather than
-          the text, and it still bleeds off the edge: it is texture, not a
-          heading, and the crop is what keeps it from competing with one. */}
+      {/* Big background wordmark, and the hero's moving part.
+
+          It was a single initial per panel — "R" and "A" — which read as stray
+          letters and had to be re-chosen whenever a panel was renamed. It is
+          the club's name on both panels now, sized in vw so it scales with the
+          panel rather than the text.
+
+          THE DRIFT IS THE POINT. Nothing else in the hero moves on its own; the
+          panels only respond to a pointer, so on an untouched page it is
+          completely still. A very slow pan on the one element that is pure
+          texture gives it life without anything legible sliding around.
+
+          Deliberately slow and deliberately small: tens of seconds per pass and
+          a few dozen pixels of travel. Fast enough to notice on a second look,
+          never fast enough to compete with the copy on top of it. The two
+          panels drift in opposite directions over different periods so they
+          never look like one image sliding, and never resync.
+
+          Only `transform` animates — x, y and scale — so this stays on the
+          compositor and never triggers layout. The mark still bleeds off the
+          edge and the panel still clips it: it is texture, not a heading, and
+          the crop is what keeps it from competing with one. */}
       <motion.span
         aria-hidden
         animate={{
           opacity: hovered ? 0.085 : 0.04,
-          scale: hovered ? 1.05 : 1,
+          scale: hovered ? 1.06 : 1,
+          ...(reduceMotion
+            ? { x: 0, y: 0 }
+            : kind === "academies"
+              ? { x: [0, -88], y: [0, 32] }
+              : { x: [0, 76], y: [0, -28] }),
         }}
-        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        transition={{
+          opacity: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
+          scale: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
+          /* Mirror rather than loop, so it eases back instead of snapping to
+             the start. Co-prime-ish periods keep the two axes from meeting at
+             the same point and turning the drift into a visible diagonal. */
+          x: reduceMotion
+            ? { duration: 0.4 }
+            : { duration: kind === "academies" ? 29 : 24, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" },
+          y: reduceMotion
+            ? { duration: 0.4 }
+            : { duration: kind === "academies" ? 19 : 22, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" },
+        }}
         className="absolute pointer-events-none select-none text-cond"
         style={{
           color: "var(--hero-glyph)",
-          /* Five letters, not one, so the type is far smaller than the
-             initial it replaces — roughly 2.6em wide in this condensed face. */
-          fontSize: isMobile ? "clamp(3rem, 20vw, 6rem)" : "clamp(4.5rem, 13vw, 17rem)",
+          /* Much larger than the initial it replaced. Five letters in a
+             condensed face run about 2.6em wide, so this is wider than the
+             panel on purpose — the crop is the composition. */
+          fontSize: isMobile ? "clamp(4rem, 26vw, 8rem)" : "clamp(6rem, 19vw, 26rem)",
           lineHeight: 0.78,
           letterSpacing: "-0.04em",
           whiteSpace: "nowrap",
-          top: kind === "academies" ? "-4%" : undefined,
-          bottom: kind === "recreation" ? "-6%" : undefined,
-          left: kind === "academies" ? "-3%" : undefined,
-          right: kind === "recreation" ? "-4%" : undefined,
+          top: kind === "academies" ? "-6%" : undefined,
+          bottom: kind === "recreation" ? "-8%" : undefined,
+          left: kind === "academies" ? "-5%" : undefined,
+          right: kind === "recreation" ? "-6%" : undefined,
         }}
       >
         {config.bigWord}
