@@ -336,9 +336,10 @@ function Panel({
                               className="block h-px w-5 shrink-0 origin-left bg-[var(--ember-ink)]"
                             />
                             <span
-                              className={`text-cond text-[1.15rem] leading-none whitespace-nowrap transition-colors ${
+                              className={`text-cond leading-none whitespace-nowrap transition-colors ${
                                 on ? "text-[var(--color-ember)]" : "text-white/80"
                               }`}
+                              style={{ fontSize: "clamp(1.15rem, 1vw, 1.45rem)" }}
                             >
                               {it.short}
                             </span>
@@ -726,6 +727,28 @@ const SHOW_NEXT_SLOT = false;
 const rateGrid = (open: boolean) =>
   `minmax(84px,1fr) repeat(3,minmax(66px,0.5fr)) minmax(0,${open ? "1.1fr" : "0fr"})`;
 
+/* The recreation panel's type scale.
+ *
+ * These were fixed rem, set when both panels held small tiles. Scaling the
+ * academies detail column up left this side visibly smaller — same hero, two
+ * different type sizes — so the two now meet.
+ *
+ * ⚠️ CLAMPED ON vw, AND THE FLOOR MATTERS. Each floor is the size this text was
+ * before, so nothing grows on a narrow screen. That is deliberate: rateGrid()
+ * floors the sport column at 84px and each price column at 66px, and those
+ * minimums only bind when the panel is narrow — which is exactly where the type
+ * now stays put. Growth happens only above roughly 1400px, where the columns
+ * are sized by fr and have room to spare. Raising the floors instead would have
+ * risked overflowing the table on a laptop.
+ *
+ * The ceilings are matched to the academies column: RATE_BODY tops out at the
+ * same 1.3rem as the blurb over there, RATE_PRICE just under it. */
+const RATE_LABEL = "clamp(0.56rem, 0.5vw, 0.72rem)";
+const RATE_SPORT = "clamp(0.95rem, 0.9vw, 1.3rem)";
+const RATE_PRICE = "clamp(0.84rem, 0.8vw, 1.15rem)";
+const RATE_NOTE = "clamp(0.7rem, 0.62vw, 0.92rem)";
+const RATE_BODY = "clamp(0.78rem, 0.75vw, 1.05rem)";
+
 const RATE_GRID = "grid gap-x-2 items-center px-4 py-[9px]";
 const RATE_GRID_EASE = "grid-template-columns 480ms cubic-bezier(0.22,1,0.36,1)";
 
@@ -852,9 +875,9 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
           className={`${RATE_GRID} bg-white/[0.04] border-b border-white/[0.07]`}
           style={{ gridTemplateColumns: rateGrid(open), transition: RATE_GRID_EASE }}
         >
-          <span className="text-mono text-[0.56rem] text-white/45">Per hour</span>
+          <span className="text-mono text-white/45" style={{ fontSize: RATE_LABEL }}>Per hour</span>
           {RATE_BANDS.map((b) => (
-            <span key={b.key} className="text-mono text-[0.56rem] text-white/45">
+            <span key={b.key} className="text-mono text-white/45" style={{ fontSize: RATE_LABEL }}>
               {b.label}
             </span>
           ))}
@@ -864,8 +887,8 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
               accessibility tree and in the served HTML. */}
           {SHOW_NEXT_SLOT && (
           <span
-            className="text-mono text-[0.56rem] text-white/45 flex items-center gap-[6px] overflow-hidden whitespace-nowrap transition-opacity duration-300"
-            style={{ opacity: open ? 1 : 0 }}
+            className="text-mono text-white/45 flex items-center gap-[6px] overflow-hidden whitespace-nowrap transition-opacity duration-300"
+            style={{ fontSize: RATE_LABEL, opacity: open ? 1 : 0 }}
           >
             {/* The one live figure in the card earns the pulse. */}
             <span className="relative flex h-[6px] w-[6px] shrink-0">
@@ -897,18 +920,19 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
           >
             <span
               className="text-cond tracking-[0.03em]"
-              style={{ fontSize: "0.95rem", color: "var(--ember-ink)" }}
+              style={{ fontSize: RATE_SPORT, color: "var(--ember-ink)" }}
             >
               {r.sport}
             </span>
             {RATE_BANDS.map((b) => (
               <span
                 key={b.key}
-                className={`text-[0.84rem] font-medium ${
+                className={`font-medium ${
                   // Peak is the price most people will actually pay, so it is
                   // the one that reads at full strength.
                   b.key === "peak" ? "text-white" : "text-white/[0.72]"
                 }`}
+                style={{ fontSize: RATE_PRICE }}
               >
                 ${r[b.key]}
               </span>
@@ -916,7 +940,7 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
             <span
               className="text-cond tracking-[0.02em] whitespace-nowrap overflow-hidden transition-opacity duration-300"
               style={{
-                fontSize: "0.86rem",
+                fontSize: RATE_PRICE,
                 color: slotFor(r.sport) ? pulse : "rgba(128,140,155,0.55)",
                 opacity: open ? 1 : 0,
               }}
@@ -950,7 +974,8 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
       )}
 
       <motion.p
-        className="text-white/40 text-[0.7rem]"
+        className="text-white/40"
+        style={{ fontSize: RATE_NOTE }}
         variants={{
           hidden: { opacity: 0 },
           visible: { opacity: 1, transition: { duration: 0.5 } },
@@ -972,10 +997,13 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
           visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
         }}
       >
-        <span className="text-mono text-[0.56rem] text-[var(--color-ember)]">
+        <span
+          className="text-mono text-[var(--color-ember)]"
+          style={{ fontSize: RATE_LABEL }}
+        >
           Bulk &amp; block bookings
         </span>
-        <span className="text-white/60 text-[0.78rem]">
+        <span className="text-white/60" style={{ fontSize: RATE_BODY }}>
           Leagues, corporate nights, school groups and full-venue hire —{" "}
           <a
             href={`mailto:${CONTACT_EMAIL}`}
