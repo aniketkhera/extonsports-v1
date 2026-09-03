@@ -1,10 +1,11 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import type { AvailabilityPayload } from "../api/availability/route";
-import type { SchedulePayload, ProgramSchedule } from "../api/schedule/route";
+import type { SchedulePayload } from "../api/schedule/route";
+import type { ProgramSchedule } from "@/lib/club-schedule";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, RATE_FEES_NOTE } from "../../lib/rates";
 import { BOOK_COURTS_URL, bookingTarget } from "../../lib/booking";
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_E164 } from "../../lib/legal";
@@ -105,6 +106,12 @@ function Panel({
      between the two columns. */
   const [activeItem, setActiveItem] = useState<string | null>(null);
 
+  /* The drifting wordmark is the hero's only continuous motion, and a very
+     large one. prefers-reduced-motion exists for exactly this, so the pan is
+     dropped entirely when it is set — the mark stays, it simply stops moving,
+     which is the same trade globals.css:191 makes for the ember pulse. */
+  const reduceMotion = useReducedMotion();
+
   /* The timetable, per program name. Client-side and best-effort: the panel
      renders complete without it, and every row whose program has no sessions
      simply shows no schedule line rather than an empty placeholder. Only the
@@ -152,32 +159,66 @@ function Panel({
         style={{ background: "var(--hero-dim)" }}
       />
 
-      {/* Big background wordmark. Was a single initial per panel — "R" and
-          "A" — which read as stray letters rather than as anything, and had to
-          be re-chosen every time a panel was renamed. It is the club's name on
-          both panels now. Sized in vw so it scales with the panel rather than
-          the text, and it still bleeds off the edge: it is texture, not a
-          heading, and the crop is what keeps it from competing with one. */}
+      {/* Big background wordmark, and the hero's moving part.
+
+          It was a single initial per panel — "R" and "A" — which read as stray
+          letters and had to be re-chosen whenever a panel was renamed. It is
+          the club's name on both panels now, sized in vw so it scales with the
+          panel rather than the text.
+
+          THE DRIFT IS THE POINT. Nothing else in the hero moves on its own; the
+          panels only respond to a pointer, so on an untouched page it is
+          completely still. A very slow pan on the one element that is pure
+          texture gives it life without anything legible sliding around.
+
+          Deliberately slow and deliberately small: tens of seconds per pass and
+          a few dozen pixels of travel. Fast enough to notice on a second look,
+          never fast enough to compete with the copy on top of it. The two
+          panels drift in opposite directions over different periods so they
+          never look like one image sliding, and never resync.
+
+          Only `transform` animates — x, y and scale — so this stays on the
+          compositor and never triggers layout. The mark still bleeds off the
+          edge and the panel still clips it: it is texture, not a heading, and
+          the crop is what keeps it from competing with one. */}
       <motion.span
         aria-hidden
         animate={{
           opacity: hovered ? 0.085 : 0.04,
-          scale: hovered ? 1.05 : 1,
+          scale: hovered ? 1.06 : 1,
+          ...(reduceMotion
+            ? { x: 0, y: 0 }
+            : kind === "academies"
+              ? { x: [0, -88], y: [0, 32] }
+              : { x: [0, 76], y: [0, -28] }),
         }}
-        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        transition={{
+          opacity: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
+          scale: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
+          /* Mirror rather than loop, so it eases back instead of snapping to
+             the start. Co-prime-ish periods keep the two axes from meeting at
+             the same point and turning the drift into a visible diagonal. */
+          x: reduceMotion
+            ? { duration: 0.4 }
+            : { duration: kind === "academies" ? 29 : 24, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" },
+          y: reduceMotion
+            ? { duration: 0.4 }
+            : { duration: kind === "academies" ? 19 : 22, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" },
+        }}
         className="absolute pointer-events-none select-none text-cond"
         style={{
           color: "var(--hero-glyph)",
-          /* Five letters, not one, so the type is far smaller than the
-             initial it replaces — roughly 2.6em wide in this condensed face. */
-          fontSize: isMobile ? "clamp(3rem, 20vw, 6rem)" : "clamp(4.5rem, 13vw, 17rem)",
+          /* Much larger than the initial it replaced. Five letters in a
+             condensed face run about 2.6em wide, so this is wider than the
+             panel on purpose — the crop is the composition. */
+          fontSize: isMobile ? "clamp(4rem, 26vw, 8rem)" : "clamp(6rem, 19vw, 26rem)",
           lineHeight: 0.78,
           letterSpacing: "-0.04em",
           whiteSpace: "nowrap",
-          top: kind === "academies" ? "-4%" : undefined,
-          bottom: kind === "recreation" ? "-6%" : undefined,
-          left: kind === "academies" ? "-3%" : undefined,
-          right: kind === "recreation" ? "-4%" : undefined,
+          top: kind === "academies" ? "-6%" : undefined,
+          bottom: kind === "recreation" ? "-8%" : undefined,
+          left: kind === "academies" ? "-5%" : undefined,
+          right: kind === "recreation" ? "-6%" : undefined,
         }}
       >
         {config.bigWord}
@@ -453,15 +494,18 @@ function RosterDetail({
   schedule: SchedulePayload["programs"];
 }) {
   const ac = ACADEMY_PARTNERS.find((a) => a.name === id);
-  /* Matched on the PLATFORM's program name, which is the studio class name
-     today and has no academy counterpart yet — squad_programs has exactly one
-     active row at Exton. Academies therefore render no schedule until someone
-     creates their programs, which is the correct empty state, not a bug. */
-  const forCricketEtc = ac ? schedule.find((p) => p.program === ac.short) : undefined;
-  if (ac) return <AcademyDetail ac={ac} schedule={forCricketEtc ?? null} />;
+  if (ac) {
+    /* Platform first, local copy second. Matched on the PLATFORM's programme
+       name; no academy has one yet, so today every academy falls through to
+       whatever `schedule` it carries in the data below. The moment a programme
+       is created the live feed wins and the local line stops being used. */
+    const live = schedule.find((p) => p.program === ac.short);
+    return <AcademyDetail ac={ac} schedule={live ?? localSchedule(ac) ?? null} />;
+  }
   const c = STUDIO_CLASSES.find((x) => x.name === id);
   if (!c) return null;
-  return <ClassDetail c={c} schedule={schedule.find((p) => p.program === c.name) ?? null} />;
+  const live = schedule.find((p) => p.program === c.name);
+  return <ClassDetail c={c} schedule={live ?? localSchedule(c) ?? null} />;
 }
 
 /* Blurb and schedule SIDE BY SIDE, not stacked.
@@ -479,7 +523,7 @@ function DetailBody({
   action,
 }: {
   blurb?: string;
-  schedule: ProgramSchedule | null;
+  schedule: DetailSchedule | null;
   action?: { label: string; href: string };
 }) {
   return (
@@ -500,13 +544,42 @@ function DetailBody({
   );
 }
 
+/* What the schedule block can lead with. The platform only ever supplies a
+   start date; local copy may instead carry a status — squash is enrolling now
+   and has no published Exton timetable, so "Starts ..." would be the wrong
+   sentence and a date would be an invented one. */
+type DetailSchedule = ProgramSchedule & { status?: string | null };
+
+/* Local timetable copy, widened to the shape the platform feed produces so
+   ScheduleLine does not need to know which one it is holding. Everything the
+   platform supplies and a hand-written line cannot — price, duration, capacity
+   — stays null, and ScheduleLine simply omits it. */
+function localSchedule(item: {
+  name: string;
+  short?: string;
+  schedule?: { startsOn?: string; when?: string; status?: string };
+}): DetailSchedule | null {
+  const local = item.schedule;
+  if (!local) return null;
+  return {
+    program: item.short ?? item.name,
+    when: local.when ?? null,
+    duration: null,
+    price: null,
+    upcoming: 0,
+    full: false,
+    startsOn: local.startsOn ?? null,
+    status: local.status ?? null,
+  };
+}
+
 /* The live timetable line. Renders NOTHING when the platform has no sessions —
    never a placeholder, never a hardcoded time. app/api/featured/route.ts
    already encodes this rule ("omit its schedule line rather than inventing
    one"); the hero previously broke it by printing the same opening date three
    times, a placeholder dressed as a feed. */
-function ScheduleLine({ schedule }: { schedule: ProgramSchedule | null }) {
-  if (!schedule || !schedule.when) return null;
+function ScheduleLine({ schedule }: { schedule: DetailSchedule | null }) {
+  if (!schedule || (!schedule.when && !schedule.startsOn && !schedule.status)) return null;
   const meta = [schedule.duration, schedule.price].filter(Boolean).join(" · ");
   return (
     <div className="shrink-0 min-w-[15rem] border-l border-white/10 pl-9">
@@ -516,9 +589,9 @@ function ScheduleLine({ schedule }: { schedule: ProgramSchedule | null }) {
       {/* Only present until the first session passes — see startsOn in
           app/api/schedule/route.ts. It leads, because "when does it begin" is
           the question a recurring pattern does not answer. */}
-      {schedule.startsOn && (
+      {(schedule.status || schedule.startsOn) && (
         <div className="text-[var(--color-ember)] text-mono text-[0.68rem] tracking-[0.08em] mb-1.5">
-          Starts {schedule.startsOn}
+          {schedule.status ?? `Starts ${schedule.startsOn}`}
         </div>
       )}
       {/* /90, not /85. The light theme remaps these utilities BY NAME
@@ -526,12 +599,14 @@ function ScheduleLine({ schedule }: { schedule: ProgramSchedule | null }) {
           .text-white/85 rule, so an /85 stayed rgba(255,255,255,0.85) and the
           schedule rendered white-on-white in light mode. Only use an opacity
           that block actually lists. */}
-      <div
-        className="text-white/90 leading-[1.35]"
-        style={{ fontSize: "clamp(1.05rem, 1vw, 1.4rem)" }}
-      >
-        {schedule.when}
-      </div>
+      {schedule.when && (
+        <div
+          className="text-white/90 leading-[1.35]"
+          style={{ fontSize: "clamp(1.05rem, 1vw, 1.4rem)" }}
+        >
+          {schedule.when}
+        </div>
+      )}
       {meta && <div className="text-white/50 text-[0.85rem] mt-1.5">{meta}</div>}
       {schedule.full && (
         <div className="text-[var(--color-ember)] text-mono text-[0.62rem] mt-2">
@@ -568,7 +643,7 @@ function ClassDetail({
   schedule,
 }: {
   c: (typeof STUDIO_CLASSES)[number];
-  schedule: ProgramSchedule | null;
+  schedule: DetailSchedule | null;
 }) {
   return (
     <div>
@@ -579,9 +654,11 @@ function ClassDetail({
       >
         {c.title ?? c.name}
       </span>
-      <span className="block text-mono text-[0.64rem] tracking-[0.18em] uppercase text-[var(--color-ember)]">
-        {c.when}
-      </span>
+      {c.when && (
+        <span className="block text-mono text-[0.64rem] tracking-[0.18em] uppercase text-[var(--color-ember)]">
+          {c.when}
+        </span>
+      )}
       <DetailBody
         blurb={c.blurb ?? c.desc}
         schedule={schedule}
@@ -596,7 +673,7 @@ function AcademyDetail({
   schedule,
 }: {
   ac: (typeof ACADEMY_PARTNERS)[number];
-  schedule: ProgramSchedule | null;
+  schedule: DetailSchedule | null;
 }) {
   const blurb = "blurb" in ac ? (ac as { blurb?: string }).blurb : undefined;
   const desc = "desc" in ac ? (ac as { desc?: string }).desc : undefined;
@@ -967,10 +1044,13 @@ const STUDIO_CLASSES: {
   /** Display headline, when the class is branded differently from the row. */
   title?: string
   logo?: React.ReactNode
-  when: string
+  /** Qualitative eyebrow ("All levels · no experience needed"). Timing belongs
+      in `schedule`, which renders in the right-hand column. */
+  when?: string
   desc: string
   blurb?: string
   action?: { label: string; href: string }
+  schedule?: { startsOn?: string; when?: string; status?: string }
 }[] = [
   { name: "Bollywood Dance",
     /* The row stays "Bollywood Dance" — it is what the platform calls the
@@ -1020,8 +1100,13 @@ const STUDIO_CLASSES: {
         </span>
       </span>
     ) },
-  { name: "Kids' Dance", when: "Coming soon",
-    desc: "After-school classes for younger movers." },
+  /* "Coming soon" is a timing statement, so it belongs in the schedule column
+     beside Bombay Jam's start date rather than as an eyebrow. There is nothing
+     qualitative to say about this class yet — its one line is the whole
+     record — so it carries no eyebrow at all. */
+  { name: "Kids' Dance",
+    desc: "After-school classes for younger movers.",
+    schedule: { status: "Coming soon" } },
 ];
 
 
@@ -1053,7 +1138,13 @@ const ACADEMY_PARTNERS = [
     href: "https://cccricketacademy.com",
     short: "Cricket",
     sport: "Cricket academy",
-    desc: "Coming Sep 28th",
+    /* No platform programme exists for cricket yet — squad_programs has one
+       active row at Exton and it is the dance class — so this row's timetable
+       is local copy. It uses the same shape the platform feed produces, so the
+       day cricket IS entered in /admin/squads the live data takes over with no
+       markup change. The date is Exton's own announcement: CCCA publishes
+       nothing about this building. */
+    schedule: { startsOn: "Sep 28", when: "7 days a week" },
     /* Near-verbatim from cccricketacademy.com. Deliberately NOT saying more:
        their site gives no founding year, and its published indoor season runs
        Oct-Mar at All-Star Sports Academy in Downingtown with outdoor sessions
@@ -1102,6 +1193,11 @@ const ACADEMY_PARTNERS = [
     short: "Squash",
     sport: "Squash academy",
     desc: "High performance junior squash academy with locations in NJ, PA and CT (forthcoming).",
+    /* No timetable: squashtigers.com's session pattern is a GROUP-WIDE
+       statement across NJ/PA/CT and qualified with "when school is in session",
+       so publishing it as an Exton schedule would be wrong. The status is what
+       is true and useful. */
+    schedule: { status: "Enrolling now" },
     /* The one row with a real trial behind it. Both sentences are sourced from
        squashtigers.com — the second is their FAQ answer almost verbatim. */
     blurb:
@@ -1130,7 +1226,10 @@ const ACADEMY_PARTNERS = [
     href: "https://smashshuttler.com",
     short: "Badminton",
     sport: "Badminton academy",
-    desc: "Coming Soon",
+    /* Same move as the other rows: "Coming soon" is timing, so it sits in the
+       schedule column. smashshuttler.com still says "Coming Summer 2026", so no
+       firmer date may be published here than they publish themselves. */
+    schedule: { status: "Coming soon" },
     /* Everything here is from smashshuttler.com. It is NOT yet running, so
        there is no trial to offer and nothing may be claimed about which courts
        it will use — no source links SmashShuttler to this building's three. */

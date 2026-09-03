@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { fetchProgramSchedules, programSlug } from '../../../lib/club-schedule'
 
 // GET /api/featured
 // ---------------------------------------------------------------------------
@@ -8,98 +9,60 @@ import { NextResponse } from 'next/server'
 // and the visitor finds out only at checkout. So the card renders the name and
 // the description from this repo and asks Orangish for everything that moves.
 //
-// Upstream contract (app.orangish.io):
+// ⛔ THIS ROUTE WAS DEAD FROM THE DAY IT SHIPPED. It was written against
 //
-//   GET /api/public/sessions?club=<location-uuid>&slugs=<a,b,c>
-//   → 200 { sessions: Array<{ slug: string,
-//                             nextStartsAt?: ISO8601,
-//                             venue?: string,
-//                             priceCents?: number,
-//                             spotsLeft?: number }> }
+//   GET /api/public/sessions?club=<uuid>&slugs=<a,b,c>
 //
-// That endpoint does not exist yet. Until it ships this route returns an empty
-// list, and the card simply omits its schedule line rather than inventing one.
+// which was never built and still 404s, so https://extonsports.com/api/featured
+// returned {"sessions":[]} in production and the rail never showed a schedule.
+// It also read EXTON_CLUB_ID, which is set nowhere, so it short-circuited to
+// empty before even attempting the fetch.
 //
-// Env:
-//   ORANGISH_API_BASE  default https://app.orangish.io
-//   EXTON_CLUB_ID      the Exton location uuid on the platform
+// It now reads the endpoint that exists, via lib/club-schedule.ts — the same
+// source /api/schedule uses, so the hero roster and the Featured rail cannot
+// disagree about when a class runs.
+//
+// Programmes are matched to the rail by SLUG, derived from the platform's
+// programme name ("Bollywood Dance" → "bollywood-dance") rather than a second
+// hardcoded table that would need keeping in step with FEATURES in
+// app/components/Featured.tsx.
 
 export const revalidate = 300
 
-const CLUB_ID = process.env.EXTON_CLUB_ID
-const API_BASE = (process.env.ORANGISH_API_BASE || 'https://app.orangish.io').replace(/\/$/, '')
-
-/** Slugs the Featured rail asks about. Keep in step with FEATURES. */
-const FEATURED_SLUGS = ['bollywood-dance']
-
 export type FeaturedSession = {
   slug: string
-  /** "Saturdays · 10:30 AM · Studio", or null when unscheduled. */
+  /** "Tuesdays & Thursdays · 7:00 PM", or null when unscheduled. */
   when: string | null
   /** "$25 drop-in", or null when the platform has no price. */
   price: string | null
+  /** "Starts Sep 15" while the programme has not begun, else null. */
+  startsOn: string | null
   /** Null hides the hint entirely rather than implying an empty class. */
   spotsLeft: number | null
 }
 
 export type FeaturedPayload = { sessions: FeaturedSession[] }
 
-function formatWhen(startsAt: string, venue?: string, timeZone = 'America/New_York'): string | null {
-  const d = new Date(startsAt)
-  if (Number.isNaN(d.getTime())) return null
-
-  const day = d.toLocaleDateString('en-US', { weekday: 'long', timeZone })
-  const time = d.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    timeZone,
-  })
-  // "Saturdays" reads as the recurring slot the class actually is, rather than
-  // pinning the reader to one specific date.
-  return [`${day}s`, time, venue].filter(Boolean).join(' · ')
-}
-
-function formatPrice(cents: number): string {
-  const dollars = cents / 100
-  const amount = Number.isInteger(dollars) ? `$${dollars}` : `$${dollars.toFixed(2)}`
-  return `${amount} drop-in`
-}
+/** Slugs the Featured rail asks about. Keep in step with FEATURES. */
+const FEATURED_SLUGS = ['bollywood-dance']
 
 export async function GET() {
-  if (!CLUB_ID) return NextResponse.json({ sessions: [] } satisfies FeaturedPayload)
+  const programs = await fetchProgramSchedules()
 
-  try {
-    const res = await fetch(
-      `${API_BASE}/api/public/sessions?club=${encodeURIComponent(CLUB_ID)}` +
-        `&slugs=${encodeURIComponent(FEATURED_SLUGS.join(','))}`,
-      { next: { revalidate: 300 }, signal: AbortSignal.timeout(4000) },
-    )
-    if (!res.ok) return NextResponse.json({ sessions: [] } satisfies FeaturedPayload)
+  const sessions: FeaturedSession[] = programs
+    .filter((p) => FEATURED_SLUGS.includes(programSlug(p.program)))
+    .map((p) => ({
+      slug: programSlug(p.program),
+      when: p.when,
+      // The rail says "drop-in" because that is what a single session is; the
+      // number itself is the platform's, never retyped here.
+      price: p.price ? `${p.price} drop-in` : null,
+      startsOn: p.startsOn,
+      // The club runs hide_schedule_details, so the platform withholds the
+      // roster and sends an authoritative is_full instead of a count. There is
+      // no honest "3 spots left" to publish — only "full" or nothing.
+      spotsLeft: null,
+    }))
 
-    const body = (await res.json()) as {
-      sessions?: Array<{
-        slug?: string
-        nextStartsAt?: string
-        venue?: string
-        priceCents?: number
-        spotsLeft?: number
-      }>
-    }
-
-    const sessions: FeaturedSession[] = (body.sessions ?? [])
-      .map((s) => {
-        if (!s.slug) return null
-        return {
-          slug: s.slug,
-          when: s.nextStartsAt ? formatWhen(s.nextStartsAt, s.venue) : null,
-          price: typeof s.priceCents === 'number' ? formatPrice(s.priceCents) : null,
-          spotsLeft: typeof s.spotsLeft === 'number' ? s.spotsLeft : null,
-        }
-      })
-      .filter((s): s is FeaturedSession => s !== null)
-
-    return NextResponse.json({ sessions } satisfies FeaturedPayload)
-  } catch {
-    return NextResponse.json({ sessions: [] } satisfies FeaturedPayload)
-  }
+  return NextResponse.json({ sessions } satisfies FeaturedPayload)
 }
