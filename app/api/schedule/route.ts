@@ -58,6 +58,15 @@ export type ProgramSchedule = {
   price: string | null
   /** Upcoming sessions counted, so the UI can say "14 upcoming". */
   upcoming: number
+  /**
+   * "Sep 15" — the first session, but ONLY while the program has not begun.
+   *
+   * Derived, not typed, and deliberately self-expiring: it is set only when NO
+   * session has already happened. Once the first one passes, the earliest
+   * remaining session is no longer a start date, and a hardcoded "Starts Sep
+   * 15" would still be sitting on the page in November claiming otherwise.
+   */
+  startsOn: string | null
   /** Authoritative from the platform; the roster is withheld for this club. */
   full: boolean
 }
@@ -158,7 +167,10 @@ export async function GET() {
       : (((body as { sessions?: SquadRow[] })?.sessions ?? []) as SquadRow[])
 
     const now = Date.now()
-    const byProgram = new Map<string, { dates: Date[]; rate?: number; mins?: number; full: boolean }>()
+    const byProgram = new Map<
+      string,
+      { dates: Date[]; rate?: number; mins?: number; full: boolean; hasPast: boolean }
+    >()
     let tz = FALLBACK_TZ
 
     for (const row of rows) {
@@ -167,11 +179,20 @@ export async function GET() {
       if (row.status && row.status !== 'scheduled') continue
 
       const at = new Date(row.scheduled_at)
-      if (Number.isNaN(at.getTime()) || at.getTime() < now) continue
+      if (Number.isNaN(at.getTime())) continue
 
       if (row.locations?.timezone) tz = row.locations.timezone
 
-      const entry = byProgram.get(name) ?? { dates: [], full: true }
+      const entry = byProgram.get(name) ?? { dates: [], full: true, hasPast: false }
+
+      // Past sessions are counted but not listed: they are what proves the
+      // program is already running, which is what makes "Starts ..." a lie.
+      if (at.getTime() < now) {
+        entry.hasPast = true
+        byProgram.set(name, entry)
+        continue
+      }
+
       entry.dates.push(at)
       if (typeof row.member_rate === 'number') entry.rate ??= row.member_rate
       if (typeof row.duration_mins === 'number') entry.mins ??= row.duration_mins
@@ -182,6 +203,7 @@ export async function GET() {
 
     const programs: ProgramSchedule[] = [...byProgram.entries()].map(([program, e]) => {
       e.dates.sort((a, b) => a.getTime() - b.getTime())
+      const first = e.dates[0]
       return {
         program,
         when: formatWhen(e.dates, tz),
@@ -189,6 +211,10 @@ export async function GET() {
         price: typeof e.rate === 'number' ? formatPrice(e.rate) : null,
         upcoming: e.dates.length,
         full: e.full,
+        startsOn:
+          !e.hasPast && first
+            ? first.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: tz })
+            : null,
       }
     })
 

@@ -513,6 +513,14 @@ function ScheduleLine({ schedule }: { schedule: ProgramSchedule | null }) {
       <div className="text-mono text-[0.58rem] tracking-[0.2em] uppercase text-white/35 mb-2">
         Schedule
       </div>
+      {/* Only present until the first session passes — see startsOn in
+          app/api/schedule/route.ts. It leads, because "when does it begin" is
+          the question a recurring pattern does not answer. */}
+      {schedule.startsOn && (
+        <div className="text-[var(--color-ember)] text-mono text-[0.68rem] tracking-[0.08em] mb-1.5">
+          Starts {schedule.startsOn}
+        </div>
+      )}
       {/* /90, not /85. The light theme remaps these utilities BY NAME
           (globals.css:372-387) and that set is 20-80 plus 90 — there is no
           .text-white/85 rule, so an /85 stayed rgba(255,255,255,0.85) and the
@@ -970,7 +978,7 @@ const STUDIO_CLASSES: {
        in the detail, exactly as the academies do it: roster says CRICKET, the
        panel says Chester County Cricket. */
     title: "Bombay Jam",
-    when: "Tue & Thu · all levels",
+    when: "All levels · no experience needed",
     desc: "Filmi routines and bhangra footwork, with a proper warm-up. All levels, no partner needed.",
     /* Every clause is off SeRa Fitness's own class flyer: "A FUN BOLLYWOOD
        INSPIRED DANCE FITNESS WORKOUT", "High energy. Easy to follow. All
@@ -1012,8 +1020,6 @@ const STUDIO_CLASSES: {
         </span>
       </span>
     ) },
-  { name: "Studio Fitness", when: "Coming soon",
-    desc: "Strength, mobility and conditioning on the studio floor." },
   { name: "Kids' Dance", when: "Coming soon",
     desc: "After-school classes for younger movers." },
 ];
@@ -1070,14 +1076,19 @@ const ACADEMY_PARTNERS = [
           width={360}
           height={239}
           className="w-auto shrink-0"
-          style={{ height: "clamp(46px, 3vw, 84px)" }}
+          style={{ height: "clamp(68px, 4.4vw, 124px)" }}
           priority
         />
         {/* "Academy" is left off deliberately — the tile's own sport label
             directly below already says "Cricket academy". */}
         <span
           className="text-cond leading-[1.05]"
-          style={{ fontSize: "clamp(1.15rem, 1.5vw, 2rem)", letterSpacing: "0.04em" }}
+          /* Sized to land alongside the SeRa wordmark, which caps at 3.6rem.
+             This is a TWO-LINE stacked lockup against SeRa's single line, so
+             matching means matching the per-line type, not the block height —
+             at 2560 both resolve to roughly 56px. The crest scales with it so
+             the lockup keeps its balance. */
+          style={{ fontSize: "clamp(1.7rem, 2.2vw, 3.4rem)", letterSpacing: "0.04em" }}
         >
           <span className="block text-[var(--color-ember)]">Chester County</span>
           <span className="block text-white">Cricket</span>
