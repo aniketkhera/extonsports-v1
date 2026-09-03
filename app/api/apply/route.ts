@@ -1,4 +1,8 @@
 import { Resend } from "resend";
+import {
+  applicationsOpen,
+  APPLICATIONS_CLOSED_MESSAGE,
+} from "@/lib/applications";
 import { buildAckEmail } from "./ack-email";
 
 // Needs the Node runtime for Buffer + the Resend SDK.
@@ -44,6 +48,13 @@ function esc(s: string) {
 }
 
 export async function POST(req: Request) {
+  // Closed between postings, and closed by default. Answered before the body
+  // is read, so a 4 MB upload is never buffered, and before Resend is touched,
+  // so nothing can reach an inbox. See lib/applications.ts.
+  if (!applicationsOpen()) {
+    return json({ error: APPLICATIONS_CLOSED_MESSAGE }, 410);
+  }
+
   try {
     const form = await req.formData();
 

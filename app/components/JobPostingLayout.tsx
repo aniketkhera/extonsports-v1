@@ -2,6 +2,7 @@ import Link from "next/link";
 import Nav from "./Nav";
 import Footer from "./Footer";
 import ApplicationForm from "./ApplicationForm";
+import { applicationsOpen } from "@/lib/applications";
 
 export type JobPostingData = {
   /** Small ember eyebrow above the title, e.g. "Chester County Cricket Academy" */
@@ -28,6 +29,10 @@ export type JobPostingData = {
 };
 
 export default function JobPostingLayout({ data }: { data: JobPostingData }) {
+  // Server-side, so a closed flag means the form is never sent to the browser
+  // at all — not merely hidden. /api/apply enforces the same flag.
+  const accepting = applicationsOpen();
+
   return (
     <div className="relative pb-[320px] sm:pb-[200px] md:pb-[90px]">
       <script
@@ -134,13 +139,14 @@ export default function JobPostingLayout({ data }: { data: JobPostingData }) {
 
           <Section title="How to Apply" id="apply">
             <p className="mb-6">
-              Attach your résumé, add a short cover letter describing your coaching
-              philosophy, and tell us how to reach you. Applications are reviewed on
-              a rolling basis until the position is filled.
+              {accepting
+                ? "Attach your résumé, add a short cover letter describing your coaching philosophy, and tell us how to reach you. Applications are reviewed on a rolling basis until the position is filled."
+                : "This posting is not taking applications through the site at the moment."}
             </p>
-            <ApplicationForm role={data.title} />
+            <ApplicationForm role={data.title} open={accepting} />
             <p className="mt-4 text-white/45 text-[0.82rem]">
-              Prefer email? Send your résumé and cover letter to{" "}
+              {accepting ? "Prefer email? Send" : "Send"} your résumé and cover
+              letter to{" "}
               <a
                 href={data.applyMailto}
                 className="text-[var(--color-ember)] hover:text-[var(--color-ember-hi)] transition-colors"

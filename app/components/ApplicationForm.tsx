@@ -6,7 +6,16 @@ const INPUT_CLASS =
   "w-full bg-[var(--color-ink-2)] border border-[var(--color-line-2)] focus:border-[var(--color-ember)] text-white placeholder:text-white/30 px-3.5 py-2.5 text-[0.9rem] outline-none transition-colors";
 const LABEL_CLASS = "block text-mono text-[0.6rem] text-white/50 mb-1.5";
 
-export default function ApplicationForm({ role }: { role: string }) {
+export default function ApplicationForm({
+  role,
+  open = true,
+}: {
+  role: string;
+  /** Mirrors APPLICATIONS_OPEN. When false the form is replaced by a notice —
+      /api/apply answers 410 regardless, and that message lands in the error
+      box below if a stale page is ever submitted against a closed route. */
+  open?: boolean;
+}) {
   const [state, setState] = useState<"idle" | "sending" | "ok" | "err">("idle");
   const [error, setError] = useState<string>("");
   const [fileName, setFileName] = useState<string>("");
@@ -43,6 +52,21 @@ export default function ApplicationForm({ role }: { role: string }) {
       setState("idle");
       setError(err instanceof Error ? err.message : "Something went wrong.");
     }
+  }
+
+  if (!open) {
+    return (
+      <div className="border border-[var(--color-line)] bg-[var(--color-ink)] p-6 sm:p-8">
+        <div className="text-cond text-[1.5rem] text-white mb-1.5">
+          Applications are closed
+        </div>
+        <p className="text-white/65 text-[0.9rem] leading-[1.6]">
+          We&apos;re not accepting applications for the {role} role through the
+          site right now. Send your résumé to the email address below and
+          we&apos;ll keep it on file for the next opening.
+        </p>
+      </div>
+    );
   }
 
   if (state === "ok") {
