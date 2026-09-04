@@ -436,6 +436,60 @@ function Panel({
               </motion.div>
             </div>
           ))}
+
+        {/* The coaching-roles note, which used to sit at the very bottom of the
+            homepage under About.
+
+            It belongs here. This is the coaching panel — three academies and a
+            studio — so a line about wanting coaches is the same subject, and it
+            was previously separated from it by two full sections. The panel
+            also had the room: below the roster there was nothing but empty
+            column.
+
+            mt-auto pins it to the bottom of the panel rather than letting it
+            float under the roster, so it reads as a footer to this panel
+            instead of a stray fourth item in the list.
+
+            The dot is the nav chip's pulse, reused rather than reinvented — it
+            is already how this site says "there is something live here". It is
+            bg-[var(--ember-ink)], NOT --color-ember: only the TEXT utility is
+            remapped for light (globals.css:401), so a --color-ember background
+            would stay pale salmon on white. motion-reduce drops the pulse and
+            keeps the dot, the same trade .opening-glow makes at
+            globals.css:192.
+
+            id="careers" survives the section it was named for. Nothing links to
+            /#careers any more, but the anchor was live and shared, so inbound
+            links still land on the sentence that answers them. */}
+        {kind === "academies" && (
+          <div
+            id="careers"
+            className="w-full mt-auto pt-8 scroll-mt-24"
+          >
+            <p className="flex flex-wrap items-baseline gap-x-[14px] gap-y-2 m-0 pt-5 border-t border-white/10">
+              <span
+                className="text-mono text-[var(--color-ember)] inline-flex items-center gap-2 whitespace-nowrap"
+                style={{ fontSize: RATE_LABEL }}
+              >
+                <span className="relative flex h-[6px] w-[6px]">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-[var(--ember-ink)] opacity-70 animate-ping motion-reduce:animate-none" />
+                  <span className="relative inline-flex rounded-full h-[6px] w-[6px] bg-[var(--ember-ink)]" />
+                </span>
+                Coaching roles
+              </span>
+              <span className="text-white/60" style={{ fontSize: RATE_BODY }}>
+                Interested in coaching? Email{" "}
+                <a
+                  href={`mailto:${CONTACT_EMAIL}?subject=General%20coaching%20interest`}
+                  className="text-white border-b border-[var(--color-ember)]/55 hover:border-[var(--color-ember)] transition-colors"
+                >
+                  {CONTACT_EMAIL}
+                </a>{" "}
+                — we&apos;re always looking for coaching talent.
+              </span>
+            </p>
+          </div>
+        )}
       </div>
     </motion.div>
   );
