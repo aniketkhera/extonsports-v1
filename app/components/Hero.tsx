@@ -29,7 +29,13 @@ export default function Hero() {
   const flexFor = (key: PanelKey) => {
     if (isMobile) return 1;
     if (hovered === null) return 1;
-    return hovered === key ? 1.6 : 0.7;
+    /* ⛔ THE FLOOR IS 0.85, NOT 0.7, AND IT IS LOAD-BEARING. At 0.7 a hovered
+       panel squeezed the other one to 389px on a 1280 screen, which is narrower
+       than the rate table's own columns — three rows overflowed by 36px and the
+       panel's overflow:hidden cut the prices off. 0.85 gives it 444px there,
+       comfortably past the 434px the table needs.
+       The hover still reads: 1.6 against 0.85 is nearly twice the width. */
+    return hovered === key ? 1.6 : 0.85;
   };
 
   return (
@@ -276,6 +282,37 @@ function Panel({
             columns and gets the same data as a block underneath instead. */}
         {kind === "recreation" && (
           <RateCard open={SHOW_NEXT_SLOT && !isMobile && hovered} stacked={isMobile} />
+        )}
+
+        {/* The hired-courts rule, which used to sit in the pricing explainer at
+            the top of the footer.
+
+            It belongs against the price. Someone reading "one rate covers the
+            whole court" is deciding what they may do with that court, and the
+            answer was two sections away. This panel is the court-hire panel, so
+            the condition of hire sits at the foot of it — mirroring the
+            coaching-roles note pinned to the foot of the academies panel.
+
+            ⛔ SCOPED TO HIRED COURTS, and the scope is load-bearing. The club
+            runs academies and advertises them in the panel immediately to the
+            right; a blanket "no coaching of any kind" would read as
+            contradicting them. The rule is that a court you hire is not a
+            teaching slot — coaching is what the academy programme sells, which
+            is why the second line points at it. */}
+        {kind === "recreation" && (
+          <div className="w-full mt-auto pt-8">
+            <div className="pt-5 border-t border-white/10">
+              <p
+                className="m-0 text-white/80 font-semibold uppercase tracking-[0.06em] leading-[1.5]"
+                style={{ fontSize: RATE_BODY }}
+              >
+                Absolutely no coaching on hired courts — recreational play only.
+              </p>
+              <p className="m-0 text-white/35 mt-1" style={{ fontSize: RATE_NOTE }}>
+                Coaching runs through the club&apos;s academies.
+              </p>
+            </div>
+          </div>
         )}
 
         {/* The roster — a LIST first, the detail second.
@@ -919,7 +956,12 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
       }}
     >
       <motion.div
-        className="w-full border border-white/10 bg-white/[0.05]"
+        /* overflow-x-auto is the backstop the flex floor cannot be. Below
+           roughly 1150px a hovered panel is still narrower than the table's
+           own column minimums, and without this the panel's overflow:hidden
+           silently amputates the peak price. Scrolling degrades; clipping
+           lies. Same idiom the caps table in Footer.tsx already uses. */
+        className="w-full border border-white/10 bg-white/[0.05] overflow-x-auto"
         variants={{
           hidden: { opacity: 0, y: 18 },
           visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] } },
