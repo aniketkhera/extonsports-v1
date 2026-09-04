@@ -718,6 +718,9 @@ function localSchedule(item: {
     price: null,
     upcoming: 0,
     full: false,
+    // A hand-written line never carries pack prices — those only exist on the
+    // platform, which is the point of not typing them here.
+    packs: [],
     startsOn: local.startsOn ?? null,
     status: local.status ?? null,
   };
@@ -730,7 +733,16 @@ function localSchedule(item: {
    times, a placeholder dressed as a feed. */
 function ScheduleLine({ schedule }: { schedule: DetailSchedule | null }) {
   if (!schedule || (!schedule.when && !schedule.startsOn && !schedule.status)) return null;
-  const meta = [schedule.duration, schedule.price].filter(Boolean).join(" · ");
+  /* "$25" alone is unambiguous on its own. Under a pack list it is not — it
+     sits directly above "4 classes $80" and reads as a fourth price rather than
+     the single-session one. So it is labelled ONLY when packs are shown, which
+     leaves every other row's line exactly as it was. Same word the Featured
+     rail uses, for the same reason. */
+  const priceLabel =
+    schedule.price && schedule.packs.length > 0
+      ? `${schedule.price} drop-in`
+      : schedule.price;
+  const meta = [schedule.duration, priceLabel].filter(Boolean).join(" · ");
   return (
     <div className="shrink-0 min-w-[15rem] border-l border-white/10 pl-9">
       <div className="text-mono text-[0.58rem] tracking-[0.2em] uppercase text-white/35 mb-2">
@@ -758,6 +770,45 @@ function ScheduleLine({ schedule }: { schedule: DetailSchedule | null }) {
         </div>
       )}
       {meta && <div className="text-white/50 text-[0.85rem] mt-1.5">{meta}</div>}
+      {/* Multi-session packs. Absent for every row but the studio classes, and
+          absent for those too whenever the platform cannot be reached — so this
+          renders nothing rather than an empty heading.
+
+          STICKER PRICES, matching the court rate card three panels away and the
+          Studio's own flyer. RATE_FEES_NOTE below is the same sentence the rate
+          card carries, for the same reason: Exton passes the Stripe fee on, so
+          $80 is $82.70 at checkout, and one disclosure covering both products
+          beats two conventions on one page. */}
+      {schedule.packs.length > 0 && (
+        <div className="mt-5 pt-4 border-t border-white/10">
+          <div className="text-mono text-[0.58rem] tracking-[0.2em] uppercase text-white/35 mb-2">
+            Packs
+          </div>
+          <ul className="list-none m-0 p-0 flex flex-col gap-1">
+            {schedule.packs.map((pk) => (
+              <li key={pk.quantity} className="flex items-baseline justify-between gap-6">
+                <span className="text-white/80 text-[0.9rem]">
+                  {pk.quantity} classes
+                </span>
+                <span className="text-white/90 text-[0.95rem] tabular-nums">{pk.price}</span>
+              </li>
+            ))}
+          </ul>
+          {/* One line, not one per row: every pack Exton sells shares a
+              validity, and repeating "45 days" twice reads as though they
+              might differ. Falls back to per-row only if they ever do. */}
+          {(() => {
+            const days = [...new Set(schedule.packs.map((p) => p.validityDays))];
+            if (days.length !== 1 || days[0] == null) return null;
+            return (
+              <div className="text-white/50 text-[0.8rem] mt-2">
+                Valid {days[0]} days from purchase
+              </div>
+            );
+          })()}
+          <div className="text-white/35 text-[0.75rem] mt-1">{RATE_FEES_NOTE}</div>
+        </div>
+      )}
       {schedule.full && (
         <div className="text-[var(--color-ember)] text-mono text-[0.62rem] mt-2">
           Currently full

@@ -45,6 +45,27 @@ const SLUG = process.env.EXTON_CLUB_SLUG || 'exton-sports'
 const CLUB_ID = process.env.EXTON_CLUB_ID
 const FALLBACK_TZ = 'America/New_York'
 
+/**
+ * One multi-session pack a programme sells.
+ *
+ * `price` is the STICKER — the number the Studio prints on its flyer, and the
+ * one the court rate card next to it also quotes. `allIn` is what checkout
+ * actually takes once Exton's passed-on Stripe fee is grossed up, published by
+ * the platform rather than derived here so the two can never disagree about the
+ * fee. Which of the two a surface shows is that surface's call; both are
+ * carried because a mirror that drops half the answer is how drift starts.
+ */
+export type PackPrice = {
+  /** Sessions in the pack, e.g. 4. */
+  quantity: number
+  /** "$80" — pre-fee, matching the rate card's convention. */
+  price: string
+  /** "$82.70" — what the card is charged. */
+  allIn: string | null
+  /** 45, or null when the pack does not expire. */
+  validityDays: number | null
+}
+
 /** One programme's timetable, already formatted. Nulls mean "say nothing". */
 export type ProgramSchedule = {
   /** Matches squad_programs.name, e.g. "Bollywood Dance". */
@@ -68,6 +89,12 @@ export type ProgramSchedule = {
   startsOn: string | null
   /** Authoritative from the platform; the roster is withheld for this club. */
   full: boolean
+  /**
+   * Multi-session packs, cheapest first. EMPTY is the normal case — most
+   * programmes sell none — so a surface must render nothing rather than an
+   * empty heading.
+   */
+  packs: PackPrice[]
 }
 
 /** Only the fields this module is willing to look at. Nothing else is read. */
@@ -83,27 +110,77 @@ type SquadRow = {
 
 const WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
+/** What /api/public/clubs/<slug> gives us: the uuid, and the price book. */
+type ClubFacts = {
+  id: string | null
+  /** Programme name -> its packs, cheapest first. */
+  packsByProgram: Map<string, PackPrice[]>
+}
+
+const NO_FACTS: ClubFacts = { id: null, packsByProgram: new Map() }
+
+/** The platform's shape. Everything else in the payload is ignored. */
+type ClubProgramRow = {
+  name?: string
+  packs?: Array<{
+    quantity?: number
+    rate?: number | null
+    all_in?: number | null
+    validity_days?: number | null
+  }>
+}
+
 /**
- * The Exton location uuid.
+ * The Exton location uuid, and the pack prices that arrive with it.
  *
  * EXTON_CLUB_ID is set nowhere today, which is the second reason /api/featured
  * returned empty even when its upstream was healthy — it short-circuited before
  * fetching. So the slug is the real source: /api/public/clubs/<slug> returns the
  * id, and EXTON_CLUB_SLUG already has a working default, the same one
  * lib/club-pricing.ts relies on.
+ *
+ * ── WHY THE PACKS COME FROM HERE AND NOT /api/squads ────────────────────────
+ * /api/squads returns SESSIONS. A pack is priced on the PROGRAMME
+ * (squad_program_packs), which that payload does not carry. The club endpoint
+ * does, and it is the same endpoint lib/club-pricing.ts already reads for the
+ * player caps — so the packs cost this site nothing: no new request, and the
+ * fetch cache dedupes it against the id lookup that was happening anyway.
+ *
+ * ⚠️ THE CLUB_ID SHORTCUT NO LONGER SKIPS THE FETCH. It used to return early,
+ * which would now mean "an id but no prices" — packs silently missing at
+ * exactly the deployment that has the env var set. The env var still avoids
+ * TRUSTING the endpoint for the id; it no longer avoids calling it.
  */
-async function resolveClubId(): Promise<string | null> {
-  if (CLUB_ID) return CLUB_ID
+async function fetchClubFacts(): Promise<ClubFacts> {
   try {
     const res = await fetch(`${API_BASE}/api/public/clubs/${SLUG}`, {
       next: { revalidate: 3600 },
       signal: AbortSignal.timeout(4000),
     })
-    if (!res.ok) return null
-    const json = (await res.json()) as { club?: { id?: string } }
-    return json.club?.id ?? null
+    if (!res.ok) return { ...NO_FACTS, id: CLUB_ID ?? null }
+    const json = (await res.json()) as { club?: { id?: string; programs?: ClubProgramRow[] } }
+
+    const packsByProgram = new Map<string, PackPrice[]>()
+    for (const pr of json.club?.programs ?? []) {
+      if (!pr?.name || !Array.isArray(pr.packs)) continue
+      const packs = pr.packs
+        // A pack with no price is a size the club declined to sell. The
+        // platform already filters these; re-checking costs nothing and keeps
+        // "$NaN classes" off the page if that ever changes.
+        .filter((pk) => typeof pk?.quantity === 'number' && typeof pk?.rate === 'number')
+        .map((pk) => ({
+          quantity: pk.quantity as number,
+          price: formatPrice(pk.rate as number),
+          allIn: typeof pk.all_in === 'number' ? formatPrice(pk.all_in) : null,
+          validityDays: typeof pk.validity_days === 'number' ? pk.validity_days : null,
+        }))
+        .sort((a, b) => a.quantity - b.quantity)
+      if (packs.length) packsByProgram.set(pr.name, packs)
+    }
+
+    return { id: CLUB_ID ?? json.club?.id ?? null, packsByProgram }
   } catch {
-    return null
+    return { ...NO_FACTS, id: CLUB_ID ?? null }
   }
 }
 
@@ -152,7 +229,7 @@ function formatPrice(rate: number): string {
  * errors, which is the same stance lib/club-pricing.ts takes for the caps.
  */
 export async function fetchProgramSchedules(): Promise<ProgramSchedule[]> {
-  const clubId = await resolveClubId()
+  const { id: clubId, packsByProgram } = await fetchClubFacts()
   if (!clubId) return []
 
   try {
@@ -216,6 +293,10 @@ export async function fetchProgramSchedules(): Promise<ProgramSchedule[]> {
           price: typeof e.rate === 'number' ? formatPrice(e.rate) : null,
           upcoming: e.dates.length,
           full: e.full,
+          // Matched on the platform's own programme name, which is the same
+          // string both endpoints return — no second mapping to keep in step.
+          // Absent is the normal case and renders nothing.
+          packs: packsByProgram.get(program) ?? [],
           startsOn:
             !e.hasPast && first
               ? first.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: tz })
