@@ -190,13 +190,15 @@ function Panel({
       <motion.span
         aria-hidden
         animate={{
-          /* "Lighter" read as BRIGHTER, not fainter — the rest of the brief
-             (move more, larger, animate more) all asks for more presence, and
-             at 0.03 the mark had gone so quiet in light theme you could not see
-             it move at all. Up from 0.04/0.085. Still nowhere near the copy
-             sitting on top of it; --hero-glyph is #FFFFFF in dark and #7C8B9C
-             in light, so this is a tint either way, not a fill. */
-          opacity: hovered ? 0.105 : 0.058,
+          /* FAINTER, confirmed by the owner — I had read "lighter" as brighter
+             and pushed it the wrong way. It is texture, and the mark got large
+             enough at 24vw that presence now comes from area rather than
+             opacity: this is fainter than the 0.04 it sat at even before the
+             enlargement, and still reads, because there is far more of it.
+             --hero-glyph is #FFFFFF in dark and #0A1019 in light, picked so
+             the mark is equally faint in both — see globals.css. A tint either
+             way, never a fill. */
+          opacity: hovered ? 0.068 : 0.032,
           scale: hovered ? 1.06 : 1,
           ...(reduceMotion
             ? { x: 0, y: 0 }
