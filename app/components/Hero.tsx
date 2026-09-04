@@ -190,13 +190,19 @@ function Panel({
       <motion.span
         aria-hidden
         animate={{
-          opacity: hovered ? 0.085 : 0.04,
+          /* "Lighter" read as BRIGHTER, not fainter — the rest of the brief
+             (move more, larger, animate more) all asks for more presence, and
+             at 0.03 the mark had gone so quiet in light theme you could not see
+             it move at all. Up from 0.04/0.085. Still nowhere near the copy
+             sitting on top of it; --hero-glyph is #FFFFFF in dark and #7C8B9C
+             in light, so this is a tint either way, not a fill. */
+          opacity: hovered ? 0.105 : 0.058,
           scale: hovered ? 1.06 : 1,
           ...(reduceMotion
             ? { x: 0, y: 0 }
             : kind === "academies"
-              ? { x: [0, -88], y: [0, 32] }
-              : { x: [0, 76], y: [0, -28] }),
+              ? { x: [0, -150], y: [0, 52] }
+              : { x: [0, 128], y: [0, -44] }),
         }}
         transition={{
           opacity: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
@@ -206,10 +212,10 @@ function Panel({
              the same point and turning the drift into a visible diagonal. */
           x: reduceMotion
             ? { duration: 0.4 }
-            : { duration: kind === "academies" ? 29 : 24, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" },
+            : { duration: kind === "academies" ? 23 : 19, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" },
           y: reduceMotion
             ? { duration: 0.4 }
-            : { duration: kind === "academies" ? 19 : 22, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" },
+            : { duration: kind === "academies" ? 15 : 17, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" },
         }}
         className="absolute pointer-events-none select-none text-cond"
         style={{
@@ -217,7 +223,7 @@ function Panel({
           /* Much larger than the initial it replaced. Five letters in a
              condensed face run about 2.6em wide, so this is wider than the
              panel on purpose — the crop is the composition. */
-          fontSize: isMobile ? "clamp(4rem, 26vw, 8rem)" : "clamp(6rem, 19vw, 26rem)",
+          fontSize: isMobile ? "clamp(4.5rem, 30vw, 10rem)" : "clamp(7rem, 24vw, 34rem)",
           lineHeight: 0.78,
           letterSpacing: "-0.04em",
           whiteSpace: "nowrap",
@@ -227,7 +233,46 @@ function Panel({
           right: kind === "recreation" ? "-6%" : undefined,
         }}
       >
-        {config.bigWord}
+        {/* One span per letter so the spread animates on TRANSFORM. The obvious
+            implementation is animating letter-spacing, and it is the wrong one:
+            that is a layout property, so every frame would reflow a 300px-tall
+            line and drag the whole panel through layout with it. Per-letter
+            translate stays on the compositor.
+
+            Each letter's offset is its distance from the centre, normalised to
+            -1..1, so E and N travel the full amount, X and O half, and T — the
+            middle — does not move at all. That is what makes it read as the
+            word breathing rather than five letters sliding.
+
+            The stagger is deliberate: delaying by distance from centre means
+            the letters never share a phase, so the word keeps drifting in and
+            out of true instead of pulsing in lockstep. Combined with the
+            parent's own pan, no two frames repeat for minutes. */}
+        {config.bigWord.split("").map((ch, i, all) => {
+          const mid = (all.length - 1) / 2;
+          const off = mid === 0 ? 0 : (i - mid) / mid;
+          return (
+            <motion.span
+              key={`${ch}-${i}`}
+              /* inline-block, because transforms do not apply to inline boxes. */
+              className="inline-block"
+              animate={reduceMotion ? { x: 0 } : { x: [0, off * LETTER_SPREAD] }}
+              transition={
+                reduceMotion
+                  ? { duration: 0.4 }
+                  : {
+                      duration: kind === "academies" ? 13 : 11,
+                      repeat: Infinity,
+                      repeatType: "mirror",
+                      ease: "easeInOut",
+                      delay: Math.abs(off) * 0.9,
+                    }
+              }
+            >
+              {ch}
+            </motion.span>
+          );
+        })}
       </motion.span>
 
 
@@ -1142,6 +1187,11 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
     </motion.div>
   );
 }
+
+/* How far the outermost letters of the background wordmark travel from their
+   set position, in px. The middle letter stays put and the ones between get a
+   proportion, so the word opens and closes rather than shearing. */
+const LETTER_SPREAD = 72;
 
 /* ─── Content config ───────────────────────────────────────────── */
 
