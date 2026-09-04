@@ -341,7 +341,13 @@ html { scroll-behavior: smooth; }
   /* The component applies 4–8.5% opacity, which was tuned for white ink on
      navy. Near-black at the same opacity on white reads far heavier, so
      light mode uses a mid slate instead of the ink colour. */
-  --hero-glyph: #7C8B9C;
+  /* The background wordmark's tint. #0A1019 is --color-void, this site's own
+     ink, and it is chosen so the mark is EQUALLY faint in both themes: white on
+     the dark ground and void on white both shift the background by 7.84 per
+     channel at the wordmark's 0.032 rest opacity. The old #7C8B9C shifted it by
+     4.19, so once the mark went properly faint it disappeared in light mode
+     while still reading in dark. */
+  --hero-glyph: #0A1019;
 
   --tile-bg: rgba(10,16,25,0.045);
   --tile-bg-quiet: rgba(10,16,25,0.025);
