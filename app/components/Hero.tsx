@@ -279,7 +279,18 @@ function Panel({
 
 
       {/* Body content */}
-      <div className={`relative z-[3] flex flex-col ${isMobile ? "p-8 pt-10 pb-10" : "h-full px-12 pt-16 pb-12 justify-start"}`}>
+      {/* px-6 below xl, px-12 at and above it.
+ 
+          48px of padding a side is right at 1440+, and is what pushed the rate
+          table into a scrollbar on smaller laptops: at 1200 with the other
+          panel hovered the card had 320px and needed 322 — short by two
+          pixels, entirely spent on padding. Halving it below 1280 hands 48px
+          back to the content and the table fits from about 1100 up.
+ 
+          Below roughly 1080 it still scrolls, which is what the overflow-x-auto
+          on the card is for. There is no padding value that fixes that: the
+          panel is ~260px there and the table's own column minimums are 322. */}
+      <div className={`relative z-[3] flex flex-col ${isMobile ? "p-8 pt-10 pb-10" : "h-full px-6 xl:px-12 pt-16 pb-12 justify-start"}`}>
         <span className="label-chip self-start mb-[18px]">
           {config.label}
         </span>
