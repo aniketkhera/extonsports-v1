@@ -7,7 +7,7 @@ import type { AvailabilityPayload } from "../api/availability/route";
 import type { SchedulePayload } from "../api/schedule/route";
 import type { ProgramSchedule } from "@/lib/club-schedule";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, RATE_FEES_NOTE } from "../../lib/rates";
-import { BOOK_COURTS_URL, bookingTarget } from "../../lib/booking";
+import { BOOK_COURTS_URL, BOOK_CLASSES_URL, bookingTarget } from "../../lib/booking";
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_E164 } from "../../lib/legal";
 
 type PanelKey = "academies" | "recreation";
@@ -671,10 +671,12 @@ function DetailBody({
   blurb,
   schedule,
   action,
+  book,
 }: {
   blurb?: string;
   schedule: DetailSchedule | null;
   action?: { label: string; href: string };
+  book?: { label: string; href: string };
 }) {
   return (
     <div className="mt-4 flex flex-wrap items-start gap-x-14 gap-y-7">
@@ -687,7 +689,7 @@ function DetailBody({
             {blurb}
           </p>
         )}
-        <DetailAction action={action} />
+        <DetailAction action={action} book={book} />
       </div>
       <ScheduleLine schedule={schedule} />
     </div>
@@ -818,22 +820,45 @@ function ScheduleLine({ schedule }: { schedule: DetailSchedule | null }) {
   );
 }
 
-/* The one CTA per row. Every destination is somewhere that actually accepts the
-   thing its label promises — see the per-row comments in the data below. */
-function DetailAction({ action }: { action?: { label: string; href: string } }) {
-  if (!action) return null;
-  const external = action.href.startsWith("http");
+/* The CTAs for a row. Every destination is somewhere that actually accepts the
+   thing its label promises — see the per-row comments in the data below.
+
+   `book` is the self-serve route and leads where a row has one: it is the only
+   path that can also sell the multi-session pack, which a phone call cannot.
+   The phone/email `action` keeps its exact appearance and stays beside it,
+   because it is the route that needs no account at all. */
+function DetailAction({
+  action,
+  book,
+}: {
+  action?: { label: string; href: string };
+  book?: { label: string; href: string };
+}) {
+  if (!action && !book) return null;
+  const external = action?.href.startsWith("http");
   return (
-    <a
-      href={action.href}
-      target={external ? "_blank" : undefined}
-      rel={external ? "noreferrer" : undefined}
-      className="inline-block mt-5 text-[var(--color-ember)] hover:text-white text-mono text-[0.7rem] transition-colors"
-    >
-      <span className="border border-[var(--color-ember)]/50 px-5 py-2.5">
-        {action.label} &rarr;
-      </span>
-    </a>
+    <div className="mt-5 flex flex-wrap items-center gap-3">
+      {book && (
+        <a
+          href={book.href}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-block bg-[var(--color-ember)] text-black hover:bg-[var(--color-ember-hi)] text-mono text-[0.7rem] transition-colors"
+        >
+          <span className="inline-block px-5 py-2.5">{book.label} &rarr;</span>
+        </a>
+      )}
+      {action && (
+        <a
+          href={action.href}
+          target={external ? "_blank" : undefined}
+          rel={external ? "noreferrer" : undefined}
+          className="inline-block text-[var(--color-ember)] hover:text-white text-mono text-[0.7rem] transition-colors"
+        >
+          <span className="inline-block border border-[var(--color-ember)]/50 px-5 py-2.5">{action.label} &rarr;</span>
+        </a>
+      )}
+    </div>
   );
 }
 
@@ -864,6 +889,7 @@ function ClassDetail({
         blurb={c.blurb ?? c.desc}
         schedule={schedule}
         action={c.action}
+        book={c.book}
       />
     </div>
   );
@@ -1288,6 +1314,7 @@ const STUDIO_CLASSES: {
   desc: string
   blurb?: string
   action?: { label: string; href: string }
+  book?: { label: string; href: string }
   schedule?: { startsOn?: string; when?: string; status?: string }
 }[] = [
   { name: "Bollywood Dance",
@@ -1309,6 +1336,19 @@ const STUDIO_CLASSES: {
        platform deep-link — anonymous enrolment 401s and Exton is
        public_join:false with access_paused:true. */
     action: { label: "Call to register", href: "tel:+12019252710" },
+    /* Added once the platform could actually take this booking: orangish-app
+       #553 lets somebody with no membership reach the class list and enrol, and
+       #554 sells them the 4- and 8-session packs — the thing a phone call
+       cannot do. The phone line stays because it is the only route that needs no
+       account at all, and it is what the flyer prints.
+
+       ⛔ DELIBERATELY NOT bookingTarget(). Every other CTA on this site falls
+       back to the waitlist until isOpen(), and that is right for a court that
+       does not exist yet — but this class runs on Sep 15, before the club's
+       general opening, and is taking bookings today. Gating it would send the
+       one programme that IS live to a waitlist. The phone CTA above is ungated
+       for exactly the same reason. */
+    book: { label: "Book online", href: BOOK_CLASSES_URL },
     /* A wordmark in the site's own materials rather than the flyer artwork: the
        flyer is a portrait raster with a photograph in it and would not survive
        being dropped into a dark panel at 84px. Caveat is already loaded for
