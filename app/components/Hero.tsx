@@ -6,8 +6,8 @@ import Image from "next/image";
 import type { AvailabilityPayload } from "../api/availability/route";
 import type { SchedulePayload } from "../api/schedule/route";
 import type { ProgramSchedule } from "@/lib/club-schedule";
-import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, RATE_FEES_NOTE } from "../../lib/rates";
-import { BOOK_COURTS_URL, BOOK_CLASSES_URL, bookingTarget } from "../../lib/booking";
+import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, RATE_FEES_NOTE, CLASS_FEES_NOTE } from "../../lib/rates";
+import { BOOK_COURTS_URL, BOLLYWOOD_CLASS_URL, bookingTarget } from "../../lib/booking";
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_E164 } from "../../lib/legal";
 
 type PanelKey = "academies" | "recreation";
@@ -776,11 +776,17 @@ function ScheduleLine({ schedule }: { schedule: DetailSchedule | null }) {
           absent for those too whenever the platform cannot be reached — so this
           renders nothing rather than an empty heading.
 
-          STICKER PRICES, matching the court rate card three panels away and the
-          Studio's own flyer. RATE_FEES_NOTE below is the same sentence the rate
-          card carries, for the same reason: Exton passes the Stripe fee on, so
-          $80 is $82.70 at checkout, and one disclosure covering both products
-          beats two conventions on one page. */}
+          STICKER PRICES, matching the Studio's own flyer — and here the sticker
+          IS the total. This used to carry RATE_FEES_NOTE, on the reasoning that
+          one disclosure covering courts and classes alike beat two conventions
+          on one page. That reasoning was overtaken on 2026-09-09: Exton lists
+          "program" in fee_processing_absorb_surfaces, so the club absorbs the
+          card fee on classes and packs while courts stay a pass-through. The
+          old note promised "$80 is $82.70 at checkout" and the customer is in
+          fact charged $80.00 — verified against /api/public/clubs/exton-sports,
+          which returns all_in === rate for both packs. Two conventions on one
+          page is worse than one; quoting a number nobody is charged is worse
+          than both. */}
       {schedule.packs.length > 0 && (
         <div className="mt-5 pt-4 border-t border-white/10">
           <div className="text-mono text-[0.58rem] tracking-[0.2em] uppercase text-white/35 mb-2">
@@ -808,7 +814,7 @@ function ScheduleLine({ schedule }: { schedule: DetailSchedule | null }) {
               </div>
             );
           })()}
-          <div className="text-white/35 text-[0.75rem] mt-1">{RATE_FEES_NOTE}</div>
+          <div className="text-white/35 text-[0.75rem] mt-1">{CLASS_FEES_NOTE}</div>
         </div>
       )}
       {schedule.full && (
@@ -1348,7 +1354,7 @@ const STUDIO_CLASSES: {
        general opening, and is taking bookings today. Gating it would send the
        one programme that IS live to a waitlist. The phone CTA above is ungated
        for exactly the same reason. */
-    book: { label: "Book online", href: BOOK_CLASSES_URL },
+    book: { label: "Book online", href: BOLLYWOOD_CLASS_URL },
     /* A wordmark in the site's own materials rather than the flyer artwork: the
        flyer is a portrait raster with a photograph in it and would not survive
        being dropped into a dark panel at 84px. Caveat is already loaded for

@@ -162,11 +162,38 @@ export const RATE_FOOTNOTE =
  * the customer on both products (`fee_processing_mode` = 'pass'), which is what
  * keeps the club whole on its 30% of every class.
  *
+ * ⚠️ COURTS ONLY as of 2026-09-09 — see CLASS_FEES_NOTE below. The claim
+ * above that "the platform has no per-product override" stopped being true:
+ * orangish-app added `locations.fee_processing_absorb_surfaces`, and Exton's is
+ * set to ["program","lesson"]. Courts are still passed through, so THIS string
+ * is still correct where it is used (the court rate-card footnote). It is no
+ * longer correct for classes or packs.
+ *
  * Retyped here, which is the same drift risk as the rates above. If they move,
  * the honest fix is to serve them from the club endpoint, not edit this string.
  */
 export const RATE_FEES_NOTE =
   'Stripe fee (2.9% + 30¢) not included.'
+
+/**
+ * The studio classes and their packs, where the club EATS the card fee.
+ *
+ * Not the same sentence as RATE_FEES_NOTE, and deliberately so. Exton lists
+ * "program" in `locations.fee_processing_absorb_surfaces`, so orangish-app
+ * resolves processing to 'absorb' on this surface: the flyer says $25 and the
+ * card says $25, while a court hour stays a pass-through. Two products, two
+ * conventions, on one page — which is worse than one convention, but far worse
+ * than telling somebody a number they will not be charged.
+ *
+ * VERIFIED against the live club endpoint 2026-09-09, not inferred:
+ * /api/public/clubs/exton-sports returns member_all_in === member_rate (25) and
+ * packs with all_in === rate (80 and 125). If a future payload ever disagrees,
+ * that endpoint is the truth and this string is the stale copy.
+ *
+ * Carries no number on purpose, so a price change cannot falsify it.
+ */
+export const CLASS_FEES_NOTE =
+  'The price shown is what you pay — no card fee added.'
 
 /** A sentence per band for the footer, where there is space to say why. */
 export const BAND_BLURB: Record<BandKey, string> = {
