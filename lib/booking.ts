@@ -27,6 +27,33 @@ export const BOOK_COURTS_URL = `${APP_URL}/book/courts`
  */
 export const BOOK_CLASSES_URL = `${APP_URL}/book/squads`
 
+/**
+ * The Bollywood Dance programme's OWN page, and where the class CTA now points.
+ *
+ * BOOK_CLASSES_URL above is the generic cross-club class list — still correct
+ * for Featured.tsx, which is not about one programme. This one names the class:
+ * it opens on the next three dates with a Register button each, plus both
+ * packs, and it READS without signing in. A visitor who has just read "$25
+ * drop-in, Tuesdays & Thursdays" lands on that, not on a list of every club's
+ * squads with a login wall in front of it.
+ *
+ * ⚠️ 'bollywood' IS HARDCODED AND CANNOT BE DERIVED. programSlug() in
+ * lib/club-schedule.ts turns "Bollywood Dance" into 'bollywood-dance', which
+ * 404s, and /api/public/clubs/<slug> does not publish the programme slug at all
+ * (verified against the live payload 2026-09-09: name, type, rates, packs,
+ * currency — no slug). The durable fix is to add `slug` to that endpoint's
+ * programs[]; until then this string is the join, and it is load-bearing.
+ *
+ * The platform keeps retired slugs resolving (squad_programs.previous_slugs,
+ * plus a trigger), so a rename on that side does not immediately break this —
+ * but nothing here would notice if it did.
+ *
+ * Verified live 2026-09-09: https://app.orangish.io/c/bollywood → HTTP 200.
+ * It 404'd until orangish-app #564 merged, which is why this constant could not
+ * ship before that did.
+ */
+export const BOLLYWOOD_CLASS_URL = `${APP_URL}/c/bollywood`
+
 /** The booking CTA target, and whether it leaves the site. */
 export function bookingTarget(url: string): { href: string; external: boolean } {
   return isOpen() ? { href: url, external: true } : { href: '#waitlist', external: false }
