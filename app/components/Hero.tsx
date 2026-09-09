@@ -7,7 +7,7 @@ import type { AvailabilityPayload } from "../api/availability/route";
 import type { SchedulePayload } from "../api/schedule/route";
 import type { ProgramSchedule } from "@/lib/club-schedule";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, RATE_FEES_NOTE, CLASS_FEES_NOTE } from "../../lib/rates";
-import { BOOK_COURTS_URL, BOLLYWOOD_CLASS_URL, bookingTarget } from "../../lib/booking";
+import { BOOK_COURTS_URL, BOLLYWOOD_CLASS_URL, CLASS_ONLINE_BOOKING_LIVE, bookingTarget } from "../../lib/booking";
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_E164 } from "../../lib/legal";
 
 type PanelKey = "academies" | "recreation";
@@ -1353,8 +1353,16 @@ const STUDIO_CLASSES: {
        does not exist yet — but this class runs on Sep 15, before the club's
        general opening, and is taking bookings today. Gating it would send the
        one programme that IS live to a waitlist. The phone CTA above is ungated
-       for exactly the same reason. */
-    book: { label: "Book online", href: BOLLYWOOD_CLASS_URL },
+       for exactly the same reason.
+
+       ⛔ HIDDEN since 2026-09-09 — CLASS_ONLINE_BOOKING_LIVE is false while the
+       registration path goes untested end to end. `book` undefined makes
+       DetailAction render the phone CTA alone, which is the pre-#28 behaviour
+       and still takes bookings. Flip the constant in lib/booking.ts to restore
+       it; the checklist for doing so is on that constant. */
+    book: CLASS_ONLINE_BOOKING_LIVE
+      ? { label: "Book online", href: BOLLYWOOD_CLASS_URL }
+      : undefined,
     /* A wordmark in the site's own materials rather than the flyer artwork: the
        flyer is a portrait raster with a photograph in it and would not survive
        being dropped into a dark panel at 84px. Caveat is already loaded for

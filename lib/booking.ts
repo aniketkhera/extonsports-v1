@@ -54,6 +54,37 @@ export const BOOK_CLASSES_URL = `${APP_URL}/book/squads`
  */
 export const BOLLYWOOD_CLASS_URL = `${APP_URL}/c/bollywood`
 
+/**
+ * ⛔ ONLINE REGISTRATION IS HIDDEN ON PURPOSE. Set to `true` to bring it back.
+ *
+ * Turned off 2026-09-09, the day it went live, at Aniket's request: the link
+ * and the page both work, but NOBODY HAS EVER COMPLETED A REGISTRATION through
+ * them. No account has been created from a cold start, no seat claimed, no card
+ * charged, and no waitlist promotion exercised. The first person to try must
+ * not be a paying customer of the Studio's.
+ *
+ * What this hides is ONLY the "Book online" button in the studio class pane.
+ * "Call to register" stays — it is the flyer's own route, it needs no account,
+ * and it is how the class actually takes bookings until this flips.
+ *
+ * ⚠️ IT HIDES THE BUTTON, NOT THE PAGE. https://app.orangish.io/c/bollywood is
+ * public and stays reachable by anyone holding the link. This is a soft close
+ * on one entry point, not a gate. If registrations must be stopped outright,
+ * that is a platform-side change (features.squads at Exton), not this constant.
+ *
+ * BEFORE FLIPPING IT BACK: walk the cold path on a throwaway account from a
+ * phone — sign up, clear the legal gate, pay the $25, confirm the money reached
+ * Exton's connected account, then refund it. The magic-link path specifically,
+ * because `next` has to survive a Supabase email template that lives outside
+ * both repos. Also set features.adults_only_classes at Exton, which is still
+ * unset, so "Adults 19+" is currently displayed but not enforced.
+ *
+ * Deliberately NOT wired to isOpen()/bookingTarget(). Those answer "has the
+ * club opened yet", which is a different question with a different answer — see
+ * the comment on the class entry in Hero.tsx.
+ */
+export const CLASS_ONLINE_BOOKING_LIVE = false
+
 /** The booking CTA target, and whether it leaves the site. */
 export function bookingTarget(url: string): { href: string; external: boolean } {
   return isOpen() ? { href: url, external: true } : { href: '#waitlist', external: false }
