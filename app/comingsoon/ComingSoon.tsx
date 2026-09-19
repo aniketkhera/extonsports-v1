@@ -139,6 +139,33 @@ export default function ComingSoon() {
           <div className={s.whereSub}>Pay by the hour · No membership required</div>
         </div>
       </footer>
+
+      {/* The programmes in the building (2026-09-19), each lockup as the homepage draws it
+          (Hero.tsx ACADEMY_PARTNERS and the SeRa class card): SquashTigers in Exo 2 800
+          italic, the Chester County shield beside its name, SeRa in Caveat. Type, not
+          artwork, so every logo stays sharp at any TV size. Static: nothing in it moves. */}
+      <div className={`${s.partners} ${s.rise}`} style={delay(0.6)}>
+        <span className={s.partnersLabel}>Coaching &amp; classes by</span>
+        <span className={s.partnerLogos}>
+          <span className={s.stLogo} role="img" aria-label="SquashTigers">
+            <span>Squash</span>
+            <span>Tigers</span>
+          </span>
+          <span className={s.partnerRule} aria-hidden />
+          <span className={s.cccaLogo} role="img" aria-label="Chester County Cricket Academy">
+            <img src="/academies/ccca-shield.png" alt="" width={360} height={239} />
+            <span>
+              <span>Chester County</span>
+              <span>Cricket Academy</span>
+            </span>
+          </span>
+          <span className={s.partnerRule} aria-hidden />
+          <span className={s.seraLogo} role="img" aria-label="SeRa Dance and Fitness">
+            <span>SeRa</span>
+            <span>Dance &amp; Fitness</span>
+          </span>
+        </span>
+      </div>
     </main>
   );
 }
