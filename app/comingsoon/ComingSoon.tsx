@@ -50,9 +50,9 @@ export default function ComingSoon() {
           </div>
         </div>
 
-        {/* Two messages taking turns in one spot (2026-09-19): COMING SOON!, then the bulk
-            booking offer. Both slides share one grid cell, so the heading keeps the taller
-            one's height and nothing below it moves when they swap. data-text feeds each line's
+        {/* Three messages taking turns in one spot (2026-09-19): COMING SOON!, the bulk
+            booking offer, PAY AND PLAY. The slides share one grid cell, so the heading keeps
+            the tallest one's height and nothing below it moves when they swap. data-text feeds each line's
             colour-crossfading ::after copy; the slides are aria-hidden and the heading's
             aria-label says both, so a screen reader reads each message once.
             "Call us", not "call or text" (2026-09-19): texts to the Exton line arrive, but it
@@ -61,7 +61,7 @@ export default function ComingSoon() {
         <h1
           className={`${s.title} ${s.rise}`}
           style={delay(0.15)}
-          aria-label="Coming soon! Bulk court bookings — call us."
+          aria-label="Coming soon! Bulk court bookings — call us. Pay and play."
         >
           <span className={`${s.slide} ${s.slideA}`} aria-hidden>
             <span className={s.line} data-text="Coming">Coming</span>
@@ -74,6 +74,10 @@ export default function ComingSoon() {
               <PhoneIcon />
               Call us
             </span>
+          </span>
+          <span className={`${s.slide} ${s.slideC}`} aria-hidden>
+            <span className={s.line} data-text="Pay and">Pay and</span>
+            <span className={s.line} data-text="play">play</span>
           </span>
         </h1>
       </section>

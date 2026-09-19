@@ -180,32 +180,27 @@
   text-transform: uppercase;
 }
 
-/* The two messages take turns: 14 s round, each on screen ~6 s with a 1 s crossfade.
-   Opacity only — composited, not repainted (see the motion budget at the top). */
+/* The messages take turns: a 21 s round, each on screen 7 s, crossfading over 1 s into the
+   next (every slide runs the same keyframes, offset by 7 s). Opacity only — composited, not
+   repainted (see the motion budget at the top). Adding a message: a slide in the TSX, one
+   more delay here, and a 7 s longer round. */
 .slide {
   grid-area: 1 / 1;
   align-self: center;
   display: flex;
   flex-direction: column;
-  will-change: opacity;
-}
-.slideA {
-  font-size: calc(var(--u) * 10);
-  animation: slide-a 14s ease-in-out infinite;
-}
-.slideB {
-  font-size: calc(var(--u) * 7.2);
   opacity: 0;
-  animation: slide-b 14s ease-in-out infinite;
+  will-change: opacity;
+  animation: slide-turn 21s ease-in-out infinite both;
 }
-@keyframes slide-a {
-  0%, 43% { opacity: 1; }
-  50%, 93% { opacity: 0; }
-  100% { opacity: 1; }
-}
-@keyframes slide-b {
-  0%, 43% { opacity: 0; }
-  50%, 93% { opacity: 1; }
+.slideA { font-size: calc(var(--u) * 10); animation-delay: 0s; }
+.slideB { font-size: calc(var(--u) * 7.2); animation-delay: 7s; }
+.slideC { font-size: calc(var(--u) * 10); animation-delay: 14s; }
+@keyframes slide-turn {
+  0% { opacity: 0; }
+  4.76% { opacity: 1; }    /* 1 s in */
+  33.33% { opacity: 1; }   /* 7 s: the next slide starts fading in… */
+  38.1% { opacity: 0; }    /* …and this one is gone by 8 s */
   100% { opacity: 0; }
 }
 
@@ -528,7 +523,7 @@
 /* ── Phones / portrait: stack, and let it scroll ─────────────────── */
 @media not ((min-aspect-ratio: 4/3) and (min-width: 900px)) {
   .copy { align-items: flex-start; }
-  .slideA { font-size: calc(var(--u) * 10.5); }
+  .slideA, .slideC { font-size: calc(var(--u) * 10.5); }
   .slideB { font-size: calc(var(--u) * 7.6); }
   .legend { justify-content: flex-start; }
   /* Wider than tall, like the homepage's box, so the building's ends are not cropped. */
@@ -539,8 +534,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /* No rotation: COMING SOON! stays, the offer is not shown. */
-  .slideB { display: none; }
+  /* No rotation: COMING SOON! stays, the other messages are not shown. */
+  .slideB, .slideC { display: none; }
   .slideA { opacity: 1; }
   .slideA, .rise, .riseStage, .blob, .line::after, .qrTile::before, .phoneBadge svg, .phoneBadge::after, .stageTagDot {
     animation: none;
