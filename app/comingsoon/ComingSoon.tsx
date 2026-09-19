@@ -61,14 +61,14 @@ export default function ComingSoon() {
         <h1
           className={`${s.title} ${s.rise}`}
           style={delay(0.15)}
-          aria-label="Coming soon! Bulk court bookings — call us. Pay and play."
+          aria-label="Coming soon! Bulk bookings — call us. Pay and play."
         >
           <span className={`${s.slide} ${s.slideA}`} aria-hidden>
             <span className={s.line} data-text="Coming">Coming</span>
             <span className={s.line} data-text="soon!">soon!</span>
           </span>
           <span className={`${s.slide} ${s.slideB}`} aria-hidden>
-            <span className={s.line} data-text="Bulk court">Bulk court</span>
+            <span className={s.line} data-text="Bulk">Bulk</span>
             <span className={s.line} data-text="bookings">bookings</span>
             <span className={s.callUs}>
               <PhoneIcon />
