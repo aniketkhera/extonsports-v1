@@ -20,7 +20,13 @@ import * as THREE from "three";
  * IntersectionObserver. WebGL context and geometries are disposed on
  * unmount.
  */
-export default function Facility3D() {
+export default function Facility3D({
+  // Zoom by field of view, never by moving the camera: the cricket-lane placement below is
+  // tuned to exactly which floor the walls hide from this camera position, and a narrower
+  // FOV changes the framing without changing a single occlusion. /reception uses it to fill
+  // a larger stage (2026-09-19); the homepage keeps the default.
+  fov = 38,
+}: { fov?: number } = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,7 +41,7 @@ export default function Facility3D() {
     const initialWidth = container.clientWidth || 800;
     const initialHeight = container.clientHeight || 420;
 
-    const camera = new THREE.PerspectiveCamera(38, initialWidth / initialHeight, 1, 5000);
+    const camera = new THREE.PerspectiveCamera(fov, initialWidth / initialHeight, 1, 5000);
     let angle = Math.PI / 4;
     const camDist = 860, camHeight = 700;
     function updateCamera() {
@@ -387,7 +393,7 @@ export default function Facility3D() {
         container.removeChild(renderer.domElement);
       }
     };
-  }, []);
+  }, [fov]);
 
   return (
     <div
