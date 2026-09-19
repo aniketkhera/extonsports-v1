@@ -245,7 +245,7 @@
 @keyframes xfade { to { opacity: 1; } }
 
 /* The ask under the offer: a solid pill, so it reads as an instruction, not another line. */
-.callOrText {
+.callUs {
   display: inline-flex;
   align-items: center;
   gap: 0.35em;
@@ -261,7 +261,7 @@
   line-height: 1;
   box-shadow: 0 0 calc(var(--u) * 2) rgba(248, 155, 114, 0.4);
 }
-.callOrText svg {
+.callUs svg {
   width: 0.95em;
   height: 0.95em;
 }
