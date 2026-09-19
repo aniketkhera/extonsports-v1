@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Barlow, Oswald, Caveat, Exo_2 } from "next/font/google";
-import { Analytics } from "@vercel/analytics/react";
-import TrackBeacon from "mailer-admin/TrackBeacon";
-import WhatsAppFab from "./components/WhatsAppFab";
+import SiteChrome from "./components/SiteChrome";
 import { LEGAL_NAME } from "@/lib/legal";
 import "./globals.css";
 
@@ -168,9 +166,9 @@ export default function RootLayout({
         {/* overflow-x wrapper: keeps horizontal scroll locked without
             touching body overflow, which would break position:fixed */}
         <div style={{ overflowX: "hidden" }}>{children}</div>
-        <WhatsAppFab />
-        <Analytics />
-        <TrackBeacon />
+        {/* WhatsApp bubble, Vercel Analytics and the visit beacon — skipped on the
+            wall-TV screens; see SiteChrome for why. */}
+        <SiteChrome />
       </body>
     </html>
   );
