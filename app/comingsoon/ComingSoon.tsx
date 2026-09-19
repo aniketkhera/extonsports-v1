@@ -60,7 +60,7 @@ export default function ComingSoon() {
         <h1
           className={`${s.title} ${s.rise}`}
           style={delay(0.15)}
-          aria-label="Coming soon! Bulk court bookings welcome — call or text."
+          aria-label="Coming soon! Bulk court bookings — call or text."
         >
           <span className={`${s.slide} ${s.slideA}`} aria-hidden>
             <span className={s.line} data-text="Coming">Coming</span>
@@ -69,7 +69,6 @@ export default function ComingSoon() {
           <span className={`${s.slide} ${s.slideB}`} aria-hidden>
             <span className={s.line} data-text="Bulk court">Bulk court</span>
             <span className={s.line} data-text="bookings">bookings</span>
-            <span className={s.line} data-text="welcome!">welcome!</span>
             <span className={s.callOrText}>
               <PhoneIcon />
               Call or text
