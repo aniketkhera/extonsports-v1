@@ -246,7 +246,11 @@
   display: flex;
   /* On a TV the grid row decides the height; on phones, see the stacked layout below. */
   min-height: 0;
-  padding: 2px;
+  /* The border is this padding showing the gradient behind .stage. Sized in --u, not px, so
+     it reads the same thickness on every TV: ~6 CSS px on the 1280-wide reception TV.
+     Thickened from 2px on 2026-09-19 at Aniket's request. */
+  --frame: calc(var(--u) * 0.45);
+  padding: var(--frame);
   border-radius: calc(var(--u) * 2);
   /* Static. Spinning it (@property angle) repainted the whole frame every frame, ~7 fps. */
   background: conic-gradient(from 200deg, var(--ember), rgba(248, 155, 114, 0) 22%, var(--green) 48%, rgba(66, 181, 77, 0) 72%, var(--gold) 88%, var(--ember));
@@ -257,7 +261,7 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  border-radius: calc(var(--u) * 2 - 2px);
+  border-radius: calc(var(--u) * 2 - var(--frame));
   background:
     radial-gradient(ellipse 70% 60% at 50% 58%, rgba(248, 155, 114, 0.16), transparent 70%),
     radial-gradient(ellipse 60% 60% at 100% 100%, rgba(66, 181, 77, 0.16), transparent 70%),
