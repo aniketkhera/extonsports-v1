@@ -30,15 +30,13 @@ const delay = (seconds: number): CSSProperties => ({ animationDelay: `${seconds}
 const TV_LAYOUT = "(min-aspect-ratio: 4/3) and (min-width: 900px)";
 const stageFov = () => (typeof window !== "undefined" && window.matchMedia(TV_LAYOUT).matches ? 31 : 38);
 
-export default function Reception({ openingLabel, openingAt }: { openingLabel: string; openingAt: number }) {
-  // Flips once, when the doors open: the eyebrow and the stage tag stop promising and start
-  // saying so. Nothing on this page re-renders on a timer.
-  const open = useIsPast(openingAt);
+export default function Reception() {
   useReloadOnDeploy();
 
   return (
     <main className={s.root}>
       <Backdrop />
+      <Diag />
 
       <section className={s.copy}>
         <div className={`${s.brand} ${s.rise}`}>
@@ -52,18 +50,11 @@ export default function Reception({ openingLabel, openingAt }: { openingLabel: s
           </div>
         </div>
 
-        {/* Wrapped: the pill has its own breathing animation, and one element cannot run
-            both without one `animation` declaration overriding the other. */}
-        <div className={s.rise} style={delay(0.15)}>
-          <div className={s.eyebrow}>
-            <span className={s.pulse} aria-hidden />
-            {open ? "Open 24/7" : <>Doors open {openingLabel}</>}
-          </div>
-        </div>
-
-        <h1 className={`${s.title} ${s.rise}`} style={delay(0.25)}>
-          <span>Coming</span>
-          <span>soon!</span>
+        {/* data-text feeds each line's crossfading ::after copy (see .title in the CSS); the
+            aria-label keeps a screen reader from reading every word twice. */}
+        <h1 className={`${s.title} ${s.rise}`} style={delay(0.15)} aria-label="Coming soon!">
+          <span data-text="Coming">Coming</span>
+          <span data-text="soon!">soon!</span>
         </h1>
       </section>
 
@@ -77,9 +68,10 @@ export default function Reception({ openingLabel, openingAt }: { openingLabel: s
               <span className={s.stageTagDot} aria-hidden />
               The club floor · 3D
             </div>
-            {/* Not a bare "Open 24/7" before opening day — beside COMING SOON that reads
-                as open now. lib/opening.ts: the club runs 24/7 from opening day. */}
-            <div className={s.stageTagRight}>{open ? "Open 24/7" : "Open 24/7 from day one"}</div>
+            {/* Not a bare "Open 24/7" — beside COMING SOON that reads as open now. And no
+                opening date anywhere on this screen: it is not settled (2026-09-19), so the
+                page does not read lib/opening.ts at all. */}
+            <div className={s.stageTagRight}>Open 24/7 from day one</div>
           </div>
         </div>
         {/* Under the frame, not over it: overlaid, the chips covered the building's near
@@ -125,24 +117,6 @@ export default function Reception({ openingLabel, openingAt }: { openingLabel: s
       </footer>
     </main>
   );
-}
-
-// True once `at` has passed. Re-arms at most a minute ahead rather than setting one long
-// timeout: setTimeout silently fires at once for delays past ~24.8 days, and a TV's clock
-// can be corrected (NTP) while it waits.
-function useIsPast(at: number): boolean {
-  const [past, setPast] = useState(false);
-  useEffect(() => {
-    let id: ReturnType<typeof setTimeout>;
-    const check = () => {
-      const ms = at - Date.now();
-      if (ms <= 0) return setPast(true);
-      id = setTimeout(check, Math.min(ms, 60_000));
-    };
-    id = setTimeout(check, 0);
-    return () => clearTimeout(id);
-  }, [at]);
-  return past;
 }
 
 // "Whatever is on the URL is what the TV shows." A wall screen loads its page once and
@@ -205,4 +179,38 @@ class StageBoundary extends Component<{ children: ReactNode; fallback: ReactNode
   render() {
     return this.state.failed ? this.props.fallback : this.props.children;
   }
+}
+
+// ?diag=1 — what this screen is actually doing, printed in a corner: frame rate, device
+// pixel ratio, viewport, the 3D canvas's real backing size, and the GPU. For judging a TV
+// from across the room ("the floor plan is choppy") with numbers rather than adjectives —
+// which is how the 18 → 75 fps fix on the reception TV was found (2026-09-19). Off unless
+// asked for; reads the URL client-side so /reception stays a static page. Point a TV at it
+// with tv-keeper: `point reception https://extonsports.com/reception?diag=1`.
+function Diag() {
+  const [text, setText] = useState<string | null>(null);
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has("diag")) return;
+    let frames = 0;
+    let raf = 0;
+    const count = () => { frames++; raf = requestAnimationFrame(count); };
+    raf = requestAnimationFrame(count);
+    let gpu = "?";
+    const report = () => {
+      const fps = frames / 5;
+      frames = 0;
+      const c = document.querySelector("canvas");
+      if (c && gpu === "?") {
+        const gl = (c.getContext("webgl2") || c.getContext("webgl")) as WebGLRenderingContext | null;
+        const ext = gl?.getExtension("WEBGL_debug_renderer_info");
+        gpu = gl ? String(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER)) : "no WebGL";
+      }
+      const canvas = c ? `${c.width}x${c.height} for ${c.clientWidth}x${c.clientHeight} css` : "none";
+      setText(`${Math.round(fps)} fps · dpr ${window.devicePixelRatio} · ${window.innerWidth}x${window.innerHeight} · canvas ${canvas} · ${gpu}`);
+    };
+    const id = setInterval(report, 5000);
+    return () => { cancelAnimationFrame(raf); clearInterval(id); };
+  }, []);
+  if (!text) return null;
+  return <div className={s.diag}>{text}</div>;
 }

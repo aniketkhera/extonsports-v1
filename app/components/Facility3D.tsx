@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 /**
  * Facility3D — rotating 3D rendering of the Exton Sports Center.
@@ -345,17 +346,79 @@ export default function Facility3D({
       addWicketSet(184, pitchZ);
     });
 
+    // ── Batching ── one draw call per look, not per piece
+    //
+    // Every piece above is its own mesh with its own material: a couple of hundred draw calls
+    // a frame. On the reception TV (VIZIO M55Q6-L4, Mali-G52, 2026-09-19) that held the orbit
+    // to ~40-45 fps however small the canvas was drawn — quartering the pixels gained
+    // nothing — so the limit was the CPU issuing draw calls, not the GPU filling pixels.
+    // Nothing here moves except the camera, so opaque pieces that look alike (same material
+    // type, colour and side) are merged, once, into one mesh with their transforms baked in.
+    // The picture is unchanged.
+    //
+    // Transparent pieces — the glass, the door panes, the nets — are left alone: three.js
+    // sorts transparent objects back-to-front per object, every frame, and a merged glass
+    // mesh would draw its far panes over its near ones at some angles of the orbit.
+    scene.updateMatrixWorld(true);
+    const looks = new Map<string, THREE.Mesh[]>();
+    for (const m of meshes) {
+      const mat = m.material;
+      if (Array.isArray(mat) || mat.transparent) continue;
+      const color = (mat as THREE.MeshLambertMaterial).color;
+      const key = `${mat.type}|${color ? color.getHexString() : ""}|${mat.side}`;
+      const same = looks.get(key);
+      if (same) same.push(m);
+      else looks.set(key, [m]);
+    }
+    const merged = new Set<THREE.Mesh>();
+    for (const group of looks.values()) {
+      if (group.length < 2) continue;
+      // Non-indexed and world-space, so planes, boxes and extrusions merge alike.
+      const parts = group.map((m) => {
+        const g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone();
+        return g.applyMatrix4(m.matrixWorld);
+      });
+      const geometry = mergeGeometries(parts, false);
+      parts.forEach((g) => g.dispose());
+      if (!geometry) continue; // attributes did not line up: leave this look unbatched
+      const material = group[0].material as THREE.Material;
+      scene.add(new THREE.Mesh(geometry, material));
+      for (const m of group) {
+        scene.remove(m);
+        m.geometry.dispose();
+        if (m.material !== material && m.material !== stumpMat) (m.material as THREE.Material).dispose();
+        merged.add(m);
+      }
+    }
+    // Keep the dispose list true: drop what was merged, add what replaced it.
+    const kept = meshes.filter((m) => !merged.has(m));
+    meshes.length = 0;
+    meshes.push(...kept);
+    scene.traverse((o) => {
+      if (o instanceof THREE.Mesh && !meshes.includes(o)) meshes.push(o);
+    });
+
     // ── Animation ── pause when off-screen via IntersectionObserver
+    //
+    // Rotation is by elapsed time, not a fixed step per frame. `angle += 0.0033` per frame
+    // tied the speed to the frame rate, so a device that drops frames also lurches between
+    // fast and slow — judder on top of the dropped frames. Seen on the reception TV,
+    // 2026-09-19. 0.198 rad/s is the old speed at 60 fps.
+    const RAD_PER_SEC = 0.0033 * 60;
     let rafId = 0;
     let visible = true;
-    function animate() {
+    let last = 0;
+    function animate(now: number) {
       rafId = requestAnimationFrame(animate);
-      if (!visible) return;
-      angle += 0.0033;
+      if (!visible) { last = 0; return; }
+      // Clamped so a long pause (off-screen, a busy main thread) resumes, not leaps.
+      const dt = last ? Math.min((now - last) / 1000, 0.1) : 0;
+      last = now;
+      angle += RAD_PER_SEC * dt;
       updateCamera();
       renderer.render(scene, camera);
     }
-    animate();
+    rafId = requestAnimationFrame(animate);
 
     const observer = new IntersectionObserver(
       (entries) => { visible = entries[0]?.isIntersecting ?? true; },
