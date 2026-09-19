@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import Reception from "./Reception";
+import ComingSoon from "./ComingSoon";
 
-// The wall screen at the front desk (2026-09-19): a 16:9 TV first, a phone second (the QR
+// The "coming soon" wall screen (2026-09-19), shown on every Exton TV — reception and
+// outside so far. A 16:9 TV first, a phone second (the QR
 // on it lands people on the homepage, not here). No nav, no footer, no WhatsApp bubble or
 // visit beacon (see components/SiteChrome.tsx), and it fits one screen with no scroll.
 //
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
   title: { absolute: "Coming soon · Exton Sports Center" },
   description:
     "Exton Sports Center — squash, badminton, cricket and fitness under one roof in Exton, PA. Coming soon.",
-  alternates: { canonical: "/reception" },
+  alternates: { canonical: "/comingsoon" },
   robots: { index: false, follow: false },
 };
 
@@ -25,6 +26,6 @@ export const viewport: Viewport = {
   colorScheme: "dark",
 };
 
-export default function ReceptionPage() {
-  return <Reception />;
+export default function ComingSoonPage() {
+  return <ComingSoon />;
 }

@@ -1,4 +1,4 @@
-/* The reception wall screen.
+/* The "coming soon" wall screen (/comingsoon), on the Exton TVs.
 
    Explicit colours throughout, not the theme tokens: this page is a TV first, and a visitor
    who once chose light mode on their phone must not get a washed-out version of it
@@ -116,7 +116,7 @@
 }
 
 /* ── Entrances ────────────────────────────────────────────────────
-   CSS rather than framer-motion — see the note on `delay` in Reception.tsx. fill-mode
+   CSS rather than framer-motion — see the note on `delay` in ComingSoon.tsx. fill-mode
    `both` holds the start frame through the delay and the end frame forever after. */
 .rise { animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
 .riseStage { animation: rise-stage 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both; }

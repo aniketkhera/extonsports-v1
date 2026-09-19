@@ -8,12 +8,12 @@ import WhatsAppFab from "./WhatsAppFab";
 // The site-wide extras the root layout used to mount directly, now skipped on pages that
 // are screens rather than places a person visits.
 //
-// /reception is the wall TV at the front desk (added 2026-09-19). It loads once and stays
+// /comingsoon is what the Exton wall TVs show (added 2026-09-19). A TV loads it once and stays
 // up for days, reloading whenever the TV power-cycles, so TrackBeacon would count a
 // television as a visitor in /admin/visits every morning, and the WhatsApp bubble would
 // sit on the screen forever with nobody to tap it. Vercel Analytics goes for the same
 // reason as the beacon.
-const SCREEN_PATHS = ["/reception"];
+const SCREEN_PATHS = ["/comingsoon"];
 
 export default function SiteChrome() {
   const pathname = usePathname();

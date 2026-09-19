@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 
 // GET /api/screen-version
 // ---------------------------------------------------------------------------
-// Which deployment is serving. The wall screens (/reception, 2026-09-19) poll this and
+// Which deployment is serving. The wall screens (/comingsoon, 2026-09-19) poll this and
 // reload themselves when it changes.
 //
 // A TV loads its page once and then holds it for days — it reloads only when it

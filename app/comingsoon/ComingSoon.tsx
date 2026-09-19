@@ -4,7 +4,7 @@ import { Component, useEffect, useState, type CSSProperties, type ReactNode } fr
 import Facility3D from "../components/Facility3D";
 import { CONTACT_PHONE, CONTACT_PHONE_E164 } from "@/lib/legal";
 import QrCode from "./QrCode";
-import s from "./reception.module.css";
+import s from "./comingsoon.module.css";
 
 // Zone colours are Facility3D's own (its `C` table), so each legend dot matches the floor
 // it names in the rendering above it.
@@ -30,7 +30,7 @@ const delay = (seconds: number): CSSProperties => ({ animationDelay: `${seconds}
 const TV_LAYOUT = "(min-aspect-ratio: 4/3) and (min-width: 900px)";
 const stageFov = () => (typeof window !== "undefined" && window.matchMedia(TV_LAYOUT).matches ? 31 : 38);
 
-export default function Reception() {
+export default function ComingSoon() {
   useReloadOnDeploy();
 
   return (
@@ -185,8 +185,8 @@ class StageBoundary extends Component<{ children: ReactNode; fallback: ReactNode
 // pixel ratio, viewport, the 3D canvas's real backing size, and the GPU. For judging a TV
 // from across the room ("the floor plan is choppy") with numbers rather than adjectives —
 // which is how the 18 → 75 fps fix on the reception TV was found (2026-09-19). Off unless
-// asked for; reads the URL client-side so /reception stays a static page. Point a TV at it
-// with tv-keeper: `point reception https://extonsports.com/reception?diag=1`.
+// asked for; reads the URL client-side so /comingsoon stays a static page. Point a TV at it
+// with tv-keeper: `point reception https://extonsports.com/comingsoon?diag=1`.
 function Diag() {
   const [text, setText] = useState<string | null>(null);
   useEffect(() => {

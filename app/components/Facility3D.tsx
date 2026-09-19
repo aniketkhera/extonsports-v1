@@ -24,7 +24,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 export default function Facility3D({
   // Zoom by field of view, never by moving the camera: the cricket-lane placement below is
   // tuned to exactly which floor the walls hide from this camera position, and a narrower
-  // FOV changes the framing without changing a single occlusion. /reception uses it to fill
+  // FOV changes the framing without changing a single occlusion. /comingsoon uses it to fill
   // a larger stage (2026-09-19); the homepage keeps the default.
   fov = 38,
 }: { fov?: number } = {}) {

@@ -167,7 +167,7 @@ export default function RootLayout({
             touching body overflow, which would break position:fixed */}
         <div style={{ overflowX: "hidden" }}>{children}</div>
         {/* WhatsApp bubble, Vercel Analytics and the visit beacon — skipped on the
-            reception wall screen; see SiteChrome for why. */}
+            wall-TV screens; see SiteChrome for why. */}
         <SiteChrome />
       </body>
     </html>
