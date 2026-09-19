@@ -194,7 +194,7 @@
   animation: slide-turn 21s ease-in-out infinite both;
 }
 .slideA { font-size: calc(var(--u) * 10); animation-delay: 0s; }
-.slideB { font-size: calc(var(--u) * 7.2); animation-delay: 7s; }
+.slideB { font-size: calc(var(--u) * 8.8); animation-delay: 7s; }   /* "BOOKINGS" is the widest line: ~482 of 501 px on the TV */
 .slideC { font-size: calc(var(--u) * 10); animation-delay: 14s; }
 @keyframes slide-turn {
   0% { opacity: 0; }
@@ -524,7 +524,7 @@
 @media not ((min-aspect-ratio: 4/3) and (min-width: 900px)) {
   .copy { align-items: flex-start; }
   .slideA, .slideC { font-size: calc(var(--u) * 10.5); }
-  .slideB { font-size: calc(var(--u) * 7.6); }
+  .slideB { font-size: calc(var(--u) * 7.8); }
   .legend { justify-content: flex-start; }
   /* Wider than tall, like the homepage's box, so the building's ends are not cropped. */
   .stageFrame { flex: none; aspect-ratio: 5 / 4; }
