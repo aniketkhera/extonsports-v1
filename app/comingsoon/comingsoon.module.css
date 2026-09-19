@@ -244,7 +244,7 @@
 }
 @keyframes xfade { to { opacity: 1; } }
 
-/* The ask under the offer: a solid pill, so it reads as an instruction, not a fourth line. */
+/* The ask under the offer: a solid pill, so it reads as an instruction, not another line. */
 .callOrText {
   display: inline-flex;
   align-items: center;
