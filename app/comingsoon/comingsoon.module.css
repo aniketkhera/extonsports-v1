@@ -37,7 +37,8 @@
   display: flex;
   flex-direction: column;
   gap: calc(var(--u) * 4);
-  padding: calc(var(--u) * 5) calc(var(--u) * 4.5);
+  /* No bottom padding: the partner strip is the last thing on the page and sits flush. */
+  padding: calc(var(--u) * 5) calc(var(--u) * 4.5) 0;
   background: var(--void);
   color: var(--paper);
   font-family: var(--font-body), system-ui, sans-serif;
@@ -49,9 +50,9 @@
     height: 100dvh;
     display: grid;
     grid-template-columns: 43fr 57fr;
-    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-rows: minmax(0, 1fr) auto auto;
     column-gap: calc(var(--u) * 3);
-    row-gap: calc(var(--u) * 2);
+    row-gap: calc(var(--u) * 1.6);
     padding: calc(var(--u) * 2.6) calc(var(--u) * 3) calc(var(--u) * 2.2);
   }
   /* One row, always: a wrapped footer steals the copy column's height (measured 2026-09-19
@@ -409,8 +410,8 @@
 .qrTile {
   position: relative;
   flex-shrink: 0;
-  width: calc(var(--u) * 9.4);
-  height: calc(var(--u) * 9.4);
+  width: calc(var(--u) * 8.4);
+  height: calc(var(--u) * 8.4);
   padding: calc(var(--u) * 0.35);
   border-radius: calc(var(--u) * 1.1);
   background: #fff;
@@ -531,6 +532,101 @@
   .foot { flex-direction: column; align-items: flex-start; }
   .rule { display: none; }
   .where { margin-left: 0; text-align: left; }
+}
+
+/* ── Partner strip: the programmes in the building ─────────────── */
+.partners {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 0.8) calc(var(--u) * 3);
+  /* Phones: out through the root's 4.5u side padding to the edges; the root has no bottom
+     padding on phones, so no bottom margin is needed. */
+  margin: 0 calc(var(--u) * -4.5);
+  padding: calc(var(--u) * 0.75) calc(var(--u) * 3);
+  background: linear-gradient(180deg, rgba(14, 24, 37, 0.85), #070b12);
+  border-top: 1px solid rgba(248, 155, 114, 0.28);
+}
+.partnersLabel {
+  font-size: calc(var(--u) * 0.85);
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--fog);
+}
+.partnerLogos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 1) calc(var(--u) * 2.6);
+}
+.partnerRule {
+  width: 1px;
+  height: calc(var(--u) * 3.4);
+  background: rgba(255, 255, 255, 0.16);
+}
+@media (min-aspect-ratio: 4/3) and (min-width: 900px) {
+  /* After the base rule on purpose (a media query adds no specificity): full bleed out
+     through the TV layout's own padding, 3u at the sides and 2.2u at the bottom. */
+  .partners { grid-column: 1 / -1; margin: 0 calc(var(--u) * -3) calc(var(--u) * -2.2); }
+}
+/* SquashTigers — Exo 2 800 italic, SQUASH white · TIGERS orange (as on the homepage). */
+.stLogo {
+  font-family: var(--font-exo2), sans-serif;
+  font-weight: 800;
+  font-style: italic;
+  font-size: calc(var(--u) * 2.3);
+  letter-spacing: 0.06em;
+  line-height: 1;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+.stLogo span:first-child { color: #ffffff; }
+.stLogo span:last-child { color: var(--ember); }
+/* Chester County Cricket Academy — the shield, then the name in the condensed face. */
+.cccaLogo {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--u) * 0.6);
+  white-space: nowrap;
+}
+.cccaLogo img {
+  height: calc(var(--u) * 3.6);
+  width: auto;
+}
+.cccaLogo > span {
+  font-family: var(--font-cond), sans-serif;
+  font-size: calc(var(--u) * 1.35);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+.cccaLogo > span > span { display: block; }
+.cccaLogo > span > span:first-child { color: var(--ember); }
+.cccaLogo > span > span:last-child { color: #ffffff; }
+/* SeRa — Caveat 700 script in orange, the rest in spaced condensed capitals. */
+.seraLogo {
+  display: inline-flex;
+  align-items: baseline;
+  gap: calc(var(--u) * 0.7);
+  white-space: nowrap;
+}
+.seraLogo span:first-child {
+  font-family: var(--font-caveat), cursive;
+  font-weight: 700;
+  font-size: calc(var(--u) * 3.3);
+  line-height: 1;
+  color: var(--ember);
+}
+.seraLogo span:last-child {
+  font-family: var(--font-cond), sans-serif;
+  font-size: calc(var(--u) * 1.05);
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: #ffffff;
 }
 
 @media (prefers-reduced-motion: reduce) {
