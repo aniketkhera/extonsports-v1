@@ -50,11 +50,31 @@ export default function ComingSoon() {
           </div>
         </div>
 
-        {/* data-text feeds each line's crossfading ::after copy (see .title in the CSS); the
-            aria-label keeps a screen reader from reading every word twice. */}
-        <h1 className={`${s.title} ${s.rise}`} style={delay(0.15)} aria-label="Coming soon!">
-          <span data-text="Coming">Coming</span>
-          <span data-text="soon!">soon!</span>
+        {/* Two messages taking turns in one spot (2026-09-19): COMING SOON!, then the bulk
+            booking offer. Both slides share one grid cell, so the heading keeps the taller
+            one's height and nothing below it moves when they swap. data-text feeds each line's
+            colour-crossfading ::after copy; the slides are aria-hidden and the heading's
+            aria-label says both, so a screen reader reads each message once.
+            "Call or text": texts to the Exton line do arrive, but it cannot text back until
+            its 10DLC brand is registered (orangish-app docs/telephony.md §5). */}
+        <h1
+          className={`${s.title} ${s.rise}`}
+          style={delay(0.15)}
+          aria-label="Coming soon! Bulk court bookings welcome — call or text."
+        >
+          <span className={`${s.slide} ${s.slideA}`} aria-hidden>
+            <span className={s.line} data-text="Coming">Coming</span>
+            <span className={s.line} data-text="soon!">soon!</span>
+          </span>
+          <span className={`${s.slide} ${s.slideB}`} aria-hidden>
+            <span className={s.line} data-text="Bulk court">Bulk court</span>
+            <span className={s.line} data-text="bookings">bookings</span>
+            <span className={s.line} data-text="welcome!">welcome!</span>
+            <span className={s.callOrText}>
+              <PhoneIcon />
+              Call or text
+            </span>
+          </span>
         </h1>
       </section>
 
@@ -105,7 +125,7 @@ export default function ComingSoon() {
             <PhoneIcon />
           </span>
           <span>
-            <span className={s.kicker}>Questions? Call us</span>
+            <span className={s.kicker}>Questions? Call or text</span>
             <span className={s.big}>{CONTACT_PHONE}</span>
           </span>
         </a>

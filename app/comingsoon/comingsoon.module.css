@@ -171,21 +171,50 @@
 }
 
 .title {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   margin: 0;
   font-family: var(--font-cond), sans-serif;
   font-weight: 700;
-  font-size: calc(var(--u) * 10);
   line-height: 0.86;
   letter-spacing: -0.005em;
   text-transform: uppercase;
 }
-/* Two pre-coloured copies of each line, crossfading: orange and gold ↔ white on COMING,
-   white ↔ green on SOON!. The ::after copy comes from data-text, so it sits exactly on the
-   line beneath it. Its opacity is the only thing that animates, which the GPU composites
-   without repainting the text — unlike the background-position shimmer this replaced. */
-.title span {
+
+/* The two messages take turns: 14 s round, each on screen ~6 s with a 1 s crossfade.
+   Opacity only — composited, not repainted (see the motion budget at the top). */
+.slide {
+  grid-area: 1 / 1;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  will-change: opacity;
+}
+.slideA {
+  font-size: calc(var(--u) * 10);
+  animation: slide-a 14s ease-in-out infinite;
+}
+.slideB {
+  font-size: calc(var(--u) * 7.2);
+  opacity: 0;
+  animation: slide-b 14s ease-in-out infinite;
+}
+@keyframes slide-a {
+  0%, 43% { opacity: 1; }
+  50%, 93% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes slide-b {
+  0%, 43% { opacity: 0; }
+  50%, 93% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Two pre-coloured copies of each line, crossfading: orange and gold ↔ white on the odd
+   lines, white ↔ green on the even ones. The ::after copy comes from data-text, so it sits
+   exactly on the line beneath it. Its opacity is the only thing that animates, which the GPU
+   composites without repainting the text — unlike the background-position shimmer this
+   replaced. */
+.line {
   position: relative;
   display: block;
   width: fit-content;
@@ -194,7 +223,7 @@
   background-clip: text;
   color: transparent;
 }
-.title span::after {
+.line::after {
   content: attr(data-text);
   position: absolute;
   inset: 0;
@@ -206,14 +235,36 @@
   will-change: opacity;
   animation: xfade 5s ease-in-out infinite alternate;
 }
-.title span + span {
+.line:nth-child(2n) {
   background-image: linear-gradient(100deg, #ffffff 0%, #ffffff 45%, var(--ember-soft) 100%);
 }
-.title span + span::after {
+.line:nth-child(2n)::after {
   background-image: linear-gradient(100deg, var(--green-hi) 0%, #ffffff 50%, var(--green-hi) 100%);
   animation-delay: -2.5s;
 }
 @keyframes xfade { to { opacity: 1; } }
+
+/* The ask under the offer: a solid pill, so it reads as an instruction, not a fourth line. */
+.callOrText {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  width: fit-content;
+  margin-top: 0.3em;
+  padding: 0.28em 0.7em 0.24em 0.55em;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--ember-hi), var(--ember) 60%, #e07a50);
+  color: var(--void);
+  font-size: 0.42em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  box-shadow: 0 0 calc(var(--u) * 2) rgba(248, 155, 114, 0.4);
+}
+.callOrText svg {
+  width: 0.95em;
+  height: 0.95em;
+}
 
 /* ── 3D stage ────────────────────────────────────────────────────── */
 .stageWrap {
@@ -477,7 +528,8 @@
 /* ── Phones / portrait: stack, and let it scroll ─────────────────── */
 @media not ((min-aspect-ratio: 4/3) and (min-width: 900px)) {
   .copy { align-items: flex-start; }
-  .title { font-size: calc(var(--u) * 10.5); }
+  .slideA { font-size: calc(var(--u) * 10.5); }
+  .slideB { font-size: calc(var(--u) * 7.6); }
   .legend { justify-content: flex-start; }
   /* Wider than tall, like the homepage's box, so the building's ends are not cropped. */
   .stageFrame { flex: none; aspect-ratio: 5 / 4; }
@@ -487,7 +539,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rise, .riseStage, .blob, .title span::after, .qrTile::before, .phoneBadge svg, .phoneBadge::after, .stageTagDot {
+  /* No rotation: COMING SOON! stays, the offer is not shown. */
+  .slideB { display: none; }
+  .slideA { opacity: 1; }
+  .slideA, .rise, .riseStage, .blob, .line::after, .qrTile::before, .phoneBadge svg, .phoneBadge::after, .stageTagDot {
     animation: none;
   }
 }
