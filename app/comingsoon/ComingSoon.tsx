@@ -55,12 +55,13 @@ export default function ComingSoon() {
             one's height and nothing below it moves when they swap. data-text feeds each line's
             colour-crossfading ::after copy; the slides are aria-hidden and the heading's
             aria-label says both, so a screen reader reads each message once.
-            "Call or text": texts to the Exton line do arrive, but it cannot text back until
-            its 10DLC brand is registered (orangish-app docs/telephony.md §5). */}
+            "Call us", not "call or text" (2026-09-19): texts to the Exton line arrive, but it
+            cannot text back until its 10DLC brand and campaign are registered (orangish-app
+            docs/telephony.md §5), so the screen does not invite a text nobody can answer. */}
         <h1
           className={`${s.title} ${s.rise}`}
           style={delay(0.15)}
-          aria-label="Coming soon! Bulk court bookings — call or text."
+          aria-label="Coming soon! Bulk court bookings — call us."
         >
           <span className={`${s.slide} ${s.slideA}`} aria-hidden>
             <span className={s.line} data-text="Coming">Coming</span>
@@ -69,9 +70,9 @@ export default function ComingSoon() {
           <span className={`${s.slide} ${s.slideB}`} aria-hidden>
             <span className={s.line} data-text="Bulk court">Bulk court</span>
             <span className={s.line} data-text="bookings">bookings</span>
-            <span className={s.callOrText}>
+            <span className={s.callUs}>
               <PhoneIcon />
-              Call or text
+              Call us
             </span>
           </span>
         </h1>
@@ -124,7 +125,7 @@ export default function ComingSoon() {
             <PhoneIcon />
           </span>
           <span>
-            <span className={s.kicker}>Questions? Call or text</span>
+            <span className={s.kicker}>Questions? Call us</span>
             <span className={s.big}>{CONTACT_PHONE}</span>
           </span>
         </a>
