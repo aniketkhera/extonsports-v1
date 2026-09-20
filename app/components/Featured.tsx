@@ -30,8 +30,8 @@ type Feature = {
 
 const FEATURES: Feature[] = [
   {
-    slug: "bollywood-dance",
-    title: "Bollywood Dance",
+    slug: "bollywood-fitness",
+    title: "Bollywood Fitness",
     kicker: "New this season",
     body: "High-energy Bollywood choreography on the studio floor — filmi routines, bhangra footwork and a proper warm-up. All levels, no partner needed, no experience assumed.",
     glyph: "♪",
@@ -159,7 +159,7 @@ export default function Featured() {
 
           {/* Empty slot — says more sessions are coming without inventing
               them, and keeps the two-column grid from looking broken while
-              Bollywood Dance is the only thing on the board. */}
+              Bollywood Fitness is the only thing on the board. */}
           <motion.div
             initial={{ opacity: 0, y: 26 }}
             whileInView={{ opacity: 1, y: 0 }}

@@ -23,7 +23,7 @@ import { fetchProgramSchedules, programSlug } from '../../../lib/club-schedule'
 // disagree about when a class runs.
 //
 // Programmes are matched to the rail by SLUG, derived from the platform's
-// programme name ("Bollywood Dance" → "bollywood-dance") rather than a second
+// programme name ("Bollywood Fitness" → "bollywood-fitness") rather than a second
 // hardcoded table that would need keeping in step with FEATURES in
 // app/components/Featured.tsx.
 
@@ -44,7 +44,7 @@ export type FeaturedSession = {
 export type FeaturedPayload = { sessions: FeaturedSession[] }
 
 /** Slugs the Featured rail asks about. Keep in step with FEATURES. */
-const FEATURED_SLUGS = ['bollywood-dance']
+const FEATURED_SLUGS = ['bollywood-fitness']
 
 export async function GET() {
   const programs = await fetchProgramSchedules()

@@ -1323,11 +1323,15 @@ const STUDIO_CLASSES: {
   book?: { label: string; href: string }
   schedule?: { startsOn?: string; when?: string; status?: string }
 }[] = [
-  { name: "Bollywood Dance",
-    /* The row stays "Bollywood Dance" — it is what the platform calls the
-       program AND what a reader scanning a roster understands. The brand goes
-       in the detail, exactly as the academies do it: roster says CRICKET, the
-       panel says Chester County Cricket. */
+  { name: "Bollywood Fitness",
+    /* Renamed from "Bollywood Dance" on 2026-09-20 at the operator's request.
+       ⚠️ THIS STRING IS A JOIN KEY, not just a label: RosterDetail matches it
+       against `program` from /api/schedule, which is squad_programs.name on the
+       platform. The programme was renamed there in the same change. Rename one
+       without the other and the class quietly loses its schedule, price and
+       packs — the panel still renders, just with nothing live in it. The brand
+       goes in the detail, exactly as the academies do it: roster says CRICKET,
+       the panel says Chester County Cricket. */
     title: "Bombay Jam",
     when: "All levels · no experience needed",
     desc: "Filmi routines and bhangra footwork, with a proper warm-up. All levels, no partner needed.",

@@ -14,7 +14,7 @@ export const BOOK_COURTS_URL = `${APP_URL}/book/courts`
  * ⛔ NOT /book/events. That is the platform's club EVENTS page — tournaments,
  * socials, facility events — and it reads the `events` table. A class is a
  * `group_sessions` row under a `squad_programs` programme, and those live at
- * /book/squads. So the Bollywood Dance card, whose price and timetable are read
+ * /book/squads. So the Bollywood Fitness card, whose price and timetable are read
  * live from the platform, would have sent people to a page that could never
  * list the class they had just read the price of.
  *
@@ -28,7 +28,7 @@ export const BOOK_COURTS_URL = `${APP_URL}/book/courts`
 export const BOOK_CLASSES_URL = `${APP_URL}/book/squads`
 
 /**
- * The Bollywood Dance programme's OWN page, and where the class CTA now points.
+ * The Bollywood Fitness programme's OWN page, and where the class CTA now points.
  *
  * BOOK_CLASSES_URL above is the generic cross-club class list — still correct
  * for Featured.tsx, which is not about one programme. This one names the class:
@@ -38,7 +38,7 @@ export const BOOK_CLASSES_URL = `${APP_URL}/book/squads`
  * squads with a login wall in front of it.
  *
  * ⚠️ 'bollywood' IS HARDCODED AND CANNOT BE DERIVED. programSlug() in
- * lib/club-schedule.ts turns "Bollywood Dance" into 'bollywood-dance', which
+ * lib/club-schedule.ts turns "Bollywood Fitness" into 'bollywood-fitness', which
  * 404s, and /api/public/clubs/<slug> does not publish the programme slug at all
  * (verified against the live payload 2026-09-09: name, type, rates, packs,
  * currency — no slug). The durable fix is to add `slug` to that endpoint's
