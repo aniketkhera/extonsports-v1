@@ -68,7 +68,7 @@ export type PackPrice = {
 
 /** One programme's timetable, already formatted. Nulls mean "say nothing". */
 export type ProgramSchedule = {
-  /** Matches squad_programs.name, e.g. "Bollywood Dance". */
+  /** Matches squad_programs.name, e.g. "Bollywood Fitness". */
   program: string
   /** "Tuesdays & Thursdays · 7:00 PM", or null when it cannot be derived. */
   when: string | null
@@ -308,7 +308,7 @@ export async function fetchProgramSchedules(): Promise<ProgramSchedule[]> {
   }
 }
 
-/** "Bollywood Dance" → "bollywood-dance", so a programme can be matched to the
+/** "Bollywood Fitness" → "bollywood-fitness", so a programme can be matched to the
     Featured rail's slugs without a second hardcoded mapping to keep in step. */
 export function programSlug(name: string): string {
   return name
