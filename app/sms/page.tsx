@@ -57,12 +57,15 @@ const SECTIONS: Section[] = [
     // sending code does (isFirstOutbound in orangish-app's lib/sms.ts), so it is what
     // this page says. If that behaviour changes, this wording and the filed samples
     // change with it.
+    // ⚠️ THESE FIVE ARE THE MESSAGE SAMPLES FILED ON THE A2P CAMPAIGN. A reviewer opens this
+    // page and compares. Change one here and change the filing with it — and no dates in
+    // them: "we open in late August" sat here past the date and past the plan.
     body: 'Every message we send is an answer to something you asked, so the wording varies. These are typical examples.\n\nThe first message we send to a number ends with the opt-out line; later messages in the same conversation do not repeat it.',
     samples: [
-      `Hi — thanks for asking about Exton Sports Center. We open in late August with cricket, squash, badminton and indoor turf at 4 Tabas Lane. Happy to answer anything before then. Reply STOP to opt out.`,
-      `Yes, we can show you around before we open. Saturday mornings work best — tell me a time that suits and I will meet you at 4 Tabas Lane.`,
+      `Hi — thanks for asking about Exton Sports Center. We have squash, badminton, cricket and indoor turf at 4 Tabas Lane, Exton. Happy to answer anything before we open. Reply STOP to opt out.`,
+      `Yes, we can take a bulk court booking for your group. How many courts, and which evenings suit you?`,
       `Thanks for calling — sorry I missed you. Call back on ${CONTACT_PHONE} whenever suits, or reply here and I will pick it up.`,
-      `Happy to have someone email you the membership options once they are confirmed. What is the best address for that?`,
+      `Happy to have someone email you the court rates once they are confirmed. What is the best address for that?`,
       `We are at 4 Tabas Lane, Building 2, opposite Apna Bazar, with parking right outside. Let me know when you would like to come and see the courts.`,
     ],
   },
@@ -106,7 +109,7 @@ export default function SmsTermsPage() {
     <LegalPage
       title="SMS Terms"
       intro="We only text people who have contacted us first, and only to answer them."
-      updated="13 August 2026"
+      updated="20 September 2026"
       sections={SECTIONS}
     />
   )
