@@ -146,6 +146,13 @@ type ClubProgramRow = {
  * player caps — so the packs cost this site nothing: no new request, and the
  * fetch cache dedupes it against the id lookup that was happening anyway.
  *
+ * ⚠️ RENAMING A PROGRAMME EMPTIES ITS PACKS FOR UP TO AN HOUR. The map below is keyed by
+ * programme NAME, and this response is cached for 3600 s while /api/squads is cached for 300.
+ * So after a rename the sessions arrive under the new name, the cached price book still holds
+ * the old one, the lookup misses, and the class renders with no packs — no error anywhere.
+ * Seen 2026-09-20 renaming "Bollywood Dance" to "Bollywood Fitness". Deploy after a rename:
+ * a deployment drops the data cache and the packs come straight back.
+ *
  * ⚠️ THE CLUB_ID SHORTCUT NO LONGER SKIPS THE FETCH. It used to return early,
  * which would now mean "an id but no prices" — packs silently missing at
  * exactly the deployment that has the env var set. The env var still avoids
