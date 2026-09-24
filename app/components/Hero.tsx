@@ -917,8 +917,8 @@ function AcademyDetail({
       <span className="block text-mono text-[0.64rem] tracking-[0.18em] uppercase text-[var(--color-ember)]">
         {ac.sport}
       </span>
-      {/* Status first and small — "Coming Sep 28th" is a fact about timing, not
-          a description — then the blurb underneath it. */}
+      {/* Status first and small — "Coming soon" is a fact about timing, not a
+          description — then the blurb underneath it. */}
       {desc && desc !== blurb && (
         <p className="text-white/45 text-[0.82rem] leading-[1.5] mt-2 mb-0">{desc}</p>
       )}
@@ -1369,8 +1369,9 @@ const STUDIO_CLASSES: {
       : undefined,
     /* A wordmark in the site's own materials rather than the flyer artwork: the
        flyer is a portrait raster with a photograph in it and would not survive
-       being dropped into a dark panel at 84px. Caveat is already loaded for
-       smash!shuttler, and the script/caps split mirrors how the flyer sets it. */
+       being dropped into a dark panel at 84px. The script/caps split mirrors
+       how the flyer sets it; Caveat came in for smash!shuttler and now carries
+       this card alone. */
     logo: (
       <span className="flex items-baseline gap-[9px]">
         <span
@@ -1416,17 +1417,17 @@ const RECREATION = {
 };
 
 /* Academy partner logos — accurate fonts per brand.
-   SmashShuttler: Caveat 700 cursive    "smash!" orange · "shuttler" white
+   Philadelphia Badminton: Space Grotesk 700   "Philadelphia" orange · "Badminton" white
    SquashTigers:  Exo 2 800 italic      "squash" white · "tigers" orange
    Chester County Cricket Academy ships a crest rather than a wordmark, and
    has no brand webfont, so it is a cropped shield image plus the name set in
    the site's own condensed face. Cropping to the shield keeps all three marks
    at the same optical weight — the full badge is roughly twice as tall. */
 /* The line the detail column shows before you point at anything. Every claim is
-   read off the entries below rather than invented: cricket has a date, squash
-   takes trials today, badminton has a brand and no date yet. */
+   read off the entries below rather than invented: squash is the only one
+   taking players today, cricket and badminton both read "Coming soon". */
 const ROSTER_INTRO =
-  "Coaching runs through three academies rather than the club itself — cricket opens Sep 28th, squash takes trials now, badminton follows. The studio floor is the club's own: dance and fitness, all levels.";
+  "Coaching runs through three academies rather than the club itself — squash takes trials now, cricket and badminton follow when the doors open. The studio floor is the club's own: dance and fitness, all levels.";
 
 const ACADEMY_PARTNERS = [
   {
@@ -1434,18 +1435,20 @@ const ACADEMY_PARTNERS = [
     href: "https://cccricketacademy.com",
     short: "Cricket",
     sport: "Cricket academy",
-    /* No platform programme exists for cricket yet — squad_programs has one
-       active row at Exton and it is the dance class — so this row's timetable
-       is local copy. It uses the same shape the platform feed produces, so the
-       day cricket IS entered in /admin/squads the live data takes over with no
-       markup change. The date is Exton's own announcement: CCCA publishes
-       nothing about this building. */
-    schedule: { startsOn: "Sep 28", when: "7 days a week" },
+    /* Was "Starts Sep 28 · 7 days a week" until 2026-09-24. The building's own
+       opening moved to Oct 5, which put cricket a week ahead of the doors, so
+       the date came out rather than being corrected to a second guess — both
+       academies now read "Coming soon" until their dates are real.
+       Still no platform programme for cricket: squad_programs has one active
+       row at Exton and it is the dance class. This stays local copy in the
+       shape the platform feed produces, so the day cricket IS entered in
+       /admin/squads the live data takes over with no markup change. */
+    schedule: { status: "Coming soon" },
     /* Near-verbatim from cccricketacademy.com. Deliberately NOT saying more:
        their site gives no founding year, and its published indoor season runs
        Oct-Mar at All-Star Sports Academy in Downingtown with outdoor sessions
-       at Exton Park in MALVERN — which is not this building. "Coming Sep 28th"
-       is Exton's own announcement, so it stays framed as ours. */
+       at Exton Park in MALVERN — which is not this building. Any start date we
+       print here is Exton's own announcement, not theirs. */
     blurb:
       "High-quality cricket coaching for aspiring cricketers of all ages and skill levels, with junior enrolments open for girls and boys.",
     /* No trial: the platform has no trial concept at all, and CCCA runs its own
@@ -1518,31 +1521,36 @@ const ACADEMY_PARTNERS = [
     ),
   },
   {
-    name: "SmashShuttler",
-    href: "https://smashshuttler.com",
+    /* Replaced SmashShuttler 2026-09-24 — the court licence is signed with
+       Philadelphia Badminton, so the whole row is theirs now. */
+    name: "Philadelphia Badminton",
+    href: "https://philadelphiabadminton.com",
     short: "Badminton",
     sport: "Badminton academy",
-    /* Same move as the other rows: "Coming soon" is timing, so it sits in the
-       schedule column. smashshuttler.com still says "Coming Summer 2026", so no
-       firmer date may be published here than they publish themselves. */
+    /* Still timing, so still the schedule column. The licence ramps up over
+       Oct–Dec and no single start date is settled, so "Coming soon" stands. */
     schedule: { status: "Coming soon" },
-    /* Everything here is from smashshuttler.com. It is NOT yet running, so
-       there is no trial to offer and nothing may be claimed about which courts
-       it will use — no source links SmashShuttler to this building's three. */
+    /* Their own programme copy, near-verbatim, plus their coach roster. NOT
+       said: "Pennsylvania's largest badminton facility" and the 12 mat courts
+       are their Norristown building, not this one. Nor is this juniors-only,
+       which is what the SmashShuttler line claimed. */
     blurb:
-      "A high-performance junior badminton academy — footwork, speed and shot-making.",
-    action: { label: "Get notified", href: "https://smashshuttler.com" },
+      "Structured, goal-oriented private and small-group coaching for all ages and levels, from BWF- and USAB-certified coaches.",
+    action: { label: "Get notified", href: "https://philadelphiabadminton.com" },
     logo: (
+      /* Their hero sets the name over two lines in Space Grotesk 700; this is
+         that mark, split across the tile's two colours like the cricket one. */
       <span
+        className="leading-[1.05]"
         style={{
-          fontFamily: "var(--font-caveat), cursive",
+          fontFamily: "var(--font-space-grotesk), sans-serif",
           fontWeight: 700,
-          fontSize: "clamp(2.3rem, 3vw, 4rem)",
-          lineHeight: 1.1,
+          fontSize: "clamp(1.5rem, 1.95vw, 2.6rem)",
+          letterSpacing: "-0.02em",
         }}
       >
-        <span style={{ color: "var(--ember-ink)" }}>smash!</span>
-        <span style={{ color: "var(--on-tile)" }}>shuttler</span>
+        <span className="block" style={{ color: "var(--ember-ink)" }}>Philadelphia</span>
+        <span className="block" style={{ color: "var(--on-tile)" }}>Badminton</span>
       </span>
     ),
   },

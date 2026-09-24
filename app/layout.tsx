@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Barlow, Oswald, Caveat, Exo_2 } from "next/font/google";
+import { Barlow, Oswald, Caveat, Exo_2, Space_Grotesk } from "next/font/google";
 import SiteChrome from "./components/SiteChrome";
 import { LEGAL_NAME } from "@/lib/legal";
 import "./globals.css";
@@ -18,9 +18,9 @@ const body = Barlow({
   display: "swap",
 });
 
-// Academy partner logo fonts. Comfortaa went with ExcelCricket — Chester
-// County Cricket Academy's mark is artwork plus the site's own condensed face,
-// so there is no third brand webfont to load.
+// Brand logo fonts. Chester County Cricket Academy's mark is artwork plus the
+// site's own condensed face, so it needs no webfont. Caveat is here for the
+// SeRa Fitness card — it came in for smash!shuttler and outlived that partner.
 const caveat = Caveat({
   subsets: ["latin"],
   variable: "--font-caveat",
@@ -32,6 +32,14 @@ const exo2 = Exo_2({
   variable: "--font-exo2",
   weight: ["800"],
   style: ["italic"],
+  display: "swap",
+});
+// philadelphiabadminton.com sets its own name in Space Grotesk 700, so the
+// badminton mark reproduces it rather than approximating. 700 only.
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+  weight: ["700"],
   display: "swap",
 });
 
@@ -141,7 +149,7 @@ export default function RootLayout({
       // The theme script below writes data-theme onto this element before
       // React hydrates, so the server markup and the DOM legitimately differ.
       suppressHydrationWarning
-      className={`${cond.variable} ${body.variable} ${caveat.variable} ${exo2.variable} h-full antialiased`}
+      className={`${cond.variable} ${body.variable} ${caveat.variable} ${exo2.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
       <head>
         {/* Theme, applied before first paint. This has to be a blocking

@@ -4,9 +4,11 @@
 
 // Head Cricket Coach is no longer advertised, but the entry stays so that
 // acknowledgements for applications already in flight still name the academy.
+// Badminton reads "Philadelphia Badminton" from 2026-09-24 — the partner
+// changed. No "Academy" suffix: that is the whole of their trading name.
 const ACADEMY_BY_ROLE: Record<string, string> = {
   "Head Cricket Coach": "Chester County Cricket Academy",
-  "Head Badminton Coach": "SmashShuttler Badminton Academy",
+  "Head Badminton Coach": "Philadelphia Badminton",
 };
 
 const LOGO_URL = "https://extonsports.com/logo.png";
