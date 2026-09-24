@@ -1,7 +1,10 @@
 /* Brand wordmarks for the partner academies, reproduced in each brand's
-   real logo font (as rendered on smashshuttler.com):
-     SmashShuttler — Caveat 700 cursive, "smash!" ember · "shuttler" white
-   Fonts are loaded globally in layout.tsx (--font-caveat).
+   real logo font (as rendered on philadelphiabadminton.com):
+     Philadelphia Badminton — Space Grotesk 700, "Philadelphia" ember ·
+     "Badminton" white, stacked over two lines as their own hero sets it
+   Fonts are loaded globally in layout.tsx (--font-space-grotesk).
+   (Nothing imports this file — Hero.tsx and ComingSoon.tsx each inline their
+   own lockups. Kept in step so it cannot mislead.)
 
    Chester County Cricket Academy is the exception: it ships a crest, not a
    wordmark, and cccricketacademy.com uses no brand webface at all. So its mark
@@ -53,9 +56,9 @@ export function ChesterCountyCricketWordmark({
   );
 }
 
-export function SmashShuttlerWordmark({
+export function PhiladelphiaBadmintonWordmark({
   className = "",
-  title = "SmashShuttler",
+  title = "Philadelphia Badminton",
 }: {
   className?: string;
   title?: string;
@@ -66,14 +69,15 @@ export function SmashShuttlerWordmark({
       aria-label={title}
       className={className}
       style={{
-        fontFamily: "var(--font-caveat), cursive",
+        fontFamily: "var(--font-space-grotesk), sans-serif",
         fontWeight: 700,
-        lineHeight: 1,
+        letterSpacing: "-0.02em",
+        lineHeight: 1.05,
         whiteSpace: "nowrap",
       }}
     >
-      <span style={{ color: "var(--ember-ink)" }}>smash!</span>
-      <span style={{ color: "var(--on-tile)" }}>shuttler</span>
+      <span style={{ display: "block", color: "var(--ember-ink)" }}>Philadelphia</span>
+      <span style={{ display: "block", color: "var(--on-tile)" }}>Badminton</span>
     </span>
   );
 }
@@ -84,13 +88,13 @@ export function BrandWordmark({
   className = "",
   title,
 }: {
-  brand: "ccca" | "smashshuttler";
+  brand: "ccca" | "philadelphia-badminton";
   className?: string;
   title?: string;
 }) {
   return brand === "ccca" ? (
     <ChesterCountyCricketWordmark className={className} title={title} />
   ) : (
-    <SmashShuttlerWordmark className={className} title={title} />
+    <PhiladelphiaBadmintonWordmark className={className} title={title} />
   );
 }

@@ -5,21 +5,21 @@
 // schedule needed three edits in three different tones of voice. It is now one
 // constant and a handful of formatters, so moving the date is a one-line change.
 //
-// Doors open 06:00 on Monday 21 September 2026. The chips and banner still say
-// "mid-September" — deliberately softer than the exact day, so the date can
-// slip a week without the copy becoming a lie — while the hero's first-slot
-// column shows the precise hour, because a bookable slot has to be exact.
+// Doors open 06:00 on Monday 5 October 2026. The copy used to hedge
+// ("mid-September") so a slip of a few days would not make it a lie; it now
+// names the day, because the date is committed and a vague month reads as
+// drift once a firm one has been announced.
 
-export const OPENING_DATE = new Date('2026-09-21T06:00:00-04:00')
+export const OPENING_DATE = new Date('2026-10-05T06:00:00-04:00')
 
-/** "mid-September 2026" — long form, for body copy and legal pages. */
-export const OPENING_LONG = 'mid-September 2026'
+/** "October 5, 2026" — long form, for body copy and legal pages. */
+export const OPENING_LONG = 'October 5, 2026'
 
-/** "Mid-Sept 2026" — for the nav chip, where horizontal space is tight. */
-export const OPENING_SHORT = 'Mid-Sept 2026'
+/** "Oct 5, 2026" — for the nav chip, where horizontal space is tight. */
+export const OPENING_SHORT = 'Oct 5, 2026'
 
 /** The waitlist eyebrow, already uppercase. */
-export const OPENING_EYEBROW = 'OPENING MID-SEPTEMBER 2026'
+export const OPENING_EYEBROW = 'OPENING OCTOBER 5, 2026'
 
 /** The first bookable hour. The club runs 24/7 from opening day, so midnight
     is technically first, but 06:00 is the first hour anyone wants — and it is
