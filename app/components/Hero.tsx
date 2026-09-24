@@ -917,8 +917,8 @@ function AcademyDetail({
       <span className="block text-mono text-[0.64rem] tracking-[0.18em] uppercase text-[var(--color-ember)]">
         {ac.sport}
       </span>
-      {/* Status first and small — "Coming Sep 28th" is a fact about timing, not
-          a description — then the blurb underneath it. */}
+      {/* Status first and small — "Coming soon" is a fact about timing, not a
+          description — then the blurb underneath it. */}
       {desc && desc !== blurb && (
         <p className="text-white/45 text-[0.82rem] leading-[1.5] mt-2 mb-0">{desc}</p>
       )}
@@ -1424,10 +1424,10 @@ const RECREATION = {
    the site's own condensed face. Cropping to the shield keeps all three marks
    at the same optical weight — the full badge is roughly twice as tall. */
 /* The line the detail column shows before you point at anything. Every claim is
-   read off the entries below rather than invented: cricket has a date, squash
-   takes trials today, badminton has a brand and no date yet. */
+   read off the entries below rather than invented: squash is the only one
+   taking players today, cricket and badminton both read "Coming soon". */
 const ROSTER_INTRO =
-  "Coaching runs through three academies rather than the club itself — cricket opens Sep 28th, squash takes trials now, badminton follows. The studio floor is the club's own: dance and fitness, all levels.";
+  "Coaching runs through three academies rather than the club itself — squash takes trials now, cricket and badminton follow when the doors open. The studio floor is the club's own: dance and fitness, all levels.";
 
 const ACADEMY_PARTNERS = [
   {
@@ -1435,18 +1435,20 @@ const ACADEMY_PARTNERS = [
     href: "https://cccricketacademy.com",
     short: "Cricket",
     sport: "Cricket academy",
-    /* No platform programme exists for cricket yet — squad_programs has one
-       active row at Exton and it is the dance class — so this row's timetable
-       is local copy. It uses the same shape the platform feed produces, so the
-       day cricket IS entered in /admin/squads the live data takes over with no
-       markup change. The date is Exton's own announcement: CCCA publishes
-       nothing about this building. */
-    schedule: { startsOn: "Sep 28", when: "7 days a week" },
+    /* Was "Starts Sep 28 · 7 days a week" until 2026-09-24. The building's own
+       opening moved to Oct 5, which put cricket a week ahead of the doors, so
+       the date came out rather than being corrected to a second guess — both
+       academies now read "Coming soon" until their dates are real.
+       Still no platform programme for cricket: squad_programs has one active
+       row at Exton and it is the dance class. This stays local copy in the
+       shape the platform feed produces, so the day cricket IS entered in
+       /admin/squads the live data takes over with no markup change. */
+    schedule: { status: "Coming soon" },
     /* Near-verbatim from cccricketacademy.com. Deliberately NOT saying more:
        their site gives no founding year, and its published indoor season runs
        Oct-Mar at All-Star Sports Academy in Downingtown with outdoor sessions
-       at Exton Park in MALVERN — which is not this building. "Coming Sep 28th"
-       is Exton's own announcement, so it stays framed as ours. */
+       at Exton Park in MALVERN — which is not this building. Any start date we
+       print here is Exton's own announcement, not theirs. */
     blurb:
       "High-quality cricket coaching for aspiring cricketers of all ages and skill levels, with junior enrolments open for girls and boys.",
     /* No trial: the platform has no trial concept at all, and CCCA runs its own
