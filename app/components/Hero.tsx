@@ -6,7 +6,7 @@ import Image from "next/image";
 import type { AvailabilityPayload } from "../api/availability/route";
 import type { SchedulePayload } from "../api/schedule/route";
 import type { ProgramSchedule } from "@/lib/club-schedule";
-import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, RATE_FEES_NOTE, CLASS_FEES_NOTE } from "../../lib/rates";
+import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, CLASS_FEES_NOTE } from "../../lib/rates";
 import { BOOK_COURTS_URL, BOLLYWOOD_CLASS_URL, CLASS_ONLINE_BOOKING_LIVE, bookingTarget } from "../../lib/booking";
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_E164 } from "../../lib/legal";
 
@@ -779,14 +779,23 @@ function ScheduleLine({ schedule }: { schedule: DetailSchedule | null }) {
           STICKER PRICES, matching the Studio's own flyer — and here the sticker
           IS the total. This used to carry RATE_FEES_NOTE, on the reasoning that
           one disclosure covering courts and classes alike beat two conventions
-          on one page. That reasoning was overtaken on 2026-09-09: Exton lists
-          "program" in fee_processing_absorb_surfaces, so the club absorbs the
-          card fee on classes and packs while courts stay a pass-through. The
+          on one page. That reasoning was overtaken on 2026-09-09: Exton listed
+          "program" in fee_processing_absorb_surfaces, so the club absorbed the
+          card fee on classes and packs while courts stayed a pass-through. The
           old note promised "$80 is $82.70 at checkout" and the customer is in
           fact charged $80.00 — verified against /api/public/clubs/exton-sports,
           which returns all_in === rate for both packs. Two conventions on one
           page is worse than one; quoting a number nobody is charged is worse
-          than both. */}
+          than both.
+
+          ⚠️ AND ON 2026-09-30 IT WENT BACK TO ONE CONVENTION — courts moved to
+          absorb as well, so there is nothing left anywhere on this page that
+          adds a fee at checkout. RATE_FEES_NOTE was deleted rather than
+          reworded (see lib/rates.ts, where the reasoning is kept). This note
+          survives because it says something still worth saying on a pack price:
+          the number IS the number. The court rate card needs no equivalent —
+          it has no fee line at all now, which says the same thing by saying
+          nothing. */}
       {schedule.packs.length > 0 && (
         <div className="mt-5 pt-4 border-t border-white/10">
           <div className="text-mono text-[0.58rem] tracking-[0.2em] uppercase text-white/35 mb-2">
@@ -1218,11 +1227,14 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
           visible: { opacity: 1, transition: { duration: 0.5 } },
         }}
       >
-        {RATE_FOOTNOTE}{" "}
-        {/* Set a shade brighter than the rest of the footnote: it is the one
-            clause that changes what the reader will actually be charged, and
-            at 40% it read as small print about small print. */}
-        <span className="text-white/60">{RATE_FEES_NOTE}</span>
+        {RATE_FOOTNOTE}
+        {/* A brighter <span> carrying RATE_FEES_NOTE followed this until
+            2026-09-30 — "Stripe fee (2.9% + 30¢) not included." — set a shade
+            brighter than the rest because it was the one clause that changed
+            what the reader would actually be charged. Exton now absorbs the
+            card fee on courts as well as classes, so there is no longer any
+            such clause: the rate card IS the price. See lib/rates.ts, where
+            the constant used to live, before adding a fee line back here. */}
       </motion.p>
 
       {/* Bulk bookings — leagues and corporate hire are a phone call, not a

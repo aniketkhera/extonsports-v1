@@ -137,60 +137,70 @@ export const RATE_FOOTNOTE =
   'of day, and a longer booking can take more people — both are explained below.'
 
 /**
- * The fee disclosure, kept OUT of RATE_FOOTNOTE on purpose.
+ * ⛔ RATE_FEES_NOTE WAS HERE AND IS DELETED, 2026-09-30.
  *
- * The rate card is the base rate. Exton passes the Stripe fee on
- * (`fee_processing_mode` = 'pass'), so a $40 court is $41.50 at checkout once
- * that fee is grossed up. Appending that to the footnote would have buried a
- * price disclosure at the end of a sentence about player caps; it gets its own
- * line so it reads as a term, not a footnote to a footnote.
+ * It read "Stripe fee (2.9% + 30¢) not included." and sat under the court rate
+ * card. That was true while Exton's `fee_processing_mode` was 'pass' — a $40
+ * court really was $41.50 at checkout. Aniket moved the club to 'absorb': a
+ * $45 listing charges $45 and STE eats the 2.9% + 30c. `fee_platform_mode`
+ * moved with it, which changes no price (every `platform_fee_*` column is
+ * 0.00) but drops the platform's own `fees_extra` flag to false so the booking
+ * calendar stops carrying the matching caveat.
  *
- * The same sentence appears on the booking calendar in orangish-app, above the
- * per-slot prices, which are also pre-fee.
+ * Deleted rather than reworded. The interim wording was "The price shown is
+ * what you pay — no card fee added.", which is word-for-word CLASS_FEES_NOTE:
+ * two constants, one sentence, on one page. A rate card that has nothing to
+ * disclose should say nothing, not say it twice.
  *
- * ⚠️ THESE NUMBERS MUST MATCH lib/billing-math.ts ON THE PLATFORM, which is what
- * actually charges the card: STRIPE_PCT = 0.029 and STRIPE_FIXED = 0.30. That
- * is 2.9% and 30c, NOT 2.5% — one global constant, no per-club override, so a
- * site quoting a lower rate under-states every single charge.
+ * ── WHY THIS IS RECORDED AT ALL ─────────────────────────────────────────────
+ * The string was wrong twice in four weeks, always because the club's fee
+ * treatment is RETYPED here rather than read:
+ *   2026-09-03  the 75c platform fee was dropped (`platform_fee_fixed` = 0.00)
+ *   2026-09-09  `fee_processing_absorb_surfaces` = ["program","lesson"], so
+ *               classes began absorbing while courts still passed — which is
+ *               the only reason CLASS_FEES_NOTE exists as a separate string
+ *   2026-09-30  courts joined them, club-wide, and the note went
  *
- * ⛔ THE 75c PLATFORM FEE IS GONE as of 2026-09-03. Exton's
- * `platform_fee_fixed` was set to 0.00 so ONE fee treatment covers courts and
- * the new studio classes alike: fee treatment lives on the `locations` row and
- * the platform has no per-product override, so a club-wide setting was the only
- * way to price both without standing up a second club row. Exton now matches
- * Princeton and Wyvern, which were always at zero. Stripe is still passed to
- * the customer on both products (`fee_processing_mode` = 'pass'), which is what
- * keeps the club whole on its 30% of every class.
+ * ⚠️ IF A FEE NOTE IS EVER NEEDED AGAIN, DERIVE IT — do not retype it.
+ * orangish-app publishes `hourly_rate_all_in` beside `hourly_rate` on
+ * /api/public/clubs/<slug>; equal means absorbed. lib/club-pricing.ts already
+ * fetches that endpoint for the player caps and needs only the extra field.
  *
- * ⚠️ COURTS ONLY as of 2026-09-09 — see CLASS_FEES_NOTE below. The claim
- * above that "the platform has no per-product override" stopped being true:
- * orangish-app added `locations.fee_processing_absorb_surfaces`, and Exton's is
- * set to ["program","lesson"]. Courts are still passed through, so THIS string
- * is still correct where it is used (the court rate-card footnote). It is no
- * longer correct for classes or packs.
- *
- * Retyped here, which is the same drift risk as the rates above. If they move,
- * the honest fix is to serve them from the club endpoint, not edit this string.
+ * ⚠️ And note the 2026-09-30 change was made club-wide, NOT by adding "court"
+ * to fee_processing_absorb_surfaces, because orangish-app's
+ * lib/court-booking-pricing.ts resolves fee modes without passing a surface —
+ * a "court" entry there is a silent no-op on the charge path. So the surfaces
+ * array is not a reliable place to read courts' treatment from either.
  */
-export const RATE_FEES_NOTE =
-  'Stripe fee (2.9% + 30¢) not included.'
 
 /**
  * The studio classes and their packs, where the club EATS the card fee.
  *
- * Not the same sentence as RATE_FEES_NOTE, and deliberately so. Exton lists
- * "program" in `locations.fee_processing_absorb_surfaces`, so orangish-app
- * resolves processing to 'absorb' on this surface: the flyer says $25 and the
- * card says $25, while a court hour stays a pass-through. Two products, two
- * conventions, on one page — which is worse than one convention, but far worse
- * than telling somebody a number they will not be charged.
+ * Exton lists "program" in `locations.fee_processing_absorb_surfaces`, so
+ * orangish-app resolves processing to 'absorb' on this surface: the flyer says
+ * $25 and the card says $25.
+ *
+ * ⚠️ NO LONGER THE ODD ONE OUT, AND NOW THE ONLY ONE. This was written on
+ * 2026-09-09 as the exception — two products, two conventions on one page,
+ * justified only because telling somebody a number they will not be charged is
+ * worse. On 2026-09-30 courts moved to absorb too. Rather than leave two
+ * constants holding one identical sentence, RATE_FEES_NOTE was deleted; the
+ * court rate card now carries no fee line at all, which says the same thing by
+ * saying nothing.
+ *
+ * This one survives because it earns its place on a PACK price, where "$80"
+ * next to "4 sessions" invites the question of what is added at checkout. The
+ * answer is nothing, and saying so is worth a line. A court rate card already
+ * reads as a price per hour and raises no such question.
  *
  * VERIFIED against the live club endpoint 2026-09-09, not inferred:
  * /api/public/clubs/exton-sports returns member_all_in === member_rate (25) and
  * packs with all_in === rate (80 and 125). If a future payload ever disagrees,
  * that endpoint is the truth and this string is the stale copy.
  *
- * Carries no number on purpose, so a price change cannot falsify it.
+ * Carries no number on purpose, so a price change cannot falsify it — which is
+ * why it survived 2026-09-30 untouched while RATE_FEES_NOTE, which carried
+ * "2.9% + 30¢", did not.
  */
 export const CLASS_FEES_NOTE =
   'The price shown is what you pay — no card fee added.'

@@ -50,10 +50,17 @@ const FALLBACK_TZ = 'America/New_York'
  *
  * `price` is the STICKER — the number the Studio prints on its flyer, and the
  * one the court rate card next to it also quotes. `allIn` is what checkout
- * actually takes once Exton's passed-on Stripe fee is grossed up, published by
- * the platform rather than derived here so the two can never disagree about the
- * fee. Which of the two a surface shows is that surface's call; both are
- * carried because a mirror that drops half the answer is how drift starts.
+ * actually takes, published by the platform rather than derived here so the two
+ * can never disagree about the fee. Which of the two a surface shows is that
+ * surface's call; both are carried because a mirror that drops half the answer
+ * is how drift starts.
+ *
+ * ⚠️ THE TWO ARE EQUAL AT EXTON TODAY and have been for packs since
+ * 2026-09-09, when classes moved to absorb; courts joined them 2026-09-30, so
+ * nothing at this club grosses up any more. Do NOT collapse `allIn` into
+ * `price` on the strength of that: the equality is one column on the locations
+ * row away from ending, and carrying both is what makes a flip back a data
+ * change rather than a code change.
  */
 export type PackPrice = {
   /** Sessions in the pack, e.g. 4. */
