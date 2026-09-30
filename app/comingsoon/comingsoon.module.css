@@ -243,11 +243,29 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  /* ⚠️ THIS PADDING IS WHY THE Q HAS A TAIL. These glyphs are not painted with `color` —
+     they are a BACKGROUND clipped to the text, so the letters only exist where the
+     background box exists. `.title` sets line-height 0.86, which makes the line box
+     SHORTER than the glyphs: measured at 1280x720, the ink ran 236→380px inside a box of
+     247→357px. The overhang had no background behind it and so was never painted — not
+     clipped, never drawn. On the wall that turned SQUASH into "SOUASH", reported
+     2026-09-30. Vertical padding extends the background box past the ink; the equal
+     negative margin gives the extra height straight back, so every height figure the
+     slides were measured against (16.5u vs 17.2u above) is untouched. Measured overhang
+     is 0.065em below and 0.06em above, so 0.09em carries real headroom.
+     Horizontal padding stays 0 — the slide widths were measured against the heading and
+     must not move. */
+  padding: 0.09em 0;
+  margin: -0.09em 0;
 }
 .line::after {
   content: attr(data-text);
   position: absolute;
   inset: 0;
+  /* Same padding as .line, and not optional. `inset: 0` pins this copy to .line's PADDING
+     box, so without it this layer's text would start 0.09em higher than the text beneath
+     it and the crossfade would show two offset copies instead of one recolouring. */
+  padding: 0.09em 0;
   background-image: linear-gradient(100deg, #ffffff 0%, var(--ember-soft) 55%, #ffffff 100%);
   -webkit-background-clip: text;
   background-clip: text;
