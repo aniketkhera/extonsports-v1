@@ -19,6 +19,43 @@ const nextConfig: NextConfig = {
     return [
       { source: '/careers', destination: '/', permanent: true },
       { source: '/careers/:path*', destination: '/', permanent: true },
+
+      // ── ONE CANONICAL HOST: www ────────────────────────────────────────────
+      // Until 2026-09-30 the apex and www BOTH served 200 with no redirect
+      // between them, while the site declared the APEX canonical (metadataBase,
+      // robots host, sitemap) — so a visitor arriving on www got pages whose own
+      // canonical pointed at a different hostname, and the same content lived at
+      // two addresses.
+      //
+      // ⚠️ THE DIRECTION IS www, NOT apex, AND IT IS NOT A STYLE CHOICE. The
+      // A2P 10DLC customer profile registers https://www.extonsports.com and is
+      // `twilio-approved`. Editing an approved profile risks pushing it back into
+      // review, which would cost far more than the code churn of moving the
+      // site's canonical to match it. So the registration is fixed and the site
+      // moves. The sibling squashtigers.com is already apex -> www for the same
+      // reason. The A2P campaign was rejected on 2026-09-30 (errors 30908 and
+      // 30882) with the split still in place; whether the split caused it is
+      // unproven, but a vetter following the registered URL must not land on a
+      // page that disclaims its own hostname.
+      //
+      // Everything the site asserts about itself moved with this in the same
+      // commit: metadataBase and the OpenGraph + JSON-LD urls in app/layout.tsx,
+      // and host + sitemap in app/robots.ts, and the base in app/sitemap.ts.
+      // Change one without the others and the contradiction is simply relocated.
+      //
+      // Outbound links that still name the apex — the QR code, the reception TV
+      // card, the email templates — are deliberately LEFT ALONE. They are
+      // printed or already sent, they cost one 308 hop, and rewriting a QR
+      // target nobody can re-print is worse than the hop.
+      //
+      // If this ever needs inverting, the order is: change the Twilio customer
+      // profile website first, wait for it to re-approve, then move the site.
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'extonsports.com' }],
+        destination: 'https://www.extonsports.com/:path*',
+        permanent: true,
+      },
     ];
   },
 };

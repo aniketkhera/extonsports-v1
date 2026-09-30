@@ -10,7 +10,7 @@ import type { MetadataRoute } from 'next'
 // homepage carries no sitemap priority or lastModified — which is exactly what
 // happened to the careers pages, for weeks, before they came down.
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = 'https://extonsports.com'
+  const base = 'https://www.extonsports.com'
   const now = new Date()
 
   const routes: Array<{

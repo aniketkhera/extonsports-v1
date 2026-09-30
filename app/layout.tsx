@@ -44,7 +44,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://extonsports.com"),
+  metadataBase: new URL("https://www.extonsports.com"),
   title: {
     default: "Exton Sports Center — pay-to-play multi-sport club · open 24/7",
     template: "%s · Exton Sports Center",
@@ -69,7 +69,7 @@ export const metadata: Metadata = {
     title: "Exton Sports Center — pay-to-play multi-sport club · open 24/7",
     description:
       "Cricket, squash, badminton and indoor turf in Exton, PA. Pay by the hour, no membership. Open 24/7.",
-    url: "https://extonsports.com",
+    url: "https://www.extonsports.com",
     siteName: "Exton Sports Center",
     type: "website",
     locale: "en_US",
@@ -113,9 +113,9 @@ const sportsClubLd = {
   // address means — while the company's registered address is on the legal pages.
   // See lib/legal.ts.
   legalName: LEGAL_NAME,
-  url: "https://extonsports.com",
-  logo: "https://extonsports.com/logo.png",
-  image: "https://extonsports.com/logo.png",
+  url: "https://www.extonsports.com",
+  logo: "https://www.extonsports.com/logo.png",
+  image: "https://www.extonsports.com/logo.png",
   email: "info@extonsports.com",
   telephone: "+1-484-252-2523",
   description:

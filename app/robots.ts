@@ -9,7 +9,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/admin/', '/api/', '/unsubscribe/'],
       },
     ],
-    sitemap: 'https://extonsports.com/sitemap.xml',
-    host: 'https://extonsports.com',
+    sitemap: 'https://www.extonsports.com/sitemap.xml',
+    host: 'https://www.extonsports.com',
   }
 }
