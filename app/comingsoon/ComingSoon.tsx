@@ -61,11 +61,28 @@ export default function ComingSoon() {
         <h1
           className={`${s.title} ${s.rise}`}
           style={delay(0.15)}
-          aria-label="Coming soon! Bulk bookings — call us. Pay and play."
+          aria-label="Coming the week of Oct 5th! Bulk bookings — call us. Pay and play. Badminton. Cricket. Squash."
         >
+          {/* ⚠️ THIS SLIDE NOW CARRIES A DATE, reversing the 2026-09-19 decision recorded on
+              the page component ("a screen on the wall would outlive a slipped date"). The
+              date is settled — lib/opening.ts has OPENING_DATE 2026-10-05, bookings open
+              Tue Oct 6 — and Aniket asked for it on 2026-09-30.
+
+              ⏰ SO IT GOES STALE ON ITS OWN. From Mon Oct 12 this reads "coming the week of
+              Oct 5th" to somebody standing in an open building, which is worse than the
+              "soon!" it replaced. Whoever is here after opening week: change it, or make it
+              read from lib/opening.ts and fall back once isOpen() is true.
+
+              THREE LINES, not two, and the size drops from 10u to 6.4u to pay for it. Both
+              limits were checked: "THE WEEK OF" is the widest line at 11 characters against
+              slideB's "BOOKINGS" at 8 (~482 of 501px on the TV), and three lines at 6.4u is
+              16.5u tall against the two-line slides' 17.2u — so slideC still sets the grid
+              height and nothing below this heading moves. Change the wording and you must
+              re-check both. */}
           <span className={`${s.slide} ${s.slideA}`} aria-hidden>
             <span className={s.line} data-text="Coming">Coming</span>
-            <span className={s.line} data-text="soon!">soon!</span>
+            <span className={s.line} data-text="the week of">the week of</span>
+            <span className={s.line} data-text="Oct 5th!">Oct 5th!</span>
           </span>
           <span className={`${s.slide} ${s.slideB}`} aria-hidden>
             <span className={s.line} data-text="Bulk">Bulk</span>
@@ -78,6 +95,24 @@ export default function ComingSoon() {
           <span className={`${s.slide} ${s.slideC}`} aria-hidden>
             <span className={s.line} data-text="Pay and">Pay and</span>
             <span className={s.line} data-text="play">play</span>
+          </span>
+          {/* The three court sports, added 2026-09-30. One word each, because that is the
+              whole point of them: a driver glancing at the outside screen should read the
+              sport in one beat, and a single word at 10u is the largest type on the wall.
+
+              THE ROTATION WENT FROM THREE SLIDES TO SIX, so the cycle is 42s, not 21s, and
+              every slide's animation-delay moves with it (0, 7, 14, 21, 28, 35). The
+              keyframe percentages had to be recomputed against the longer duration or each
+              slide would have held for 14s and overlapped its neighbour — see the note on
+              @keyframes slide-turn. Add a seventh and all of that changes again. */}
+          <span className={`${s.slide} ${s.slideD}`} aria-hidden>
+            <span className={s.line} data-text="Badminton">Badminton</span>
+          </span>
+          <span className={`${s.slide} ${s.slideE}`} aria-hidden>
+            <span className={s.line} data-text="Cricket">Cricket</span>
+          </span>
+          <span className={`${s.slide} ${s.slideF}`} aria-hidden>
+            <span className={s.line} data-text="Squash">Squash</span>
           </span>
         </h1>
       </section>
@@ -158,6 +193,20 @@ export default function ComingSoon() {
               <span>Chester County</span>
               <span>Cricket Academy</span>
             </span>
+          </span>
+          <span className={s.partnerRule} aria-hidden />
+          {/* Philadelphia Badminton, added 2026-09-30 — they take the badminton courts under
+              a licence from Mon Oct 5 (the agreement was signed 2026-09-23). Placed third so
+              the three SPORT academies run squash, cricket, badminton and the studio closes
+              the row; SeRa is dance and fitness, not a court sport.
+
+              Space Grotesk 700, "Philadelphia" ember over "Badminton" white, stacked — their
+              own hero sets it that way, and it matches Hero.tsx and the reference lockup in
+              components/BrandWordmarks.tsx. Inlined rather than imported because every logo
+              on this strip is (see the note above the partners div). */}
+          <span className={s.pbLogo} role="img" aria-label="Philadelphia Badminton">
+            <span>Philadelphia</span>
+            <span>Badminton</span>
           </span>
           <span className={s.partnerRule} aria-hidden />
           <span className={s.seraLogo} role="img" aria-label="SeRa Dance and Fitness">
