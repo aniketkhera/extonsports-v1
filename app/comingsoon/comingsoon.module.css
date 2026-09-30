@@ -192,16 +192,41 @@
   flex-direction: column;
   opacity: 0;
   will-change: opacity;
-  animation: slide-turn 21s ease-in-out infinite both;
+  animation: slide-turn 42s ease-in-out infinite both;
 }
-.slideA { font-size: calc(var(--u) * 10); animation-delay: 0s; }
+/* 6.4u, not 10u: slideA went to THREE lines on 2026-09-30 ("Coming / the week of /
+   Oct 5th!"). Two independent limits, both binding at about 6.6u, so 6.4 leaves a little
+   room — WIDTH: "THE WEEK OF" is 11 characters against slideB's 8-character "BOOKINGS",
+   which already measures ~482 of the 501px available on the TV. HEIGHT: three lines at
+   6.4u and line-height 0.86 is 16.5u, under the two-line slides' 17.2u, so slideC still
+   sets the shared grid cell and nothing below the heading shifts when the slides turn. */
+.slideA { font-size: calc(var(--u) * 6.4); animation-delay: 0s; }
 .slideB { font-size: calc(var(--u) * 8.8); animation-delay: 7s; }   /* "BOOKINGS" is the widest line: ~482 of 501 px on the TV */
 .slideC { font-size: calc(var(--u) * 10); animation-delay: 14s; }
+/* The three court sports, 2026-09-30. One word each, so they take the full 10u — the
+   largest type on the wall, which is the point: readable from a car.
+
+   ⚠️ BADMINTON IS 7.6u, AND THAT NUMBER WAS MEASURED, NOT REASONED. Matching slideB's
+   8.8u looked obviously right — "BADMINTON" is 9 characters against "BOOKINGS" at 8 — and
+   it was wrong: the condensed face is not monospaced, and it rendered 548px against the
+   501px available, overflowing the heading. 7.6u brings it to ~473px. CRICKET (446px) and
+   SQUASH (428px) fit at the full 10u.
+
+   If you change any of these words, measure the rendered line box against the heading's
+   clientWidth in a browser at 16:9. Character count will mislead you — it misled me. */
+.slideD { font-size: calc(var(--u) * 7.6); animation-delay: 21s; }
+.slideE { font-size: calc(var(--u) * 10); animation-delay: 28s; }
+.slideF { font-size: calc(var(--u) * 10); animation-delay: 35s; }
+/* ⚠️ THE PERCENTAGES ARE TIED TO THE 42s DURATION ON .slide, AND TO THE 7s SPACING OF THE
+   animation-delays ABOVE. Six slides x 7s = 42s. It was 21s for three slides; doubling the
+   duration without recomputing these would have held each slide 14s and overlapped it with
+   the next, showing two headings at once. Each value is (seconds / 42) — change the number
+   of slides and every one of them moves. */
 @keyframes slide-turn {
   0% { opacity: 0; }
-  4.76% { opacity: 1; }    /* 1 s in */
-  33.33% { opacity: 1; }   /* 7 s: the next slide starts fading in… */
-  38.1% { opacity: 0; }    /* …and this one is gone by 8 s */
+  2.38% { opacity: 1; }    /* 1 s in */
+  16.67% { opacity: 1; }   /* 7 s: the next slide starts fading in… */
+  19.05% { opacity: 0; }   /* …and this one is gone by 8 s */
   100% { opacity: 0; }
 }
 
@@ -540,7 +565,12 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: calc(var(--u) * 0.8) calc(var(--u) * 3);
+  /* Column gap 2u, not 3u: a FOURTH partner (Philadelphia Badminton) joined the row on
+     2026-09-30 and the strip overflowed, clipping "COACHING & CLASSES BY" to "ACHING &
+     CLASSES BY" at 1280x720. Verified in the browser at 16:9, which is the only size that
+     matters here. A fifth partner will not fit by shrinking gaps alone — wrap the label
+     onto its own line instead. */
+  gap: calc(var(--u) * 0.8) calc(var(--u) * 2);
   /* Phones: out through the root's 4.5u side padding to the edges; the root has no bottom
      padding on phones, so no bottom margin is needed. */
   margin: 0 calc(var(--u) * -4.5);
@@ -560,7 +590,9 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: calc(var(--u) * 1) calc(var(--u) * 2.6);
+  /* 1.7u between logos, down from 2.6u — same reason as the row gap above: four lockups
+     where there were three. */
+  gap: calc(var(--u) * 1) calc(var(--u) * 1.7);
 }
 .partnerRule {
   width: 1px;
@@ -607,6 +639,22 @@
 .cccaLogo > span > span { display: block; }
 .cccaLogo > span > span:first-child { color: var(--ember); }
 .cccaLogo > span > span:last-child { color: #ffffff; }
+/* Philadelphia Badminton — Space Grotesk 700, "Philadelphia" ember over "Badminton" white,
+   stacked on two lines as their own hero sets it. Sized against the CCCA lockup beside it
+   rather than the single-line SquashTigers one: two lines at 1.5u and line-height 1.05 is
+   3.15u, matching CCCA's 3.6u shield within the strip's optical range. NOT uppercased —
+   the brand is set in sentence case, unlike SquashTigers and SeRa's condensed capitals. */
+.pbLogo {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: calc(var(--u) * 1.5);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+.pbLogo span { display: block; }
+.pbLogo span:first-child { color: var(--ember); }
+.pbLogo span:last-child { color: #ffffff; }
 /* SeRa — Caveat 700 script in orange, the rest in spaced condensed capitals. */
 .seraLogo {
   display: inline-flex;
