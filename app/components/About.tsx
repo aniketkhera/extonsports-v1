@@ -79,6 +79,10 @@ export default function About() {
                 out, or HELP for help. See our{" "}
                 <Link href="/sms" className="underline hover:text-[var(--color-ember)] transition">
                   SMS Terms
+                </Link>{" "}
+                and{" "}
+                <Link href="/privacy" className="underline hover:text-[var(--color-ember)] transition">
+                  Privacy Policy
                 </Link>
                 .
               </p>

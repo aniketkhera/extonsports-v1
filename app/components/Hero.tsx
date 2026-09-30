@@ -8,7 +8,7 @@ import type { SchedulePayload } from "../api/schedule/route";
 import type { ProgramSchedule } from "@/lib/club-schedule";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, CLASS_FEES_NOTE } from "../../lib/rates";
 import { BOOK_COURTS_URL, BOLLYWOOD_CLASS_URL, CLASS_ONLINE_BOOKING_LIVE, bookingTarget } from "../../lib/booking";
-import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_E164 } from "../../lib/legal";
+import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_E164, LEGAL_NAME } from "../../lib/legal";
 
 type PanelKey = "academies" | "recreation";
 
@@ -1266,6 +1266,45 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
             className="text-white border-b border-[var(--color-ember)]/55 hover:border-[var(--color-ember)] transition-colors whitespace-nowrap"
           >
             {CONTACT_PHONE}
+          </a>
+          .
+        </span>
+        {/*
+          ⚠️ A2P 10DLC DISCLOSURE — THE SECOND PLACE THE NUMBER IS ADVERTISED.
+
+          The contact block in About.tsx already carries this, and its comment says the
+          consent language must sit BESIDE the number because a reviewer opens the
+          homepage, finds the number and looks for consent right there. That reasoning
+          applies to every occurrence, and this one was missed: until 2026-09-30 the
+          homepage printed the number TWICE and only the lower one was disclosed. The
+          bare one is HIGHER on the page, so it is the first a crawler and a reader meet.
+
+          That mattered concretely. The A2P campaign filed on 2026-09-30 told the reviewer
+          the number is "advertised on our website with this disclosure beside it" — a
+          statement that was false of the first occurrence. The campaign was rejected
+          (30908/30882). Whether this was a cause is unproven, but a filing must not
+          describe a page that does not exist.
+
+          Shorter than the About.tsx copy on purpose — this is a marketing panel, not the
+          contact block — but the load-bearing clauses are all here and all match
+          app/sms/page.tsx: agreeing to receive, the named entity, what we send, cost,
+          STOP, and now BOTH policy links. Change them together or not at all.
+
+          The {" "} after LEGAL_NAME is deliberate: JSX drops the literal space following
+          an expression, which rendered "EXTON LLCabout" when About.tsx first did this.
+        */}
+        <span className="text-white/35 mt-2 block" style={{ fontSize: RATE_NOTE }}>
+          By calling or texting that number you are agreeing to receive text message
+          replies from {LEGAL_NAME}{" "}
+          about membership, visits and court availability. We only reply and never text
+          first. Msg &amp; data rates may apply. Reply STOP to opt out, or HELP for help.
+          See our{" "}
+          <a href="/sms" className="underline hover:text-[var(--color-ember)] transition">
+            SMS Terms
+          </a>{" "}
+          and{" "}
+          <a href="/privacy" className="underline hover:text-[var(--color-ember)] transition">
+            Privacy Policy
           </a>
           .
         </span>

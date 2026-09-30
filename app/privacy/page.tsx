@@ -23,7 +23,24 @@ const SECTIONS: Section[] = [
   },
   {
     title: 'Text messages (SMS)',
-    body: 'If you call or text our contact line, we may reply by text message at the number you contacted us from. We only text people who contacted us first — there is no sign-up list and no marketing messages. Reply STOP to any message to stop receiving them, or HELP for help; message and data rates may apply.\n\nTo deliver those messages we share your mobile number with Twilio Inc., our messaging provider, solely so the message reaches you. No mobile information is sold, rented, or shared with third parties or affiliates for their own marketing or promotional purposes. Full details are in our SMS Terms.',
+    // ⚠️ THE SECOND SENTENCE OF THE SECOND PARAGRAPH IS A2P COMPLIANCE LANGUAGE, NOT
+    // ORDINARY COPY. Twilio's error 30908 page prescribes the shape a reviewer looks for:
+    // "We do not share, sell, or provide your mobile phone number or messaging consent
+    // data to third parties or affiliates for marketing or promotional purposes."
+    //
+    // Until 2026-09-30 this read "No mobile information is sold, rented, or shared with
+    // third parties or affiliates for their own marketing or promotional purposes." —
+    // which covers the NUMBER but says nothing about CONSENT or OPT-IN data, the thing
+    // the requirement is actually about. Both concepts are now named explicitly, and the
+    // "for their own" qualifier is gone: it narrowed the promise in a way the requirement
+    // does not.
+    //
+    // Honest note on why: the Exton A2P campaign was rejected on 2026-09-30 with 30908.
+    // squashtigers.com carries the OLD wording and was APPROVED, so this cannot be what
+    // separated them and this edit is not a proven fix. It is made because the documented
+    // requirement is documented, and a stronger promise costs nothing. Consider making
+    // the same edit on squashtigers.com so the two do not drift.
+    body: 'If you call or text our contact line, we may reply by text message at the number you contacted us from. We only text people who contacted us first — there is no sign-up list and no marketing messages. Reply STOP to any message to stop receiving them, or HELP for help; message and data rates may apply.\n\nTo deliver those messages we share your mobile number with Twilio Inc., our messaging provider, solely so the message reaches you. We do not share, sell, or provide your mobile phone number or messaging consent data to third parties or affiliates for marketing or promotional purposes, and we do not share text messaging opt-in data with anyone. Full details are in our SMS Terms.',
   },
   {
     title: 'Who we share it with',
