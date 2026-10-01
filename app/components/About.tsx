@@ -110,7 +110,7 @@ export default function About() {
               className="inline-flex items-center gap-2.5 border-2 border-white/30 hover:border-[var(--color-ember)] text-white text-cond-md text-[0.85rem] no-underline transition"
               style={{ padding: "10px 24px" }}
             >
-              Get directions →
+              Get directions
             </a>
             <WhatsAppButton />
           </div>

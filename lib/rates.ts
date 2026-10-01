@@ -53,11 +53,17 @@ export type Band = {
   weekend: string
 }
 
-/** Column order — cheapest to dearest. */
+/* Column order — PEAK FIRST, then off-peak, then late night. Deliberately not
+   cheapest-to-dearest, which is how it read until 2026-10-01: peak is the band
+   most people are actually shopping for, so it leads and late night (a genuine
+   edge case) trails. Both the hero rate card and the footer map this array, so
+   changing the order here moves both — which is the point, they should agree.
+   `4pm–10pm` is spelled with both meridiems on purpose: `4–10pm` can be read as
+   4am. The weekend off-peak `8–10pm` has the same shape if you want it to match. */
 export const RATE_BANDS: Band[] = [
-  { key: 'lateNight', label: 'Late night', weekday: '10pm–6am', weekend: '10pm–8am' },
+  { key: 'peak', label: 'Peak', weekday: '4pm–10pm', weekend: '8am–8pm' },
   { key: 'offPeak', label: 'Off-peak', weekday: '6am–4pm', weekend: '8–10pm' },
-  { key: 'peak', label: 'Peak', weekday: '4–10pm', weekend: '8am–8pm' },
+  { key: 'lateNight', label: 'Late night', weekday: '10pm–6am', weekend: '10pm–8am' },
 ]
 
 /**
