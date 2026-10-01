@@ -7,7 +7,7 @@ import type { AvailabilityPayload } from "../api/availability/route";
 import type { SchedulePayload } from "../api/schedule/route";
 import type { ProgramSchedule } from "@/lib/club-schedule";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, CLASS_FEES_NOTE } from "../../lib/rates";
-import { BOOK_COURTS_URL, BOLLYWOOD_CLASS_URL, CLASS_ONLINE_BOOKING_LIVE, bookingTarget } from "../../lib/booking";
+import { BOLLYWOOD_CLASS_URL, CLASS_ONLINE_BOOKING_LIVE } from "../../lib/booking";
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_E164, LEGAL_NAME } from "../../lib/legal";
 
 type PanelKey = "academies" | "recreation";
@@ -1069,7 +1069,6 @@ function FirstSlotRow({
 }
 
 function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
-  const book = bookingTarget(BOOK_COURTS_URL);
   const [availability, setAvailability] = useState<AvailabilityPayload | null>(null);
 
   // Fetched on the client rather than rendered on the server: the value goes
@@ -1310,27 +1309,11 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
         </span>
       </motion.div>
 
-      <motion.div
-        className="flex flex-wrap items-center gap-[10px] pt-1"
-        variants={{
-          hidden: { opacity: 0, y: 12 },
-          visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
-        }}
-      >
-        <a
-          href={book.href}
-          {...(book.external ? { target: "_blank", rel: "noreferrer" } : {})}
-          className="text-mono text-[0.66rem] px-[18px] py-[9px] bg-[var(--color-ember)] text-black border border-[var(--color-ember)] hover:bg-[var(--color-ember-hi)] hover:border-[var(--color-ember-hi)] transition-colors"
-        >
-          {book.external ? "Book a court" : "Join the waitlist"}
-        </a>
-        <a
-          href="#sports"
-          className="text-mono text-[0.66rem] px-[18px] py-[9px] text-[var(--color-ember)] border border-[var(--color-ember)]/50 hover:border-[var(--color-ember)] hover:bg-[var(--color-ember)]/10 transition-colors"
-        >
-          See the courts
-        </a>
-      </motion.div>
+      {/* The "Join the waitlist" / "See the courts" pair was removed 2026-10-01.
+          The rate card already carries the booking route, and the club is days
+          from opening, so a waitlist CTA was selling the wrong action. Removing
+          this orphaned `book` here and the BOOK_COURTS_URL/bookingTarget import
+          at the top of the file — restore all three together if it comes back. */}
     </motion.div>
   );
 }
@@ -1448,13 +1431,6 @@ const STUDIO_CLASSES: {
         </span>
       </span>
     ) },
-  /* "Coming soon" is a timing statement, so it belongs in the schedule column
-     beside Bombay Jam's start date rather than as an eyebrow. There is nothing
-     qualitative to say about this class yet — its one line is the whole
-     record — so it carries no eyebrow at all. */
-  { name: "Kids' Dance",
-    desc: "After-school classes for younger movers.",
-    schedule: { status: "Coming soon" } },
 ];
 
 
@@ -1476,7 +1452,9 @@ const RECREATION = {
    at the same optical weight — the full badge is roughly twice as tall. */
 /* The line the detail column shows before you point at anything. Every claim is
    read off the entries below rather than invented: squash is the only one
-   taking players today, cricket and badminton both read "Coming soon". */
+   taking players today; cricket and badminton now carry real start dates
+   (Oct 7 and Oct 5), which is why this line says "follow when the doors open"
+   rather than naming one date for both. */
 const ROSTER_INTRO =
   "Coaching runs through three academies rather than the club itself — squash takes trials now, cricket and badminton follow when the doors open. The studio floor is the club's own: dance and fitness, all levels.";
 
@@ -1486,15 +1464,17 @@ const ACADEMY_PARTNERS = [
     href: "https://cccricketacademy.com",
     short: "Cricket",
     sport: "Cricket academy",
-    /* Was "Starts Sep 28 · 7 days a week" until 2026-09-24. The building's own
-       opening moved to Oct 5, which put cricket a week ahead of the doors, so
-       the date came out rather than being corrected to a second guess — both
-       academies now read "Coming soon" until their dates are real.
+    /* Was "Starts Sep 28 · 7 days a week" until 2026-09-24, then "Coming soon"
+       while the building's own opening moved to Oct 5 and no academy date was
+       settled. Both dates are real as of 2026-10-01 and confirmed by Aniket:
+       cricket Oct 7, badminton Oct 5. Note they are NOT the same date and the
+       later one is cricket — easy to transpose, so check with him before
+       "correcting" either.
        Still no platform programme for cricket: squad_programs has one active
        row at Exton and it is the dance class. This stays local copy in the
        shape the platform feed produces, so the day cricket IS entered in
        /admin/squads the live data takes over with no markup change. */
-    schedule: { status: "Coming soon" },
+    schedule: { status: "Coming Oct 7th" },
     /* Near-verbatim from cccricketacademy.com. Deliberately NOT saying more:
        their site gives no founding year, and its published indoor season runs
        Oct-Mar at All-Star Sports Academy in Downingtown with outdoor sessions
@@ -1504,7 +1484,10 @@ const ACADEMY_PARTNERS = [
       "High-quality cricket coaching for aspiring cricketers of all ages and skill levels, with junior enrolments open for girls and boys.",
     /* No trial: the platform has no trial concept at all, and CCCA runs its own
        enrolment. The address is the honest ask. */
-    action: { label: "Register interest", href: "mailto:cricket@extonsports.com?subject=Cricket%20academy%20enquiry" },
+    /* Was a mailto to cricket@extonsports.com. Now that CCCA is signed and has a
+       date, the useful next step is their own site rather than an enquiry form
+       we then have to forward. Same treatment as badminton below. */
+    action: { label: "Learn more", href: "https://cccricketacademy.com" },
     // No cta: the site link lives on the logo and there is nothing else to
     // send a reader to until the academy opens, so the tile offers the
     // address instead of a button.
@@ -1579,15 +1562,15 @@ const ACADEMY_PARTNERS = [
     short: "Badminton",
     sport: "Badminton academy",
     /* Still timing, so still the schedule column. The licence ramps up over
-       Oct–Dec and no single start date is settled, so "Coming soon" stands. */
-    schedule: { status: "Coming soon" },
+       Oct–Dec; the start date is Oct 5, confirmed by Aniket 2026-10-01. */
+    schedule: { status: "Coming Oct 5th" },
     /* Their own programme copy, near-verbatim, plus their coach roster. NOT
        said: "Pennsylvania's largest badminton facility" and the 12 mat courts
        are their Norristown building, not this one. Nor is this juniors-only,
        which is what the SmashShuttler line claimed. */
     blurb:
       "Structured, goal-oriented private and small-group coaching for all ages and levels, from BWF- and USAB-certified coaches.",
-    action: { label: "Get notified", href: "https://philadelphiabadminton.com" },
+    action: { label: "Learn more", href: "https://philadelphiabadminton.com" },
     logo: (
       /* Their hero sets the name over two lines in Space Grotesk 700; this is
          that mark, split across the tile's two colours like the cricket one. */

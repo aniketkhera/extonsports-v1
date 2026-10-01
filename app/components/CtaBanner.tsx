@@ -90,7 +90,7 @@ export default function CtaBanner() {
           className="text-cond text-[1.3rem] sm:text-[1.55rem] text-black leading-tight"
           style={{ letterSpacing: "0.02em" }}
         >
-          Be the first to know when we open Badminton, Cricket &amp; Turf.
+          Join our Mailing List
         </p>
         <p className="text-black/65 text-[0.8rem] sm:text-[0.88rem] mt-1 font-semibold tracking-wide">
           Badminton, Cricket &amp; Turf <span className="text-black font-bold">opening {OPENING_LONG}</span>. Pay by the hour — no membership needed.

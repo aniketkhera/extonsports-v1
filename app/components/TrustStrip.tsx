@@ -6,8 +6,6 @@ const stats = [
   { num: "4",    lab: "Squash · all-glass" },
   { num: "3",    lab: "Badminton courts" },
   { num: "3",    lab: "Cricket lanes" },
-  { num: "1",    lab: "Fitness studio" },
-  { num: "1",    lab: "Indoor turf" },
   { num: "24/7", lab: "Always open" },
 ];
 

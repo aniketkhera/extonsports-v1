@@ -52,16 +52,6 @@ const sports: Sport[] = [
     body: "Indoor turf with marked athletic running lanes — sprint work, agility drills, conditioning, and a back-of-house spot for extra cricket nets when needed.",
     decoration: "turf",
   },
-  {
-    n: "05",
-    name: "Fitness",
-    count: "—",
-    unit: "",
-    prefix: "Studio",
-    spec: "Rowers · weights · cable",
-    body: "Dedicated fitness studio with rowing machines, free weights, and cable training — included with any court booking.",
-    decoration: "fitness",
-  },
 ];
 
 export default function Sports() {
