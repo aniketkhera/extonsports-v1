@@ -1364,15 +1364,19 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
      price then another, and snapping back to week one each time would make
      that impossible. It resets when the panel closes. */
   const [weekOffset, setWeekOffset] = useState(0);
-  /* Which sport's heatmap is open on a phone.
-     OPEN ON ARRIVAL, not on tap. It shipped closed behind a chevron and the
-     reply was "somehow don't see it on my phone" — a thing nobody opens is a
-     thing nobody has. The first row starts expanded so the feature is simply
-     present, and the chevron then does the job it is good at: collapsing it,
-     or moving to another sport.
-     STILL ONE AT A TIME: the card is already long on a 375px screen and three
-     open grids would push the bulk-bookings line off the bottom. */
-  const [openSport, setOpenSport] = useState<string | null>(COURT_RATES[0]?.sport ?? null);
+  /* Which heatmaps are open on a phone. ALL THREE ON ARRIVAL.
+     It shipped closed behind a chevron and the reply was "somehow don't see
+     it on my phone" — a thing nobody opens is a thing nobody has. Opening
+     just the first row was the next guess and also wrong: the answer is all
+     of them, so the whole picture is simply there and the chevrons are only
+     for putting one away.
+     This DOES make the card long on a 375px screen, which is why it was one
+     at a time to begin with. That was the wrong trade: a reader who has to
+     tap to discover a feature mostly does not, and scrolling is cheap. */
+  const [openSports, setOpenSports] = useState<string[]>(() => COURT_RATES.map((r) => r.sport));
+  const toggleSport = (sport: string) =>
+    setOpenSports((prev) =>
+      prev.includes(sport) ? prev.filter((s) => s !== sport) : [...prev, sport]);
   useEffect(() => {
     let live = true;
     fetch("/api/court-availability")
@@ -1491,9 +1495,9 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
                 type="button"
                 className="text-cond tracking-[0.03em] text-left flex items-center gap-1.5 focus:outline-none"
                 style={{ fontSize: RATE_SPORT, color: "var(--ember-ink)" }}
-                aria-expanded={openSport === r.sport}
-                aria-label={`${openSport === r.sport ? "Hide" : "Show"} ${r.sport} availability`}
-                onClick={() => setOpenSport(openSport === r.sport ? null : r.sport)}
+                aria-expanded={openSports.includes(r.sport)}
+                aria-label={`${openSports.includes(r.sport) ? "Hide" : "Show"} ${r.sport} availability`}
+                onClick={() => toggleSport(r.sport)}
               >
                 {r.sport}
                 {/* ⚠️ THIS WAS 8px AT 0.55 OPACITY AND NOBODY FOUND IT.
@@ -1510,7 +1514,7 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
                     fontSize: "0.62em",
                     color: "var(--color-ember)",
                     border: "1px solid color-mix(in srgb, var(--color-ember) 45%, transparent)",
-                    transform: openSport === r.sport ? "rotate(90deg)" : "none",
+                    transform: openSports.includes(r.sport) ? "rotate(90deg)" : "none",
                   }}
                 >
                   {"›"}
@@ -1594,7 +1598,7 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
               )}
             </span>
           </div>
-          {stacked && week && openSport === r.sport && (
+          {stacked && week && openSports.includes(r.sport) && (
             <MobileHeat
               sport={r.sport}
               data={week}
@@ -1780,7 +1784,7 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
                 was undiscoverable: no pointer to reveal it and a mark too
                 faint to read as a control. */}
             {stacked && week && (
-              <span className="text-white/30"> Tap a sport to switch weeks or collapse.</span>
+              <span className="text-white/30"> Tap a sport to collapse it.</span>
             )}
           </span>
           </>
