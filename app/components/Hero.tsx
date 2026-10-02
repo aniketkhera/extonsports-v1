@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { Fragment, useState, useEffect } from "react";
 import Image from "next/image";
 import type { AvailabilityPayload } from "../api/availability/route";
 import type { CourtAvailability } from "../api/court-availability/route";
@@ -1002,6 +1002,132 @@ const API_BAND: Record<string, string> = {
   lateNight: "late_night",
 };
 
+/* Grey at 100%, colour only once something is gone: an empty week should
+   read calm, not alarming. Shared by the desktop bars and the phone's
+   heatmap so the two can never disagree about what a colour means. */
+function fillFor(pct: number | null): string {
+  if (pct === null) return "transparent";
+  if (pct === 100) return "rgba(255,255,255,0.14)";
+  if (pct >= 60) return "rgba(66,181,77,0.55)";
+  return "rgba(248,155,114,0.65)";
+}
+
+/* ⚠️ A DAY BEFORE THE SPORT OPENS IS NOT AN EMPTY DAY. The endpoint counts
+   occupancy and nothing is booked before opening, so without this a sport
+   reads "all free" on days it cannot be booked at all. Gated on the
+   per-sport dates because the three come online across the first week. */
+function shutOn(sport: string, date: string): boolean {
+  const opensAt = SPORT_BOOKING_OPENS[sport];
+  return !!opensAt && new Date(`${date}T23:59:59-04:00`).getTime() < opensAt.getTime();
+}
+
+/* THE PHONE'S RENDERING, and deliberately not the desktop one shrunk.
+   Seven columns of "12/18 free" is unreadable at 375px, so the numbers go
+   and colour carries the signal with a legend. In exchange the phone shows
+   ALL THREE BANDS of a sport at once — 21 cells — where the desktop hover
+   shows one band at a time. The constraint produced the denser view. */
+function MobileHeat({
+  sport, data, offset, onOffset,
+}: {
+  sport: string;
+  data: CourtAvailability;
+  offset: number;
+  onOffset: (n: number) => void;
+}) {
+  const page = data.days.slice(offset * 7, offset * 7 + 7);
+  const hasNext = data.days.length > 7;
+  const fmt = (d: string, o: Intl.DateTimeFormatOptions) =>
+    new Date(`${d}T12:00:00`).toLocaleDateString("en-US", o);
+  /* Composed, not one formatter call: {weekday, day} together renders
+     "2 Fri" here, which reads as a quantity. Same trap as WeekStrip. */
+  const dayLabel = (d: string) =>
+    `${fmt(d, { weekday: "short" })} ${new Date(`${d}T12:00:00`).getDate()}`;
+
+  return (
+    <div className="px-4 pb-3 pt-1">
+      <div className="grid gap-[3px]" style={{ gridTemplateColumns: "34px repeat(7, 1fr)" }}>
+        <span />
+        {page.map((d) => (
+          <span key={d} className="text-mono text-center text-white/40" style={{ fontSize: "0.5rem" }}>
+            {fmt(d, { weekday: "narrow" })}
+          </span>
+        ))}
+        {RATE_BANDS.map((b) => (
+          <Fragment key={b.key}>
+            <span className="text-mono text-white/45 self-center" style={{ fontSize: "0.5rem" }}>
+              {b.key === "offPeak" ? "Off-pk" : b.key === "lateNight" ? "Late" : "Peak"}
+            </span>
+            {page.map((d) => {
+              const shut = shutOn(sport, d);
+              const c = shut
+                ? null
+                : data.cells.find(
+                    (x) => x.sport === sport && x.band === (API_BAND[b.key] ?? b.key) && x.date === d,
+                  ) ?? null;
+              const pct = c && c.total > 0 ? Math.round((c.free / c.total) * 100) : null;
+              return (
+                <span
+                  key={d}
+                  className="rounded-[2px]"
+                  style={{
+                    height: "15px",
+                    background: shut ? "transparent" : fillFor(pct),
+                    border: shut ? "1px dashed rgba(255,255,255,0.18)" : undefined,
+                  }}
+                  title={
+                    shut
+                      ? `${sport} not bookable ${dayLabel(d)}`
+                      : c
+                        ? `${dayLabel(d)} — ${c.free} of ${c.total} court-hours free`
+                        : undefined
+                  }
+                />
+              );
+            })}
+          </Fragment>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between mt-2 gap-2">
+        <span className="text-white/35" style={{ fontSize: "0.56rem" }}>
+          {dayLabel(page[0])} &ndash; {dayLabel(page[page.length - 1])}
+        </span>
+        {hasNext && (
+          <button
+            type="button"
+            className="text-mono text-white/45 px-2 py-1 rounded-[2px] border border-white/15"
+            style={{ fontSize: "0.5rem" }}
+            aria-label={offset === 0 ? "Show next week" : "Back to this week"}
+            onClick={() => onOffset(offset === 0 ? 1 : 0)}
+          >
+            {offset === 0 ? "next week ›" : "‹ this week"}
+          </button>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-white/40" style={{ fontSize: "0.52rem" }}>
+        {[
+          ["all free", "rgba(255,255,255,0.14)"],
+          ["some gone", "rgba(66,181,77,0.55)"],
+          ["nearly out", "rgba(248,155,114,0.65)"],
+        ].map(([label, bg]) => (
+          <span key={label} className="inline-flex items-center gap-1">
+            <span className="inline-block rounded-[2px]" style={{ width: 9, height: 9, background: bg }} />
+            {label}
+          </span>
+        ))}
+        <span className="inline-flex items-center gap-1">
+          <span
+            className="inline-block rounded-[2px]"
+            style={{ width: 9, height: 9, border: "1px dashed rgba(255,255,255,0.3)" }}
+          />
+          shut
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /* The hovered cell's week, as seven bars.
    Court-hours, NOT "hours with a court free" — see lib/floor.ts and the
    endpoint. The friendlier measure reads "6 of 6 free" for cricket peak while
@@ -1026,9 +1152,7 @@ function WeekStrip({
      courts are not free, they do not exist to the public yet. Those days are
      marked shut instead. The gate is the per-sport date in lib/opening.ts,
      because the three sports come online across the first week. */
-  const opensAt = SPORT_BOOKING_OPENS[sport];
-  const closedOn = (d: string) =>
-    !!opensAt && new Date(`${d}T23:59:59-04:00`).getTime() < opensAt.getTime();
+  const closedOn = (d: string) => shutOn(sport, d);
   /* Both weeks arrive in one payload, so paging is a slice, not a fetch. */
   const page = data.days.slice(offset * 7, offset * 7 + 7);
   const hasNext = data.days.length > 7;
@@ -1060,12 +1184,7 @@ function WeekStrip({
           const shut = closedOn(d);
           const c = shut ? null : cells[i];
           const pct = c && c.total > 0 ? Math.round((c.free / c.total) * 100) : null;
-          /* Grey at 100%: an empty week should read calm, not alarming. Colour
-             arrives only once something is actually gone. */
-          const fill = pct === null ? "transparent"
-            : pct === 100 ? "rgba(255,255,255,0.14)"
-            : pct >= 60 ? "rgba(66,181,77,0.55)"
-            : "rgba(248,155,114,0.65)";
+          const fill = fillFor(pct);
           /* Composed, not formatted in one call: toLocaleDateString with
              {weekday,day} rendered "2 Fri" here, which reads as a quantity.
              Weekday then number is the order a person scans a week in. */
@@ -1245,6 +1364,10 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
      price then another, and snapping back to week one each time would make
      that impossible. It resets when the panel closes. */
   const [weekOffset, setWeekOffset] = useState(0);
+  /* Which sport's heatmap is open on a phone. ONE AT A TIME: the card is
+     already long on a 375px screen and three open grids would push the bulk
+     bookings line off the bottom. */
+  const [openSport, setOpenSport] = useState<string | null>(null);
   useEffect(() => {
     let live = true;
     fetch("/api/court-availability")
@@ -1342,8 +1465,8 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
         </div>
 
         {COURT_RATES.map((r, i) => (
+          <Fragment key={r.sport}>
           <div
-            key={r.sport}
             className={`${RATE_GRID} ${
               i < COURT_RATES.length - 1 ? "border-b border-white/[0.07]" : ""
             }`}
@@ -1353,12 +1476,40 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
               transition: RATE_GRID_EASE,
             }}
           >
-            <span
-              className="text-cond tracking-[0.03em]"
-              style={{ fontSize: RATE_SPORT, color: "var(--ember-ink)" }}
-            >
-              {r.sport}
-            </span>
+            {/* On a phone the sport name is the control that opens its
+                heatmap — the whole row, effectively, since the name is the
+                only wide target in it. The 15px squares are NOT tappable and
+                are not meant to be: booking lives on the floating button, so
+                the grid stays a read. */}
+            {stacked && week ? (
+              <button
+                type="button"
+                className="text-cond tracking-[0.03em] text-left flex items-center gap-1.5 focus:outline-none"
+                style={{ fontSize: RATE_SPORT, color: "var(--ember-ink)" }}
+                aria-expanded={openSport === r.sport}
+                aria-label={`${openSport === r.sport ? "Hide" : "Show"} ${r.sport} availability`}
+                onClick={() => setOpenSport(openSport === r.sport ? null : r.sport)}
+              >
+                {r.sport}
+                <span
+                  className="inline-block transition-transform duration-200"
+                  style={{
+                    fontSize: "0.55em",
+                    opacity: 0.55,
+                    transform: openSport === r.sport ? "rotate(90deg)" : "none",
+                  }}
+                >
+                  {"›"}
+                </span>
+              </button>
+            ) : (
+              <span
+                className="text-cond tracking-[0.03em]"
+                style={{ fontSize: RATE_SPORT, color: "var(--ember-ink)" }}
+              >
+                {r.sport}
+              </span>
+            )}
             {RATE_BANDS.map((b) => {
               // Peak is the price most people will actually pay, so it is the
               // one that reads at full strength.
@@ -1429,6 +1580,15 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
               )}
             </span>
           </div>
+          {stacked && week && openSport === r.sport && (
+            <MobileHeat
+              sport={r.sport}
+              data={week}
+              offset={weekOffset}
+              onOffset={setWeekOffset}
+            />
+          )}
+          </Fragment>
         ))}
       </motion.div>
 
