@@ -1046,23 +1046,16 @@ function WeekStrip({
           {sport}{" "}&middot;{" "}{bandLabel}{" "}&middot;{" "}
           {offset === 0 ? "this week" : "next week"}
         </span>
-        {hasNext && (
-          /* One button, two jobs: forward to next week, then back again.
-             A chevron here is navigation, not the decorative trailing arrow
-             that came off every CTA on 2026-10-02 — it IS the control, and
-             without it the button is an unlabelled box. */
-          <button
-            type="button"
-            className="text-mono text-white/45 hover:text-[var(--color-ember)] focus-visible:text-[var(--color-ember)] focus:outline-none transition-colors px-1"
-            style={{ fontSize: RATE_LABEL }}
-            aria-label={offset === 0 ? "Show next week" : "Back to this week"}
-            onClick={() => onOffset(offset === 0 ? 1 : 0)}
-          >
-            {offset === 0 ? "next ›" : "‹ back"}
-          </button>
-        )}
       </span>
-      <div className="grid grid-cols-7 gap-[5px]">
+      {/* The pager sits at the RIGHT EDGE OF THE DAYS, not up in the title:
+          it is a "what comes after Thursday" control, so it belongs where
+          Thursday ends. One button, two jobs — forward a week, then back.
+
+          A chevron here is navigation, not the decorative trailing arrow that
+          came off every CTA on 2026-10-02. It IS the control; without it the
+          button is an unlabelled box. */}
+      <div className="flex items-stretch gap-2">
+      <div className="grid grid-cols-7 gap-[5px] flex-1 min-w-0">
         {page.map((d, i) => {
           const shut = closedOn(d);
           const c = shut ? null : cells[i];
@@ -1116,6 +1109,22 @@ function WeekStrip({
             </a>
           );
         })}
+      </div>
+      {hasNext && (
+        <button
+          type="button"
+          /* Aligned to the BARS, not the whole cell: the day label sits above
+             them and the figure below, so centring on the column would float
+             the chevron off the row it belongs to. */
+          className="shrink-0 self-start mt-[18px] w-6 flex items-center justify-center rounded-[2px] border border-white/15 text-white/50 hover:text-[var(--color-ember)] hover:border-[var(--color-ember)]/50 focus-visible:text-[var(--color-ember)] focus-visible:border-[var(--color-ember)] focus:outline-none transition-colors"
+          style={{ height: "30px", fontSize: "0.8rem", lineHeight: 1 }}
+          aria-label={offset === 0 ? "Show next week" : "Back to this week"}
+          title={offset === 0 ? "Next week" : "This week"}
+          onClick={() => onOffset(offset === 0 ? 1 : 0)}
+        >
+          {offset === 0 ? "›" : "‹"}
+        </button>
+      )}
       </div>
       {/* Asked twice what the numbers were, which is twice more than a term
           should need. "Court-hours" is courts x hours and nobody is obliged
