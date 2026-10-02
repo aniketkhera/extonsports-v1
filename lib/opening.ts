@@ -34,6 +34,46 @@ export const OPENING_EYEBROW = 'OPENING OCTOBER 5, 2026'
     so the column can format it exactly like a live slot. */
 export const OPENING_FIRST_HOUR = OPENING_DATE.toISOString()
 
+/**
+ * When each sport's COURTS become bookable — which is not one date.
+ *
+ * The doors open Mon 5 Oct, but the three sports come online over that first
+ * week (confirmed by Aniket 2026-10-02): badminton Tue 6 Oct, cricket Thu
+ * 8 Oct. Squash is not staged — it is ready on day one, so it takes
+ * OPENING_DATE itself.
+ *
+ * ⚠️ NOT the academy start dates, which are a different thing on a different
+ * part of the page: Philadelphia Badminton begins Mon 5 Oct and Chester County
+ * Cricket Mon 12 Oct (see the ACADEMY_PARTNERS entries in Hero.tsx). A sport
+ * being bookable and its academy running are independent — cricket LANES open
+ * on the 8th, four days before the academy that holds two of them starts.
+ *
+ * Keys MUST match a `sport` in COURT_RATES; the rate card joins the two by name.
+ */
+export const SPORT_BOOKING_OPENS: Record<string, Date> = {
+  Squash: OPENING_DATE,
+  Badminton: new Date('2026-10-06T06:00:00-04:00'),
+  Cricket: new Date('2026-10-08T06:00:00-04:00'),
+}
+
+/** "Tue 6 Oct" — the short form the rate card prints beside a sport. */
+export const SPORT_BOOKING_OPENS_LABEL: Record<string, string> = {
+  Squash: 'Mon 5 Oct',
+  Badminton: 'Tue 6 Oct',
+  Cricket: 'Thu 8 Oct',
+}
+
+/** True once THIS sport can be booked. Unknown sport -> fall back to the club. */
+export function sportBookingOpen(sport: string, now: Date = new Date()): boolean {
+  const d = SPORT_BOOKING_OPENS[sport] ?? OPENING_DATE
+  return now.getTime() >= d.getTime()
+}
+
+/** The sports that are not bookable yet, in rate-card order. */
+export function sportsNotYetOpen(sports: string[], now: Date = new Date()): string[] {
+  return sports.filter((s) => !sportBookingOpen(s, now))
+}
+
 /** True once the doors are open. Evaluated per render, so no rebuild needed. */
 export function isOpen(now: Date = new Date()): boolean {
   return now.getTime() >= OPENING_DATE.getTime()

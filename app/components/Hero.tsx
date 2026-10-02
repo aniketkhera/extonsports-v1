@@ -8,7 +8,7 @@ import type { SchedulePayload } from "../api/schedule/route";
 import type { ProgramSchedule } from "@/lib/club-schedule";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, CLASS_FEES_NOTE } from "../../lib/rates";
 import { BOLLYWOOD_CLASS_URL, BOOK_COURTS_URL, CLASS_ONLINE_BOOKING_LIVE, bookingTarget } from "../../lib/booking";
-import { OPENING_DOORS } from "../../lib/opening";
+import { SPORT_BOOKING_OPENS_LABEL, sportBookingOpen, sportsNotYetOpen } from "../../lib/opening";
 import { FLOOR_HOLDS, FLOOR_HEADING, FLOOR_FOOTNOTE } from "../../lib/floor";
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_E164, LEGAL_NAME } from "../../lib/legal";
 
@@ -1074,6 +1074,9 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
   /* Flips itself at 06:00 on OPENING_DATE — isOpen() is evaluated per render,
      so opening morning needs no deploy and nobody has to be awake for it. */
   const book = bookingTarget(BOOK_COURTS_URL);
+  /* Which sports are still to come. Evaluated per render like isOpen(), so the
+     line retires itself sport by sport across opening week with no deploy. */
+  const pendingSports = sportsNotYetOpen(COURT_RATES.map((r) => r.sport));
   const [availability, setAvailability] = useState<AvailabilityPayload | null>(null);
 
   // Fetched on the client rather than rendered on the server: the value goes
@@ -1294,16 +1297,26 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
             </a>
           )}
 
-          <span className="flex items-center gap-2 text-white/70" style={{ fontSize: RATE_NOTE }}>
+          {/* ⚠️ THE THREE SPORTS DO NOT OPEN TOGETHER, so this cannot be one
+              date. The doors are Mon 5 Oct but the courts come online across
+              that week — squash 5th, badminton 6th, cricket 8th — and a single
+              "Booking opens Monday" line was telling two thirds of readers the
+              wrong thing. It collapses to "Open now" only once every sport is
+              live, so the staged week states itself and then stops. */}
+          <span
+            className={`flex gap-2 text-white/70 ${stacked ? "items-start" : "items-center"}`}
+            style={{ fontSize: RATE_NOTE }}
+          >
             <span
               className="inline-block rounded-full shrink-0"
               style={{
                 width: "7px",
                 height: "7px",
-                background: book.external ? "var(--color-green)" : "var(--color-ember)",
+                marginTop: stacked ? "0.45em" : undefined,
+                background: pendingSports.length === 0 ? "var(--color-green)" : "var(--color-ember)",
               }}
             />
-            {book.external ? (
+            {pendingSports.length === 0 ? (
               <span>
                 {/* The {" "} is load-bearing: JSX drops the literal space that
                     follows an expression container, which rendered "Open now·
@@ -1312,7 +1325,15 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
               </span>
             ) : (
               <span>
-                Booking opens <span className="text-white">{OPENING_DOORS}</span>
+                {COURT_RATES.map((r, i) => (
+                  <span key={r.sport}>
+                    {i > 0 && " · "}
+                    <span className="text-white">{r.sport}</span>{" "}
+                    {sportBookingOpen(r.sport)
+                      ? "open now"
+                      : `from ${SPORT_BOOKING_OPENS_LABEL[r.sport] ?? "soon"}`}
+                  </span>
+                ))}
               </span>
             )}
           </span>
