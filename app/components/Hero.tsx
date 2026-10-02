@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import type { AvailabilityPayload } from "../api/availability/route";
+import type { CourtAvailability } from "../api/court-availability/route";
 import type { SchedulePayload } from "../api/schedule/route";
 import type { ProgramSchedule } from "@/lib/club-schedule";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, CLASS_FEES_NOTE } from "../../lib/rates";
@@ -992,6 +993,73 @@ const RATE_PRICE = "clamp(0.84rem, 0.8vw, 1.15rem)";
 const RATE_NOTE = "clamp(0.7rem, 0.62vw, 0.92rem)";
 const RATE_BODY = "clamp(0.78rem, 0.75vw, 1.05rem)";
 
+/* This site says peak / off-peak / late night; the platform's rate rules say
+   peak / standard / late_night. One join, written down once, because getting
+   it wrong shows a plausible but wrong column rather than an error. */
+const API_BAND: Record<string, string> = {
+  peak: "peak",
+  offPeak: "standard",
+  lateNight: "late_night",
+};
+
+/* The hovered cell's week, as seven bars.
+   Court-hours, NOT "hours with a court free" — see lib/floor.ts and the
+   endpoint. The friendlier measure reads "6 of 6 free" for cricket peak while
+   Chester County Cricket holds two of the three lanes, because lane 3 is never
+   taken; court-hours says 12 of 18, which is the fact a cricketer needs. */
+function WeekStrip({
+  sport, bandKey, bandLabel, data,
+}: {
+  sport: string;
+  bandKey: string;
+  bandLabel: string;
+  data: CourtAvailability;
+}) {
+  const apiBand = API_BAND[bandKey] ?? bandKey;
+  const cells = data.days.map((d) =>
+    data.cells.find((c) => c.sport === sport && c.band === apiBand && c.date === d) ?? null);
+  /* A day with no cell is not zero — it is a band with no hours left today,
+     which is why today's late night vanishes after 6am. Rendered as a gap. */
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-mono text-[var(--color-ember)]" style={{ fontSize: RATE_LABEL }}>
+        {/* Explicit {" "} around every expression: JSX drops the literal
+            space that follows one, which rendered "Peak· next 7 days". The
+            same trap About.tsx documents for LEGAL_NAME. */}
+        {sport}{" "}&middot;{" "}{bandLabel}{" "}&middot; next 7 days &middot; court-hours free
+      </span>
+      <div className="grid grid-cols-7 gap-[5px]">
+        {data.days.map((d, i) => {
+          const c = cells[i];
+          const pct = c && c.total > 0 ? Math.round((c.free / c.total) * 100) : null;
+          /* Grey at 100%: an empty week should read calm, not alarming. Colour
+             arrives only once something is actually gone. */
+          const fill = pct === null ? "transparent"
+            : pct === 100 ? "rgba(255,255,255,0.14)"
+            : pct >= 60 ? "rgba(66,181,77,0.55)"
+            : "rgba(248,155,114,0.65)";
+          /* Composed, not formatted in one call: toLocaleDateString with
+             {weekday,day} rendered "2 Fri" here, which reads as a quantity.
+             Weekday then number is the order a person scans a week in. */
+          const dt = new Date(`${d}T12:00:00`);
+          const label = `${dt.toLocaleDateString("en-US", { weekday: "short" })} ${dt.getDate()}`;
+          return (
+            <div key={d} className="text-center">
+              <span className="text-mono block text-white/45" style={{ fontSize: RATE_LABEL }}>{label}</span>
+              <div className="relative mt-1 overflow-hidden rounded-[2px] bg-white/[0.06]" style={{ height: "30px" }}>
+                <span className="absolute inset-x-0 bottom-0" style={{ height: `${pct ?? 0}%`, background: fill }} />
+              </div>
+              <span className="block mt-1 text-white/70 tabular-nums" style={{ fontSize: RATE_LABEL }}>
+                {c ? `${c.free}/${c.total}` : "—"}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 const RATE_GRID = "grid gap-x-2 items-center px-4 py-[9px]";
 const RATE_GRID_EASE = "grid-template-columns 480ms cubic-bezier(0.22,1,0.36,1)";
 
@@ -1077,6 +1145,25 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
   /* Which sports are still to come. Evaluated per render like isOpen(), so the
      line retires itself sport by sport across opening week with no deploy. */
   const pendingSports = sportsNotYetOpen(COURT_RATES.map((r) => r.sport));
+
+  /* The week behind the hover panel. Client-side like the rate card's other
+     live figure: it goes stale within the minute, so a server-rendered copy
+     would be wrong for anyone who leaves the page open. Null until it lands,
+     and null on any failure — the panel then shows the standing commitments
+     instead, which is a complete answer rather than a broken one. */
+  const [week, setWeek] = useState<CourtAvailability | null>(null);
+  const [probe, setProbe] = useState<{ sport: string; band: string; label: string } | null>(null);
+  useEffect(() => {
+    let live = true;
+    fetch("/api/court-availability")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: CourtAvailability | null) => { if (live && j?.days?.length) setWeek(j); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, []);
+  /* No hover on a touch screen, and a price that silently does nothing when
+     tapped is worse than a price. The cells stay plain spans when stacked. */
+  const canProbe = !stacked && !!week;
   const [availability, setAvailability] = useState<AvailabilityPayload | null>(null);
 
   // Fetched on the client rather than rendered on the server: the value goes
@@ -1177,19 +1264,42 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
             >
               {r.sport}
             </span>
-            {RATE_BANDS.map((b) => (
-              <span
-                key={b.key}
-                className={`font-medium ${
-                  // Peak is the price most people will actually pay, so it is
-                  // the one that reads at full strength.
-                  b.key === "peak" ? "text-white" : "text-white/[0.72]"
-                }`}
-                style={{ fontSize: RATE_PRICE }}
-              >
-                ${r[b.key]}
-              </span>
-            ))}
+            {RATE_BANDS.map((b) => {
+              // Peak is the price most people will actually pay, so it is the
+              // one that reads at full strength.
+              const tone = b.key === "peak" ? "text-white" : "text-white/[0.72]";
+              if (!canProbe) {
+                return (
+                  <span key={b.key} className={`font-medium ${tone}`} style={{ fontSize: RATE_PRICE }}>
+                    ${r[b.key]}
+                  </span>
+                );
+              }
+              /* A real <button>, not a hover-only div: this is the whole way
+                 to reach the week panel, and a div with onMouseEnter is
+                 invisible to the keyboard. Focus opens it too. */
+              return (
+                <button
+                  key={b.key}
+                  type="button"
+                  className={`font-medium ${tone} text-left -mx-1 px-1 rounded-[3px] border border-transparent hover:border-[var(--color-ember)]/45 hover:bg-[var(--color-ember)]/10 focus-visible:border-[var(--color-ember)] focus-visible:bg-[var(--color-ember)]/10 focus:outline-none transition-colors`}
+                  style={{ fontSize: RATE_PRICE }}
+                  aria-label={`${r.sport} ${b.label} — show the week's availability`}
+                  /* onClick is the one that actually carries the keyboard:
+                     Enter and Space on a focused button both fire it. onFocus
+                     is kept because plain Tab-ing through ought to reveal the
+                     panel too, but it was measured NOT firing on programmatic
+                     focus in this build (2026-10-02), so it is the garnish and
+                     click is the contract. Do not drop onClick on the grounds
+                     that focus "should" be enough. */
+                  onClick={() => setProbe({ sport: r.sport, band: b.key, label: b.label })}
+                  onMouseEnter={() => setProbe({ sport: r.sport, band: b.key, label: b.label })}
+                  onFocus={() => setProbe({ sport: r.sport, band: b.key, label: b.label })}
+                >
+                  ${r[b.key]}
+                </button>
+              );
+            })}
             <span
               className="text-cond tracking-[0.02em] whitespace-nowrap overflow-hidden transition-opacity duration-300"
               style={{
@@ -1339,10 +1449,22 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
           </span>
         </div>
 
-        {/* The holds. A 84px label column on desktop so the three sports line
-            up; stacked on a phone, where that column would squeeze the text
-            to about four words a line. */}
-        <div className="flex flex-col gap-2 pt-0.5">
+        {/* ── The panel ────────────────────────────────────────────────────
+            At rest: who already has the floor — true today, true on Oct 5,
+            true on a dead Tuesday, and free of any platform call.
+            On hover or focus of a price: that sport and band across the week.
+
+            A fixed min-height so the block below does not jump as the two
+            swap; measured against the taller of the two at desktop widths. */}
+        <div
+          className="flex flex-col gap-2 pt-0.5"
+          style={{ minHeight: canProbe ? "118px" : undefined }}
+          onMouseLeave={() => setProbe(null)}
+        >
+          {canProbe && probe && week ? (
+            <WeekStrip sport={probe.sport} bandKey={probe.band} bandLabel={probe.label} data={week} />
+          ) : (
+          <>
           <span className="text-mono text-white/45" style={{ fontSize: RATE_LABEL }}>
             {FLOOR_HEADING}
           </span>
@@ -1366,7 +1488,12 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
           ))}
           <span className="text-white/40" style={{ fontSize: RATE_NOTE }}>
             {FLOOR_FOOTNOTE}
+            {canProbe && (
+              <span className="text-white/30"> Hover a price for the week.</span>
+            )}
           </span>
+          </>
+          )}
         </div>
       </motion.div>
 
