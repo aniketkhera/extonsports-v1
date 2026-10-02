@@ -1587,7 +1587,7 @@ const RECREATION = {
 /* The line the detail column shows before you point at anything. Every claim is
    read off the entries below rather than invented: squash is the only one
    taking players today; cricket and badminton now carry real start dates
-   (Oct 7 and Oct 5), which is why this line says "follow when the doors open"
+   (Oct 12 and Oct 5), which is why this line says "follow when the doors open"
    rather than naming one date for both. */
 const ROSTER_INTRO =
   "Coaching runs through three academies rather than the club itself — squash takes trials now, cricket and badminton follow when the doors open. The studio floor is the club's own: dance and fitness, all levels.";
@@ -1600,15 +1600,15 @@ const ACADEMY_PARTNERS = [
     sport: "Cricket academy",
     /* Was "Starts Sep 28 · 7 days a week" until 2026-09-24, then "Coming soon"
        while the building's own opening moved to Oct 5 and no academy date was
-       settled. Both dates are real as of 2026-10-01 and confirmed by Aniket:
-       cricket Oct 7, badminton Oct 5. Note they are NOT the same date and the
-       later one is cricket — easy to transpose, so check with him before
-       "correcting" either.
+       settled. Both dates are real and confirmed by Aniket: badminton Oct 5,
+       cricket Oct 12 — moved from Oct 7 on 2026-10-02, a week after the doors.
+       They are NOT the same date and the later one is cricket — easy to
+       transpose, so check with him before "correcting" either.
        Still no platform programme for cricket: squad_programs has one active
        row at Exton and it is the dance class. This stays local copy in the
        shape the platform feed produces, so the day cricket IS entered in
        /admin/squads the live data takes over with no markup change. */
-    schedule: { status: "Coming Oct 7th" },
+    schedule: { status: "Coming Oct 12th" },
     /* Near-verbatim from cccricketacademy.com. Deliberately NOT saying more:
        their site gives no founding year, and its published indoor season runs
        Oct-Mar at All-Star Sports Academy in Downingtown with outdoor sessions
