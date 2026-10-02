@@ -18,6 +18,13 @@ export const OPENING_LONG = 'October 5, 2026'
 /** "Oct 5, 2026" — for the nav chip, where horizontal space is tight. */
 export const OPENING_SHORT = 'Oct 5, 2026'
 
+/** "Monday 5 October, 6:00 AM" — the doors moment, for the rate card's
+    pre-opening CTA, where a reader needs the DAY and the HOUR and not the
+    year. A literal rather than a toLocaleDateString() off OPENING_DATE, to
+    match the two constants above and to keep it out of reach of a server and
+    a browser disagreeing about locale mid-hydration. Move it with them. */
+export const OPENING_DOORS = 'Monday 5 October, 6:00 AM'
+
 /** The waitlist eyebrow, already uppercase. */
 export const OPENING_EYEBROW = 'OPENING OCTOBER 5, 2026'
 
