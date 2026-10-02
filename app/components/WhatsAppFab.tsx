@@ -42,7 +42,10 @@ export default function WhatsAppFab() {
      hidden, so there is no hydration flash of the wrong bubble. */
   const opensLabel = bookingOpensLabel();
   const shared = "fixed right-4 md:right-6 z-50 flex items-center justify-center hover:scale-105 transition-[transform,background-color,bottom] duration-200";
-  const box = { bottom, boxShadow: "var(--fab-shadow)" } as const;
+  /* ⚠️ boxShadow is NOT in here for the booking bubble — see .fab-glow in
+     globals.css. An inline box-shadow would beat the class and kill the
+     animation. WhatsApp keeps its flat shadow inline. */
+  const box = { bottom } as const;
 
   return (
     <>
@@ -51,7 +54,7 @@ export default function WhatsAppFab() {
         target="_blank"
         rel="noreferrer"
         aria-label={opensLabel ? `Court booking opens ${opensLabel}` : "Book a court at Exton Sports Center"}
-        className={`${shared} md:hidden rounded-full bg-[var(--color-ember)] hover:bg-[var(--color-ember-hi)] text-black text-mono text-center leading-[1.15] px-1`}
+        className={`${shared} fab-glow md:hidden rounded-full bg-[var(--color-ember)] hover:bg-[var(--color-ember-hi)] text-black text-mono text-center leading-[1.15] px-1`}
         style={{ ...box, width: 68, height: 68, fontSize: "0.5rem" }}
       >
         {opensLabel ? <span>Opens<br />{opensLabel}</span> : <span>Book a<br />court</span>}
@@ -63,7 +66,7 @@ export default function WhatsAppFab() {
         rel="noreferrer"
         aria-label="Follow Exton Sports Center on WhatsApp"
         className={`${shared} hidden md:flex rounded-full bg-[#25D366] hover:bg-[#20BD5C] text-white`}
-        style={{ ...box, width: 56, height: 56 }}
+        style={{ ...box, width: 56, height: 56, boxShadow: "var(--fab-shadow)" }}
       >
         <WhatsAppIcon className="w-7 h-7" />
       </a>
