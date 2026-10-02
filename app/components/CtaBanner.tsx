@@ -134,7 +134,7 @@ export default function CtaBanner() {
             disabled={state === "sending"}
             className="bg-black hover:bg-[#1A1A1A] text-[var(--color-ember)] text-cond text-[0.9rem] px-4 py-2.5 transition whitespace-nowrap disabled:opacity-60 tracking-wide shrink-0"
           >
-            {state === "sending" ? "…" : "Notify Me →"}
+            {state === "sending" ? "…" : "Notify Me"}
           </button>
         </form>
       )}

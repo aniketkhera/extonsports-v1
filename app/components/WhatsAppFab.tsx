@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { WHATSAPP_CHANNEL_URL, WhatsAppIcon } from "./WhatsAppButton";
+import { BOOK_COURTS_URL } from "../../lib/booking";
+import { bookingOpensLabel } from "../../lib/opening";
 
 // Floating WhatsApp bubble, rendered site-wide from the root layout.
 // It parks itself just above the sticky waitlist banner on pages that have
@@ -30,21 +32,41 @@ export default function WhatsAppFab() {
     };
   }, []);
 
+  /* ⚠️ ON A PHONE THIS BUBBLE IS NOW BOOKING, NOT WHATSAPP (2026-10-02).
+     The bubble is the only persistent control a phone has, and booking is the
+     action the club is paid for; the channel is still linked from the contact
+     block in About.tsx, so only the shortcut is lost. Desktop keeps WhatsApp
+     because it gained its own booking CTA in the nav instead.
+
+     Swapped by CSS breakpoint, not a JS media query: both render and one is
+     hidden, so there is no hydration flash of the wrong bubble. */
+  const opensLabel = bookingOpensLabel();
+  const shared = "fixed right-4 md:right-6 z-50 flex items-center justify-center hover:scale-105 transition-[transform,background-color,bottom] duration-200";
+  const box = { bottom, boxShadow: "var(--fab-shadow)" } as const;
+
   return (
-    <a
-      href={WHATSAPP_CHANNEL_URL}
-      target="_blank"
-      rel="noreferrer"
-      aria-label="Follow Exton Sports Center on WhatsApp"
-      className="fixed right-4 md:right-6 z-50 flex items-center justify-center rounded-full bg-[#25D366] hover:bg-[#20BD5C] text-white hover:scale-105 transition-[transform,background-color,bottom] duration-200"
-      style={{
-        bottom,
-        width: 56,
-        height: 56,
-        boxShadow: "var(--fab-shadow)",
-      }}
-    >
-      <WhatsAppIcon className="w-7 h-7" />
-    </a>
+    <>
+      <a
+        href={BOOK_COURTS_URL}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={opensLabel ? `Court booking opens ${opensLabel}` : "Book a court at Exton Sports Center"}
+        className={`${shared} md:hidden rounded-full bg-[var(--color-ember)] hover:bg-[var(--color-ember-hi)] text-black text-mono text-center leading-[1.15] px-1`}
+        style={{ ...box, width: 68, height: 68, fontSize: "0.5rem" }}
+      >
+        {opensLabel ? <span>Opens<br />{opensLabel}</span> : <span>Book a<br />court</span>}
+      </a>
+
+      <a
+        href={WHATSAPP_CHANNEL_URL}
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Follow Exton Sports Center on WhatsApp"
+        className={`${shared} hidden md:flex rounded-full bg-[#25D366] hover:bg-[#20BD5C] text-white`}
+        style={{ ...box, width: 56, height: 56 }}
+      >
+        <WhatsAppIcon className="w-7 h-7" />
+      </a>
+    </>
   );
 }

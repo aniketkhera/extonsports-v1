@@ -35,7 +35,7 @@ export default function LegalPage({
           href="/"
           className="text-mono text-[0.7rem] tracking-widest text-white/45 hover:text-white transition"
         >
-          ← EXTON SPORTS CENTER
+          EXTON SPORTS CENTER
         </Link>
 
         <h1 className="font-[family-name:var(--font-cond)] mt-6 mb-4 leading-[1.05]"
