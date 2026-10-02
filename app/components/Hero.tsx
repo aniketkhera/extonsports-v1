@@ -8,8 +8,8 @@ import type { CourtAvailability } from "../api/court-availability/route";
 import type { SchedulePayload } from "../api/schedule/route";
 import type { ProgramSchedule } from "@/lib/club-schedule";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, CLASS_FEES_NOTE } from "../../lib/rates";
-import { BOLLYWOOD_CLASS_URL, BOOK_COURTS_URL, CLASS_ONLINE_BOOKING_LIVE, bookingTarget } from "../../lib/booking";
-import { SPORT_BOOKING_OPENS_LABEL, sportBookingOpen, sportsNotYetOpen } from "../../lib/opening";
+import { BOLLYWOOD_CLASS_URL, BOOK_COURTS_URL, CLASS_ONLINE_BOOKING_LIVE } from "../../lib/booking";
+import { SPORT_BOOKING_OPENS, SPORT_BOOKING_OPENS_LABEL, sportBookingOpen, sportsNotYetOpen } from "../../lib/opening";
 import { FLOOR_HOLDS, FLOOR_HEADING, FLOOR_FOOTNOTE } from "../../lib/floor";
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_E164, LEGAL_NAME } from "../../lib/legal";
 
@@ -1016,6 +1016,15 @@ function WeekStrip({
   data: CourtAvailability;
 }) {
   const apiBand = API_BAND[bandKey] ?? bandKey;
+  /* ⚠️ A DAY BEFORE THE SPORT OPENS IS NOT AN EMPTY DAY. The endpoint counts
+     occupancy, and nothing is booked before opening, so cricket honestly
+     reported "18 of 18 free" on days you cannot book cricket at all — the
+     courts are not free, they do not exist to the public yet. Those days are
+     marked shut instead. The gate is the per-sport date in lib/opening.ts,
+     because the three sports come online across the first week. */
+  const opensAt = SPORT_BOOKING_OPENS[sport];
+  const closedOn = (d: string) =>
+    !!opensAt && new Date(`${d}T23:59:59-04:00`).getTime() < opensAt.getTime();
   const cells = data.days.map((d) =>
     data.cells.find((c) => c.sport === sport && c.band === apiBand && c.date === d) ?? null);
   /* A day with no cell is not zero — it is a band with no hours left today,
@@ -1026,11 +1035,12 @@ function WeekStrip({
         {/* Explicit {" "} around every expression: JSX drops the literal
             space that follows one, which rendered "Peak· next 7 days". The
             same trap About.tsx documents for LEGAL_NAME. */}
-        {sport}{" "}&middot;{" "}{bandLabel}{" "}&middot; next 7 days &middot; court-hours free
+        {sport}{" "}&middot;{" "}{bandLabel}{" "}&middot; court-hours free each day
       </span>
       <div className="grid grid-cols-7 gap-[5px]">
         {data.days.map((d, i) => {
-          const c = cells[i];
+          const shut = closedOn(d);
+          const c = shut ? null : cells[i];
           const pct = c && c.total > 0 ? Math.round((c.free / c.total) * 100) : null;
           /* Grey at 100%: an empty week should read calm, not alarming. Colour
              arrives only once something is actually gone. */
@@ -1043,16 +1053,42 @@ function WeekStrip({
              Weekday then number is the order a person scans a week in. */
           const dt = new Date(`${d}T12:00:00`);
           const label = `${dt.toLocaleDateString("en-US", { weekday: "short" })} ${dt.getDate()}`;
+          /* Each day is a booking link as well, so the panel is not a
+             dead-end read: you see Wednesday is nearly gone and the next
+             click is the booking page. */
           return (
-            <div key={d} className="text-center">
+            <a
+              key={d}
+              href={BOOK_COURTS_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="text-center no-underline rounded-[3px] px-[2px] py-[1px] hover:bg-[var(--color-ember)]/10 focus-visible:bg-[var(--color-ember)]/10 focus:outline-none transition-colors"
+              aria-label={
+                shut
+                  ? `${sport} is not bookable on ${label} — opens ${SPORT_BOOKING_OPENS_LABEL[sport] ?? "soon"}`
+                  : `Book ${sport} on ${label} — ${c ? `${c.free} of ${c.total} court-hours free` : "no hours in this band"}`
+              }
+            >
               <span className="text-mono block text-white/45" style={{ fontSize: RATE_LABEL }}>{label}</span>
-              <div className="relative mt-1 overflow-hidden rounded-[2px] bg-white/[0.06]" style={{ height: "30px" }}>
-                <span className="absolute inset-x-0 bottom-0" style={{ height: `${pct ?? 0}%`, background: fill }} />
+              {/* Dashed and empty, not a zero bar: shut and fully booked must
+                  not look alike. */}
+              <div
+                className={`relative mt-1 overflow-hidden rounded-[2px] ${
+                  shut ? "border border-dashed border-white/20" : "bg-white/[0.06]"
+                }`}
+                style={{ height: "30px" }}
+              >
+                {!shut && (
+                  <span className="absolute inset-x-0 bottom-0" style={{ height: `${pct ?? 0}%`, background: fill }} />
+                )}
               </div>
-              <span className="block mt-1 text-white/70 tabular-nums" style={{ fontSize: RATE_LABEL }}>
-                {c ? `${c.free}/${c.total}` : "—"}
+              <span
+                className={`block mt-1 tabular-nums ${shut ? "text-white/35" : "text-white/70"}`}
+                style={{ fontSize: RATE_LABEL }}
+              >
+                {shut ? "shut" : c ? `${c.free}/${c.total} free` : "—"}
               </span>
-            </div>
+            </a>
           );
         })}
       </div>
@@ -1139,9 +1175,6 @@ function FirstSlotRow({
 }
 
 function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
-  /* Flips itself at 06:00 on OPENING_DATE — isOpen() is evaluated per render,
-     so opening morning needs no deploy and nobody has to be awake for it. */
-  const book = bookingTarget(BOOK_COURTS_URL);
   /* Which sports are still to come. Evaluated per render like isOpen(), so the
      line retires itself sport by sport across opening week with no deploy. */
   const pendingSports = sportsNotYetOpen(COURT_RATES.map((r) => r.sport));
@@ -1216,8 +1249,11 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
           style={{ gridTemplateColumns: rateGrid(open), transition: RATE_GRID_EASE }}
         >
           <span className="text-mono text-white/45" style={{ fontSize: RATE_LABEL }}>Per hour</span>
+          {/* Centred over their tracks, with the sport column left: the price
+              columns are much wider than "$45", so left-aligned numbers sat
+              hard against the sport name and left a gutter of dead space. */}
           {RATE_BANDS.map((b) => (
-            <span key={b.key} className="text-mono text-white/45" style={{ fontSize: RATE_LABEL }}>
+            <span key={b.key} className="text-mono text-white/45 text-center" style={{ fontSize: RATE_LABEL }}>
               {b.label}
             </span>
           ))}
@@ -1268,36 +1304,27 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
               // Peak is the price most people will actually pay, so it is the
               // one that reads at full strength.
               const tone = b.key === "peak" ? "text-white" : "text-white/[0.72]";
-              if (!canProbe) {
-                return (
-                  <span key={b.key} className={`font-medium ${tone}`} style={{ fontSize: RATE_PRICE }}>
-                    ${r[b.key]}
-                  </span>
-                );
-              }
-              /* A real <button>, not a hover-only div: this is the whole way
-                 to reach the week panel, and a div with onMouseEnter is
-                 invisible to the keyboard. Focus opens it too. */
+              /* EVERY PRICE IS A BOOKING LINK, at Aniket's instruction
+                 2026-10-02. Hover still reveals that cell's week in the panel
+                 below; the click goes to the platform. Note this deliberately
+                 bypasses bookingTarget(), which before opening sends people to
+                 the mailing list rather than "a login screen for a club with
+                 no slots" — that trade was overruled: the prices should lead
+                 to the booking page whether or not the doors are open yet. */
               return (
-                <button
+                <a
                   key={b.key}
-                  type="button"
-                  className={`font-medium ${tone} text-left -mx-1 px-1 rounded-[3px] border border-transparent hover:border-[var(--color-ember)]/45 hover:bg-[var(--color-ember)]/10 focus-visible:border-[var(--color-ember)] focus-visible:bg-[var(--color-ember)]/10 focus:outline-none transition-colors`}
+                  href={BOOK_COURTS_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`font-medium ${tone} block text-center -mx-1 px-1 py-[2px] rounded-[3px] border border-transparent no-underline hover:border-[var(--color-ember)]/45 hover:bg-[var(--color-ember)]/10 focus-visible:border-[var(--color-ember)] focus-visible:bg-[var(--color-ember)]/10 focus:outline-none transition-colors`}
                   style={{ fontSize: RATE_PRICE }}
-                  aria-label={`${r.sport} ${b.label} — show the week's availability`}
-                  /* onClick is the one that actually carries the keyboard:
-                     Enter and Space on a focused button both fire it. onFocus
-                     is kept because plain Tab-ing through ought to reveal the
-                     panel too, but it was measured NOT firing on programmatic
-                     focus in this build (2026-10-02), so it is the garnish and
-                     click is the contract. Do not drop onClick on the grounds
-                     that focus "should" be enough. */
-                  onClick={() => setProbe({ sport: r.sport, band: b.key, label: b.label })}
-                  onMouseEnter={() => setProbe({ sport: r.sport, band: b.key, label: b.label })}
-                  onFocus={() => setProbe({ sport: r.sport, band: b.key, label: b.label })}
+                  aria-label={`Book a ${r.sport} court — ${b.label}, $${r[b.key]} an hour`}
+                  onMouseEnter={() => canProbe && setProbe({ sport: r.sport, band: b.key, label: b.label })}
+                  onFocus={() => canProbe && setProbe({ sport: r.sport, band: b.key, label: b.label })}
                 >
                   ${r[b.key]}
-                </button>
+                </a>
               );
             })}
             <span
@@ -1379,33 +1406,24 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
             it; side by side they would each get about 150px and the status
             would wrap to three lines. */}
         <div className={stacked ? "flex flex-col gap-2.5" : "flex flex-wrap items-center gap-x-4 gap-y-2.5"}>
-          {book.external ? (
-            <a
-              href={book.href}
-              target="_blank"
-              rel="noreferrer"
-              className={`text-mono bg-[var(--color-ember)] text-black border border-[var(--color-ember)] hover:bg-[var(--color-ember-hi)] hover:border-[var(--color-ember-hi)] transition-colors ${
-                stacked ? "block text-center py-[13px] px-5" : "inline-block py-[11px] px-[22px]"
-              }`}
-              style={{ fontSize: RATE_LABEL }}
-            >
-              Book a court &rarr;
-            </a>
-          ) : (
-            /* Before the doors open there is nothing to book, so the CTA is
-               the mailing list rather than a dead button or a login screen
-               for a club with no slots. bookingTarget() returns the
-               '#waitlist' anchor, which CtaBanner carries. */
-            <a
-              href={book.href}
-              className={`text-mono text-[var(--color-ember)] border border-[var(--color-ember)]/50 hover:border-[var(--color-ember)] hover:bg-[var(--color-ember)]/10 transition-colors ${
-                stacked ? "block text-center py-[13px] px-5" : "inline-block py-[11px] px-[22px]"
-              }`}
-              style={{ fontSize: RATE_LABEL }}
-            >
-              Join our mailing list
-            </a>
-          )}
+          {/* ONE CTA, ALWAYS THE BOOKING PAGE. The pre-opening branch used to
+              offer the mailing list instead, on the reasoning that there is
+              nothing to book yet and a login screen for a club with no slots
+              is a dead end. Removed 2026-10-02 at Aniket's instruction: every
+              price in the table above is now a booking link too, so a CTA
+              pointing somewhere else was the odd one out. bookingTarget() is
+              consequently no longer consulted here. */}
+          <a
+            href={BOOK_COURTS_URL}
+            target="_blank"
+            rel="noreferrer"
+            className={`text-mono bg-[var(--color-ember)] text-black border border-[var(--color-ember)] hover:bg-[var(--color-ember-hi)] hover:border-[var(--color-ember-hi)] transition-colors ${
+              stacked ? "block text-center py-[13px] px-5" : "inline-block py-[11px] px-[22px]"
+            }`}
+            style={{ fontSize: RATE_LABEL }}
+          >
+            Book a court &rarr;
+          </a>
 
           {/* ⚠️ THE THREE SPORTS DO NOT OPEN TOGETHER, so this cannot be one
               date. The doors are Mon 5 Oct but the courts come online across
