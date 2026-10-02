@@ -1364,10 +1364,15 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
      price then another, and snapping back to week one each time would make
      that impossible. It resets when the panel closes. */
   const [weekOffset, setWeekOffset] = useState(0);
-  /* Which sport's heatmap is open on a phone. ONE AT A TIME: the card is
-     already long on a 375px screen and three open grids would push the bulk
-     bookings line off the bottom. */
-  const [openSport, setOpenSport] = useState<string | null>(null);
+  /* Which sport's heatmap is open on a phone.
+     OPEN ON ARRIVAL, not on tap. It shipped closed behind a chevron and the
+     reply was "somehow don't see it on my phone" — a thing nobody opens is a
+     thing nobody has. The first row starts expanded so the feature is simply
+     present, and the chevron then does the job it is good at: collapsing it,
+     or moving to another sport.
+     STILL ONE AT A TIME: the card is already long on a 375px screen and three
+     open grids would push the bulk-bookings line off the bottom. */
+  const [openSport, setOpenSport] = useState<string | null>(COURT_RATES[0]?.sport ?? null);
   useEffect(() => {
     let live = true;
     fetch("/api/court-availability")
@@ -1775,7 +1780,7 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
                 was undiscoverable: no pointer to reveal it and a mark too
                 faint to read as a control. */}
             {stacked && week && (
-              <span className="text-white/30"> Tap a sport for its week.</span>
+              <span className="text-white/30"> Tap a sport to switch weeks or collapse.</span>
             )}
           </span>
           </>

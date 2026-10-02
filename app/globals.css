@@ -201,6 +201,34 @@ html { scroll-behavior: smooth; }
   }
 }
 
+/* The phone's booking bubble.
+   A SOLID ember disc cannot glow from its border the way the nav chip does —
+   .opening-glow breathes border-color, and this element has no border — so
+   this is an outer halo plus an expanding ring instead. The ring is what the
+   eye catches; the halo is what makes it look lit rather than outlined.
+
+   ⚠️ The element must NOT also set box-shadow inline: inline beats a class,
+   and the animation would be silently overridden. The resting shadow is
+   folded into the keyframes here for that reason. */
+.fab-glow {
+  animation: fab-breathe 2.8s ease-in-out infinite;
+}
+@keyframes fab-breathe {
+  0%, 100% {
+    box-shadow: var(--fab-shadow), 0 0 0 0 rgba(248, 155, 114, 0.50), 0 0 16px rgba(248, 155, 114, 0.35);
+  }
+  50% {
+    box-shadow: var(--fab-shadow), 0 0 0 11px rgba(248, 155, 114, 0), 0 0 30px rgba(248, 155, 114, 0.60);
+  }
+}
+/* Same courtesy as .opening-glow: keep the glow, drop the pulse. */
+@media (prefers-reduced-motion: reduce) {
+  .fab-glow {
+    animation: none;
+    box-shadow: var(--fab-shadow), 0 0 22px rgba(248, 155, 114, 0.50);
+  }
+}
+
 /* ── Shared chrome utilities ───────────────────────────────────── */
 .label-chip {
   display: inline-flex;
