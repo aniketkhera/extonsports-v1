@@ -7,7 +7,9 @@ import type { AvailabilityPayload } from "../api/availability/route";
 import type { SchedulePayload } from "../api/schedule/route";
 import type { ProgramSchedule } from "@/lib/club-schedule";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, CLASS_FEES_NOTE } from "../../lib/rates";
-import { BOLLYWOOD_CLASS_URL, CLASS_ONLINE_BOOKING_LIVE } from "../../lib/booking";
+import { BOLLYWOOD_CLASS_URL, BOOK_COURTS_URL, CLASS_ONLINE_BOOKING_LIVE, bookingTarget } from "../../lib/booking";
+import { OPENING_DOORS } from "../../lib/opening";
+import { FLOOR_HOLDS, FLOOR_HEADING, FLOOR_FOOTNOTE } from "../../lib/floor";
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_E164, LEGAL_NAME } from "../../lib/legal";
 
 type PanelKey = "academies" | "recreation";
@@ -1069,6 +1071,9 @@ function FirstSlotRow({
 }
 
 function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
+  /* Flips itself at 06:00 on OPENING_DATE — isOpen() is evaluated per render,
+     so opening morning needs no deploy and nobody has to be awake for it. */
+  const book = bookingTarget(BOOK_COURTS_URL);
   const [availability, setAvailability] = useState<AvailabilityPayload | null>(null);
 
   // Fetched on the client rather than rendered on the server: the value goes
@@ -1235,6 +1240,114 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
             such clause: the rate card IS the price. See lib/rates.ts, where
             the constant used to live, before adding a fee line back here. */}
       </motion.p>
+
+      {/* ── Book, and who already has the floor ─────────────────────────
+          Restored 2026-10-02. A "Join the waitlist" / "See the courts" pair
+          used to live in the hero copy column and was removed on 2026-10-01 —
+          which quietly took the LAST booking CTA off the homepage, four days
+          before the doors open. It comes back here instead of there on
+          purpose: this is the block a reader is in when they have just read
+          "$45", so it is the shortest distance between the price and the act.
+
+          Underneath it, the commitment timetable rather than an availability
+          feed. See lib/floor.ts for why that choice was made against real
+          data: with ten courts and an empty calendar, every honest
+          availability figure in opening week reads "everything is free",
+          which lands as "nobody goes here". This says something true that is
+          still worth reading on a quiet Tuesday, and costs no platform call. */}
+      <motion.div
+        className="w-full border-t border-white/10 pt-4 flex flex-col gap-3.5"
+        variants={{
+          hidden: { opacity: 0, y: 12 },
+          visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
+        }}
+      >
+        {/* On a phone the button goes full width and the status drops under
+            it; side by side they would each get about 150px and the status
+            would wrap to three lines. */}
+        <div className={stacked ? "flex flex-col gap-2.5" : "flex flex-wrap items-center gap-x-4 gap-y-2.5"}>
+          {book.external ? (
+            <a
+              href={book.href}
+              target="_blank"
+              rel="noreferrer"
+              className={`text-mono bg-[var(--color-ember)] text-black border border-[var(--color-ember)] hover:bg-[var(--color-ember-hi)] hover:border-[var(--color-ember-hi)] transition-colors ${
+                stacked ? "block text-center py-[13px] px-5" : "inline-block py-[11px] px-[22px]"
+              }`}
+              style={{ fontSize: RATE_LABEL }}
+            >
+              Book a court &rarr;
+            </a>
+          ) : (
+            /* Before the doors open there is nothing to book, so the CTA is
+               the mailing list rather than a dead button or a login screen
+               for a club with no slots. bookingTarget() returns the
+               '#waitlist' anchor, which CtaBanner carries. */
+            <a
+              href={book.href}
+              className={`text-mono text-[var(--color-ember)] border border-[var(--color-ember)]/50 hover:border-[var(--color-ember)] hover:bg-[var(--color-ember)]/10 transition-colors ${
+                stacked ? "block text-center py-[13px] px-5" : "inline-block py-[11px] px-[22px]"
+              }`}
+              style={{ fontSize: RATE_LABEL }}
+            >
+              Join our mailing list
+            </a>
+          )}
+
+          <span className="flex items-center gap-2 text-white/70" style={{ fontSize: RATE_NOTE }}>
+            <span
+              className="inline-block rounded-full shrink-0"
+              style={{
+                width: "7px",
+                height: "7px",
+                background: book.external ? "var(--color-green)" : "var(--color-ember)",
+              }}
+            />
+            {book.external ? (
+              <span>
+                {/* The {" "} is load-bearing: JSX drops the literal space that
+                    follows an expression container, which rendered "Open now·
+                    any hour". Same trap About.tsx documents for LEGAL_NAME. */}
+                <span className="text-white">Open now</span>{" "}&middot; any hour, day or night
+              </span>
+            ) : (
+              <span>
+                Booking opens <span className="text-white">{OPENING_DOORS}</span>
+              </span>
+            )}
+          </span>
+        </div>
+
+        {/* The holds. A 84px label column on desktop so the three sports line
+            up; stacked on a phone, where that column would squeeze the text
+            to about four words a line. */}
+        <div className="flex flex-col gap-2 pt-0.5">
+          <span className="text-mono text-white/45" style={{ fontSize: RATE_LABEL }}>
+            {FLOOR_HEADING}
+          </span>
+          {FLOOR_HOLDS.map((h) => (
+            <div
+              key={h.sport}
+              className={
+                stacked
+                  ? "flex flex-col gap-[2px]"
+                  : "grid grid-cols-[84px_1fr] gap-x-3 items-baseline"
+              }
+            >
+              <span className="text-mono text-[var(--color-ember)]" style={{ fontSize: RATE_LABEL }}>
+                {h.sport}
+              </span>
+              <span className="text-white/55" style={{ fontSize: RATE_NOTE }}>
+                {h.claim} &middot; {h.when}.
+                {h.stillOpen && <span className="text-white/75"> {h.stillOpen}</span>}
+              </span>
+            </div>
+          ))}
+          <span className="text-white/40" style={{ fontSize: RATE_NOTE }}>
+            {FLOOR_FOOTNOTE}
+          </span>
+        </div>
+      </motion.div>
 
       {/* Bulk bookings — leagues and corporate hire are a phone call, not a
           checkout, so they get a line of their own rather than a fourth CTA. */}
