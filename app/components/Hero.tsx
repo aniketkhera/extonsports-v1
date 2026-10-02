@@ -1491,11 +1491,20 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
                 onClick={() => setOpenSport(openSport === r.sport ? null : r.sport)}
               >
                 {r.sport}
+                {/* ⚠️ THIS WAS 8px AT 0.55 OPACITY AND NOBODY FOUND IT.
+                    Reported 2026-10-02: "somehow don't see it on my phone" —
+                    the heatmap worked, the control announcing it did not. It
+                    is now full-strength ember in a bordered box, because on a
+                    phone the ONLY thing saying this row does something is
+                    this mark; there is no hover to discover it with. */}
                 <span
-                  className="inline-block transition-transform duration-200"
+                  className="inline-flex items-center justify-center rounded-[2px] transition-transform duration-200"
                   style={{
-                    fontSize: "0.55em",
-                    opacity: 0.55,
+                    width: "1.05em",
+                    height: "1.05em",
+                    fontSize: "0.62em",
+                    color: "var(--color-ember)",
+                    border: "1px solid color-mix(in srgb, var(--color-ember) 45%, transparent)",
                     transform: openSport === r.sport ? "rotate(90deg)" : "none",
                   }}
                 >
@@ -1761,6 +1770,12 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
             {FLOOR_FOOTNOTE}
             {canProbe && (
               <span className="text-white/30"> Hover a price for the week.</span>
+            )}
+            {/* The phone had NO equivalent of the hover hint, so the accordion
+                was undiscoverable: no pointer to reveal it and a mark too
+                faint to read as a control. */}
+            {stacked && week && (
+              <span className="text-white/30"> Tap a sport for its week.</span>
             )}
           </span>
           </>
