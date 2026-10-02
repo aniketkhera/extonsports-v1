@@ -1092,6 +1092,26 @@ function WeekStrip({
           );
         })}
       </div>
+      {/* Asked twice what the numbers were, which is twice more than a term
+          should need. "Court-hours" is courts x hours and nobody is obliged
+          to infer that, so the panel says it, with this band's own numbers.
+          Derived from the commonest day rather than hardcoded: the bands have
+          different widths on weekends, and squash has four courts where the
+          others have three. */}
+      {(() => {
+        const totals = cells.filter(Boolean).map((c) => c!.total);
+        if (!totals.length) return null;
+        const modal = totals.sort((a, b) =>
+          totals.filter((t) => t === b).length - totals.filter((t) => t === a).length)[0];
+        const courts = data.courtsBySport[sport];
+        if (!courts || !modal || modal % courts !== 0) return null;
+        return (
+          <span className="text-white/40" style={{ fontSize: RATE_LABEL }}>
+            {courts} {sport.toLowerCase()} {courts === 1 ? "court" : "courts"} &times;{" "}
+            {modal / courts} {bandLabel.toLowerCase()} hours = {modal} court-hours on a typical day.
+          </span>
+        );
+      })()}
     </div>
   );
 }
@@ -1304,6 +1324,9 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
               // Peak is the price most people will actually pay, so it is the
               // one that reads at full strength.
               const tone = b.key === "peak" ? "text-white" : "text-white/[0.72]";
+              /* Marked from state so the cell keeps saying which week is on
+                 screen once the pointer has travelled down to the panel. */
+              const active = probe?.sport === r.sport && probe?.band === b.key;
               /* EVERY PRICE IS A BOOKING LINK, at Aniket's instruction
                  2026-10-02. Hover still reveals that cell's week in the panel
                  below; the click goes to the platform. Note this deliberately
@@ -1317,8 +1340,32 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
                   href={BOOK_COURTS_URL}
                   target="_blank"
                   rel="noreferrer"
-                  className={`font-medium ${tone} block text-center -mx-1 px-1 py-[2px] rounded-[3px] border border-transparent no-underline hover:border-[var(--color-ember)]/45 hover:bg-[var(--color-ember)]/10 focus-visible:border-[var(--color-ember)] focus-visible:bg-[var(--color-ember)]/10 focus:outline-none transition-colors`}
-                  style={{ fontSize: RATE_PRICE }}
+                  /* ⚠️ THE ACTIVE CELL IS MARKED FROM STATE, NOT :hover. The
+                     highlight used to be CSS-only, so the moment the pointer
+                     travelled down to the panel the cell it came from went
+                     plain and you could no longer tell which of nine prices
+                     the week belonged to. The panel keeps showing it, so the
+                     cell must keep saying so. */
+                  className={`font-medium ${tone} block text-center -mx-1 px-1 py-[2px] rounded-[3px] border no-underline focus:outline-none transition-colors ${
+                    active
+                      ? ""
+                      : "border-transparent hover:border-[var(--color-ember)]/45 hover:bg-[var(--color-ember)]/10 focus-visible:border-[var(--color-ember)] focus-visible:bg-[var(--color-ember)]/10"
+                  }`}
+                  /* Inline, not a Tailwind class. `bg-[var(--color-ember)]/15`
+                     and `border-[var(--color-ember)]` were emitted into the
+                     markup but computed to transparent — an opacity modifier
+                     on a bare var() colour does not survive the JIT here.
+                     Measured 2026-10-02; the class was present and the paint
+                     was not. Inline cannot fail that way. */
+                  style={
+                    active
+                      ? {
+                          fontSize: RATE_PRICE,
+                          borderColor: "var(--color-ember)",
+                          background: "color-mix(in srgb, var(--color-ember) 16%, transparent)",
+                        }
+                      : { fontSize: RATE_PRICE }
+                  }
                   aria-label={`Book a ${r.sport} court — ${b.label}, $${r[b.key]} an hour`}
                   onMouseEnter={() => canProbe && setProbe({ sport: r.sport, band: b.key, label: b.label })}
                   onFocus={() => canProbe && setProbe({ sport: r.sport, band: b.key, label: b.label })}
