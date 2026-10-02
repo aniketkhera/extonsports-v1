@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { OPENING_LONG } from "../../lib/opening";
 
 function useScrollDirection() {
   const [dir, setDir] = useState<"up" | "down">("down");
@@ -92,9 +91,12 @@ export default function CtaBanner() {
         >
           Join our Mailing List
         </p>
-        <p className="text-black/65 text-[0.8rem] sm:text-[0.88rem] mt-1 font-semibold tracking-wide">
-          Badminton, Cricket &amp; Turf <span className="text-black font-bold">opening {OPENING_LONG}</span>. Pay by the hour — no membership needed.
-        </p>
+        {/* The subline named a single opening date ("Badminton, Cricket & Turf
+            opening October 5, 2026") and went 2026-10-02. Two reasons: the
+            three sports no longer share one date — courts come online across
+            that week and the rate card now says so per sport — and the banner
+            had stopped being an opening announcement. It is a mailing-list
+            sign-up, so it says that and nothing it would have to keep true. */}
       </div>
 
       {/* Form — always visible */}
