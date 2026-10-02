@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server'
 
 // GET /api/court-availability
+//
+// Fourteen days, shown as two pages of seven. The upstream clamps at 14 and
+// the cost is the same order either way (one hour-grid pass), so the pager is
+// free: both weeks arrive in the first response and turning the page is state,
+// not a round trip.
 // ---------------------------------------------------------------------------
 // Court-hours free per sport, per rate band, per day for the week ahead —
 // the numbers behind the rate card's hover panel.
@@ -66,7 +71,7 @@ export async function GET() {
 
   try {
     const res = await fetch(
-      `${API_BASE}/api/public/court-availability?club=${encodeURIComponent(CLUB_ID)}&days=7`,
+      `${API_BASE}/api/public/court-availability?club=${encodeURIComponent(CLUB_ID)}&days=14`,
       { next: { revalidate: 60 }, signal: AbortSignal.timeout(4000) },
     )
     if (!res.ok) return NextResponse.json(EMPTY)

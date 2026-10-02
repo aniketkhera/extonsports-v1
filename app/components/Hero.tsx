@@ -1008,12 +1008,16 @@ const API_BAND: Record<string, string> = {
    Chester County Cricket holds two of the three lanes, because lane 3 is never
    taken; court-hours says 12 of 18, which is the fact a cricketer needs. */
 function WeekStrip({
-  sport, bandKey, bandLabel, data,
+  sport, bandKey, bandLabel, data, offset, onOffset,
 }: {
   sport: string;
   bandKey: string;
   bandLabel: string;
   data: CourtAvailability;
+  /** 0 = this week, 1 = next. Two pages only; the platform's booking window
+      is 30 days but a marketing panel showing a month of bars is a wall. */
+  offset: number;
+  onOffset: (n: number) => void;
 }) {
   const apiBand = API_BAND[bandKey] ?? bandKey;
   /* ⚠️ A DAY BEFORE THE SPORT OPENS IS NOT AN EMPTY DAY. The endpoint counts
@@ -1025,20 +1029,41 @@ function WeekStrip({
   const opensAt = SPORT_BOOKING_OPENS[sport];
   const closedOn = (d: string) =>
     !!opensAt && new Date(`${d}T23:59:59-04:00`).getTime() < opensAt.getTime();
-  const cells = data.days.map((d) =>
+  /* Both weeks arrive in one payload, so paging is a slice, not a fetch. */
+  const page = data.days.slice(offset * 7, offset * 7 + 7);
+  const hasNext = data.days.length > 7;
+  const cells = page.map((d) =>
     data.cells.find((c) => c.sport === sport && c.band === apiBand && c.date === d) ?? null);
   /* A day with no cell is not zero — it is a band with no hours left today,
      which is why today's late night vanishes after 6am. Rendered as a gap. */
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-mono text-[var(--color-ember)]" style={{ fontSize: RATE_LABEL }}>
-        {/* Explicit {" "} around every expression: JSX drops the literal
-            space that follows one, which rendered "Peak· next 7 days". The
-            same trap About.tsx documents for LEGAL_NAME. */}
-        {sport}{" "}&middot;{" "}{bandLabel}{" "}&middot; court-hours free each day
+      <span className="flex items-center gap-2">
+        <span className="text-mono text-[var(--color-ember)]" style={{ fontSize: RATE_LABEL }}>
+          {/* Explicit {" "} around every expression: JSX drops the literal
+              space that follows one, which rendered "Peak· next 7 days". The
+              same trap About.tsx documents for LEGAL_NAME. */}
+          {sport}{" "}&middot;{" "}{bandLabel}{" "}&middot;{" "}
+          {offset === 0 ? "this week" : "next week"}
+        </span>
+        {hasNext && (
+          /* One button, two jobs: forward to next week, then back again.
+             A chevron here is navigation, not the decorative trailing arrow
+             that came off every CTA on 2026-10-02 — it IS the control, and
+             without it the button is an unlabelled box. */
+          <button
+            type="button"
+            className="text-mono text-white/45 hover:text-[var(--color-ember)] focus-visible:text-[var(--color-ember)] focus:outline-none transition-colors px-1"
+            style={{ fontSize: RATE_LABEL }}
+            aria-label={offset === 0 ? "Show next week" : "Back to this week"}
+            onClick={() => onOffset(offset === 0 ? 1 : 0)}
+          >
+            {offset === 0 ? "next ›" : "‹ back"}
+          </button>
+        )}
       </span>
       <div className="grid grid-cols-7 gap-[5px]">
-        {data.days.map((d, i) => {
+        {page.map((d, i) => {
           const shut = closedOn(d);
           const c = shut ? null : cells[i];
           const pct = c && c.total > 0 ? Math.round((c.free / c.total) * 100) : null;
@@ -1206,6 +1231,11 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
      instead, which is a complete answer rather than a broken one. */
   const [week, setWeek] = useState<CourtAvailability | null>(null);
   const [probe, setProbe] = useState<{ sport: string; band: string; label: string } | null>(null);
+  /* Which of the two weeks the panel is showing. Deliberately NOT reset when
+     the probe moves: comparing Wednesday across two sports means hovering one
+     price then another, and snapping back to week one each time would make
+     that impossible. It resets when the panel closes. */
+  const [weekOffset, setWeekOffset] = useState(0);
   useEffect(() => {
     let live = true;
     fetch("/api/court-availability")
@@ -1524,10 +1554,17 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
         <div
           className="flex flex-col gap-2 pt-0.5"
           style={{ minHeight: canProbe ? "118px" : undefined }}
-          onMouseLeave={() => setProbe(null)}
+          onMouseLeave={() => { setProbe(null); setWeekOffset(0); }}
         >
           {canProbe && probe && week ? (
-            <WeekStrip sport={probe.sport} bandKey={probe.band} bandLabel={probe.label} data={week} />
+            <WeekStrip
+              sport={probe.sport}
+              bandKey={probe.band}
+              bandLabel={probe.label}
+              data={week}
+              offset={weekOffset}
+              onOffset={setWeekOffset}
+            />
           ) : (
           <>
           <span className="text-mono text-white/45" style={{ fontSize: RATE_LABEL }}>
