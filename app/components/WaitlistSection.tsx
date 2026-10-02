@@ -110,7 +110,7 @@ export default function WaitlistSection() {
               disabled={state === "sending"}
               className="bg-[var(--color-ember)] text-black font-bold px-3 py-2 text-[0.75rem] whitespace-nowrap shrink-0 transition disabled:opacity-55"
             >
-              {state === "sending" ? "…" : "Notify Me →"}
+              {state === "sending" ? "…" : "Notify Me"}
             </button>
           </form>
         </div>
@@ -158,7 +158,7 @@ export default function WaitlistSection() {
                   disabled={state === "sending"}
                   className="bg-[var(--color-ember)] hover:bg-[var(--color-ember-hi)] text-black font-bold px-7 py-3 text-cond-md text-[0.92rem] transition disabled:opacity-55 whitespace-nowrap w-full sm:w-auto"
                 >
-                  {state === "sending" ? "Sending…" : "Notify Me →"}
+                  {state === "sending" ? "Sending…" : "Notify Me"}
                 </button>
               </form>
             ) : (

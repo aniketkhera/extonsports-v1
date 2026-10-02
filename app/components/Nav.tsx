@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { OPENING_SHORT } from "../../lib/opening";
+import { OPENING_SHORT, bookingOpensLabel } from "../../lib/opening";
+import { BOOK_COURTS_URL } from "../../lib/booking";
 import ThemeToggle from "./ThemeToggle";
 
 const navLinks = [
@@ -11,6 +12,7 @@ const navLinks = [
 ];
 
 export default function Nav() {
+  const opensLabel = bookingOpensLabel();
   return (
     <header
       className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between border-b border-[var(--color-line)]"
@@ -70,6 +72,28 @@ export default function Nav() {
             </li>
           ))}
         </ul>
+
+        {/* THE DESKTOP BOOKING CTA, added 2026-10-02. Desktop had no
+            persistent way to book — the only one lived in the rate card, so
+            it was gone the moment you scrolled past it. The phone solves this
+            with a floating bubble (see WhatsAppFab); on a wide screen a
+            floating pill reads as an advert, and the nav is where people
+            already look. md: only — below that the bubble carries it, and two
+            booking CTAs on a 375px screen is one too many.
+
+            The "Opening Oct 5" chip beside the wordmark is LEFT ALONE: it is
+            a date, this is an action, and they do not compete for the same
+            spot. Revisit once the doors open and the chip reads as stale. */}
+        <a
+          href={BOOK_COURTS_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="hidden md:inline-flex items-center ml-4 px-4 py-2 bg-[var(--color-ember)] text-black text-mono text-[0.66rem] hover:bg-[var(--color-ember-hi)] transition-colors whitespace-nowrap"
+        >
+          {/* Carries the date until booking actually works, so the button is
+              never an invitation to a page that cannot sell you anything. */}
+          {opensLabel ? `Booking opens ${opensLabel}` : "Book a court"}
+        </a>
 
         {/* Theme switch sits outside the link list so it survives the md:
             breakpoint — the links collapse on mobile, the switch does not. */}

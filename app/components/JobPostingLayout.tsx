@@ -48,7 +48,7 @@ export default function JobPostingLayout({ data }: { data: JobPostingData }) {
               href="/"
               className="hover:text-[var(--color-ember)] transition-colors"
             >
-              ← Exton Sports Center
+              Exton Sports Center
             </Link>
           </div>
 

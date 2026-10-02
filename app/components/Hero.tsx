@@ -863,7 +863,7 @@ function DetailAction({
           rel="noreferrer"
           className="inline-block bg-[var(--color-ember)] text-black hover:bg-[var(--color-ember-hi)] text-mono text-[0.7rem] transition-colors"
         >
-          <span className="inline-block px-5 py-2.5">{book.label} &rarr;</span>
+          <span className="inline-block px-5 py-2.5">{book.label}</span>
         </a>
       )}
       {action && (
@@ -873,7 +873,7 @@ function DetailAction({
           rel={external ? "noreferrer" : undefined}
           className="inline-block text-[var(--color-ember)] hover:text-white text-mono text-[0.7rem] transition-colors"
         >
-          <span className="inline-block border border-[var(--color-ember)]/50 px-5 py-2.5">{action.label} &rarr;</span>
+          <span className="inline-block border border-[var(--color-ember)]/50 px-5 py-2.5">{action.label}</span>
         </a>
       )}
     </div>
@@ -1422,7 +1422,7 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
             }`}
             style={{ fontSize: RATE_LABEL }}
           >
-            Book a court &rarr;
+            Book a court
           </a>
 
           {/* ⚠️ THE THREE SPORTS DO NOT OPEN TOGETHER, so this cannot be one

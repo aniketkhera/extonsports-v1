@@ -74,6 +74,24 @@ export function sportsNotYetOpen(sports: string[], now: Date = new Date()): stri
   return sports.filter((s) => !sportBookingOpen(s, now))
 }
 
+/**
+ * The date to put ON a booking button while booking is not yet possible.
+ *
+ * Returns null the moment ANY sport is bookable — from then on the button
+ * should just say "Book a court", because booking genuinely works even if
+ * cricket is still a few days out. Before that it returns the SOONEST of the
+ * three, which is the only date a single button can honestly carry.
+ *
+ * The rate card does not use this: it sits beside the full per-sport line, so
+ * a date on its button would repeat what is already next to it.
+ */
+export function bookingOpensLabel(now: Date = new Date()): string | null {
+  const entries = Object.entries(SPORT_BOOKING_OPENS)
+  if (entries.some(([s]) => sportBookingOpen(s, now))) return null
+  const soonest = entries.sort((a, b) => a[1].getTime() - b[1].getTime())[0]
+  return soonest ? (SPORT_BOOKING_OPENS_LABEL[soonest[0]] ?? null) : null
+}
+
 /** True once the doors are open. Evaluated per render, so no rebuild needed. */
 export function isOpen(now: Date = new Date()): boolean {
   return now.getTime() >= OPENING_DATE.getTime()
