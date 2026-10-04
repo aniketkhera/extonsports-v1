@@ -52,6 +52,8 @@ export type SlotBlock = {
 export type CourtRef = {
   id: string
   sport: string
+  /** The sport's own id. /book/courts picks its tab from this. */
+  sportId: string
   name: string
   /** Just the distinguishing part — "2" out of "BADMINTON 2". */
   label: string
@@ -88,7 +90,13 @@ export async function GET() {
       days: body.days.filter((d) => typeof d === 'string'),
       courts: body.courts
         .filter((c) => c && typeof c.id === 'string' && typeof c.sport === 'string')
-        .map((c) => ({ id: c.id, sport: c.sport, name: String(c.name ?? ''), label: String(c.label ?? '') })),
+        .map((c) => ({
+          id: c.id,
+          sport: c.sport,
+          sportId: String(c.sportId ?? ''),
+          name: String(c.name ?? ''),
+          label: String(c.label ?? ''),
+        })),
       blocks: body.blocks
         .filter((b) => b && typeof b.date === 'string' && typeof b.courtId === 'string'
           && typeof b.from === 'number' && typeof b.to === 'number'

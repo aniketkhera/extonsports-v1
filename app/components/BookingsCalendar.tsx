@@ -66,6 +66,14 @@ function dayLabel(date: string): { dow: string; num: number } {
   return { dow: DOW[d.getDay()], num: d.getDate() };
 }
 
+/* The booking API's own clock: 24-hour HH:MM, which is what /book/courts
+   reads out of `start_time` and what court_bookings stores. clockLabel below
+   is the human one and the two must not be confused. */
+function apiTime(min: number): string {
+  const m = min % 1440;
+  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+}
+
 function clockLabel(min: number): string {
   const m = min % 1440;
   const h = Math.floor(m / 60);
@@ -221,6 +229,31 @@ export default function BookingsCalendar({ open, onClose }: { open: boolean; onC
   for (let m = winFrom; m < winTo; m += STEP) rows.push(m);
 
   const nowMin = date ? minutesIfOn(date, new Date()) : null;
+
+  /* Where a free half hour sends you.
+     ────────────────────────────────────────────────────────────────────
+     Not a bare login. The four params are the slot the visitor actually
+     tapped, and /book/courts opens its booking sheet on exactly that court
+     and hour — through its own click handler, so if the slot filled between
+     this page being cached and the sign-in finishing, they see what is on it
+     rather than a sheet over somebody else's booking.
+
+     They survive a logged-out visitor too: /book/courts bounces to
+     /login?next=<this whole path>, and '/book/' is on the platform's
+     post-sign-in allowlist (lib/safe-next.ts there). Before that work the
+     answer was /dashboard, with the slot thrown away.
+
+     sport_id is included because the booking page picks its tab from it;
+     without it a court-only link lands on whichever sport sorts first for
+     that member. */
+  function bookHref(court: { id: string; sportId: string }, slot: number): string {
+    const p = new URLSearchParams();
+    if (court.sportId) p.set("sport_id", court.sportId);
+    p.set("court_id", court.id);
+    p.set("date", date);
+    p.set("start_time", apiTime(slot));
+    return `${BOOK_COURTS_URL}?${p.toString()}`;
+  }
 
   function stateOf(courtId: string, sport: string, slot: number): CellState {
     const hit = byCourt.get(courtId)?.find((b) => slot >= b.from && slot < b.to);
@@ -430,12 +463,12 @@ export default function BookingsCalendar({ open, onClose }: { open: boolean; onC
                           return (
                             <a
                               key={c.id}
-                              href={BOOK_COURTS_URL}
+                              href={bookHref(c, slot)}
                               target="_blank"
                               rel="noreferrer"
                               className="xcal-free"
                               style={common}
-                              title={`${c.name} · ${clockLabel(slot)} — free. Sign in to book it.`}
+                              title={`${c.name} · ${clockLabel(slot)} — free. Opens this slot on app.orangish.io.`}
                               aria-label={`Book ${c.name} at ${clockLabel(slot)}`}
                             />
                           );
@@ -494,9 +527,9 @@ export default function BookingsCalendar({ open, onClose }: { open: boolean; onC
             </div>
 
             <p className="text-white/35 mt-3" style={{ fontSize: "0.62rem" }}>
-              Tap any free slot to sign in and book it on app.orangish.io. The club is open
-              round the clock; this opens on the afternoon and evening, plus any hour that is
-              already committed.
+              Tap any free slot and it opens on app.orangish.io, on that court and hour,
+              ready to book. The club is open round the clock; this view starts on the
+              afternoon and evening, plus any hour already committed.
             </p>
           </>
         )}
