@@ -229,6 +229,29 @@ html { scroll-behavior: smooth; }
   }
 }
 
+/* ── Bookings calendar ─────────────────────────────────────────── */
+/* A free half hour, lighting up under the pointer.
+
+   ⚠️ !important IS LOAD-BEARING HERE, and it is not laziness. The cell's
+   resting background is an INLINE style, because its value is chosen in JS
+   from the cell's state (free / booked / academy / shut / past) and Tailwind
+   cannot generate a class per branch. A normal rule in this file loses to any
+   inline declaration no matter how specific it is; an !important author rule
+   beats a non-important inline one, which is exactly this case. Same trap the
+   .fab-glow note above describes, from the other side.
+
+   The hover colour is ember rather than brighter grey on purpose: everywhere
+   else on this site ember means "this is the thing you can act on", and a free
+   slot is the only cell in the grid you can click. */
+.xcal-free:hover,
+.xcal-free:focus-visible {
+  background: rgba(248, 155, 114, 0.38) !important;
+  outline: none;
+}
+.xcal-free:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--color-ember);
+}
+
 /* ── Shared chrome utilities ───────────────────────────────────── */
 .label-chip {
   display: inline-flex;

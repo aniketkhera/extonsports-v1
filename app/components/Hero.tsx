@@ -9,8 +9,9 @@ import type { SchedulePayload } from "../api/schedule/route";
 import type { ProgramSchedule } from "@/lib/club-schedule";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, CLASS_FEES_NOTE } from "../../lib/rates";
 import { BOLLYWOOD_CLASS_URL, BOOK_COURTS_URL, CLASS_ONLINE_BOOKING_LIVE } from "../../lib/booking";
-import { SPORT_BOOKING_OPENS, SPORT_BOOKING_OPENS_LABEL, sportBookingOpen, sportsNotYetOpen } from "../../lib/opening";
+import { SPORT_BOOKING_OPENS_LABEL, sportBookingOpen, sportShutOnDate, sportsNotYetOpen } from "../../lib/opening";
 import { FLOOR_HOLDS, FLOOR_HEADING, FLOOR_FOOTNOTE } from "../../lib/floor";
+import BookingsCalendar from "./BookingsCalendar";
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_E164, LEGAL_NAME } from "../../lib/legal";
 
 type PanelKey = "academies" | "recreation";
@@ -1015,11 +1016,13 @@ function fillFor(pct: number | null): string {
 /* ⚠️ A DAY BEFORE THE SPORT OPENS IS NOT AN EMPTY DAY. The endpoint counts
    occupancy and nothing is booked before opening, so without this a sport
    reads "all free" on days it cannot be booked at all. Gated on the
-   per-sport dates because the three come online across the first week. */
-function shutOn(sport: string, date: string): boolean {
-  const opensAt = SPORT_BOOKING_OPENS[sport];
-  return !!opensAt && new Date(`${date}T23:59:59-04:00`).getTime() < opensAt.getTime();
-}
+   per-sport dates because the three come online across the first week.
+
+   Moved into lib/opening.ts 2026-10-03 so the bookings calendar asks the same
+   question of the same dates. The version that lived here built a Date with
+   EDT hardcoded; see sportShutOnDate for why that was an hour wrong after
+   1 November. */
+const shutOn = sportShutOnDate;
 
 /* THE PHONE'S RENDERING, and deliberately not the desktop one shrunk.
    Seven columns of "12/18 free" is unreadable at 375px, so the numbers go
@@ -1357,6 +1360,12 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
      would be wrong for anyone who leaves the page open. Null until it lands,
      and null on any failure — the panel then shows the standing commitments
      instead, which is a complete answer rather than a broken one. */
+  /* The full court-by-hour calendar, which is a second endpoint and a second
+     question — see BookingsCalendar.tsx. Mounted always but inert until
+     opened: it fetches nothing until then, so a visitor who never opens it
+     pays nothing for it. */
+  const [calOpen, setCalOpen] = useState(false);
+
   const [week, setWeek] = useState<CourtAvailability | null>(null);
   const [probe, setProbe] = useState<{ sport: string; band: string; label: string } | null>(null);
   /* Which of the two weeks the panel is showing. Deliberately NOT reset when
@@ -1688,6 +1697,24 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
           >
             Book a court
           </a>
+
+          {/* The whole floor, hour by hour. It sits next to the CTA rather
+              than under the heatmap on purpose: the heatmap answers "how busy
+              is the week", this answers "can I have court 3 at six", and the
+              second question is the one somebody who has just read a price is
+              actually asking.
+
+              A button, not a link: there is no /calendar page to point at —
+              it opens an overlay over this one. */}
+          <button
+            type="button"
+            onClick={() => setCalOpen(true)}
+            className="text-mono text-white/75 hover:text-white border-b border-[var(--color-ember)]/55 hover:border-[var(--color-ember)] transition-colors self-start"
+            style={{ fontSize: RATE_LABEL, paddingBottom: 2 }}
+          >
+            Show calendar of bookings
+          </button>
+          <BookingsCalendar open={calOpen} onClose={() => setCalOpen(false)} />
 
           {/* ⚠️ THE THREE SPORTS DO NOT OPEN TOGETHER, so this cannot be one
               date. The doors are Mon 5 Oct but the courts come online across

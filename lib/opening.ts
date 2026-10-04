@@ -74,6 +74,36 @@ export function sportsNotYetOpen(sports: string[], now: Date = new Date()): stri
   return sports.filter((s) => !sportBookingOpen(s, now))
 }
 
+/** The club's own zone. Every date on this site means a date in Exton, PA —
+ *  never the visitor's, who may be reading it from anywhere. */
+export const CLUB_TZ = 'America/New_York'
+
+/** A club-local calendar date, YYYY-MM-DD, for an instant. */
+function clubDate(d: Date): string {
+  const f = new Intl.DateTimeFormat('en-CA', {
+    timeZone: CLUB_TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+  })
+  const p = Object.fromEntries(f.formatToParts(d).map((x) => [x.type, x.value]))
+  return `${p.year}-${p.month}-${p.day}`
+}
+
+/**
+ * Is this sport un-bookable on this whole DAY? Used by anything that draws a
+ * calendar: a date before the sport comes online is not an empty day, it is a
+ * shut one, and the difference is the whole reason this exists.
+ *
+ * ⚠️ TAKES A DATE STRING AND COMPARES DATE STRINGS. The first version of this
+ * built `new Date(\`${date}T23:59:59-04:00\`)` — EDT hardcoded — which is an
+ * hour wrong for every date after 1 November, when the club is on EST. Only
+ * the last hour of a day could flip, which is exactly the kind of bug that
+ * never shows up in October and then does. ISO dates sort lexically, so the
+ * comparison needs no arithmetic at all.
+ */
+export function sportShutOnDate(sport: string, date: string): boolean {
+  const opensAt = SPORT_BOOKING_OPENS[sport]
+  return !!opensAt && date < clubDate(opensAt)
+}
+
 /**
  * The date to put ON a booking button while booking is not yet possible.
  *
