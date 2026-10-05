@@ -277,16 +277,16 @@ export default function BookingsCalendar({ open, onClose }: { open: boolean; onC
   const gutter = narrow ? 44 : 50;
 
   const FILL: Record<CellState, string> = {
-    free: "rgba(255,255,255,0.03)",
-    booking: "rgba(255,255,255,0.20)",
+    free: "rgba(var(--cal-fg),0.06)",
+    booking: "rgba(var(--cal-fg),0.32)",
     /* A second tone, not a second colour. The academy hours are the club's
        standing contracts and the site already prints their timetable in words
        (lib/floor.ts), so they are labelled — but they are still "not yours to
        book", which is the same message the solid blocks carry. Green would
        say "available". */
-    programme: "rgba(66,181,77,0.30)",
+    programme: "rgba(66,181,77,0.38)",
     shut: "transparent",
-    past: "rgba(255,255,255,0.015)",
+    past: "rgba(var(--cal-fg),0.03)",
   };
 
   return createPortal(
@@ -367,8 +367,8 @@ export default function BookingsCalendar({ open, onClose }: { open: boolean; onC
                       fontSize: "0.56rem",
                       padding: "5px 9px",
                       background: on ? "var(--color-ember)" : "transparent",
-                      color: on ? "#0A1019" : "rgba(255,255,255,0.6)",
-                      border: `1px solid ${on ? "var(--color-ember)" : "rgba(255,255,255,0.16)"}`,
+                      color: on ? "#0A1019" : "rgba(var(--cal-fg),0.70)",
+                      border: `1px solid ${on ? "var(--color-ember)" : "rgba(var(--cal-fg),0.22)"}`,
                     }}
                   >
                     {dow} {num}
@@ -389,9 +389,9 @@ export default function BookingsCalendar({ open, onClose }: { open: boolean; onC
                     style={{
                       fontSize: "0.56rem",
                       padding: "7px 4px",
-                      background: i === effSportIdx ? "rgba(255,255,255,0.09)" : "transparent",
-                      color: i === effSportIdx ? "#fff" : "rgba(255,255,255,0.5)",
-                      border: `1px solid ${i === effSportIdx ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.14)"}`,
+                      background: i === effSportIdx ? "rgba(var(--cal-fg),0.11)" : "transparent",
+                      color: i === effSportIdx ? "rgba(var(--cal-fg),0.95)" : "rgba(var(--cal-fg),0.62)",
+                      border: `1px solid ${i === effSportIdx ? "rgba(var(--cal-fg),0.48)" : "rgba(var(--cal-fg),0.20)"}`,
                     }}
                   >
                     {g.sport}
@@ -412,7 +412,7 @@ export default function BookingsCalendar({ open, onClose }: { open: boolean; onC
                     className="text-mono text-center"
                     style={{
                       gridColumn: `span ${g.courts.length}`,
-                      color: sportShutOnDate(g.sport, date) ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.58)",
+                      color: sportShutOnDate(g.sport, date) ? "rgba(var(--cal-fg),0.42)" : "rgba(var(--cal-fg),0.74)",
                       paddingBottom: 3,
                     }}
                   >
@@ -422,7 +422,7 @@ export default function BookingsCalendar({ open, onClose }: { open: boolean; onC
 
                 <span />
                 {courts.map((c) => (
-                  <span key={c.id} className="text-center" style={{ color: "rgba(255,255,255,0.33)", paddingBottom: 3 }}>
+                  <span key={c.id} className="text-center" style={{ color: "rgba(var(--cal-fg),0.52)", paddingBottom: 3 }}>
                     {c.label}
                   </span>
                 ))}
@@ -439,10 +439,10 @@ export default function BookingsCalendar({ open, onClose }: { open: boolean; onC
                       <span
                         style={{
                           height: rowH,
-                          color: "rgba(255,255,255,0.3)",
+                          color: "rgba(var(--cal-fg),0.48)",
                           fontSize: "0.52rem",
                           lineHeight: `${rowH}px`,
-                          borderTop: onHour ? "1px solid rgba(255,255,255,0.08)" : "none",
+                          borderTop: onHour ? "1px solid rgba(var(--cal-fg),0.13)" : "none",
                           paddingRight: 6,
                           textAlign: "right",
                         }}
@@ -455,8 +455,8 @@ export default function BookingsCalendar({ open, onClose }: { open: boolean; onC
                         const common: CSSProperties = {
                           height: rowH,
                           background: FILL[st],
-                          borderTop: `1px solid rgba(255,255,255,${onHour ? 0.08 : 0.025})`,
-                          borderLeft: `1px solid rgba(255,255,255,${first ? 0.1 : 0.03})`,
+                          borderTop: `1px solid rgba(var(--cal-fg),${onHour ? 0.13 : 0.06})`,
+                          borderLeft: `1px solid rgba(var(--cal-fg),${first ? 0.15 : 0.07})`,
                           display: "block",
                         };
                         if (st === "free") {
@@ -511,7 +511,7 @@ export default function BookingsCalendar({ open, onClose }: { open: boolean; onC
                 <span key={label} className="inline-flex items-center gap-1.5">
                   <span
                     className="inline-block"
-                    style={{ width: 11, height: 11, background: bg, border: `1px ${bs} rgba(255,255,255,0.22)` }}
+                    style={{ width: 11, height: 11, background: bg, border: `1px ${bs} rgba(var(--cal-fg),0.30)` }}
                   />
                   {label}
                 </span>
@@ -520,7 +520,7 @@ export default function BookingsCalendar({ open, onClose }: { open: boolean; onC
                 type="button"
                 onClick={() => setAllHours((v) => !v)}
                 className="text-mono text-white/50 hover:text-white transition-colors"
-                style={{ fontSize: "0.52rem", borderBottom: "1px solid rgba(255,255,255,0.25)" }}
+                style={{ fontSize: "0.52rem", borderBottom: "1px solid rgba(var(--cal-fg),0.35)" }}
               >
                 {allHours ? "Afternoon and evening" : "Show every hour"}
               </button>
