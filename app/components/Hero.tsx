@@ -11,6 +11,7 @@ import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, CLASS_FEES_NOTE } from "../../l
 import { BOLLYWOOD_CLASS_URL, BOOK_COURTS_URL, CLASS_ONLINE_BOOKING_LIVE } from "../../lib/booking";
 import { SPORT_BOOKING_OPENS_LABEL, sportBookingOpen, sportShutOnDate, sportsNotYetOpen } from "../../lib/opening";
 import { PBA_SCHEDULE, PBA_EXPANDS, PBA_COURTS } from "../../lib/pba-schedule";
+import { SQUAD_SCHEDULE, SQUAD_NOTE, SQUAD_TERM } from "../../lib/squad-schedule";
 import BadmintonEnquiry from "./BadmintonEnquiry";
 import BookingsCalendar from "./BookingsCalendar";
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_E164, LEGAL_NAME } from "../../lib/legal";
@@ -915,53 +916,71 @@ function ClassDetail({
   );
 }
 
-/* Philadelphia Badminton's timetable, rendered where the other academy rows put
-   their one-line schedule column. A table rather than a line because this one has
-   two axes — day, and coaching vs open play — and the line it replaced could only
-   ever say "Coming Oct 5th".
+/* An academy row's timetable, in the column where the other rows put their
+   one-line schedule. Shared by badminton and squash because the two differ only
+   in their columns — badminton splits coaching from open play, squash is all
+   coached — and a second copy of this markup would drift.
 
-   The data is in lib/pba-schedule.ts, which is where the contract reasoning lives.
-   Deliberately NOT lib/floor.ts: that file is a court-HOLD timetable for the
-   bookings calendar ("NOT AVAILABILITY", as it says), it couples Saturday and
-   Sunday in one string, and Sunday no longer matches it. */
-function PbaScheduleTable() {
+   ⚠️ ONLY the text-white/NN steps that globals.css re-declares under
+   :root[data-theme="light"] are safe here — 20,25,30,35,40,45,50,55,60,65,70,
+   75,80,90. There is no /85, and an /85 cell shipped white-on-white in light
+   mode on 2026-10-05. Check the ladder before inventing a step. */
+function AcademyScheduleTable({
+  status,
+  headers,
+  rows,
+  notes,
+}: {
+  status?: string;
+  headers: string[];
+  rows: string[][];
+  notes: string[];
+}) {
   return (
-    <div className="shrink-0 min-w-[19rem] border-l border-white/10 pl-9">
+    <div className="shrink-0 min-w-[17rem] border-l border-white/10 pl-9">
       <div className="text-mono text-[0.58rem] tracking-[0.2em] uppercase text-white/35 mb-2.5">
         Schedule
       </div>
-      {/* ⚠️ ONLY the text-white/NN steps that globals.css re-declares under
-          :root[data-theme="light"] are safe here — 20,25,30,35,40,45,50,55,60,65,
-          70,75,80,90. There is no /85, so an /85 cell stayed white-on-white in
-          light mode while every sibling flipped. Shipped that way 2026-10-05 and
-          caught within the hour. Check the ladder before inventing a step. */}
+      {/* Status leads, as it does in ScheduleLine: "when does it begin" is the
+          question a recurring pattern does not answer. */}
+      {status && (
+        <div className="text-[var(--color-ember)] text-mono text-[0.68rem] tracking-[0.08em] mb-2.5">
+          {status}
+        </div>
+      )}
       <table className="w-full border-collapse text-[0.78rem]">
         <thead>
           <tr className="text-mono text-[0.55rem] tracking-[0.14em] uppercase text-white/30">
-            <th scope="col" className="text-left font-normal pb-1.5 pr-4">Day</th>
-            <th scope="col" className="text-left font-normal pb-1.5 pr-4">Coaching</th>
-            <th scope="col" className="text-left font-normal pb-1.5">Open play</th>
+            {headers.map((h, i) => (
+              <th key={h} scope="col" className={`text-left font-normal pb-1.5${i < headers.length - 1 ? " pr-4" : ""}`}>
+                {h}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
-          {PBA_SCHEDULE.map((row) => (
-            <tr key={row.day} className="border-t border-white/10">
+          {rows.map((r) => (
+            <tr key={r[0]} className="border-t border-white/10">
               <th scope="row" className="text-left font-normal text-white/50 py-1.5 pr-4 whitespace-nowrap">
-                {row.day}
+                {r[0]}
               </th>
-              <td className="py-1.5 pr-4 text-white/90 whitespace-nowrap">
-                {row.coaching ?? <span className="text-white/20">&mdash;</span>}
-              </td>
-              <td className="py-1.5 text-white/90 whitespace-nowrap">
-                {row.openPlay ?? <span className="text-white/20">&mdash;</span>}
-              </td>
+              {r.slice(1).map((cell, i) => (
+                <td
+                  key={i}
+                  className={`py-1.5 text-white/90 whitespace-nowrap${i < r.length - 2 ? " pr-4" : ""}`}
+                >
+                  {cell || <span className="text-white/20">&mdash;</span>}
+                </td>
+              ))}
             </tr>
           ))}
         </tbody>
       </table>
-      <p className="text-white/35 text-[0.72rem] leading-relaxed mt-3 max-w-[22rem]">
-        {PBA_COURTS}. {PBA_EXPANDS}
-      </p>
+      {notes.map((t) => (
+        <p key={t} className="text-white/35 text-[0.72rem] leading-relaxed mt-3 max-w-[22rem]">
+          {t}
+        </p>
+      ))}
     </div>
   );
 }
@@ -976,6 +995,24 @@ function AcademyDetail({
   const blurb = "blurb" in ac ? (ac as { blurb?: string }).blurb : undefined;
   const desc = "desc" in ac ? (ac as { desc?: string }).desc : undefined;
   const action = "action" in ac ? (ac as { action?: { label: string; href: string } }).action : undefined;
+
+  const isBadminton = ac.name === "Philadelphia Badminton";
+  const isSquash = ac.name === "SquashTigers";
+  const table = isBadminton ? (
+    <AcademyScheduleTable
+      headers={["Day", "Coaching", "Open play"]}
+      rows={PBA_SCHEDULE.map((r) => [r.day, r.coaching ?? "", r.openPlay ?? ""])}
+      notes={[`${PBA_COURTS}. ${PBA_EXPANDS}`]}
+    />
+  ) : isSquash ? (
+    <AcademyScheduleTable
+      status={schedule?.status ?? undefined}
+      headers={["Day", "Squad"]}
+      rows={SQUAD_SCHEDULE.map((r) => [r.day, r.time])}
+      notes={[SQUAD_NOTE, SQUAD_TERM]}
+    />
+  ) : null;
+
   return (
     <div>
       <span className="block leading-none mb-4">{ac.logo}</span>
@@ -990,11 +1027,12 @@ function AcademyDetail({
       {/* 60ch, not 48. The column is far wider than the tile this copy was
           sized for, and a short measure in a wide box is what was leaving half
           the panel empty. 60ch is still inside the 45-75 readable range. */}
-      {/* The badminton row is the only one with a real timetable and the only one
-          whose "Learn more" opens a form rather than leaving the site, so it gets
-          its own body. DetailBody / ScheduleLine / DetailAction are shared with
-          cricket, squash and the studio classes and are deliberately untouched. */}
-      {ac.name === "Philadelphia Badminton" ? (
+      {/* Two rows have a real, Exton-specific timetable and get a table instead of
+          the one-line schedule column; badminton additionally replaces its outbound
+          "Learn more" with an enquiry form. Everything else still goes through
+          DetailBody / ScheduleLine / DetailAction, which are shared with cricket
+          and the studio classes and are deliberately untouched. */}
+      {table ? (
         <div className="mt-4 flex flex-wrap items-start gap-x-14 gap-y-7">
           <div className="min-w-[28ch] max-w-[56ch] flex-1">
             {blurb && (
@@ -1005,11 +1043,15 @@ function AcademyDetail({
                 {blurb}
               </p>
             )}
-            <div className="mt-5">
-              <BadmintonEnquiry />
-            </div>
+            {isBadminton ? (
+              <div className="mt-5">
+                <BadmintonEnquiry />
+              </div>
+            ) : (
+              <DetailAction action={action} />
+            )}
           </div>
-          <PbaScheduleTable />
+          {table}
         </div>
       ) : (
         <DetailBody blurb={blurb} schedule={schedule} action={action} />
@@ -2179,10 +2221,18 @@ const ACADEMY_PARTNERS = [
     short: "Squash",
     sport: "Squash academy",
     desc: "High performance junior squash academy with locations in NJ, PA and CT (forthcoming).",
-    /* No timetable: squashtigers.com's session pattern is a GROUP-WIDE
-       statement across NJ/PA/CT and qualified with "when school is in session",
-       so publishing it as an Exton schedule would be wrong. The status is what
-       is true and useful. */
+    /* There IS a timetable now — see lib/squad-schedule.ts, rendered as the
+       schedule column by AcademyDetail.
+
+       It used to say: no timetable, because squashtigers.com's published pattern
+       is a GROUP-WIDE statement across NJ/PA/CT qualified with "when school is in
+       session", so printing it as an Exton schedule would have been wrong. That
+       was correct and is now spent: as of 2026-10-05 the platform holds a real
+       Exton programme (squad_programs `Junior Squad`, 55 dated sessions holding
+       three squash courts). The table states THAT, not the national pattern.
+
+       The status line survives alongside it — "when does it begin" is still a
+       question a weekly pattern does not answer. */
     schedule: { status: "Enrolling now" },
     /* The one row with a real trial behind it. Both sentences are sourced from
        squashtigers.com — the second is their FAQ answer almost verbatim. */
