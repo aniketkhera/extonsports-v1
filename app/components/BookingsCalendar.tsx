@@ -103,7 +103,12 @@ export default function BookingsCalendar({
   const [data, setData] = useState<CourtSlots | null>(null);
   const [failed, setFailed] = useState(false);
   const [dayPicked, setDayPicked] = useState<number | null>(null);
-  const [allHours, setAllHours] = useState(false);
+  /* The POPUP opens on the afternoon and evening, because it is read by someone
+     already on the page who wants tonight. The SHARED PAGE opens on the whole day:
+     it arrives by email with no context, often to someone asking "when is anything
+     free", and a 3pm start silently hides every morning court at a club that is
+     open round the clock. Both keep the toggle. Aniket, 2026-10-05. */
+  const [allHours, setAllHours] = useState(standalone);
   const [narrow, setNarrow] = useState(false);
   const [sportIdx, setSportIdx] = useState(0);
   /* Whether the reader has chosen a sport themselves; see autoSportIdx. */
@@ -549,8 +554,10 @@ export default function BookingsCalendar({
 
             <p className="text-white/35 mt-3" style={{ fontSize: "0.62rem" }}>
               Tap any free slot and it opens on app.orangish.io, on that court and hour,
-              ready to book. The club is open round the clock; this view starts on the
-              afternoon and evening, plus any hour already committed.
+              ready to book. The club is open round the clock
+              {standalone
+                ? ", and every hour of it is shown."
+                : "; this view starts on the afternoon and evening, plus any hour already committed."}
             </p>
           </>
         )}
