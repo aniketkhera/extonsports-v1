@@ -372,8 +372,15 @@ function Panel({
               >
                 Absolutely no coaching on hired courts — recreational play only.
               </p>
+              {/* "Coaching partners", not "the club's academies": none of the three
+                  academies is the club's. Philadelphia Badminton and SquashTigers hold
+                  licences and run their own programmes, and the studio floor is SeRa
+                  Fitness's class. Calling them the club's own overstated the
+                  relationship on the one line that has to be exact, because it is the
+                  line that tells a hirer why they may not bring their own coach.
+                  Aniket's wording, 2026-10-05. */}
               <p className="m-0 text-white/35 mt-1" style={{ fontSize: RATE_NOTE }}>
-                Coaching runs through the club&apos;s academies.
+                Coaching through our coaching partners only.
               </p>
             </div>
           </div>
