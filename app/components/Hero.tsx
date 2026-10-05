@@ -930,6 +930,11 @@ function PbaScheduleTable() {
       <div className="text-mono text-[0.58rem] tracking-[0.2em] uppercase text-white/35 mb-2.5">
         Schedule
       </div>
+      {/* ⚠️ ONLY the text-white/NN steps that globals.css re-declares under
+          :root[data-theme="light"] are safe here — 20,25,30,35,40,45,50,55,60,65,
+          70,75,80,90. There is no /85, so an /85 cell stayed white-on-white in
+          light mode while every sibling flipped. Shipped that way 2026-10-05 and
+          caught within the hour. Check the ladder before inventing a step. */}
       <table className="w-full border-collapse text-[0.78rem]">
         <thead>
           <tr className="text-mono text-[0.55rem] tracking-[0.14em] uppercase text-white/30">
@@ -944,10 +949,10 @@ function PbaScheduleTable() {
               <th scope="row" className="text-left font-normal text-white/50 py-1.5 pr-4 whitespace-nowrap">
                 {row.day}
               </th>
-              <td className="py-1.5 pr-4 text-white/85 whitespace-nowrap">
+              <td className="py-1.5 pr-4 text-white/90 whitespace-nowrap">
                 {row.coaching ?? <span className="text-white/20">&mdash;</span>}
               </td>
-              <td className="py-1.5 text-white/85 whitespace-nowrap">
+              <td className="py-1.5 text-white/90 whitespace-nowrap">
                 {row.openPlay ?? <span className="text-white/20">&mdash;</span>}
               </td>
             </tr>
