@@ -9,6 +9,21 @@ export default async function Footer() {
   // copy when it cannot be reached — see lib/club-pricing.ts.
   const { caps } = await playerCapsOrFallback();
   const sports = SPORT_ORDER.filter((s) => caps[s]);
+
+  /* ⚠️ CONDITIONAL, NOT DELETED. Every Exton cap is currently identical across
+     peak, off-peak and late night — 6 badminton, 10 cricket, 4 squash — so the
+     bracketed peak figure repeated the number beside it on every row and read as
+     though the two might differ. Printing "6 (6)" nine times is noise.
+
+     But these caps are LIVE platform data (court_player_limits, via
+     playerCapsOrFallback), not constants, and they HAVE diverged before. So the
+     brackets are hidden while the bands agree and come back by themselves the
+     moment they do not — rather than being deleted, which would silently
+     under-state a peak cap the next time somebody changes one in the admin.
+     Aniket, 2026-10-05. */
+  const bandsDiffer = sports.some((s) =>
+    CAP_HOURS.some((h) => capFor(caps[s].peak, h) !== capFor(caps[s].offPeak, h)),
+  );
   return (
     <footer className="bg-[var(--footer-bg)] border-t border-[var(--footer-line)]">
       {/* ── HOW PRICING WORKS ────────────────────────────────────────────
@@ -111,7 +126,9 @@ export default async function Footer() {
                     {CAP_HOURS.map((h) => (
                       <td key={h} className="text-right py-[5px] px-2 tabular-nums text-white/70">
                         {capFor(caps[sport].offPeak, h)}
-                        <span className="text-white/30"> ({capFor(caps[sport].peak, h)})</span>
+                        {bandsDiffer && (
+                          <span className="text-white/30"> ({capFor(caps[sport].peak, h)})</span>
+                        )}
                       </td>
                     ))}
                   </tr>
@@ -120,7 +137,17 @@ export default async function Footer() {
             </table>
           </div>
           <p className="m-0 text-white/35 text-[0.76rem]">
-            Off-peak and late night, with <span className="text-white/50">peak in brackets</span>.
+            {bandsDiffer ? (
+              <>
+                Off-peak and late night, with{" "}
+                <span className="text-white/50">peak in brackets</span>.
+              </>
+            ) : (
+              /* Said rather than left silent: a reader who knows the PRICE changes
+                 with the time of day will reasonably wonder whether the headcount
+                 does too. It does not. */
+              <>The same at peak, off-peak and late night.</>
+            )}
           </p>
 
         </div>
