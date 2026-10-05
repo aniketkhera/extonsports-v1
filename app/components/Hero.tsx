@@ -10,6 +10,8 @@ import type { ProgramSchedule } from "@/lib/club-schedule";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, CLASS_FEES_NOTE } from "../../lib/rates";
 import { BOLLYWOOD_CLASS_URL, BOOK_COURTS_URL, CLASS_ONLINE_BOOKING_LIVE } from "../../lib/booking";
 import { SPORT_BOOKING_OPENS_LABEL, sportBookingOpen, sportShutOnDate, sportsNotYetOpen } from "../../lib/opening";
+import { PBA_SCHEDULE, PBA_EXPANDS, PBA_COURTS } from "../../lib/pba-schedule";
+import BadmintonEnquiry from "./BadmintonEnquiry";
 import BookingsCalendar from "./BookingsCalendar";
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_E164, LEGAL_NAME } from "../../lib/legal";
 
@@ -913,6 +915,52 @@ function ClassDetail({
   );
 }
 
+/* Philadelphia Badminton's timetable, rendered where the other academy rows put
+   their one-line schedule column. A table rather than a line because this one has
+   two axes — day, and coaching vs open play — and the line it replaced could only
+   ever say "Coming Oct 5th".
+
+   The data is in lib/pba-schedule.ts, which is where the contract reasoning lives.
+   Deliberately NOT lib/floor.ts: that file is a court-HOLD timetable for the
+   bookings calendar ("NOT AVAILABILITY", as it says), it couples Saturday and
+   Sunday in one string, and Sunday no longer matches it. */
+function PbaScheduleTable() {
+  return (
+    <div className="shrink-0 min-w-[19rem] border-l border-white/10 pl-9">
+      <div className="text-mono text-[0.58rem] tracking-[0.2em] uppercase text-white/35 mb-2.5">
+        Schedule
+      </div>
+      <table className="w-full border-collapse text-[0.78rem]">
+        <thead>
+          <tr className="text-mono text-[0.55rem] tracking-[0.14em] uppercase text-white/30">
+            <th scope="col" className="text-left font-normal pb-1.5 pr-4">Day</th>
+            <th scope="col" className="text-left font-normal pb-1.5 pr-4">Coaching</th>
+            <th scope="col" className="text-left font-normal pb-1.5">Open play</th>
+          </tr>
+        </thead>
+        <tbody>
+          {PBA_SCHEDULE.map((row) => (
+            <tr key={row.day} className="border-t border-white/10">
+              <th scope="row" className="text-left font-normal text-white/50 py-1.5 pr-4 whitespace-nowrap">
+                {row.day}
+              </th>
+              <td className="py-1.5 pr-4 text-white/85 whitespace-nowrap">
+                {row.coaching ?? <span className="text-white/20">&mdash;</span>}
+              </td>
+              <td className="py-1.5 text-white/85 whitespace-nowrap">
+                {row.openPlay ?? <span className="text-white/20">&mdash;</span>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="text-white/35 text-[0.72rem] leading-relaxed mt-3 max-w-[22rem]">
+        {PBA_COURTS}. {PBA_EXPANDS}
+      </p>
+    </div>
+  );
+}
+
 function AcademyDetail({
   ac,
   schedule,
@@ -937,7 +985,30 @@ function AcademyDetail({
       {/* 60ch, not 48. The column is far wider than the tile this copy was
           sized for, and a short measure in a wide box is what was leaving half
           the panel empty. 60ch is still inside the 45-75 readable range. */}
-      <DetailBody blurb={blurb} schedule={schedule} action={action} />
+      {/* The badminton row is the only one with a real timetable and the only one
+          whose "Learn more" opens a form rather than leaving the site, so it gets
+          its own body. DetailBody / ScheduleLine / DetailAction are shared with
+          cricket, squash and the studio classes and are deliberately untouched. */}
+      {ac.name === "Philadelphia Badminton" ? (
+        <div className="mt-4 flex flex-wrap items-start gap-x-14 gap-y-7">
+          <div className="min-w-[28ch] max-w-[56ch] flex-1">
+            {blurb && (
+              <p
+                className="text-white/70 leading-[1.6] m-0"
+                style={{ fontSize: "clamp(1rem, 0.95vw, 1.3rem)" }}
+              >
+                {blurb}
+              </p>
+            )}
+            <div className="mt-5">
+              <BadmintonEnquiry />
+            </div>
+          </div>
+          <PbaScheduleTable />
+        </div>
+      ) : (
+        <DetailBody blurb={blurb} schedule={schedule} action={action} />
+      )}
     </div>
   );
 }
@@ -2138,9 +2209,9 @@ const ACADEMY_PARTNERS = [
     href: "https://philadelphiabadminton.com",
     short: "Badminton",
     sport: "Badminton academy",
-    /* Still timing, so still the schedule column. The licence ramps up over
-       Oct–Dec; the start date is Oct 5, confirmed by Aniket 2026-10-01. */
-    schedule: { status: "Coming Oct 5th" },
+    /* No schedule column: this row renders the real timetable as a table
+       instead — see PbaScheduleTable. The old `schedule: { status: "Coming
+       Oct 5th" }` went on 2026-10-05, the morning it became false. */
     /* Their own programme copy, near-verbatim, plus their coach roster. NOT
        said: "Pennsylvania's largest badminton facility" and the 12 mat courts
        are their Norristown building, not this one. Nor is this juniors-only,
