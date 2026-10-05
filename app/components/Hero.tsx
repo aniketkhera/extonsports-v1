@@ -693,6 +693,11 @@ function DetailBody({
   book?: { label: string; href: string };
   registerHref?: string;
 }) {
+  /* Mirrors ScheduleLine's own early return. Kept here as well so the caller can
+     tell whether that component will render anything BEFORE calling it — which is
+     what lets the Register button fall back to a column of its own. */
+  const showSchedule =
+    !!schedule && (!!schedule.when || !!schedule.startsOn || !!schedule.status);
   return (
     <div className="mt-4 flex flex-wrap items-start gap-x-14 gap-y-7">
       <div className="min-w-[28ch] max-w-[56ch] flex-1">
@@ -706,7 +711,24 @@ function DetailBody({
         )}
         <DetailAction action={action} book={book} />
       </div>
-      <ScheduleLine schedule={schedule} registerHref={registerHref} />
+      {/* ⚠️ THE REGISTER BUTTON MUST NOT DEPEND ON THE SCHEDULE FETCH.
+          ScheduleLine returns null when there is no schedule, and the dance row's
+          schedule comes from the PLATFORM at runtime, not from the bundle — so
+          putting the CTA inside it meant a slow or failed call took the Register
+          button down with the times and the packs, and crawlers never saw it at
+          all (confirmed against production 2026-10-05: curl found the squash
+          button and not the dance one). The squash row was unaffected because its
+          table is local data.
+
+          So: inside the column when there IS a schedule, in a column of its own
+          when there is not. Either way the button renders. */}
+      {showSchedule ? (
+        <ScheduleLine schedule={schedule} registerHref={registerHref} />
+      ) : registerHref ? (
+        <div className="shrink-0 min-w-[15rem] border-l border-white/10 pl-9">
+          <RegisterCta href={registerHref} />
+        </div>
+      ) : null}
     </div>
   );
 }
