@@ -55,9 +55,32 @@ export const BOOK_CLASSES_URL = `${APP_URL}/book/squads`
 export const BOLLYWOOD_CLASS_URL = `${APP_URL}/c/bollywood`
 
 /**
- * ⛔ ONLINE REGISTRATION IS HIDDEN ON PURPOSE. Set to `true` to bring it back.
+ * The Junior Squad programme's own page — the squash equivalent of the line above.
  *
- * Turned off 2026-09-09, the day it went live, at Aniket's request: the link
+ * Same `/c/<slug>` shape, and the same caveat applies: 'exton-junior-squad' is the
+ * value of squad_programs.slug and CANNOT be derived from the name
+ * (programSlug() would give 'junior-squad', which is not it, and the public clubs
+ * endpoint still does not publish the slug). This string is the join.
+ *
+ * Verified live 2026-10-05: https://app.orangish.io/c/exton-junior-squad → HTTP 200.
+ */
+export const SQUAD_CLASS_URL = `${APP_URL}/c/exton-junior-squad`
+
+/**
+ * ⛔ ONLINE REGISTRATION. Governs the Register buttons on the squash and
+ * dance/fitness rows — cricket and badminton deliberately have none, because
+ * their bookings are not managed on the platform (Aniket, 2026-10-05).
+ *
+ * ⚠️ TURNED BACK ON 2026-10-05 at Aniket's request, and the warning below is
+ * STILL UNANSWERED as of that date — re-verified, not assumed:
+ *   • Exton has 0 completed registrations. 3 pending, 3 cancelled, nothing else.
+ *   • locations.features->>'adults_only_classes' at Exton is STILL NULL, so
+ *     "Adults 19+" is displayed and not enforced.
+ * So the first person through this path is still liable to be a paying
+ * customer. Set back to `false` to close it again; that is a one-line change
+ * and it hides the buttons without touching the pages, which stay public.
+ *
+ * Originally turned off 2026-09-09, the day it went live, at Aniket's request: the link
  * and the page both work, but NOBODY HAS EVER COMPLETED A REGISTRATION through
  * them. No account has been created from a cold start, no seat claimed, no card
  * charged, and no waitlist promotion exercised. The first person to try must
@@ -83,7 +106,7 @@ export const BOLLYWOOD_CLASS_URL = `${APP_URL}/c/bollywood`
  * club opened yet", which is a different question with a different answer — see
  * the comment on the class entry in Hero.tsx.
  */
-export const CLASS_ONLINE_BOOKING_LIVE = false
+export const CLASS_ONLINE_BOOKING_LIVE = true
 
 /** The booking CTA target, and whether it leaves the site. */
 export function bookingTarget(url: string): { href: string; external: boolean } {
