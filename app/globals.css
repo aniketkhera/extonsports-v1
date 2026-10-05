@@ -330,6 +330,17 @@ html { scroll-behavior: smooth; }
   --tile-bg: rgba(255,255,255,0.07);
   --tile-bg-quiet: rgba(255,255,255,0.04);
 
+  /* THE CALENDAR'S INK, AS AN RGB TRIPLE — not a colour.
+     BookingsCalendar paints its grid, labels and blocks through inline
+     style props, and an inline style cannot be reached by the
+     :root[data-theme="light"] .text-white/NN rules further down this file:
+     those only override Tailwind UTILITY CLASSES. So every rgba(255,255,255,a)
+     it wrote stayed literally white in light mode and the whole grid
+     disappeared on a pale panel. Reported 2026-10-05.
+     Exposed as "r,g,b" so the component keeps its own alpha per element —
+     rgba(var(--cal-fg), 0.3) — rather than needing a token per opacity. */
+  --cal-fg: 255,255,255;
+
   --nav-bg: rgba(0,0,0,0.88);
   --strip-bg: #0A0A0A;
   --fab-shadow: 0 6px 20px rgba(0,0,0,0.35);
@@ -405,6 +416,11 @@ html { scroll-behavior: smooth; }
 
   --nav-bg: rgba(255,255,255,0.92);
   --strip-bg: #F7F9FB;
+
+  /* Same ink, flipped. The alphas in the component were tuned against white
+     on near-black; dark-on-pale reads slightly stronger at the same alpha,
+     which is the right way round for a grid that has to be scannable. */
+  --cal-fg: 10,16,25;
   --fab-shadow: 0 6px 20px rgba(10,16,25,0.16);
 
   --on-tile: #0A1019;
