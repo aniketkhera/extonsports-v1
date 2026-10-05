@@ -19,6 +19,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: number
   }> = [
     { path: '/', changeFrequency: 'weekly', priority: 1.0 },
+    // The bookings calendar. 'daily' because its content genuinely changes
+    // every day — it is a live availability grid, not a brochure page.
+    { path: '/calendar', changeFrequency: 'daily', priority: 0.8 },
   ]
 
   return routes.map(({ path, changeFrequency, priority }) => ({
