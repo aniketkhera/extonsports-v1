@@ -13,7 +13,11 @@ import WhatsAppFab from "./WhatsAppFab";
 // television as a visitor in /admin/visits every morning, and the WhatsApp bubble would
 // sit on the screen forever with nobody to tap it. Vercel Analytics goes for the same
 // reason as the beacon.
-const SCREEN_PATHS = ["/comingsoon"];
+//
+// /board is the court board the same TVs show from 2026-10-05, and it is here for exactly
+// the same three reasons — it is a screen, not a visit. It polls every minute for weeks, so
+// it is the worst possible thing to let near the beacon.
+const SCREEN_PATHS = ["/comingsoon", "/board"];
 
 export default function SiteChrome() {
   const pathname = usePathname();
