@@ -10,7 +10,6 @@ import type { ProgramSchedule } from "@/lib/club-schedule";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, CLASS_FEES_NOTE } from "../../lib/rates";
 import { BOLLYWOOD_CLASS_URL, BOOK_COURTS_URL, CLASS_ONLINE_BOOKING_LIVE } from "../../lib/booking";
 import { SPORT_BOOKING_OPENS_LABEL, sportBookingOpen, sportShutOnDate, sportsNotYetOpen } from "../../lib/opening";
-import { FLOOR_HOLDS, FLOOR_HEADING, FLOOR_FOOTNOTE } from "../../lib/floor";
 import BookingsCalendar from "./BookingsCalendar";
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_E164, LEGAL_NAME } from "../../lib/legal";
 
@@ -1705,12 +1704,20 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
               actually asking.
 
               A button, not a link: there is no /calendar page to point at —
-              it opens an overlay over this one. */}
+              it opens an overlay over this one.
+
+              OUTLINED, NOT FILLED, and the same height and padding as the
+              ember CTA beside it. It reads as the pair it is — look, then
+              book — where a second solid ember block would have two primary
+              actions competing a centimetre apart. Same shape as the
+              outlined half of DetailAction above. */}
           <button
             type="button"
             onClick={() => setCalOpen(true)}
-            className="text-mono text-white/75 hover:text-white border-b border-[var(--color-ember)]/55 hover:border-[var(--color-ember)] transition-colors self-start"
-            style={{ fontSize: RATE_LABEL, paddingBottom: 2 }}
+            className={`text-mono text-[var(--color-ember)] border border-[var(--color-ember)]/50 hover:border-[var(--color-ember)] hover:text-white transition-colors ${
+              stacked ? "block w-full text-center py-[13px] px-5" : "inline-block py-[11px] px-[22px]"
+            }`}
+            style={{ fontSize: RATE_LABEL }}
           >
             Show calendar of bookings
           </button>
@@ -1759,12 +1766,20 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
         </div>
 
         {/* ── The panel ────────────────────────────────────────────────────
-            At rest: who already has the floor — true today, true on Oct 5,
-            true on a dead Tuesday, and free of any platform call.
             On hover or focus of a price: that sport and band across the week.
+            At rest: nothing but the hint that says so.
 
-            A fixed min-height so the block below does not jump as the two
-            swap; measured against the taller of the two at desktop widths. */}
+            The commitment timetable from lib/floor.ts used to sit here at
+            rest — who holds which courts, in words. Removed 2026-10-05 at
+            Aniket's instruction: the calendar of bookings now draws the same
+            contracts as blocks on the actual grid, so the paragraph was
+            saying a second time, less precisely, what a reader can see.
+
+            ⚠️ THE MIN-HEIGHT STAYS. It is not leftover from that block — it
+            reserves the WEEK STRIP's height, which is the taller of the two
+            states, so the rows below do not jump the moment a price is
+            hovered. Removing it trades a little whitespace at rest for a
+            shifting page under the pointer. */}
         <div
           className="flex flex-col gap-2 pt-0.5"
           style={{ minHeight: canProbe ? "118px" : undefined }}
@@ -1780,41 +1795,20 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
               onOffset={setWeekOffset}
             />
           ) : (
-          <>
-          <span className="text-mono text-white/45" style={{ fontSize: RATE_LABEL }}>
-            {FLOOR_HEADING}
+          /* The hover and tap hints, which used to ride on the end of the
+             commitment timetable's footnote.
+             ⚠️ THEY OUTLIVED THAT BLOCK ON PURPOSE. The phone had NO
+             equivalent of the hover hint, so the accordion was
+             undiscoverable: no pointer to reveal it, and a mark too faint to
+             read as a control. canProbe is `!stacked && week`, so the two are
+             mutually exclusive and only ever one shows. */
+          <span className="text-white/30" style={{ fontSize: RATE_NOTE }}>
+            {canProbe
+              ? "Hover a price for the week."
+              : stacked && week
+                ? "Tap a sport to collapse it."
+                : null}
           </span>
-          {FLOOR_HOLDS.map((h) => (
-            <div
-              key={h.sport}
-              className={
-                stacked
-                  ? "flex flex-col gap-[2px]"
-                  : "grid grid-cols-[84px_1fr] gap-x-3 items-baseline"
-              }
-            >
-              <span className="text-mono text-[var(--color-ember)]" style={{ fontSize: RATE_LABEL }}>
-                {h.sport}
-              </span>
-              <span className="text-white/55" style={{ fontSize: RATE_NOTE }}>
-                {h.claim} &middot; {h.when}.
-                {h.stillOpen && <span className="text-white/75"> {h.stillOpen}</span>}
-              </span>
-            </div>
-          ))}
-          <span className="text-white/40" style={{ fontSize: RATE_NOTE }}>
-            {FLOOR_FOOTNOTE}
-            {canProbe && (
-              <span className="text-white/30"> Hover a price for the week.</span>
-            )}
-            {/* The phone had NO equivalent of the hover hint, so the accordion
-                was undiscoverable: no pointer to reveal it and a mark too
-                faint to read as a control. */}
-            {stacked && week && (
-              <span className="text-white/30"> Tap a sport to collapse it.</span>
-            )}
-          </span>
-          </>
           )}
         </div>
       </motion.div>
