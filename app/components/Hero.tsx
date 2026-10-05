@@ -8,7 +8,7 @@ import type { CourtAvailability } from "../api/court-availability/route";
 import type { SchedulePayload } from "../api/schedule/route";
 import type { ProgramSchedule } from "@/lib/club-schedule";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, CLASS_FEES_NOTE } from "../../lib/rates";
-import { BOLLYWOOD_CLASS_URL, BOOK_COURTS_URL, CLASS_ONLINE_BOOKING_LIVE } from "../../lib/booking";
+import { BOLLYWOOD_CLASS_URL, SQUAD_CLASS_URL, BOOK_COURTS_URL, CLASS_ONLINE_BOOKING_LIVE } from "../../lib/booking";
 import { SPORT_BOOKING_OPENS_LABEL, sportBookingOpen, sportShutOnDate, sportsNotYetOpen } from "../../lib/opening";
 import { PBA_SCHEDULE, PBA_EXPANDS, PBA_COURTS } from "../../lib/pba-schedule";
 import { SQUAD_SCHEDULE, SQUAD_NOTE, SQUAD_TERM } from "../../lib/squad-schedule";
@@ -678,11 +678,13 @@ function DetailBody({
   schedule,
   action,
   book,
+  registerHref,
 }: {
   blurb?: string;
   schedule: DetailSchedule | null;
   action?: { label: string; href: string };
   book?: { label: string; href: string };
+  registerHref?: string;
 }) {
   return (
     <div className="mt-4 flex flex-wrap items-start gap-x-14 gap-y-7">
@@ -697,7 +699,7 @@ function DetailBody({
         )}
         <DetailAction action={action} book={book} />
       </div>
-      <ScheduleLine schedule={schedule} />
+      <ScheduleLine schedule={schedule} registerHref={registerHref} />
     </div>
   );
 }
@@ -739,7 +741,7 @@ function localSchedule(item: {
    already encodes this rule ("omit its schedule line rather than inventing
    one"); the hero previously broke it by printing the same opening date three
    times, a placeholder dressed as a feed. */
-function ScheduleLine({ schedule }: { schedule: DetailSchedule | null }) {
+function ScheduleLine({ schedule, registerHref }: { schedule: DetailSchedule | null; registerHref?: string }) {
   if (!schedule || (!schedule.when && !schedule.startsOn && !schedule.status)) return null;
   /* "$25" alone is unambiguous on its own. Under a pack list it is not — it
      sits directly above "4 classes $80" and reads as a fourth price rather than
@@ -837,6 +839,7 @@ function ScheduleLine({ schedule }: { schedule: DetailSchedule | null }) {
           Currently full
         </div>
       )}
+      {registerHref && <RegisterCta href={registerHref} />}
     </div>
   );
 }
@@ -911,6 +914,7 @@ function ClassDetail({
         schedule={schedule}
         action={c.action}
         book={c.book}
+        registerHref={"registerHref" in c ? (c as { registerHref?: string }).registerHref : undefined}
       />
     </div>
   );
@@ -925,16 +929,43 @@ function ClassDetail({
    :root[data-theme="light"] are safe here — 20,25,30,35,40,45,50,55,60,65,70,
    75,80,90. There is no /85, and an /85 cell shipped white-on-white in light
    mode on 2026-10-05. Check the ladder before inventing a step. */
+/* The Register CTA that sits at the foot of the schedule column — i.e. to the
+   RIGHT of the class, beside its times rather than under its prose.
+
+   Only squash and dance/fitness have one. Cricket and badminton deliberately do
+   not: their bookings are not managed on app.orangish.io (Aniket, 2026-10-05),
+   so a Register button there would lead somewhere that cannot take the booking.
+   Badminton keeps its enquiry form instead, which is the honest CTA for a class
+   whose registration happens off-platform.
+
+   Gated on CLASS_ONLINE_BOOKING_LIVE, which is the single switch for the whole
+   self-serve path — read the warning on it before assuming it should be on. */
+function RegisterCta({ href }: { href: string }) {
+  if (!CLASS_ONLINE_BOOKING_LIVE) return null;
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="mt-4 inline-block bg-[var(--color-ember)] text-black hover:bg-[var(--color-ember-hi)] text-mono text-[0.7rem] transition-colors"
+    >
+      <span className="inline-block px-5 py-2.5">Register</span>
+    </a>
+  );
+}
+
 function AcademyScheduleTable({
   status,
   headers,
   rows,
   notes,
+  registerHref,
 }: {
   status?: string;
   headers: string[];
   rows: string[][];
   notes: string[];
+  registerHref?: string;
 }) {
   return (
     <div className="shrink-0 min-w-[17rem] border-l border-white/10 pl-9">
@@ -981,6 +1012,7 @@ function AcademyScheduleTable({
           {t}
         </p>
       ))}
+      {registerHref && <RegisterCta href={registerHref} />}
     </div>
   );
 }
@@ -1010,6 +1042,7 @@ function AcademyDetail({
       headers={["Day", "Squad"]}
       rows={SQUAD_SCHEDULE.map((r) => [r.day, r.time])}
       notes={[SQUAD_NOTE, SQUAD_TERM]}
+      registerHref={SQUAD_CLASS_URL}
     />
   ) : null;
 
@@ -2050,6 +2083,11 @@ const STUDIO_CLASSES: {
   blurb?: string
   action?: { label: string; href: string }
   book?: { label: string; href: string }
+  /** Self-serve registration, rendered as a Register button at the foot of the
+      SCHEDULE column rather than beside the blurb. Gated by RegisterCta on
+      CLASS_ONLINE_BOOKING_LIVE. Only classes whose bookings are managed on
+      app.orangish.io set this. */
+  registerHref?: string
   schedule?: { startsOn?: string; when?: string; status?: string }
 }[] = [
   { name: "Bollywood Fitness",
@@ -2093,9 +2131,12 @@ const STUDIO_CLASSES: {
        DetailAction render the phone CTA alone, which is the pre-#28 behaviour
        and still takes bookings. Flip the constant in lib/booking.ts to restore
        it; the checklist for doing so is on that constant. */
-    book: CLASS_ONLINE_BOOKING_LIVE
-      ? { label: "Book online", href: BOLLYWOOD_CLASS_URL }
-      : undefined,
+    /* ⛔ `book` stays undefined: the online route moved to the SCHEDULE COLUMN on
+       2026-10-05, so there is one Register button per class and it sits to the
+       right, beside the times — see registerHref below and RegisterCta. Leaving
+       it here too would print two buttons to the same page. "Call to register"
+       above is unaffected and still the account-free route the flyer prints. */
+    registerHref: BOLLYWOOD_CLASS_URL,
     /* A wordmark in the site's own materials rather than the flyer artwork: the
        flyer is a portrait raster with a photograph in it and would not survive
        being dropped into a dark panel at 84px. The script/caps split mirrors
