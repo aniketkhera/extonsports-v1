@@ -1,5 +1,17 @@
 // Who has the floor, and when.
 //
+// ⚠️ NOTHING RENDERS THIS ANY MORE, AND IT IS KEPT ON PURPOSE. The hero
+// printed it as "Hours already committed" until 2026-10-05, when the calendar
+// of bookings began drawing the same contracts as blocks on the actual grid
+// and the paragraph became a second, vaguer telling of what a reader can see.
+//
+// It stays because it is the hand-verified TRANSCRIPTION of those contracts,
+// and three live comments point at it as such: BookingsCalendar.tsx here, and
+// lib/court-slots.ts + lib/court-availability.ts in orangish-app, which cite
+// the cricket lane-3 case to explain why they count court-hours. Delete the
+// file and those references dangle. If the licences change, this is still the
+// place that says what they were.
+//
 // ⛔ THIS IS NOT AVAILABILITY, AND THE DISTINCTION IS THE WHOLE POINT.
 //
 // It is the standing COMMITMENT timetable: the hours the two academy licences
