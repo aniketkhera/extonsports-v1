@@ -83,7 +83,23 @@ function clockLabel(min: number): string {
   return mm === 0 ? `${h12} ${ampm}` : `${h12}:${String(mm).padStart(2, "0")} ${ampm}`;
 }
 
-export default function BookingsCalendar({ open, onClose }: { open: boolean; onClose: () => void }) {
+export default function BookingsCalendar({
+  open,
+  onClose,
+  /* Render as a PAGE rather than an overlay — no portal, no scrim, no dialog
+     role, no Close button, and no Escape/scroll-lock handling, because there is
+     nothing behind it to go back to. Used by /calendar, which exists so the
+     grid can be put in an email; everything else about the view is identical,
+     deliberately, so the shared link and the popup can never disagree. */
+  standalone = false,
+}: {
+  open: boolean;
+  /* Optional because a SERVER component cannot pass a function across the
+     client boundary — /calendar renders this without one, and in standalone
+     there is no Close button and no backdrop, so nothing can ever call it. */
+  onClose?: () => void;
+  standalone?: boolean;
+}) {
   const [data, setData] = useState<CourtSlots | null>(null);
   const [failed, setFailed] = useState(false);
   const [dayPicked, setDayPicked] = useState<number | null>(null);
@@ -142,10 +158,10 @@ export default function BookingsCalendar({ open, onClose }: { open: boolean; onC
   }, [data]);
   const dayIdx = dayPicked ?? autoDayIdx;
 
-  const close = useCallback(() => onClose(), [onClose]);
+  const close = useCallback(() => onClose?.(), [onClose]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || standalone) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
     document.addEventListener("keydown", onKey);
     /* The page behind must not scroll while a full-screen sheet is up — on a
@@ -159,7 +175,7 @@ export default function BookingsCalendar({ open, onClose }: { open: boolean; onC
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
     };
-  }, [open, close]);
+  }, [open, close, standalone]);
 
   const date = data?.days[dayIdx] ?? "";
 
@@ -271,7 +287,7 @@ export default function BookingsCalendar({ open, onClose }: { open: boolean; onC
      a click, so by the time createPortal runs we are unambiguously on the
      client. A mounted flag would be a second piece of state saying the same
      thing, set from an effect — which this repo's lint rightly rejects. */
-  if (!open) return null;
+  if (!open && !standalone) return null;
 
   const rowH = narrow ? 20 : 15;
   const gutter = narrow ? 44 : 50;
@@ -289,14 +305,17 @@ export default function BookingsCalendar({ open, onClose }: { open: boolean; onC
     past: "rgba(var(--cal-fg),0.03)",
   };
 
-  return createPortal(
+  const shell = (
     <div
-      role="dialog"
-      aria-modal="true"
+      {...(standalone ? {} : { role: "dialog", "aria-modal": true })}
       aria-label="Calendar of bookings"
-      className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto"
-      style={{ background: "rgba(10,16,25,0.88)", backdropFilter: "blur(2px)" }}
-      onClick={(e) => { if (e.target === e.currentTarget) close(); }}
+      className={
+        standalone
+          ? "w-full flex items-start justify-center"
+          : "fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto"
+      }
+      style={standalone ? undefined : { background: "rgba(10,16,25,0.88)", backdropFilter: "blur(2px)" }}
+      onClick={standalone ? undefined : (e) => { if (e.target === e.currentTarget) close(); }}
     >
       <div
         ref={panelRef}
@@ -321,6 +340,7 @@ export default function BookingsCalendar({ open, onClose }: { open: boolean; onC
               has them.
             </p>
           </div>
+          {!standalone && (
           <button
             type="button"
             onClick={close}
@@ -330,6 +350,7 @@ export default function BookingsCalendar({ open, onClose }: { open: boolean; onC
           >
             Close
           </button>
+          )}
         </div>
 
         {failed && (
@@ -534,7 +555,8 @@ export default function BookingsCalendar({ open, onClose }: { open: boolean; onC
           </>
         )}
       </div>
-    </div>,
-    document.body,
+    </div>
   );
+
+  return standalone ? shell : createPortal(shell, document.body);
 }
