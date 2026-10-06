@@ -1,0 +1,196 @@
+/* The court board's own stylesheet — reception and vestibule televisions.
+   ────────────────────────────────────────────────────────────────────────
+   ⚠️ EVERY COLOUR IS A LITERAL, NOT A --color-* TOKEN, AND THAT IS ON PURPOSE.
+   The site's light theme works by redefining those tokens under
+   :root[data-theme="light"], and the browser on the N95 is a fresh profile we
+   do not control — if it ever lands in light mode, a board built on tokens
+   turns into dark text on a dark ground and the screen goes unreadable with
+   nobody in the room to notice. The values below are the same brand hexes
+   globals.css defines for dark; they simply cannot be flipped out from under
+   this page. Keep them in step with globals.css by hand.
+
+   ⚠️ NO PIXELS. Sizes are in vh/vw so the identical page fills a 55" at
+   reception and a 75" in the vestibule, whether the browser reports 1920 or
+   3840 CSS pixels wide. The ten rows are a 1fr grid, so they always fit.
+
+   The 2.5vh/2vw inset is TV overscan margin. Consumer panels still crop a few
+   percent off every edge on some inputs; without it the clock loses its last
+   digit and nobody can tell why. */
+
+.board {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 1.5vh;
+  padding: 2.5vh 2vw;
+  box-sizing: border-box;
+  background: #0E1825;
+  color: #FAFAFA;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+
+.bhead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2vw;
+  border-bottom: 0.25vh solid #F89B72;
+  padding-bottom: 1.2vh;
+}
+
+.btitle {
+  font-family: var(--font-cond), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 3.6vh;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.bsub {
+  font-weight: 600;
+  font-size: 1.6vh;
+  letter-spacing: 0.18em;
+  color: #6E7A88;
+  margin-top: 0.7vh;
+}
+
+.bclock {
+  font-family: var(--font-cond), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 5.4vh;
+  line-height: 1;
+  color: #F89B72;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 1vh;
+}
+
+/* Deliberately tiny: a reader does not need it, and whoever is wondering why
+   the board has not changed since this morning does. */
+.bdot {
+  width: 1.1vh;
+  height: 1.1vh;
+  border-radius: 50%;
+  background: #6E7A88;
+}
+
+/* ── The table ──────────────────────────────────────────────────────── */
+
+.btable {
+  display: grid;
+  /* Header row sized by content; the ten courts share the rest equally, which
+     is what keeps the board from spilling off the bottom of the screen. */
+  grid-template-rows: auto repeat(10, 1fr);
+  min-height: 0;
+}
+
+.brow {
+  display: grid;
+  grid-template-columns: 26% 37% 37%;
+  align-items: center;
+  gap: 1vw;
+  padding: 0 0.6vw;
+  border-bottom: 1px solid #1F2E3E;
+}
+
+.brow:last-child { border-bottom: 0; }
+
+/* Zebra, very faint. Ten rows of three columns need some horizontal tracking
+   help from fifteen feet away, but a visible stripe would compete with the
+   ember rule above. */
+.brow:nth-child(even) { background: rgba(255, 255, 255, 0.022); }
+
+.bhrow {
+  font-weight: 600;
+  font-size: 1.5vh;
+  letter-spacing: 0.2em;
+  color: #6E7A88;
+  padding-bottom: 1vh;
+  border-bottom: 1px solid #2B3B4D;
+  background: none;
+}
+
+.bcourt {
+  font-family: var(--font-cond), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 3.1vh;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+/* "On now" and "Next" share a shape: the time on top in condensed, what kind
+   of session it is underneath in small caps. b and i are structural here, not
+   emphasis — reset the italic. */
+.bnow, .bnext { display: flex; flex-direction: column; gap: 0.3vh; min-width: 0; }
+.bnow b, .bnext b {
+  font-family: var(--font-cond), system-ui, sans-serif;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+.bnow i, .bnext i, .bnext em {
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+}
+
+.bnow b { font-weight: 500; font-size: 2.9vh; color: #FFFFFF; }
+.bnow i { font-size: 1.4vh; color: #9FAAB6; }
+
+.bnext b { font-weight: 400; font-size: 2.4vh; color: #9FAAB6; }
+.bnext i { font-size: 1.3vh; color: #6E7A88; }
+.bnext em { font-size: 1.5vh; color: #4A5765; }
+
+/* Green, not ember: on this board ember is the clock and the brand rule, and
+   a free court is the one thing somebody standing here wants to spot without
+   reading. Same token globals.css uses for availability elsewhere. */
+.bopen {
+  font-family: var(--font-cond), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 2.9vh;
+  letter-spacing: 0.08em;
+  color: #42B54D;
+}
+
+.bempty {
+  grid-column: 1 / -1;
+  align-self: center;
+  text-align: center;
+  font-weight: 600;
+  font-size: 2vh;
+  letter-spacing: 0.2em;
+  color: #6E7A88;
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────── */
+
+.bfoot {
+  border-top: 1px solid #1F2E3E;
+  padding-top: 1.2vh;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2vw;
+}
+
+.bcta {
+  font-family: var(--font-cond), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 2.6vh;
+  letter-spacing: 0.07em;
+  color: #F89B72;
+}
+
+.bcta2 {
+  font-weight: 600;
+  font-size: 1.7vh;
+  letter-spacing: 0.16em;
+  color: #6E7A88;
+}
