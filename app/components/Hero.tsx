@@ -2215,6 +2215,37 @@ const RECREATION = {
    has no brand webfont, so it is a cropped shield image plus the name set in
    the site's own condensed face. Cropping to the shield keeps all three marks
    at the same optical weight — the full badge is roughly twice as tall. */
+/* ── THE CRICKET ACADEMY START DATE — ONE PLACE ──────────────────────────────
+   Every mention of it on this site is computed from the two constants below.
+   It used to be written twice: once as a Date driving the roster intro, and once
+   as the literal string "Coming Oct 12th" in the Chester County entry. Two
+   statements of one fact drift the moment somebody moves the date and updates
+   only the one they happened to be looking at — and this date has already moved
+   once, from Oct 7 to Oct 12 on 2026-10-02.
+
+   Change the date here and the roster line, the academy chip and the detail
+   panel all follow. Nothing else on the site names it.
+
+   ⛔ NOT THE SAME AS lib/opening.ts SPORT_BOOKING_OPENS.Cricket (Thu 8 Oct).
+   That is when the cricket LANES become bookable by anyone; this is when the
+   ACADEMY that holds two of them starts running. The lanes open four days first,
+   and that file's own header warns about exactly this confusion. */
+const CRICKET_ACADEMY_OPENS = new Date("2026-10-12T06:00:00-04:00");
+
+/* How the date is written wherever a reader sees it. Aniket's wording,
+   2026-10-05 — day-of-month before weekday, which is not the order the rest of
+   the site uses, so it is set here once rather than re-derived and re-argued. */
+const CRICKET_ACADEMY_LABEL = "Oct 12th, Monday";
+
+function cricketAcademyOpen(now: Date = new Date()): boolean {
+  return now.getTime() >= CRICKET_ACADEMY_OPENS.getTime();
+}
+
+/* The chip on the Chester County row, and in its detail panel. */
+function cricketAcademyStatus(now: Date = new Date()): string {
+  return cricketAcademyOpen(now) ? "Enrolling now" : `Coming ${CRICKET_ACADEMY_LABEL}`;
+}
+
 /* The line the detail column shows before you point at anything.
    ───────────────────────────────────────────────────────────────────────────
    It used to read "squash takes trials now, cricket and badminton follow when
@@ -2224,23 +2255,14 @@ const RECREATION = {
    never the only one "taking trials": SquashTigers has been enrolling and
    Junior Squad is running five sessions a week.
 
-   So it is computed now, like the nav chip, off the one date still in the
-   future. On 12 October the cricket clause disappears by itself and the line
-   becomes "all three take players now". Nothing here needs editing that day —
-   which is the whole point, because the last version of this sentence went stale
-   silently and nobody noticed for a week.
-
-   ⚠️ The DATE lives here, but the per-academy copy still lives in the
-   ACADEMY_PARTNERS entries below (cricket's `schedule.status`). If the cricket
-   start moves, both change — they are two statements of one fact, and this one
-   is not the governing one. */
-const CRICKET_ACADEMY_OPENS = new Date("2026-10-12T06:00:00-04:00");
-
+   Computed now, off the one date still in the future. On 12 October the cricket
+   clause disappears by itself and the line becomes "all three take players now".
+   Nothing needs editing that day — which is the point, because the last version
+   of this sentence went stale silently and sat wrong for a week. */
 function rosterIntro(now: Date = new Date()): string {
-  const head =
-    now.getTime() >= CRICKET_ACADEMY_OPENS.getTime()
-      ? "all three take players now"
-      : "squash and badminton take players now, cricket from 12 October";
+  const head = cricketAcademyOpen(now)
+    ? "all three take players now"
+    : `squash and badminton take players now, cricket from ${CRICKET_ACADEMY_LABEL}`;
   return `Coaching runs through three academies rather than the club itself — ${head}. The studio floor is the club's own: dance and fitness, all levels.`;
 }
 
@@ -2260,7 +2282,7 @@ const ACADEMY_PARTNERS = [
        row at Exton and it is the dance class. This stays local copy in the
        shape the platform feed produces, so the day cricket IS entered in
        /admin/squads the live data takes over with no markup change. */
-    schedule: { status: "Coming Oct 12th" },
+    schedule: { status: cricketAcademyStatus() },
     /* Near-verbatim from cccricketacademy.com. Deliberately NOT saying more:
        their site gives no founding year, and its published indoor season runs
        Oct-Mar at All-Star Sports Academy in Downingtown with outdoor sessions
