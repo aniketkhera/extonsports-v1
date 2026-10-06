@@ -530,7 +530,7 @@ function Panel({
                       className="text-white/60 leading-[1.6] max-w-[56ch] m-0"
                       style={{ fontSize: "clamp(1rem, 0.95vw, 1.3rem)" }}
                     >
-                      {ROSTER_INTRO}
+                      {rosterIntro()}
                     </p>
                   </DetailLayer>
                   {ROSTER_GROUPS.flatMap((g) =>
@@ -2215,13 +2215,34 @@ const RECREATION = {
    has no brand webfont, so it is a cropped shield image plus the name set in
    the site's own condensed face. Cropping to the shield keeps all three marks
    at the same optical weight — the full badge is roughly twice as tall. */
-/* The line the detail column shows before you point at anything. Every claim is
-   read off the entries below rather than invented: squash is the only one
-   taking players today; cricket and badminton now carry real start dates
-   (Oct 12 and Oct 5), which is why this line says "follow when the doors open"
-   rather than naming one date for both. */
-const ROSTER_INTRO =
-  "Coaching runs through three academies rather than the club itself — squash takes trials now, cricket and badminton follow when the doors open. The studio floor is the club's own: dance and fitness, all levels.";
+/* The line the detail column shows before you point at anything.
+   ───────────────────────────────────────────────────────────────────────────
+   It used to read "squash takes trials now, cricket and badminton follow when
+   the doors open". The doors opened on 5 October and badminton started the same
+   day — Philadelphia Badminton played its first contracted hours that evening —
+   so the sentence was describing a club that no longer existed. Squash was also
+   never the only one "taking trials": SquashTigers has been enrolling and
+   Junior Squad is running five sessions a week.
+
+   So it is computed now, like the nav chip, off the one date still in the
+   future. On 12 October the cricket clause disappears by itself and the line
+   becomes "all three take players now". Nothing here needs editing that day —
+   which is the whole point, because the last version of this sentence went stale
+   silently and nobody noticed for a week.
+
+   ⚠️ The DATE lives here, but the per-academy copy still lives in the
+   ACADEMY_PARTNERS entries below (cricket's `schedule.status`). If the cricket
+   start moves, both change — they are two statements of one fact, and this one
+   is not the governing one. */
+const CRICKET_ACADEMY_OPENS = new Date("2026-10-12T06:00:00-04:00");
+
+function rosterIntro(now: Date = new Date()): string {
+  const head =
+    now.getTime() >= CRICKET_ACADEMY_OPENS.getTime()
+      ? "all three take players now"
+      : "squash and badminton take players now, cricket from 12 October";
+  return `Coaching runs through three academies rather than the club itself — ${head}. The studio floor is the club's own: dance and fitness, all levels.`;
+}
 
 const ACADEMY_PARTNERS = [
   {
