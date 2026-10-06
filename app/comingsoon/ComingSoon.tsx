@@ -5,6 +5,7 @@ import Facility3D from "../components/Facility3D";
 import { CONTACT_PHONE, CONTACT_PHONE_E164 } from "@/lib/legal";
 import QrCode from "./QrCode";
 import s from "./comingsoon.module.css";
+import useReloadOnDeploy from "../components/useReloadOnDeploy";
 
 // Zone colours are Facility3D's own (its `C` table), so each legend dot matches the floor
 // it names in the rendering above it.
@@ -217,34 +218,6 @@ export default function ComingSoon() {
       </div>
     </main>
   );
-}
-
-// "Whatever is on the URL is what the TV shows." A wall screen loads its page once and
-// holds it for days, so a deploy would otherwise reach it only at the next power cut. Polls
-// /api/screen-version once a minute and reloads when the deployment changes. A failed poll
-// (the club's internet blipping) is just skipped; the next one tries again.
-function useReloadOnDeploy(everyMs = 60_000) {
-  useEffect(() => {
-    let first: string | null = null;
-    const check = async () => {
-      try {
-        const res = await fetch("/api/screen-version", { cache: "no-store" });
-        if (!res.ok) return;
-        const { version } = (await res.json()) as { version?: string };
-        if (!version) return;
-        if (first === null) first = version;
-        else if (version !== first) window.location.reload();
-      } catch {
-        /* offline — try again next tick */
-      }
-    };
-    const kick = setTimeout(check, 0);
-    const id = setInterval(check, everyMs);
-    return () => {
-      clearTimeout(kick);
-      clearInterval(id);
-    };
-  }, [everyMs]);
 }
 
 function Backdrop() {

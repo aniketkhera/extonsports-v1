@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CourtSlots, SlotBlock, CourtRef } from "../api/court-slots/route";
 import { CLUB_TZ } from "../../lib/opening";
+import useReloadOnDeploy from "../components/useReloadOnDeploy";
 
 /* The court board, as shown on the reception and vestibule televisions.
    ────────────────────────────────────────────────────────────────────────
@@ -88,6 +89,10 @@ export default function CourtBoard() {
      is never cleared on failure. */
   const [stale, setStale] = useState(false);
   const mounted = useRef(true);
+
+  /* A deploy must reach the wall without somebody driving to Exton to power-cycle
+     a television. Shared with /comingsoon — see the hook. */
+  useReloadOnDeploy();
 
   /* The clock. Fifteen seconds, not sixty: a row flipping from "on now" to the
      next booking up to a minute late is the one error a person standing in
