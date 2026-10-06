@@ -52,14 +52,19 @@ export const OPENING_FIRST_HOUR = OPENING_DATE.toISOString()
  */
 export const SPORT_BOOKING_OPENS: Record<string, Date> = {
   Squash: OPENING_DATE,
-  Badminton: new Date('2026-10-06T06:00:00-04:00'),
+  /* Badminton was staged for Tue 6 Oct when this was written. It opened a day
+     early — on 5 Oct the platform took real money for BADMINTON 2 and 3 (two
+     paid court hires that evening) and Philadelphia Badminton played its first
+     contracted hours on all three. The site was the only thing still saying
+     "Tue 6 Oct", so it was understating what the club could already sell. */
+  Badminton: OPENING_DATE,
   Cricket: new Date('2026-10-08T06:00:00-04:00'),
 }
 
 /** "Tue 6 Oct" — the short form the rate card prints beside a sport. */
 export const SPORT_BOOKING_OPENS_LABEL: Record<string, string> = {
   Squash: 'Mon 5 Oct',
-  Badminton: 'Tue 6 Oct',
+  Badminton: 'Mon 5 Oct',
   Cricket: 'Thu 8 Oct',
 }
 
@@ -125,4 +130,28 @@ export function bookingOpensLabel(now: Date = new Date()): string | null {
 /** True once the doors are open. Evaluated per render, so no rebuild needed. */
 export function isOpen(now: Date = new Date()): boolean {
   return now.getTime() >= OPENING_DATE.getTime()
+}
+
+/* What the nav chip says about which sports are live.
+   ───────────────────────────────────────────────────────────────────────────
+   It used to read "Opening Oct 5, 2026", which was a promise with an expiry
+   date on it — and on 5 October it quietly became a lie that only a human
+   reading the nav would catch. This is computed from SPORT_BOOKING_OPENS
+   instead, so it tells the truth on its own: the sports that are bookable, then
+   the ones that are not yet. On 8 October, when cricket opens, the second half
+   disappears without anybody editing a file.
+
+   Returns null once EVERY sport is open — the caller then hides the chip
+   entirely, because "everything is open" is not news worth a glowing badge in
+   the nav. */
+export function openSportsLabel(sports: string[], now: Date = new Date()): string | null {
+  const open = sports.filter((s) => sportBookingOpen(s, now))
+  const soon = sports.filter((s) => !sportBookingOpen(s, now))
+  if (!soon.length) return null
+  // "A & B" for two, "A, B & C" beyond — the chip is one line and a serial
+  // comma would be the widest thing in the nav.
+  const list = (xs: string[]) =>
+    xs.length <= 1 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} & ${xs[xs.length - 1]}`
+  if (!open.length) return `${list(soon)} opening soon`
+  return `${list(open)} open now · ${list(soon)} opening soon`
 }
