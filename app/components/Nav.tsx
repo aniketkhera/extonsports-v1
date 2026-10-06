@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { OPENING_SHORT, bookingOpensLabel } from "../../lib/opening";
+import { bookingOpensLabel, openSportsLabel } from "../../lib/opening";
+import { SPORT_ORDER } from "../../lib/rates";
 import { BOOK_COURTS_URL } from "../../lib/booking";
 import ThemeToggle from "./ThemeToggle";
 
@@ -37,23 +38,38 @@ export default function Nav() {
           </span>
         </Link>
 
-        {/* Coming-soon chip beside the title — persistent (nav is sticky) and
-            links to the waitlist form. Hidden on the narrowest screens so it
-            never crowds the wordmark; the bottom CTA carries the date there.
+        {/* The status chip beside the title — persistent (nav is sticky) and links
+            to the booking section. Same glow and same breathing dot it has always
+            had; only what it SAYS changed.
+
+            It used to read "Opening Oct 5, 2026" and it is now derived from
+            SPORT_BOOKING_OPENS, because a hard-coded date is a promise that
+            expires: on the morning of the 5th it became a lie, and nothing but a
+            person reading the nav would have caught it. openSportsLabel returns
+            null once every sport is bookable, and the chip disappears — at that
+            point "we are open" is not news worth a glowing badge.
+
+            Hidden below `xl`, not `sm`: the old chip was five words and this one
+            is nine. At 1024 it collided with the nav links and forced the wordmark
+            to wrap onto three lines — checked, not guessed. The hero still carries
+            the same fact at every width, so nothing is lost below xl.
+
             The ember breath (.opening-glow) drives border-color, so the border
             utility here is only the width/style — hover keeps the fill tint. */}
-        <Link
-          href="/#waitlist"
-          className="opening-glow hidden sm:inline-flex items-center gap-2 px-3 py-1.5 border border-[var(--color-ember)]/45 hover:bg-[var(--color-ember)]/10 transition-colors whitespace-nowrap shrink-0"
-        >
-          <span className="relative flex h-[6px] w-[6px]">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-[var(--color-ember)] opacity-70 animate-ping" />
-            <span className="relative inline-flex rounded-full h-[6px] w-[6px] bg-[var(--color-ember)]" />
-          </span>
-          <span className="opening-glow-text text-mono text-[0.6rem] text-[var(--color-ember)]">
-            Opening {OPENING_SHORT}
-          </span>
-        </Link>
+        {openSportsLabel(SPORT_ORDER) && (
+          <Link
+            href="/#rates"
+            className="opening-glow hidden xl:inline-flex items-center gap-2 px-3 py-1.5 border border-[var(--color-ember)]/45 hover:bg-[var(--color-ember)]/10 transition-colors whitespace-nowrap shrink-0"
+          >
+            <span className="relative flex h-[6px] w-[6px]">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-[var(--color-ember)] opacity-70 animate-ping" />
+              <span className="relative inline-flex rounded-full h-[6px] w-[6px] bg-[var(--color-ember)]" />
+            </span>
+            <span className="opening-glow-text text-mono text-[0.6rem] text-[var(--color-ember)]">
+              {openSportsLabel(SPORT_ORDER)}
+            </span>
+          </Link>
+        )}
       </div>
 
       <div className="flex items-center shrink-0">
