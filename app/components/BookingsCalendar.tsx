@@ -40,6 +40,17 @@ const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
    on a Saturday and Chester County Cricket has lanes 1 and 2 from 10am, so a
    hard 3pm start would draw Saturday morning as open floor. "Show every
    hour" is still there for the 6am squash player. */
+/* How many day chips are on screen at once. Also the threshold above which the
+   date field and the window arrows appear — at or below it, every day is a chip
+   and no extra navigation is needed. */
+const DAY_WINDOW = 14;
+
+/* How far ahead the shareable /calendar page looks. Four months answers the
+   question it is opened for — "is that court already taken in the new year" —
+   without pulling a year of rows to draw fourteen days of them. The popup in
+   the hero is unaffected; it takes the proxy's own 14-day default. */
+const STANDALONE_DAYS = 120;
+
 const CORE_FROM = 15 * 60;
 const CORE_TO = 23 * 60;
 const STEP = 30;
@@ -103,6 +114,7 @@ export default function BookingsCalendar({
   const [data, setData] = useState<CourtSlots | null>(null);
   const [failed, setFailed] = useState(false);
   const [dayPicked, setDayPicked] = useState<number | null>(null);
+  const [winStart, setWinStart] = useState(0);
   /* The POPUP opens on the afternoon and evening, because it is read by someone
      already on the page who wants tonight. The SHARED PAGE opens on the whole day:
      it arrives by email with no context, often to someone asking "when is anything
@@ -134,7 +146,7 @@ export default function BookingsCalendar({
   useEffect(() => {
     if (!open || data) return;
     let live = true;
-    fetch("/api/court-slots")
+    fetch(standalone ? `/api/court-slots?days=${STANDALONE_DAYS}` : "/api/court-slots")
       .then((r) => r.json())
       .then((j: CourtSlots) => {
         if (!live) return;
@@ -143,7 +155,7 @@ export default function BookingsCalendar({
       })
       .catch(() => live && setFailed(true));
     return () => { live = false; };
-  }, [open, data]);
+  }, [open, data, standalone]);
 
   /* ⚠️ IT DOES NOT OPEN ON TODAY DURING OPENING WEEK, AND THAT IS THE POINT.
      The sports come online across the first week — squash the 5th, badminton
@@ -378,8 +390,57 @@ export default function BookingsCalendar({
 
         {data && (
           <>
+            {/* ⚠️ A YEAR WILL NOT FIT IN A CHIP STRIP. At 14 days every day is a
+                chip and that is still the nicest way to move a few days. At 365
+                it is a scrollbar nobody can aim, so the chips become a WINDOW
+                onto the year and a date field does the long jumps. The popup is
+                untouched: it asks for 14, so winStart stays 0, the window covers
+                everything, and no date field renders. */}
+            {data.days.length > DAY_WINDOW && (
+              <div className="flex items-center gap-2 pb-2">
+                <label className="text-mono text-white/40" style={{ fontSize: "0.5rem" }} htmlFor="cal-jump">
+                  Jump to
+                </label>
+                <input
+                  id="cal-jump"
+                  type="date"
+                  value={date}
+                  min={data.days[0]}
+                  max={data.days[data.days.length - 1]}
+                  onChange={(e) => {
+                    const i = data.days.indexOf(e.target.value);
+                    if (i < 0) return;
+                    setDayPicked(i);
+                    setWinStart(Math.max(0, Math.min(i, data.days.length - DAY_WINDOW)));
+                  }}
+                  className="text-mono bg-transparent text-white/80"
+                  style={{
+                    fontSize: "0.56rem", padding: "4px 7px",
+                    border: "1px solid rgba(var(--cal-fg),0.22)", colorScheme: "dark",
+                  }}
+                />
+                <span className="text-white/30" style={{ fontSize: "0.5rem" }}>
+                  to {dayLabel(data.days[data.days.length - 1]).dow} {dayLabel(data.days[data.days.length - 1]).num}{" "}
+                  {data.days[data.days.length - 1].slice(0, 4)}
+                </span>
+              </div>
+            )}
+
             <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1" style={{ scrollbarWidth: "thin" }}>
-              {data.days.map((d, i) => {
+              {data.days.length > DAY_WINDOW && (
+                <button
+                  type="button"
+                  onClick={() => setWinStart((w) => Math.max(0, w - DAY_WINDOW))}
+                  disabled={winStart === 0}
+                  aria-label="Earlier days"
+                  className="text-mono shrink-0 transition-colors disabled:opacity-25"
+                  style={{ fontSize: "0.56rem", padding: "5px 7px", border: "1px solid rgba(var(--cal-fg),0.22)", color: "rgba(var(--cal-fg),0.70)" }}
+                >
+                  &lsaquo;
+                </button>
+              )}
+              {data.days.slice(winStart, winStart + DAY_WINDOW).map((d) => {
+                const i = data.days.indexOf(d);
                 const { dow, num } = dayLabel(d);
                 const on = i === dayIdx;
                 return (
@@ -401,6 +462,18 @@ export default function BookingsCalendar({
                   </button>
                 );
               })}
+              {data.days.length > DAY_WINDOW && (
+                <button
+                  type="button"
+                  onClick={() => setWinStart((w) => Math.min(data.days.length - DAY_WINDOW, w + DAY_WINDOW))}
+                  disabled={winStart >= data.days.length - DAY_WINDOW}
+                  aria-label="Later days"
+                  className="text-mono shrink-0 transition-colors disabled:opacity-25"
+                  style={{ fontSize: "0.56rem", padding: "5px 7px", border: "1px solid rgba(var(--cal-fg),0.22)", color: "rgba(var(--cal-fg),0.70)" }}
+                >
+                  &rsaquo;
+                </button>
+              )}
             </div>
 
             {narrow && groups.length > 1 && (

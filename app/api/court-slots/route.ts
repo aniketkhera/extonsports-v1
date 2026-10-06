@@ -68,12 +68,29 @@ export type CourtSlots = {
 
 const EMPTY: CourtSlots = { timeZone: 'America/New_York', days: [], courts: [], blocks: [] }
 
-export async function GET() {
+/* How many days to ask the platform for.
+ *
+ * ⚠️ THE DEFAULT IS DELIBERATELY SMALL AND THE TV BOARD RELIES ON IT. /board
+ * renders only the current day and relaunches every ten minutes; pulling a
+ * year each time would be ~117 KB of which it uses a fraction. /calendar asks
+ * for 365 explicitly because it is a page somebody opens to look ahead.
+ *
+ * Clamped here as well as upstream: this value reaches a query string, and a
+ * caller asking for 100000 should get a sane number rather than an error. */
+const DEFAULT_DAYS = 14
+const MAX_DAYS = 365
+
+export async function GET(req: Request) {
+  const asked = Number(new URL(req.url).searchParams.get('days'))
+  const days = Number.isFinite(asked) && asked > 0
+    ? Math.min(Math.trunc(asked), MAX_DAYS)
+    : DEFAULT_DAYS
+
   if (!CLUB_ID) return NextResponse.json(EMPTY)
 
   try {
     const res = await fetch(
-      `${API_BASE}/api/public/court-slots?club=${encodeURIComponent(CLUB_ID)}&days=14`,
+      `${API_BASE}/api/public/court-slots?club=${encodeURIComponent(CLUB_ID)}&days=${days}`,
       { next: { revalidate: 60 }, signal: AbortSignal.timeout(5000) },
     )
     if (!res.ok) return NextResponse.json(EMPTY)
