@@ -17,7 +17,12 @@ import WhatsAppFab from "./WhatsAppFab";
 // /board is the court board the same TVs show from 2026-10-05, and it is here for exactly
 // the same three reasons — it is a screen, not a visit. It polls every minute for weeks, so
 // it is the worst possible thing to let near the beacon.
-const SCREEN_PATHS = ["/comingsoon", "/board"];
+//
+// /reception is the desk screen added 2026-10-07 — same three reasons again. It was
+// missed on its first build and the WhatsApp bubble duly appeared in the corner of a
+// television, which is the visible half of the problem; the invisible half was a TV
+// counting itself as a daily visitor.
+const SCREEN_PATHS = ["/comingsoon", "/board", "/reception"];
 
 export default function SiteChrome() {
   const pathname = usePathname();
