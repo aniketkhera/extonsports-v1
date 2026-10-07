@@ -288,9 +288,35 @@ export default function BookingsCalendar({
     return `${BOOK_COURTS_URL}?${p.toString()}`;
   }
 
-  function stateOf(courtId: string, sport: string, slot: number): CellState {
+  /* The cell's state, the holder's initials, and whether this row is where the
+     block STARTS — all from one lookup.
+     ────────────────────────────────────────────────────────────────────────
+     Resolved together rather than by a second helper because this runs for
+     every one of ~500 cells, and a sibling function would repeat the same
+     find for a value this one has already located.
+
+     `atStart` exists so the initials are drawn ONCE per booking rather than
+     on each of its half-hour rows: a two-hour hire is four rows at 15px, and
+     "RK" stamped down all four reads as four bookings. A block that begins
+     before the visible window starts is labelled on the window's first row
+     instead, so scrolling never hides the only copy. */
+  function cellOf(
+    courtId: string,
+    sport: string,
+    slot: number,
+  ): { st: CellState; who?: string; atStart: boolean } {
     const hit = byCourt.get(courtId)?.find((b) => slot >= b.from && slot < b.to);
-    if (hit) return hit.kind;
+    if (hit) {
+      return {
+        st: hit.kind,
+        ...(hit.who ? { who: hit.who } : {}),
+        atStart: slot === hit.from || slot === winFrom,
+      };
+    }
+    return { st: stateOf(sport, slot), atStart: false };
+  }
+
+  function stateOf(sport: string, slot: number): CellState {
     /* Taken beats shut on purpose: a sport can have hours committed before the
        day it opens for public booking — Philadelphia Badminton is on court
        Monday the 5th while badminton bookings open on the 6th. Drawing that
@@ -353,8 +379,8 @@ export default function BookingsCalendar({
               Calendar of bookings
             </h2>
             <p className="text-white/45 mt-1" style={{ fontSize: "0.72rem", maxWidth: "48ch" }}>
-              Every court, as it stands. Taken hours are shown without any detail of who
-              has them.
+              Every court, as it stands. A booked hour shows the initials of whoever
+              holds it; academy and coaching hours are not named.
             </p>
           </div>
           {!standalone && (
@@ -549,7 +575,7 @@ export default function BookingsCalendar({
                         {onHour ? clockLabel(slot) : ""}
                       </span>
                       {courts.map((c, ci) => {
-                        const st = stateOf(c.id, c.sport, slot);
+                        const { st, who, atStart } = cellOf(c.id, c.sport, slot);
                         const first = ci === 0 || courts[ci - 1].sport !== c.sport;
                         const common: CSSProperties = {
                           height: rowH,
@@ -572,17 +598,42 @@ export default function BookingsCalendar({
                             />
                           );
                         }
+                        const label = who && atStart ? who : "";
                         return (
                           <span
                             key={c.id}
-                            style={{ ...common, borderStyle: st === "shut" ? "dashed" : "solid" }}
+                            style={{
+                              ...common,
+                              borderStyle: st === "shut" ? "dashed" : "solid",
+                              // Only the labelled cell becomes a flex box. Every
+                              // other cell stays a plain block, which is ~490 of
+                              // them on a busy day.
+                              ...(label
+                                ? {
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    // 15px rows, so this is deliberately tiny and
+                                    // clipped rather than allowed to push the row
+                                    // taller and knock the grid out of alignment.
+                                    fontSize: narrow ? "0.5rem" : "0.44rem",
+                                    lineHeight: 1,
+                                    letterSpacing: "0.02em",
+                                    overflow: "hidden",
+                                    color: "rgba(var(--cal-fg),0.62)",
+                                  }
+                                : null),
+                            }}
                             title={
-                              st === "booking" ? `${c.name} · ${clockLabel(slot)} — booked`
+                              st === "booking"
+                                ? `${c.name} · ${clockLabel(slot)} — booked${who ? ` by ${who}` : ""}`
                                 : st === "programme" ? `${c.name} · ${clockLabel(slot)} — academy or coaching`
                                   : st === "shut" ? `${c.sport} is not bookable on this day yet`
                                     : `${clockLabel(slot)} has passed`
                             }
-                          />
+                          >
+                            {label}
+                          </span>
                         );
                       })}
                     </Fragment>
@@ -603,7 +654,7 @@ export default function BookingsCalendar({
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 text-white/45" style={{ fontSize: "0.55rem" }}>
               {([
                 ["free to book", FILL.free, "solid"],
-                ["booked", FILL.booking, "solid"],
+                ["booked — initials are the holder", FILL.booking, "solid"],
                 ["academy or coaching", FILL.programme, "solid"],
                 ["not bookable yet", FILL.shut, "dashed"],
               ] as const).map(([label, bg, bs]) => (
