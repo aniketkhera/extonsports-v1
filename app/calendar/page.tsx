@@ -13,10 +13,18 @@ import BookingsCalendar from '@/app/components/BookingsCalendar'
    proxy to the platform — so this page needs no auth, no club id in the bundle,
    and one cached response serves everyone who opens the emailed link.
 
-   ⚠️ NO LOGIN AND NO NAMES. The upstream returns a court, a time and one of two
-   words ('booking' or 'programme') — never who holds the slot. That is what makes
-   this safe to send to a mailing list. If the payload ever grows a name, this
-   page stops being shareable and the endpoint is the thing to fix. */
+   ⚠️ NO LOGIN, AND INITIALS RATHER THAN NAMES. This said "NO NAMES" until
+   2026-10-07, when Aniket asked for the holder's initials on booked hours. The
+   upstream now returns a court, a time, one of two words ('booking' or
+   'programme') and — for a booking only — two letters.
+
+   So this page is still shareable, but it is no longer anonymous, and the
+   difference matters because the link goes to a mailing list and Google indexes
+   it at priority 0.8. What keeps it defensible: programme hours stay unnamed,
+   under-18 holders are stripped upstream before the reduction, and a FULL name
+   never crosses the wire at all. If a full name ever appears in the payload,
+   that is a bug in the platform's lib/court-slots.ts, and this page should stop
+   being shared until it is fixed. */
 
 export const metadata: Metadata = {
   title: 'Calendar of bookings',
@@ -26,7 +34,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Calendar of bookings — Exton Sports Center',
     description:
-      'Every court, as it stands. Taken hours are shown without any detail of who has them.',
+      'Every court, as it stands — which hours are taken, which are free to book.',
     url: '/calendar',
   },
 }

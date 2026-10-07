@@ -16,12 +16,18 @@ import useReloadOnDeploy from "../components/useReloadOnDeploy";
    not, when — and a board that answers those in three seconds beats one that
    shows a whole week nobody can read from fifteen feet away.
 
-   ⛔ NO NAMES, NO HEADCOUNTS, NO BOOKING IDS. Same rule as the door screen and
-   the public calendar, and here it costs nothing to keep: /api/court-slots
-   returns a court, a time and one of two words ('booking' or 'programme'), and
-   that is all this file receives. If the payload ever grows a name, do NOT
-   print it — a lobby television is read by everyone who walks past, including
-   people the booking holder has never met. `court_bookings.title` is the
+   ⛔ NO HEADCOUNTS, NO BOOKING IDS, AND NO FULL NAMES FROM THE UNKEYED FEED.
+   This said "NO NAMES" flatly until 2026-10-07. It is no longer true of the
+   unkeyed path: /api/court-slots now carries the holder's INITIALS on a
+   booking block, because the public calendar wanted them and both surfaces
+   share that proxy. That is a widening of what this screen shows when it has
+   no key, and it was not asked for here — it is a consequence of the shared
+   endpoint, and it is acceptable only because the KEYED feed this screen
+   normally runs on already shows full names by design.
+
+   What has NOT changed: if the payload ever grows a FULL name on the unkeyed
+   path, do NOT print it — a lobby television is read by everyone who walks
+   past, including people the booking holder has never met. `court_bookings.title` is the
    specific trap: titles read like "Jeyaram court hire — Badminton 1", which
    names a customer on a 75-inch screen.
 

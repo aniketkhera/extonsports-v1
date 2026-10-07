@@ -15,9 +15,13 @@ import './board.css'
    over the SmartCast API. Changing a screen means editing that file, not this
    one — nothing in this repo knows which TV shows what.
 
-   ⛔ NO NAMES ON IT, EVER. Same rule as /calendar and the door screen, and the
-   reasoning is in CourtBoard.tsx. A lobby television has the widest audience of
-   any surface we own.
+   ⛔ NAMES: keyed yes, unkeyed initials only. This said "NO NAMES ON IT, EVER"
+   until 2026-10-07 and that was already half wrong — the keyed board has shown
+   full names since the board_screens token went in, deliberately, because this
+   is a television inside the club. What changed on the 7th is the UNKEYED
+   fallback, which now carries initials along with /calendar. The reasoning and
+   the exact bounds are in CourtBoard.tsx. A lobby television still has the
+   widest audience of any surface we own.
 
    Not indexed: it is furniture, not a page, and a search result pointing a
    member at a board with no navigation on it is a dead end. */

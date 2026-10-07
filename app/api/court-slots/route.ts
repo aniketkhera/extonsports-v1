@@ -47,6 +47,15 @@ export type SlotBlock = {
   to: number
   /** 'booking' = somebody hired it. 'programme' = academy, squad or lesson. */
   kind: 'booking' | 'programme'
+  /**
+   * The holder's INITIALS — "RK" — on a booking block only (2026-10-07).
+   *
+   * Absent on a programme block, and absent for an under-18 holder, both
+   * decided upstream in the platform's lib/court-slots.ts. Treat it as
+   * optional everywhere: a block with no `who` is the normal case, not a
+   * failure, and the overlay must still render it as simply "booked".
+   */
+  who?: string
 }
 
 export type CourtRef = {
@@ -118,7 +127,18 @@ export async function GET(req: Request) {
         .filter((b) => b && typeof b.date === 'string' && typeof b.courtId === 'string'
           && typeof b.from === 'number' && typeof b.to === 'number'
           && (b.kind === 'booking' || b.kind === 'programme'))
-        .map((b) => ({ date: b.date, courtId: b.courtId, from: b.from, to: b.to, kind: b.kind })),
+        .map((b) => {
+          // Capped and stripped rather than forwarded. This value is rendered
+          // into the overlay, and the upstream reduces to initials — so
+          // anything longer than a few characters means that reduction did not
+          // happen, and forwarding a full name to a public page on the strength
+          // of a remote response is exactly the mistake worth refusing here.
+          const who = typeof b.who === 'string' ? b.who.trim().slice(0, 4) : ''
+          return {
+            date: b.date, courtId: b.courtId, from: b.from, to: b.to, kind: b.kind,
+            ...(who && b.kind === 'booking' ? { who } : {}),
+          }
+        }),
     } satisfies CourtSlots)
   } catch {
     // A platform blip must not take a hole out of the hero.
