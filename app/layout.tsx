@@ -154,12 +154,21 @@ export default function RootLayout({
       <head>
         {/* Theme, applied before first paint. This has to be a blocking
             inline script in <head>: anything deferred to React would let the
-            browser paint the dark default first, and a light-mode visitor
-            would see the whole page flash navy on every navigation.
-            Keep the fallback in step with readTheme() in ThemeToggle.tsx. */}
+            browser paint the default first, and a visitor on the other theme
+            would see the whole page flash on every navigation.
+
+            ⚠️ THE DEFAULT IS LIGHT from 2026-10-07 (Aniket). It was dark, and
+            the stored value was read as "light or else dark"; it is now read
+            as "dark or else light", so the ONLY people who still get dark are
+            those who explicitly chose it. The catch flips with it — a browser
+            that cannot reach localStorage must land on the same default as
+            everyone else, not on the old one.
+
+            Keep this in step with getSnapshot() in ThemeToggle.tsx; the two
+            disagreeing is how the toggle ends up showing the wrong state. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{document.documentElement.dataset.theme=localStorage.getItem("exton-theme")==="light"?"light":"dark"}catch(e){document.documentElement.dataset.theme="dark"}`,
+            __html: `try{document.documentElement.dataset.theme=localStorage.getItem("exton-theme")==="dark"?"dark":"light"}catch(e){document.documentElement.dataset.theme="light"}`,
           }}
         />
       </head>

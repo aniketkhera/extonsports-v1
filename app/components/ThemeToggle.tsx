@@ -5,9 +5,18 @@ import { useSyncExternalStore } from "react";
 /* Light/dark switcher for the nav.
 
    The stored value is the whole state — there is no "system" option, and
-   that is deliberate: the navy/ember palette IS the brand, so an OS set to
-   light should not silently repaint the site for someone who never asked.
-   Dark is the default and light is an opt-in.
+   that is deliberate: an OS set one way should not silently repaint the site
+   for someone who never asked.
+
+   ⚠️ LIGHT IS THE DEFAULT from 2026-10-07 (Aniket); dark is now the opt-in.
+   It was the other way round, and the navy/ember palette being "the brand" was
+   the stated reason — so if this is ever reverted, revert the inline script in
+   layout.tsx in the same commit. A default that disagrees with that script
+   leaves the button reporting the opposite of what is on screen.
+
+   The three in-club screens are NOT affected either way: /board, /reception
+   and /comingsoon all paint literal hexes rather than theme tokens, precisely
+   so a visitor's preference can never wash out a television.
 
    To follow the OS instead, change the fallback in the inline script in
    layout.tsx to read prefers-color-scheme. Nothing here needs to change —
@@ -34,14 +43,19 @@ function subscribe(onChange: () => void) {
   };
 }
 
+/* Mirrors the inline script in layout.tsx and must stay identical to it:
+   "dark" when that is what is stored, light for everyone else. Reading it the
+   other way round (light-or-else-dark) is what it said until 2026-10-07 and
+   would now report dark for every default visitor, so the button would offer
+   to switch them to the theme they are already looking at. */
 function getSnapshot(): Theme {
-  return document.documentElement.dataset.theme === "light" ? "light" : "dark";
+  return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
 }
 
 /* The server has no way to know the visitor's choice, so it renders the
    default. The inline script corrects the DOM before paint. */
 function getServerSnapshot(): Theme {
-  return "dark";
+  return "light";
 }
 
 export default function ThemeToggle({ className = "" }: { className?: string }) {
