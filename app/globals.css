@@ -284,11 +284,18 @@ html { scroll-behavior: smooth; }
 .brand-wordmark .brand-accent { color: var(--color-ember); }
 
 /* ══ Theming ══════════════════════════════════════════════════════
-   The site is dark by design — the navy/ember palette is the brand, and
-   that stays the default for everyone who has never touched the switcher.
-   Light is an explicit opt-in, stored in localStorage and stamped onto
-   <html data-theme>. (To follow the OS instead, see the note in
-   ThemeToggle.tsx — it is a one-line change there, not here.)
+   ⚠️ LIGHT IS THE DEFAULT from 2026-10-07 (Aniket). This block used to open
+   "the site is dark by design — the navy/ember palette is the brand", and
+   dark is still a complete, first-class theme; it is simply now the opt-in.
+   The choice is stored in localStorage and stamped onto <html data-theme> by
+   the inline script in layout.tsx before first paint.
+
+   NOTHING BELOW CHANGED when the default flipped, and that is the point of
+   the structure: :root carries the dark values and :root[data-theme="light"]
+   overrides them, while the script always stamps an explicit attribute. So
+   the bare :root block is now only what a browser sees if that script fails
+   outright. (To follow the OS instead, see the note in ThemeToggle.tsx — it
+   is a one-line change there, not here.)
 
    Two mechanisms live below, and the split is deliberate:
 
