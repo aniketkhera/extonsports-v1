@@ -84,6 +84,41 @@ function useTick(t: ReturnType<typeof makeTicker>): number {
    rather than blanking, "today" is recomputed from the clock on every tick
    rather than taken from days[0], and nothing accumulates in state. */
 
+/* ── THE TV PALETTE ───────────────────────────────────────────────────────────
+   Brighter than the web palette, deliberately, and kept here as one block so
+   it can be tuned in one place.
+
+   Aniket read the first build from across the lobby on 2026-10-07 and called
+   it dull. Two causes, both fixed here:
+
+   1. MOST OF THE TEXT WAS TRANSLUCENT. Nine different alpha whites between
+      0.045 and 0.78. On a 55" panel a few metres away anything under about
+      0.75 stops reading as white and starts reading as grey — the labels and
+      the NEXT lines were the worst of it. They are near-opaque now, and the
+      hierarchy is carried by SIZE instead, which survives distance.
+   2. THE ORANGE WAS NOT THE BRAND ORANGE. It was #f26b3a, a darker and more
+      saturated colour than globals.css's --color-ember (#F89B72). EMBER below
+      is brighter again than even --color-ember-hi (#FBB28C).
+
+   ⚠️ LITERALS, NOT TOKENS — same rule as board.css and comingsoon.module.css.
+   The site's light theme redefines --color-* under :root[data-theme="light"],
+   and from 2026-10-07 light is the DEFAULT. A screen built on tokens would
+   have turned into dark text on a dark ground with nobody in the room. */
+const BG = "#0B1623";
+const INK = "#FFFFFF";
+/** Brighter than --color-ember-hi; the header, the clock and brand accents. */
+const EMBER = "#FFBE97";
+/** Brighter than --color-green-hi (#5CC766) — "open" has to carry the room. */
+const GREEN = "#79EA92";
+const LABEL = "rgba(255,255,255,0.86)";
+const META = "rgba(255,255,255,0.80)";
+const NEXT_VAL = "rgba(255,255,255,0.88)";
+const NEXT_LBL = "rgba(255,255,255,0.62)";
+const MUTED = "rgba(255,255,255,0.70)";
+const RULE = "rgba(255,255,255,0.34)";
+const RULE_SOFT = "rgba(255,255,255,0.22)";
+const PANEL = "rgba(255,255,255,0.075)";
+
 const SPORT_ORDER = ["Badminton", "Cricket", "Squash"];
 
 /** One holder's hours, after courts have been merged. */
@@ -150,8 +185,8 @@ function Lockup({ brand, who }: { brand: BrandKey | null; who: string }) {
           fontSize: "1.55vw",
         }}
       >
-        <span style={{ display: "block", color: "#f26b3a" }}>Philadelphia</span>
-        <span style={{ display: "block", color: "#fff" }}>Badminton</span>
+        <span style={{ display: "block", color: EMBER }}>Philadelphia</span>
+        <span style={{ display: "block", color: INK }}>Badminton</span>
       </div>
     );
   }
@@ -166,8 +201,8 @@ function Lockup({ brand, who }: { brand: BrandKey | null; who: string }) {
           style={{ height: "3.1vw", width: "auto" }}
         />
         <div className="text-cond" style={{ fontSize: "1.15vw", lineHeight: 1.08, letterSpacing: "0.04em" }}>
-          <span style={{ display: "block", color: "#f26b3a" }}>Chester County</span>
-          <span style={{ display: "block", color: "#fff" }}>Cricket Academy</span>
+          <span style={{ display: "block", color: EMBER }}>Chester County</span>
+          <span style={{ display: "block", color: INK }}>Cricket Academy</span>
         </div>
       </div>
     );
@@ -180,16 +215,16 @@ function Lockup({ brand, who }: { brand: BrandKey | null; who: string }) {
     return (
       <div
         className="text-cond"
-        style={{ fontSize: "1.6vw", letterSpacing: "0.08em", color: "#fff", lineHeight: 1.05 }}
+        style={{ fontSize: "1.6vw", letterSpacing: "0.08em", color: INK, lineHeight: 1.05 }}
       >
-        SQUASH<span style={{ color: "#f26b3a" }}>TIGERS</span>
+        SQUASH<span style={{ color: EMBER }}>TIGERS</span>
       </div>
     );
   }
   /* Unbranded holder — a member's own hire. Their name (or initials) is the
      lockup, which is why this prints `who` rather than nothing. */
   return (
-    <div className="text-cond" style={{ fontSize: "1.5vw", color: "#fff", letterSpacing: "0.03em", lineHeight: 1.1 }}>
+    <div className="text-cond" style={{ fontSize: "1.5vw", color: INK, letterSpacing: "0.03em", lineHeight: 1.1 }}>
       {who}
     </div>
   );
@@ -305,7 +340,7 @@ export default function ReceptionBoard() {
   return (
     <div
       style={{
-        position: "absolute", inset: 0, background: "#0f1821", color: "#fff",
+        position: "absolute", inset: 0, background: BG, color: INK,
         display: "flex", flexDirection: "column", padding: "2.1vh 1.9vw",
         overflow: "hidden",
       }}
@@ -313,23 +348,23 @@ export default function ReceptionBoard() {
       <div
         style={{
           display: "flex", justifyContent: "space-between", alignItems: "baseline",
-          borderBottom: "1px solid rgba(255,255,255,0.20)",
+          borderBottom: `1px solid ${RULE}`,
           paddingBottom: "1.2vh", marginBottom: "1.6vh",
         }}
       >
-        <div className="text-cond" style={{ color: "#f26b3a", fontSize: "2.1vw", letterSpacing: "0.10em" }}>
+        <div className="text-cond" style={{ color: EMBER, fontSize: "2.1vw", letterSpacing: "0.10em" }}>
           EXTON SPORTS CENTER
           {stale && (
             <span
               aria-hidden
               style={{
                 display: "inline-block", width: "0.5vw", height: "0.5vw", borderRadius: "50%",
-                background: "rgba(255,255,255,0.3)", marginLeft: "0.6vw", verticalAlign: "middle",
+                background: RULE, marginLeft: "0.6vw", verticalAlign: "middle",
               }}
             />
           )}
         </div>
-        <div className="text-cond" style={{ color: "#f26b3a", fontSize: "2.4vw", lineHeight: 1 }}>
+        <div className="text-cond" style={{ color: EMBER, fontSize: "2.4vw", lineHeight: 1 }}>
           <Clock />
         </div>
       </div>
@@ -340,10 +375,10 @@ export default function ReceptionBoard() {
             key={p.sport}
             style={{
               display: "flex", flexDirection: "column", minWidth: 0,
-              background: "rgba(255,255,255,0.045)", borderRadius: "0.6vw", padding: "1.4vh 1vw",
+              background: PANEL, borderRadius: "0.6vw", padding: "1.4vh 1vw",
             }}
           >
-            <div className="text-cond" style={{ fontSize: "1.5vw", letterSpacing: "0.15em", color: "rgba(255,255,255,0.55)", marginBottom: "0.9vh" }}>
+            <div className="text-cond" style={{ fontSize: "1.5vw", letterSpacing: "0.15em", color: LABEL, marginBottom: "0.9vh" }}>
               {p.sport.toUpperCase()}
             </div>
 
@@ -358,7 +393,7 @@ export default function ReceptionBoard() {
               }}
             >
               {p.now.length === 0 ? (
-                <div className="text-cond" style={{ fontSize: "3.1vw", color: "#5fd398", lineHeight: 1.03 }}>
+                <div className="text-cond" style={{ fontSize: "3.1vw", color: GREEN, lineHeight: 1.03 }}>
                   ALL OPEN
                 </div>
               ) : (
@@ -367,10 +402,10 @@ export default function ReceptionBoard() {
                     <div style={{ minHeight: "3.2vw", display: "flex", alignItems: "center", marginBottom: "0.4vh" }}>
                       <Lockup brand={e.brand} who={e.who} />
                     </div>
-                    <div className="text-cond" style={{ fontSize: "3.1vw", color: "#fff", lineHeight: 1.03 }}>
+                    <div className="text-cond" style={{ fontSize: "3.1vw", color: INK, lineHeight: 1.03 }}>
                       {span(e.from, e.to)}
                     </div>
-                    <div className="text-cond" style={{ fontSize: "1.3vw", color: "rgba(255,255,255,0.5)", letterSpacing: "0.04em" }}>
+                    <div className="text-cond" style={{ fontSize: "1.3vw", color: META, letterSpacing: "0.04em" }}>
                       {courtsOf(p, e)}
                     </div>
                   </div>
@@ -382,14 +417,14 @@ export default function ReceptionBoard() {
               className="text-cond"
               style={{
                 fontSize: "1.45vw", letterSpacing: "0.06em", marginBottom: "0.7vh",
-                color: p.freeNow ? "#5fd398" : "rgba(255,255,255,0.4)",
+                color: p.freeNow ? GREEN : MUTED,
               }}
             >
               {p.freeNow} OF {p.total} FREE NOW
             </div>
 
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.11)", paddingTop: "0.7vh" }}>
-              <div className="text-cond" style={{ fontSize: "1vw", letterSpacing: "0.16em", color: "rgba(255,255,255,0.32)" }}>
+            <div style={{ borderTop: `1px solid ${RULE_SOFT}`, paddingTop: "0.7vh" }}>
+              <div className="text-cond" style={{ fontSize: "1vw", letterSpacing: "0.16em", color: NEXT_LBL }}>
                 NEXT
               </div>
               {/* Two lines, then clipped. A holder's full name plus a time runs
@@ -400,7 +435,7 @@ export default function ReceptionBoard() {
               <div
                 className="text-cond"
                 style={{
-                  fontSize: "1.2vw", color: "rgba(255,255,255,0.62)", lineHeight: 1.2,
+                  fontSize: "1.2vw", color: NEXT_VAL, lineHeight: 1.2,
                   display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
                   overflow: "hidden",
                 }}
