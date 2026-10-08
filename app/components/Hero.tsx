@@ -2234,7 +2234,7 @@ const STUDIO_CLASSES: {
        fitness levels welcome!", and "COME FOR THE WORKOUT, STAY FOR THE
        VIBES!". Nothing here is invented. */
     blurb:
-      "A fun, Bollywood-inspired dance fitness workout from SeRa Fitness. High energy, easy to follow, and all fitness levels are welcome — come for the workout, stay for the vibes.",
+      "A fun, Bollywood-inspired dance fitness workout from SeRa Dance and Fitness. High energy, easy to follow, and all fitness levels are welcome — come for the workout, stay for the vibes.",
     /* The flyer's own registration route ("CALL TO REGISTER"), which beats the
        waitlist: it is a line that actually takes bookings today. Still not a
        platform deep-link — anonymous enrolment 401s and Exton is
@@ -2282,15 +2282,20 @@ const STUDIO_CLASSES: {
         >
           SeRa
         </span>
+        {/* DANCE & FITNESS, not FITNESS. The studio is "Sera Dance and Fitness"
+            — Aniket, 2026-10-08 — and /comingsoon has had the full name in its
+            own aria-label since it shipped, so the homepage was the odd one out.
+            Tracking is eased from 0.26em because the line is now twice as long
+            and has to sit beside a wordmark whose cap is 3.6rem. */}
         <span
-          className="text-cond"
+          className="text-cond whitespace-nowrap"
           style={{
-            fontSize: "clamp(0.78rem, 0.95vw, 1.15rem)",
-            letterSpacing: "0.26em",
+            fontSize: "clamp(0.72rem, 0.88vw, 1.05rem)",
+            letterSpacing: "0.18em",
             color: "var(--on-tile)",
           }}
         >
-          FITNESS
+          DANCE &amp; FITNESS
         </span>
       </span>
     ) },
