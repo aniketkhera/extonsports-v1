@@ -1194,12 +1194,26 @@ const API_BAND: Record<string, string> = {
 /* Grey at 100%, colour only once something is gone: an empty week should
    read calm, not alarming. Shared by the desktop bars and the phone's
    heatmap so the two can never disagree about what a colour means. */
+/* Tokens, not literals: these are painted through INLINE styles, which the
+   light theme's .text-white/NN overrides in globals.css cannot reach. The
+   100% step was literally white at 14% until 2026-10-08, so a day with
+   everything free was invisible on the light theme — the strip showed six
+   days and a gap where Sunday should be. */
 function fillFor(pct: number | null): string {
   if (pct === null) return "transparent";
-  if (pct === 100) return "rgba(255,255,255,0.14)";
-  if (pct >= 60) return "rgba(66,181,77,0.55)";
-  return "rgba(248,155,114,0.65)";
+  if (pct === 100) return "var(--avail-free)";
+  if (pct >= 60) return "var(--avail-some)";
+  return "var(--avail-low)";
 }
+
+/* The three steps, named once. The strip is colour-only now that it lives in a
+   table row, so the legend under the table is load-bearing rather than
+   decorative: without it the colours say "different", not "how much". */
+const AVAIL_LEGEND: [string, string][] = [
+  ["all free", "var(--avail-free)"],
+  ["some gone", "var(--avail-some)"],
+  ["nearly out", "var(--avail-low)"],
+];
 
 /* ⚠️ A DAY BEFORE THE SPORT OPENS IS NOT AN EMPTY DAY. The endpoint counts
    occupancy and nothing is booked before opening, so without this a sport
@@ -1230,7 +1244,7 @@ function MobileHeat({
   const fmt = (d: string, o: Intl.DateTimeFormatOptions) =>
     new Date(`${d}T12:00:00`).toLocaleDateString("en-US", o);
   /* Composed, not one formatter call: {weekday, day} together renders
-     "2 Fri" here, which reads as a quantity. Same trap as WeekStrip. */
+     "2 Fri" here, which reads as a quantity. Same trap as WeekChips. */
   const dayLabel = (d: string) =>
     `${fmt(d, { weekday: "short" })} ${new Date(`${d}T12:00:00`).getDate()}`;
 
@@ -1297,11 +1311,7 @@ function MobileHeat({
       </div>
 
       <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-white/40" style={{ fontSize: "0.52rem" }}>
-        {[
-          ["all free", "rgba(255,255,255,0.14)"],
-          ["some gone", "rgba(66,181,77,0.55)"],
-          ["nearly out", "rgba(248,155,114,0.65)"],
-        ].map(([label, bg]) => (
+        {AVAIL_LEGEND.map(([label, bg]) => (
           <span key={label} className="inline-flex items-center gap-1">
             <span className="inline-block rounded-[2px]" style={{ width: 9, height: 9, background: bg }} />
             {label}
@@ -1310,7 +1320,7 @@ function MobileHeat({
         <span className="inline-flex items-center gap-1">
           <span
             className="inline-block rounded-[2px]"
-            style={{ width: 9, height: 9, border: "1px dashed rgba(255,255,255,0.3)" }}
+            style={{ width: 9, height: 9, border: "1px dashed var(--avail-shut)" }}
           />
           shut
         </span>
@@ -1319,24 +1329,74 @@ function MobileHeat({
   );
 }
 
-/* The hovered cell's week, as seven bars.
+/* ── The hovered cell's week, INSIDE the row it belongs to ────────────────
+   Until 2026-10-08 this was seven tall bars in a panel UNDER the table, and the
+   panel reserved 118px at rest so the page would not jump when a price was
+   hovered. Aniket asked for it in the row instead, and picked chips over bars
+   and over a single seven-segment meter: the answer now appears where the
+   pointer already is, and the 118px goes back to the page.
+
+   A row is ~40px, so a bar's HEIGHT can no longer carry the quantity — colour
+   does it alone, in three steps. That makes the legend under the table
+   load-bearing rather than decorative, which is why it renders there whenever a
+   week is showing.
+
    Court-hours, NOT "hours with a court free" — see lib/floor.ts and the
    endpoint. The friendlier measure reads "6 of 6 free" for cricket peak while
    Chester County Cricket holds two of the three lanes, because lane 3 is never
    taken; court-hours says 12 of 18, which is the fact a cricketer needs. */
-function WeekStrip({
+function weekCells(sport: string, bandKey: string, data: CourtAvailability, offset: number) {
+  const apiBand = API_BAND[bandKey] ?? bandKey;
+  /* Both weeks arrive in one payload, so paging is a slice, not a fetch. */
+  const page = data.days.slice(offset * 7, offset * 7 + 7);
+  /* A day with no cell is not zero — it is a band with no hours left today.
+     The example used to be late night vanishing after 6am; with that band gone
+     (2026-10-08) the live case is today's PEAK column after 10pm on a weekday,
+     or after 8pm at the weekend. Rendered as a gap, not a zero. */
+  const cells = page.map((d) =>
+    data.cells.find((c) => c.sport === sport && c.band === apiBand && c.date === d) ?? null);
+  return { page, cells, hasNext: data.days.length > 7 };
+}
+
+/* "3 cricket courts × 6 peak hours = 18 court-hours on a typical day."
+   Asked twice what the numbers meant, which is twice more than a term should
+   need. Derived from the commonest day rather than hardcoded: the bands have
+   different widths at weekends, and squash has four courts where the others
+   have three. */
+function CourtHoursNote({
+  sport, bandLabel, cells, data,
+}: {
+  sport: string;
+  bandLabel: string;
+  cells: (CourtAvailability["cells"][number] | null)[];
+  data: CourtAvailability;
+}) {
+  const totals = cells.filter(Boolean).map((c) => c!.total);
+  if (!totals.length) return null;
+  const modal = totals.slice().sort((a, b) =>
+    totals.filter((t) => t === b).length - totals.filter((t) => t === a).length)[0];
+  const courts = data.courtsBySport[sport];
+  if (!courts || !modal || modal % courts !== 0) return null;
+  return (
+    <span className="text-white/40" style={{ fontSize: RATE_LABEL }}>
+      {courts} {sport.toLowerCase()} {courts === 1 ? "court" : "courts"} &times;{" "}
+      {modal / courts} {bandLabel.toLowerCase()} hours = {modal} court-hours on a typical day.
+    </span>
+  );
+}
+
+function WeekChips({
   sport, bandKey, bandLabel, data, offset, onOffset,
 }: {
   sport: string;
   bandKey: string;
   bandLabel: string;
   data: CourtAvailability;
-  /** 0 = this week, 1 = next. Two pages only; the platform's booking window
-      is 30 days but a marketing panel showing a month of bars is a wall. */
+  /** 0 = this week, 1 = next. Two pages only; the platform's booking window is
+      30 days, but a row showing a month of chips is a wall. */
   offset: number;
   onOffset: (n: number) => void;
 }) {
-  const apiBand = API_BAND[bandKey] ?? bandKey;
   /* ⚠️ A DAY BEFORE THE SPORT OPENS IS NOT AN EMPTY DAY. The endpoint counts
      occupancy, and nothing is booked before opening, so cricket honestly
      reported "18 of 18 free" on days you cannot book cricket at all — the
@@ -1344,121 +1404,104 @@ function WeekStrip({
      marked shut instead. The gate is the per-sport date in lib/opening.ts,
      because the three sports come online across the first week. */
   const closedOn = (d: string) => shutOn(sport, d);
-  /* Both weeks arrive in one payload, so paging is a slice, not a fetch. */
-  const page = data.days.slice(offset * 7, offset * 7 + 7);
-  const hasNext = data.days.length > 7;
-  const cells = page.map((d) =>
-    data.cells.find((c) => c.sport === sport && c.band === apiBand && c.date === d) ?? null);
-  /* A day with no cell is not zero — it is a band with no hours left today.
-     The example used to be late night vanishing after 6am; with that band
-     gone (2026-10-08) the live case is today's PEAK column after 10pm on a
-     weekday, or after 8pm at the weekend. Rendered as a gap, not a zero. */
-  return (
-    <div className="flex flex-col gap-2">
-      <span className="flex items-center gap-2">
-        <span className="text-mono text-[var(--color-ember)]" style={{ fontSize: RATE_LABEL }}>
-          {/* Explicit {" "} around every expression: JSX drops the literal
-              space that follows one, which rendered "Peak· next 7 days". The
-              same trap About.tsx documents for LEGAL_NAME. */}
-          {sport}{" "}&middot;{" "}{bandLabel}{" "}&middot;{" "}
-          {offset === 0 ? "this week" : "next week"}
-        </span>
-      </span>
-      {/* The pager sits at the RIGHT EDGE OF THE DAYS, not up in the title:
-          it is a "what comes after Thursday" control, so it belongs where
-          Thursday ends. One button, two jobs — forward a week, then back.
+  const { page, cells, hasNext } = weekCells(sport, bandKey, data, offset);
+  /* One text slot, two jobs: which week at rest, and the hovered day's own
+     figure while the pointer is on a chip. Seven "12/18 free" labels do not fit
+     in a row, and the figure is what makes the colour mean something. */
+  const [day, setDay] = useState<number | null>(null);
+  const shown = day !== null ? cells[day] : null;
+  const shutShown = day !== null ? closedOn(page[day]) : false;
+  /* Composed, not one formatter call: {weekday, day} together renders "2 Fri",
+     which reads as a quantity. MobileHeat documents the same trap. */
+  const label = (d: string) =>
+    `${new Date(`${d}T12:00:00`).toLocaleDateString("en-US", { weekday: "short" })} ${new Date(`${d}T12:00:00`).getDate()}`;
 
-          A chevron here is navigation, not the decorative trailing arrow that
-          came off every CTA on 2026-10-02. It IS the control; without it the
-          button is an unlabelled box. */}
-      <div className="flex items-stretch gap-2">
-      <div className="grid grid-cols-7 gap-[5px] flex-1 min-w-0">
+  return (
+    <span
+      className="flex items-center gap-[10px] ml-auto pl-3 shrink-0"
+      onMouseLeave={() => setDay(null)}
+    >
+      {/* Dropped below 1100px, where the sport column is not wide enough for
+          chips AND a sentence: the table's overflow-x would start scrolling the
+          moment a price was hovered. The chips, the chevron and the per-day
+          title/aria text all survive the cut — this is the one piece that has a
+          spoken equivalent. `hovered` here is a pointer, so there is always a
+          tooltip. */}
+      <span
+        className="text-mono text-white/45 whitespace-nowrap tabular-nums max-[1099px]:hidden"
+        style={{ fontSize: RATE_LABEL }}
+      >
+        {day === null
+          ? (offset === 0 ? "this week" : "next week")
+          : shutShown
+            ? `${label(page[day])} · shut`
+            : shown
+              ? `${label(page[day])} · ${shown.free}/${shown.total} free`
+              : `${label(page[day])} · no hours`}
+      </span>
+      <span className="flex items-end gap-[3px]">
         {page.map((d, i) => {
           const shut = closedOn(d);
           const c = shut ? null : cells[i];
           const pct = c && c.total > 0 ? Math.round((c.free / c.total) * 100) : null;
-          const fill = fillFor(pct);
-          /* Composed, not formatted in one call: toLocaleDateString with
-             {weekday,day} rendered "2 Fri" here, which reads as a quantity.
-             Weekday then number is the order a person scans a week in. */
           const dt = new Date(`${d}T12:00:00`);
-          const label = `${dt.toLocaleDateString("en-US", { weekday: "short" })} ${dt.getDate()}`;
-          /* Each day is a booking link as well, so the panel is not a
-             dead-end read: you see Wednesday is nearly gone and the next
-             click is the booking page. */
+          const spoken = label(d);
+          /* Each day is still a booking link, so the strip is not a dead-end
+             read: you see Wednesday is nearly gone and the next click books it. */
           return (
             <a
               key={d}
               href={BOOK_COURTS_URL}
               target="_blank"
               rel="noreferrer"
-              className="text-center no-underline rounded-[3px] px-[2px] py-[1px] hover:bg-[var(--color-ember)]/10 focus-visible:bg-[var(--color-ember)]/10 focus:outline-none transition-colors"
+              className="flex flex-col items-center gap-[2px] no-underline rounded-[3px] focus:outline-none"
+              onMouseEnter={() => setDay(i)}
+              onFocus={() => setDay(i)}
               aria-label={
                 shut
-                  ? `${sport} is not bookable on ${label} — opens ${SPORT_BOOKING_OPENS_LABEL[sport] ?? "soon"}`
-                  : `Book ${sport} on ${label} — ${c ? `${c.free} of ${c.total} court-hours free` : "no hours in this band"}`
+                  ? `${sport} is not bookable on ${spoken} — opens ${SPORT_BOOKING_OPENS_LABEL[sport] ?? "soon"}`
+                  : `Book ${sport} on ${spoken} — ${c ? `${c.free} of ${c.total} court-hours free` : "no hours in this band"}`
               }
             >
-              <span className="text-mono block text-white/45" style={{ fontSize: RATE_LABEL }}>{label}</span>
-              {/* Dashed and empty, not a zero bar: shut and fully booked must
-                  not look alike. */}
-              <div
-                className={`relative mt-1 overflow-hidden rounded-[2px] ${
-                  shut ? "border border-dashed border-white/20" : "bg-white/[0.06]"
-                }`}
-                style={{ height: "30px" }}
-              >
-                {!shut && (
-                  <span className="absolute inset-x-0 bottom-0" style={{ height: `${pct ?? 0}%`, background: fill }} />
-                )}
-              </div>
+              {/* Dashed and empty, never a filled chip: shut and fully booked
+                  must not look alike. */}
               <span
-                className={`block mt-1 tabular-nums ${shut ? "text-white/35" : "text-white/70"}`}
-                style={{ fontSize: RATE_LABEL }}
+                className={`block rounded-[3px] ${shut ? "border border-dashed" : ""}`}
+                style={{
+                  width: "24px",
+                  height: "18px",
+                  background: shut ? "transparent" : fillFor(pct),
+                  borderColor: shut ? "var(--avail-shut)" : undefined,
+                  outline: day === i ? "1px solid var(--color-ember)" : undefined,
+                  outlineOffset: "1px",
+                }}
+              />
+              <span
+                className={`text-mono tabular-nums ${day === i ? "text-[var(--color-ember)]" : "text-white/40"}`}
+                style={{ fontSize: "0.5rem", lineHeight: 1 }}
               >
-                {shut ? "shut" : c ? `${c.free}/${c.total} free` : "—"}
+                {dt.getDate()}
               </span>
             </a>
           );
         })}
-      </div>
+      </span>
       {hasNext && (
         <button
           type="button"
-          /* Aligned to the BARS, not the whole cell: the day label sits above
-             them and the figure below, so centring on the column would float
-             the chevron off the row it belongs to. */
-          className="shrink-0 self-start mt-[18px] w-6 flex items-center justify-center rounded-[2px] border border-white/15 text-white/50 hover:text-[var(--color-ember)] hover:border-[var(--color-ember)]/50 focus-visible:text-[var(--color-ember)] focus-visible:border-[var(--color-ember)] focus:outline-none transition-colors"
-          style={{ height: "30px", fontSize: "0.8rem", lineHeight: 1 }}
+          /* The pager kept its job when the strip moved into the row — asked for
+             explicitly, 2026-10-08. One button, two states: forward a week,
+             then back. */
+          className="shrink-0 w-[18px] flex items-center justify-center rounded-[2px] border border-white/15 text-white/50 hover:text-[var(--color-ember)] hover:border-[var(--color-ember)]/50 focus-visible:text-[var(--color-ember)] focus-visible:border-[var(--color-ember)] focus:outline-none transition-colors"
+          style={{ height: "18px", fontSize: "0.7rem", lineHeight: 1 }}
           aria-label={offset === 0 ? "Show next week" : "Back to this week"}
           title={offset === 0 ? "Next week" : "This week"}
           onClick={() => onOffset(offset === 0 ? 1 : 0)}
         >
-          {offset === 0 ? "›" : "‹"}
+          {offset === 0 ? "\u203a" : "\u2039"}
         </button>
       )}
-      </div>
-      {/* Asked twice what the numbers were, which is twice more than a term
-          should need. "Court-hours" is courts x hours and nobody is obliged
-          to infer that, so the panel says it, with this band's own numbers.
-          Derived from the commonest day rather than hardcoded: the bands have
-          different widths on weekends, and squash has four courts where the
-          others have three. */}
-      {(() => {
-        const totals = cells.filter(Boolean).map((c) => c!.total);
-        if (!totals.length) return null;
-        const modal = totals.sort((a, b) =>
-          totals.filter((t) => t === b).length - totals.filter((t) => t === a).length)[0];
-        const courts = data.courtsBySport[sport];
-        if (!courts || !modal || modal % courts !== 0) return null;
-        return (
-          <span className="text-white/40" style={{ fontSize: RATE_LABEL }}>
-            {courts} {sport.toLowerCase()} {courts === 1 ? "court" : "courts"} &times;{" "}
-            {modal / courts} {bandLabel.toLowerCase()} hours = {modal} court-hours on a typical day.
-          </span>
-        );
-      })()}
-    </div>
+    </span>
   );
 }
 
@@ -1633,6 +1676,11 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
           hidden: { opacity: 0, y: 18 },
           visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] } },
         }}
+        /* The week clears when the pointer leaves the TABLE, not the row: the
+           panel that used to own this is gone, and clearing per row would blink
+           the strip out in the 1px gap between two rows on the way to another
+           price. Paging goes back to this week with it. */
+        onMouseLeave={() => { setProbe(null); setWeekOffset(0); }}
       >
         <div
           className={`${RATE_GRID} bg-white/[0.04] border-b border-white/[0.07]`}
@@ -1689,6 +1737,14 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
                 only wide target in it. The 15px squares are NOT tappable and
                 are not meant to be: booking lives on the floating button, so
                 the grid stays a read. */}
+            {/* Track 1 holds the sport AND its week. The min-height is reserved
+                whether or not a week is showing, so the table does not grow by
+                5px under the pointer — the same reason the panel below used to
+                reserve 118px, at a twenty-fifth of the cost. */}
+            <span
+              className="flex items-center min-w-0"
+              style={{ minHeight: canProbe ? "26px" : undefined }}
+            >
             {stacked && week ? (
               <button
                 type="button"
@@ -1727,6 +1783,20 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
                 {r.sport}
               </span>
             )}
+            {/* Only the hovered sport's row paints one. Three weeks at once
+                would be a heatmap nobody asked for, and the point of moving it
+                here was that the answer belongs to the price under the pointer. */}
+            {canProbe && week && probe?.sport === r.sport && (
+              <WeekChips
+                sport={r.sport}
+                bandKey={probe.band}
+                bandLabel={probe.label}
+                data={week}
+                offset={weekOffset}
+                onOffset={setWeekOffset}
+              />
+            )}
+            </span>
             {RATE_BANDS.map((b) => {
               // Peak is the price most people will actually pay, so it is the
               // one that reads at full strength.
@@ -1960,35 +2030,48 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
           </span>
         </div>
 
-        {/* ── The panel ────────────────────────────────────────────────────
-            On hover or focus of a price: that sport and band across the week.
-            At rest: nothing but the hint that says so.
+        {/* ── The line under the table ──────────────────────────────────────
+            The seven-bar panel that used to live here moved INTO the row on
+            2026-10-08. What stays is what a row has no space for and a reader
+            still needs: what the three colours mean, and what a court-hour is.
 
-            The commitment timetable from lib/floor.ts used to sit here at
-            rest — who holds which courts, in words. Removed 2026-10-05 at
-            Aniket's instruction: the calendar of bookings now draws the same
-            contracts as blocks on the actual grid, so the paragraph was
-            saying a second time, less precisely, what a reader can see.
+            The commitment timetable from lib/floor.ts sat here before that —
+            who holds which courts, in words. Removed 2026-10-05 at Aniket's
+            instruction: the calendar of bookings now draws the same contracts
+            as blocks on the actual grid, so the paragraph was saying a second
+            time, less precisely, what a reader can see.
 
-            ⚠️ THE MIN-HEIGHT STAYS. It is not leftover from that block — it
-            reserves the WEEK STRIP's height, which is the taller of the two
-            states, so the rows below do not jump the moment a price is
-            hovered. Removing it trades a little whitespace at rest for a
-            shifting page under the pointer. */}
+            ⚠️ THE MIN-HEIGHT STAYS, at a fifth of its old size. The legend and
+            the hint are different heights, and without it the two CTAs below
+            step up and down as the pointer crosses a price. */}
         <div
           className="flex flex-col gap-2 pt-0.5"
-          style={{ minHeight: canProbe ? "118px" : undefined }}
-          onMouseLeave={() => { setProbe(null); setWeekOffset(0); }}
+          style={{ minHeight: canProbe ? "34px" : undefined }}
         >
           {canProbe && probe && week ? (
-            <WeekStrip
-              sport={probe.sport}
-              bandKey={probe.band}
-              bandLabel={probe.label}
-              data={week}
-              offset={weekOffset}
-              onOffset={setWeekOffset}
-            />
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              {/* Colour is the WHOLE encoding now that the chips are 18px tall
+                  and cannot carry height as well, so this is not decoration. */}
+              {AVAIL_LEGEND.map(([label, bg]) => (
+                <span key={label} className="inline-flex items-center gap-1 text-white/40" style={{ fontSize: RATE_LABEL }}>
+                  <span className="inline-block rounded-[2px]" style={{ width: 9, height: 9, background: bg }} />
+                  {label}
+                </span>
+              ))}
+              <span className="inline-flex items-center gap-1 text-white/40" style={{ fontSize: RATE_LABEL }}>
+                <span
+                  className="inline-block rounded-[2px]"
+                  style={{ width: 9, height: 9, border: "1px dashed var(--avail-shut)" }}
+                />
+                shut
+              </span>
+              <CourtHoursNote
+                sport={probe.sport}
+                bandLabel={probe.label}
+                cells={weekCells(probe.sport, probe.band, week, weekOffset).cells}
+                data={week}
+              />
+            </span>
           ) : (
           /* The hover and tap hints, which used to ride on the end of the
              commitment timetable's footnote.
