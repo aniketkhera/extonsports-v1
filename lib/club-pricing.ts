@@ -84,9 +84,14 @@ export async function fetchPlayerCaps(): Promise<Record<string, SportCaps> | nul
 
       const bucket = (partial[row.sport] ??= { peak: null, offPeak: null })
       const current = bucket[slot]
-      // offPeak collapses standard AND late night into one column, so among
-      // those two the STRICTER wins — publishing the roomier of two numbers is
-      // the mistake that gets somebody turned away at the door.
+      // offPeak collapses every non-peak band into one column, so among them
+      // the STRICTER wins — publishing the roomier of two numbers is the
+      // mistake that gets somebody turned away at the door.
+      //
+      // Since 2026-10-08 that is only 'standard', late night having been
+      // abolished, so there is nothing left to collapse at Exton. The rule
+      // stays because it costs nothing and is the safe direction if a band is
+      // ever added back.
       bucket[slot] =
         !current || cap.base < current.base || (cap.base === current.base && cap.step < current.step)
           ? cap

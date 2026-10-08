@@ -17,17 +17,22 @@
 // Harmless while Exton has taken no bookings. A mispriced sale the moment it
 // takes one. Corrected below against the live `court_rate_rules` grid.
 //
-// Three bands, cheapest first, so the table reads left to right as the price
-// climbing toward prime time:
+// ── TWO BANDS FROM 2026-10-08. LATE NIGHT IS GONE. ─────────────────────────
+// Aniket's call: "we do not have late night". There were three bands; the
+// cheap 10pm–6am one is abolished and those hours are simply off-peak now.
 //
-//   Late night 10pm–6am Mon–Thu · 10pm–8am Sat/Sun   (the club is 24/7; almost
-//                                                     nobody wants 3am, so it
-//                                                     is priced to move)
-//   Off-peak   6am–4pm Mon–Fri · 8–10pm Sat/Sun
-//   Peak       4–10pm Mon–Fri  · 8am–8pm Sat/Sun
+//   Peak      4pm–10pm Mon–Fri · 8am–8pm Sat/Sun
+//   Off-peak  every other hour
 //
-// Note the weekend inversion: Saturday and Sunday mornings are peak, weekday
-// mornings are not.
+// ⚠️ THAT IS A PRICE RISE, NOT A RELABEL. An hour that was late night now
+// costs the off-peak rate — badminton and squash $35 → $40, cricket $45 → $50.
+// The peak windows did NOT move; they were already 4–10pm and 8am–8pm, so the
+// only thing that changed in the grid is the disappearance of the third band.
+// Matched in the same change by 42 rows in the platform's court_rate_rules,
+// which is the grid that actually charges.
+//
+// Note the weekend inversion, which survives: Saturday and Sunday mornings are
+// peak, weekday mornings are not.
 //
 // ── WHY THIS IS STILL A HARDCODED COPY, AND WHAT REPLACES IT ────────────────
 // The platform actually has FOUR day-kinds, not two — Mon–Thu, Fri, Sat and Sun
@@ -42,7 +47,7 @@
 // be RENDERED from it and this block deleted. Keeping the prices as a fallback
 // is fine; keeping the hours is what drifted.
 
-export type BandKey = 'lateNight' | 'offPeak' | 'peak'
+export type BandKey = 'offPeak' | 'peak'
 
 export type Band = {
   key: BandKey
@@ -62,8 +67,11 @@ export type Band = {
    4am. The weekend off-peak `8–10pm` has the same shape if you want it to match. */
 export const RATE_BANDS: Band[] = [
   { key: 'peak', label: 'Peak', weekday: '4pm–10pm', weekend: '8am–8pm' },
-  { key: 'offPeak', label: 'Off-peak', weekday: '6am–4pm', weekend: '8–10pm' },
-  { key: 'lateNight', label: 'Late night', weekday: '10pm–6am', weekend: '10pm–8am' },
+  /* Off-peak is now "whatever peak is not", and is written that way rather
+     than as a window. The honest window wraps midnight — weekday 10pm–4pm,
+     weekend 8pm–8am — and a reader parses that as a typo before they parse it
+     as a wrap. */
+  { key: 'offPeak', label: 'Off-peak', weekday: 'all other hours', weekend: 'all other hours' },
 ]
 
 /**
@@ -118,16 +126,17 @@ export type SportRate = {
    panel in the hero. Not alphabetical and not cheapest-first; changing it here
    changes the hero table, and SPORT_ORDER below keeps the footer in step. */
 export const COURT_RATES: SportRate[] = [
-  { sport: 'Cricket', lateNight: 45, offPeak: 50, peak: 55 },
-  { sport: 'Badminton', lateNight: 35, offPeak: 40, peak: 45 },
-  { sport: 'Squash', lateNight: 35, offPeak: 40, peak: 45 },
+  { sport: 'Cricket', offPeak: 50, peak: 55 },
+  { sport: 'Badminton', offPeak: 40, peak: 45 },
+  { sport: 'Squash', offPeak: 40, peak: 45 },
 ]
 
 /** One order for every sport list on the site. */
 export const SPORT_ORDER = COURT_RATES.map((r) => r.sport)
 
-/** Cheapest hour on the board — the "from $X" figure. */
-export const RATE_FROM = Math.min(...COURT_RATES.map((r) => r.lateNight))
+/** Cheapest hour on the board — the "from $X" figure.
+    Reads off-peak now that late night is gone, so it moved $35 -> $40. */
+export const RATE_FROM = Math.min(...COURT_RATES.map((r) => r.offPeak))
 
 /**
  * The hero's one line. Deliberately short.
@@ -214,6 +223,8 @@ export const CLASS_FEES_NOTE =
 /** A sentence per band for the footer, where there is space to say why. */
 export const BAND_BLURB: Record<BandKey, string> = {
   peak: 'Evenings after work, and all day at the weekend.',
-  offPeak: 'Weekday daytime, and the late-evening wind-down at weekends.',
-  lateNight: 'We are open 24/7, and almost nobody wants a 3am court — so it is priced to move.',
+  /* Covers the small hours now that late night is gone (2026-10-08), so it has
+     to mention them — the club is open 24/7 and someone reading "weekday
+     daytime" would not know what a 2am court costs. */
+  offPeak: 'Weekday daytime, the weekend wind-down, and every hour overnight.',
 }
