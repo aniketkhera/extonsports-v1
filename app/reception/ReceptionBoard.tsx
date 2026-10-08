@@ -5,7 +5,7 @@ import Image from "next/image";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
 import {
   PLATFORM, readKey, clubNow, span, holderLabel, brandOf,
-  type BrandKey, type NamedSlots,
+  type BrandKey, type NamedBlock, type NamedSlots,
 } from "../board/board-lib";
 
 /* A clock as an EXTERNAL STORE, not as state set from an effect.
@@ -123,6 +123,8 @@ const SPORT_ORDER = ["Badminton", "Cricket", "Squash"];
 
 /** One holder's hours, after courts have been merged. */
 type Entry = {
+  /** Club-local YYYY-MM-DD. Needed now that the list runs past today. */
+  date: string;
   from: number;
   to: number;
   who: string;
@@ -136,8 +138,51 @@ type Panel = {
   total: number;
   freeNow: number;
   now: Entry[];
-  next: { when: string; what: string } | null;
+  upcoming: Entry[];
 };
+
+/** How many bookings to list under the live one. Asked for by Aniket 8 Oct 2026. */
+const UPCOMING_COUNT = 5;
+
+/* Merge blocks into entries on (holder, from, to) — and on DATE too, now that
+   the list runs past today.
+
+   ⚠️ NEVER MERGE ON TIME ALONE. Two different members on two courts in the
+   same hour are two bookings; collapsing them would put one person's name
+   over the other's court. The holder is part of the key for that reason, and
+   the date joined it the moment this stopped being a today-only screen —
+   without it, PBA's Monday 17:30 and Wednesday 17:30 would fold together. */
+function mergeBlocks(blocks: NamedBlock[], label: Map<string, string>): Entry[] {
+  const byKey = new Map<string, Entry>();
+  for (const b of blocks) {
+    const who = holderLabel(b);
+    const k = `${b.date}|${who}|${b.from}|${b.to}`;
+    const found = byKey.get(k);
+    if (found) found.courts.push(label.get(b.courtId) ?? "");
+    else {
+      byKey.set(k, {
+        date: b.date, from: b.from, to: b.to, who,
+        brand: brandOf(b.who), courts: [label.get(b.courtId) ?? ""],
+      });
+    }
+  }
+  const out = [...byKey.values()].sort(
+    (a, b) => a.date.localeCompare(b.date) || a.from - b.from,
+  );
+  for (const e of out) e.courts.sort((a, b) => Number(a) - Number(b) || a.localeCompare(b));
+  return out;
+}
+
+/* "" for today, "Tomorrow", else a short weekday. Built from the date STRING's
+   own parts rather than by parsing it — new Date("2026-10-09") is UTC
+   midnight, which formats as the 8th in New York and would label every future
+   booking a day early. */
+function dayLabel(date: string, today: string, tomorrow: string | undefined): string {
+  if (date === today) return "";
+  if (tomorrow && date === tomorrow) return "Tomorrow";
+  const [y, m, d] = date.split("-").map(Number);
+  return new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(new Date(y, m - 1, d));
+}
 
 /* "1","2","3" -> "Courts 1–3"; "1","3" -> "Courts 1, 3". Ranges only collapse
    when the labels are consecutive integers, because a club that labels a court
@@ -247,7 +292,7 @@ export default function ReceptionBoard() {
   useEffect(() => {
     mounted.current = true;
     const key = readKey();
-    const url = key ? `${PLATFORM}/api/public/court-board?days=2` : "/api/court-slots";
+    const url = key ? `${PLATFORM}/api/public/court-board?days=7` : "/api/court-slots";
     const init: RequestInit = key
       ? { cache: "no-store", headers: { Authorization: `Bearer ${key}` } }
       : { cache: "no-store" };
@@ -274,12 +319,12 @@ export default function ReceptionBoard() {
     return () => { mounted.current = false; clearInterval(t); };
   }, []);
 
-  const panels: Panel[] = useMemo(() => {
+  const view = useMemo((): { panels: Panel[]; today: string; tomorrow?: string } => {
     /* `tick` is 0 until the ticker subscribes on mount, which is also what the
        server rendered — so the first pass draws an empty shell and the data
        arrives on the next tick. Depending on the NUMBER rather than on a Date
        object is what keeps this memo from re-running every render. */
-    if (!data || !tick) return [];
+    if (!data || !tick) return { panels: [], today: "" };
     const { date: today, minutes } = clubNow(new Date(tick));
     const i = data.days.indexOf(today);
     const tomorrow = i >= 0 ? data.days[i + 1] : undefined;
@@ -290,7 +335,7 @@ export default function ReceptionBoard() {
       return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
     });
 
-    return sports.map((sport) => {
+    const panels = sports.map((sport) => {
       const courts = data.courts.filter((c) => c.sport === sport);
       const ids = new Set(courts.map((c) => c.id));
       const label = new Map(courts.map((c) => [c.id, c.label || c.name]));
@@ -298,42 +343,30 @@ export default function ReceptionBoard() {
 
       const live = mine.filter((b) => b.date === today && b.from <= minutes && minutes < b.to);
 
-      /* Merge on (holder, from, to) — never on time alone. */
-      const byKey = new Map<string, Entry>();
-      for (const b of live) {
-        const who = holderLabel(b);
-        const k = `${who}|${b.from}|${b.to}`;
-        const found = byKey.get(k);
-        if (found) found.courts.push(label.get(b.courtId) ?? "");
-        else byKey.set(k, { from: b.from, to: b.to, who, brand: brandOf(b.who), courts: [label.get(b.courtId) ?? ""] });
-      }
-      const entries = [...byKey.values()].sort((a, b) => a.from - b.from);
-      for (const e of entries) e.courts.sort((a, b) => Number(a) - Number(b) || a.localeCompare(b));
+      /* Everything still to come: later today, then whole days after it.
+         Merged with the SAME function as the live list so a booking that
+         spans three courts is one line in both places — otherwise PBA would
+         collapse while it is on and then fan back out to three rows the
+         moment it became "upcoming". */
+      const ahead = mine.filter(
+        (b) => (b.date === today && b.from > minutes) || b.date > today,
+      );
 
       const busyIds = new Set(live.map((b) => b.courtId));
-
-      const laterToday = mine
-        .filter((b) => b.date === today && b.from > minutes)
-        .sort((a, b) => a.from - b.from)[0];
-      const firstTomorrow = tomorrow
-        ? mine.filter((b) => b.date === tomorrow).sort((a, b) => a.from - b.from)[0]
-        : undefined;
-      const nxt = laterToday ?? firstTomorrow;
 
       return {
         sport,
         total: courts.length,
         freeNow: courts.length - busyIds.size,
-        now: entries,
-        next: nxt
-          ? {
-              when: `${laterToday ? "" : "Tomorrow "}${span(nxt.from, nxt.to)}`,
-              what: holderLabel(nxt),
-            }
-          : null,
+        now: mergeBlocks(live, label),
+        upcoming: mergeBlocks(ahead, label).slice(0, UPCOMING_COUNT),
       };
     });
+
+    return { panels, today, tomorrow };
   }, [data, tick]);
+
+  const { panels, today, tomorrow } = view;
 
   const courtsOf = (p: Panel, e: Entry) => courtsLabel(p.sport, e.courts);
 
@@ -341,7 +374,7 @@ export default function ReceptionBoard() {
     <div
       style={{
         position: "absolute", inset: 0, background: BG, color: INK,
-        display: "flex", flexDirection: "column", padding: "2.1vh 1.9vw",
+        display: "flex", flexDirection: "column", padding: "2.7vh 2.2vw",
         overflow: "hidden",
       }}
     >
@@ -423,25 +456,50 @@ export default function ReceptionBoard() {
               {p.freeNow} OF {p.total} FREE NOW
             </div>
 
-            <div style={{ borderTop: `1px solid ${RULE_SOFT}`, paddingTop: "0.7vh" }}>
+            {/* COMING UP — the next five, each with its court.
+                ────────────────────────────────────────────────────────────
+                Three columns on one line per booking: time, holder, court.
+                A single wrapped line per booking would cost ten lines for
+                five bookings and there is not room, so each row is clipped
+                to one line and the HOLDER is the only part allowed to
+                truncate. The time and the court are fixed-width at the two
+                ends because they are what somebody at the desk is actually
+                answering questions about ("who's got court 2 at eight?").
+
+                The day prefix appears only when it is not today, so a list
+                that stays inside today carries no repeated noise. */}
+            <div style={{ borderTop: `1px solid ${RULE_SOFT}`, paddingTop: "0.6vh" }}>
               <div className="text-cond" style={{ fontSize: "1vw", letterSpacing: "0.16em", color: NEXT_LBL }}>
-                NEXT
+                COMING UP
               </div>
-              {/* Two lines, then clipped. A holder's full name plus a time runs
-                  wider than a third of the screen — "TOMORROW 9:30 PM – 12 AM ·
-                  JEYARAM RAVEENDRAN" overflowed the panel on the first build.
-                  The time leads, so a clipped second line costs the end of a
-                  name rather than the hour somebody is reading for. */}
-              <div
-                className="text-cond"
-                style={{
-                  fontSize: "1.2vw", color: NEXT_VAL, lineHeight: 1.2,
-                  display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
-                  overflow: "hidden",
-                }}
-              >
-                {p.next ? `${p.next.when} · ${p.next.what}` : "Nothing booked"}
-              </div>
+              {p.upcoming.length === 0 ? (
+                <div className="text-cond" style={{ fontSize: "1.2vw", color: NEXT_VAL, lineHeight: 1.35 }}>
+                  Nothing booked
+                </div>
+              ) : (
+                p.upcoming.map((e) => {
+                  const day = dayLabel(e.date, today, tomorrow);
+                  return (
+                    <div
+                      key={`${e.date}-${e.from}-${e.who}`}
+                      className="text-cond"
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "auto minmax(0,1fr) auto",
+                        gap: "0 0.5vw",
+                        fontSize: "1.12vw", lineHeight: 1.34, color: NEXT_VAL,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      <span style={{ color: INK }}>
+                        {day ? `${day} ` : ""}{span(e.from, e.to)}
+                      </span>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{e.who}</span>
+                      <span style={{ color: NEXT_LBL }}>{courtsOf(p, e)}</span>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         ))}
