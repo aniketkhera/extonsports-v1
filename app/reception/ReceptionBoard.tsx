@@ -207,17 +207,21 @@ function dayDiff(a: string, b: string): number {
   return Math.round((Date.UTC(ay, am - 1, ad) - Date.UTC(by, bm - 1, bd)) / 86_400_000);
 }
 
-/* "1","2","3" -> "Courts 1–3"; "1","3" -> "Courts 1, 3". Ranges only collapse
-   when the labels are consecutive integers, because a club that labels a court
-   "A" or "Centre" must not get a nonsense range out of this. */
+/* "1","2","3" -> "Courts 1, 2, 3". EVERY COURT IS NAMED; there is no range.
+   ──────────────────────────────────────────────────────────────────────────
+   This collapsed consecutive numbers into "Courts 1–3" until 8 Oct 2026, when
+   Aniket asked for each one spelled out. The reason is worth keeping: on a
+   board a range invites the reader to work out which courts it covers, and
+   "1–3" and "1, 3" differ by one character while meaning two and three courts
+   respectively. Naming them removes the arithmetic and the near-miss.
+
+   It costs width — "Courts 1, 2, 3" is five characters longer than
+   "Courts 1–3" — which the COMING UP rows absorb because the court column is
+   pinned at its natural width and the HOLDER is what truncates. If a club
+   ever has enough courts for this to overflow, shorten the noun, not this. */
 function courtsLabel(sport: string, labels: string[]): string {
   const noun = sport === "Cricket" ? "Lane" : "Court";
-  const nums = labels.map((l) => Number(l));
-  const allNums = nums.every((n) => Number.isInteger(n));
-  const consecutive =
-    allNums && nums.length > 1 && nums.every((n, i) => i === 0 || n === nums[i - 1] + 1);
   if (labels.length === 1) return `${noun} ${labels[0]}`;
-  if (consecutive) return `${noun}s ${labels[0]}–${labels[labels.length - 1]}`;
   return `${noun}s ${labels.join(", ")}`;
 }
 
