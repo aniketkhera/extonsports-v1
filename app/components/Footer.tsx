@@ -11,7 +11,7 @@ export default async function Footer() {
   const sports = SPORT_ORDER.filter((s) => caps[s]);
 
   /* ⚠️ CONDITIONAL, NOT DELETED. Every Exton cap is currently identical across
-     peak, off-peak and late night — 6 badminton, 10 cricket, 4 squash — so the
+     peak and off-peak — 6 badminton, 10 cricket, 4 squash — so the
      bracketed peak figure repeated the number beside it on every row and read as
      though the two might differ. Printing "6 (6)" nine times is noise.
 
@@ -88,11 +88,12 @@ export default async function Footer() {
         </dl>
 
         <div className="flex flex-col gap-3 text-[0.82rem] text-white/45 max-w-[68ch] leading-relaxed">
-          <p className="m-0">
-            <span className="text-white/65">Friday and Saturday nights are different.</span>{" "}
-            From 10pm to midnight those two nights are charged at the off-peak
-            rate rather than late night.
-          </p>
+          {/* The "Friday and Saturday nights are different" paragraph lived
+              here until 2026-10-08. It existed only because every OTHER night
+              from 10pm was late night, and those two were the exception at the
+              off-peak rate. With late night abolished there is no exception
+              left to draw — all seven nights are off-peak from 10pm — so the
+              paragraph went rather than being reworded into a tautology. */}
           <p className="m-0">
             <span className="text-white/65">How many can share a court depends on the band and on how long you book.</span>{" "}
             A longer booking is people rotating on and off, so it takes more of
@@ -139,14 +140,14 @@ export default async function Footer() {
           <p className="m-0 text-white/35 text-[0.76rem]">
             {bandsDiffer ? (
               <>
-                Off-peak and late night, with{" "}
+                Off-peak, with{" "}
                 <span className="text-white/50">peak in brackets</span>.
               </>
             ) : (
               /* Said rather than left silent: a reader who knows the PRICE changes
                  with the time of day will reasonably wonder whether the headcount
                  does too. It does not. */
-              <>The same at peak, off-peak and late night.</>
+              <>The same at peak and off-peak.</>
             )}
           </p>
 

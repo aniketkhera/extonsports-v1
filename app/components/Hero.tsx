@@ -1173,13 +1173,17 @@ const RATE_PRICE = "clamp(0.84rem, 0.8vw, 1.15rem)";
 const RATE_NOTE = "clamp(0.7rem, 0.62vw, 0.92rem)";
 const RATE_BODY = "clamp(0.78rem, 0.75vw, 1.05rem)";
 
-/* This site says peak / off-peak / late night; the platform's rate rules say
-   peak / standard / late_night. One join, written down once, because getting
-   it wrong shows a plausible but wrong column rather than an error. */
+/* This site says peak / off-peak; the platform's rate rules say peak /
+   standard. One join, written down once, because getting it wrong shows a
+   plausible but wrong column rather than an error.
+
+   The third entry, lateNight -> late_night, went on 2026-10-08 when the band
+   was abolished club-wide. If it ever comes back, it comes back HERE and in
+   lib/rates.ts together — a key with no platform rows renders an empty
+   column rather than failing, which is the quiet kind of wrong. */
 const API_BAND: Record<string, string> = {
   peak: "peak",
   offPeak: "standard",
-  lateNight: "late_night",
 };
 
 /* Grey at 100%, colour only once something is gone: an empty week should
@@ -1237,7 +1241,7 @@ function MobileHeat({
         {RATE_BANDS.map((b) => (
           <Fragment key={b.key}>
             <span className="text-mono text-white/45 self-center" style={{ fontSize: "0.5rem" }}>
-              {b.key === "offPeak" ? "Off-pk" : b.key === "lateNight" ? "Late" : "Peak"}
+              {b.key === "offPeak" ? "Off-pk" : "Peak"}
             </span>
             {page.map((d) => {
               const shut = shutOn(sport, d);
@@ -1340,8 +1344,10 @@ function WeekStrip({
   const hasNext = data.days.length > 7;
   const cells = page.map((d) =>
     data.cells.find((c) => c.sport === sport && c.band === apiBand && c.date === d) ?? null);
-  /* A day with no cell is not zero — it is a band with no hours left today,
-     which is why today's late night vanishes after 6am. Rendered as a gap. */
+  /* A day with no cell is not zero — it is a band with no hours left today.
+     The example used to be late night vanishing after 6am; with that band
+     gone (2026-10-08) the live case is today's PEAK column after 10pm on a
+     weekday, or after 8pm at the weekend. Rendered as a gap, not a zero. */
   return (
     <div className="flex flex-col gap-2">
       <span className="flex items-center gap-2">
