@@ -337,6 +337,18 @@ html { scroll-behavior: smooth; }
   --tile-bg: rgba(255,255,255,0.07);
   --tile-bg-quiet: rgba(255,255,255,0.04);
 
+  /* AVAILABILITY, AS TOKENS — the rate table's week strip paints these through
+     inline styles (fillFor in Hero.tsx), and an inline style cannot be reached
+     by the :root[data-theme="light"] .text-white/NN rules below, which only
+     override Tailwind utility classes. --avail-free was literally
+     rgba(255,255,255,0.14) until 2026-10-08, so a day with everything still
+     free was INVISIBLE on the light theme: the strip showed six bars and a gap.
+     Same trap the calendar's ink triple documents further down. */
+  --avail-free: rgba(255,255,255,0.14);
+  --avail-some: rgba(66,181,77,0.55);
+  --avail-low:  rgba(248,155,114,0.65);
+  --avail-shut: rgba(255,255,255,0.30);
+
   /* THE CALENDAR'S INK, AS AN RGB TRIPLE — not a colour.
      BookingsCalendar paints its grid, labels and blocks through inline
      style props, and an inline style cannot be reached by the
@@ -420,6 +432,14 @@ html { scroll-behavior: smooth; }
 
   --tile-bg: rgba(10,16,25,0.045);
   --tile-bg-quiet: rgba(10,16,25,0.025);
+
+  /* Availability on white. A free day is a visible empty TRACK, not white on
+     white; green and ember both darken, because the dark theme's values were
+     tuned as light ink on navy and wash out completely here. */
+  --avail-free: #DCE4EC;
+  --avail-some: rgba(52,150,62,0.55);
+  --avail-low:  rgba(206,87,24,0.55);
+  --avail-shut: rgba(10,16,25,0.28);
 
   --nav-bg: rgba(255,255,255,0.92);
   --strip-bg: #F7F9FB;
