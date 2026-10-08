@@ -152,33 +152,86 @@ type Panel = {
    come down with it. */
 const UPCOMING_COUNT = 10;
 
-/* Merge blocks into entries on (holder, from, to) — and on DATE too, now that
-   the list runs past today.
+/* Blocks -> entries, by cutting the day into TIME BANDS.
+   ──────────────────────────────────────────────────────────────────────────
+   This grouped on (date, holder, from, to) until 8 Oct 2026. That matched the
+   feed's own shape and was wrong on screen, for a reason that is not obvious:
 
-   ⚠️ NEVER MERGE ON TIME ALONE. Two different members on two courts in the
-   same hour are two bookings; collapsing them would put one person's name
-   over the other's court. The holder is part of the key for that reason, and
-   the date joined it the moment this stopped being a today-only screen —
-   without it, PBA's Monday 17:30 and Wednesday 17:30 would fold together. */
+   THE FEED HAS ALREADY COALESCED. lib/court-slots.ts keys its runs on
+   `date|court|kind|who`, so two bookings by the same person back to back on
+   ONE court arrive as a single run with the boundary between them erased.
+   Aniket holding badminton 1, 2, 3 from 06:00 and keeping 1 and 3 until 08:00
+   therefore arrived as: court 1 "06:00-08:00", court 3 "06:00-08:00", court 2
+   "06:00-07:00" — because court 2's 07:00 hour belongs to somebody else and
+   could not coalesce. Grouping on (from, to) then produced "6-8 courts 1, 3"
+   and "6-7 court 2", and the 6-7 row named ONE court when three were his.
+
+   So the boundaries are taken from every block in the sport, not from each
+   block alone: slice at every start and stop, work out who holds what in each
+   slice, then stitch adjacent slices back together where nothing changed.
+   A reader gets "6-7, courts 1, 2, 3" then "7-8, courts 1, 3".
+
+   ⚠️ STILL NEVER GROUPED ON TIME ALONE. Within a band the rows are split by
+   HOLDER, so two members sharing an hour on different courts stay two rows —
+   collapsing them would put one person's name over the other's court. */
 function mergeBlocks(blocks: NamedBlock[], label: Map<string, string>): Entry[] {
-  const byKey = new Map<string, Entry>();
+  const byDate = new Map<string, NamedBlock[]>();
   for (const b of blocks) {
-    const who = holderLabel(b);
-    const k = `${b.date}|${who}|${b.from}|${b.to}`;
-    const found = byKey.get(k);
-    if (found) found.courts.push(label.get(b.courtId) ?? "");
-    else {
-      byKey.set(k, {
-        date: b.date, from: b.from, to: b.to, who,
-        brand: brandOf(b.who), courts: [label.get(b.courtId) ?? ""],
-      });
+    const list = byDate.get(b.date);
+    if (list) list.push(b);
+    else byDate.set(b.date, [b]);
+  }
+
+  const out: Entry[] = [];
+  const sortCourts = (xs: string[]) =>
+    xs.sort((a, b) => Number(a) - Number(b) || a.localeCompare(b));
+
+  for (const [date, list] of byDate) {
+    /* Every instant where anything in this sport starts or stops. Slicing on
+       these and not on the blocks themselves is the whole point — see above. */
+    const bounds = [...new Set(list.flatMap((b) => [b.from, b.to]))].sort((a, b) => a - b);
+
+    for (let i = 0; i < bounds.length - 1; i++) {
+      const from = bounds[i];
+      const to = bounds[i + 1];
+      const covering = list.filter((b) => b.from <= from && b.to >= to);
+
+      const byWho = new Map<string, Entry>();
+      for (const b of covering) {
+        const who = holderLabel(b);
+        const found = byWho.get(who);
+        if (found) found.courts.push(label.get(b.courtId) ?? "");
+        else {
+          byWho.set(who, {
+            date, from, to, who,
+            brand: brandOf(b.who), courts: [label.get(b.courtId) ?? ""],
+          });
+        }
+      }
+
+      for (const band of byWho.values()) {
+        sortCourts(band.courts);
+        /* Re-join a band to the one before it when NOTHING about it changed —
+           same holder, same courts, and butted right up against it. Without
+           this, one member booking an hour on court 2 would chop a four-hour
+           academy hold on courts 1 and 3 into separate rows either side of it,
+           for no gain, and eat the ten-row budget doing it. With it, a long
+           hold stays one row unless its own court set actually changes. */
+        const prev = out.find(
+          (e) =>
+            e.date === date &&
+            e.to === band.from &&
+            e.who === band.who &&
+            e.courts.length === band.courts.length &&
+            e.courts.every((c, n) => c === band.courts[n]),
+        );
+        if (prev) prev.to = band.to;
+        else out.push(band);
+      }
     }
   }
-  const out = [...byKey.values()].sort(
-    (a, b) => a.date.localeCompare(b.date) || a.from - b.from,
-  );
-  for (const e of out) e.courts.sort((a, b) => Number(a) - Number(b) || a.localeCompare(b));
-  return out;
+
+  return out.sort((a, b) => a.date.localeCompare(b.date) || a.from - b.from);
 }
 
 /* "" for today, "Tomorrow", else a short weekday. Built from the date STRING's
