@@ -118,6 +118,30 @@ const MUTED = "rgba(255,255,255,0.70)";
 const RULE = "rgba(255,255,255,0.34)";
 const RULE_SOFT = "rgba(255,255,255,0.22)";
 const PANEL = "rgba(255,255,255,0.075)";
+/* ── The three sport boxes, lit ───────────────────────────────────────────
+   Asked for 2026-10-08: an ember border on each box, and shading so a box
+   reads as a raised object rather than a flat patch of lighter navy.
+
+   Everything here is in vw/vh for the same reason every size on this screen
+   is: the two televisions are a 55" and a 75" and we do not control whether
+   the browser reports 1920 or 3840 CSS pixels. A 2px border is hairline on
+   one of them and solid on the other; 0.09vw is the same line on both.
+
+   The light is from ABOVE — a brighter top edge, a darker foot, and a warm
+   ember wash in the top corner. One direction, consistently, is what makes
+   three boxes read as three objects on a wall instead of three gradients.
+   Shadow opacity is high because it is cast on #0B1623: a 0.25 shadow that
+   looks right on a laptop is invisible from fifteen feet on a dark screen. */
+const PANEL_LIT =
+  "linear-gradient(180deg, rgba(255,255,255,0.115) 0%, rgba(255,255,255,0.065) 42%, rgba(255,255,255,0.028) 100%)";
+const PANEL_GLOW =
+  "radial-gradient(120% 70% at 50% -10%, rgba(255,190,151,0.14) 0%, rgba(255,190,151,0) 70%)";
+const PANEL_BORDER = "rgba(255,190,151,0.52)";
+const PANEL_SHADOW = [
+  "0 0.9vh 2.4vh rgba(0,0,0,0.50)",            // the box sits off the wall
+  "inset 0 0.14vh 0 rgba(255,255,255,0.26)",   // lit top edge
+  "inset 0 -0.3vh 0.7vh rgba(0,0,0,0.30)",     // shaded foot
+].join(", ");
 
 const SPORT_ORDER = ["Badminton", "Cricket", "Squash"];
 
@@ -486,7 +510,14 @@ export default function ReceptionBoard() {
             key={p.sport}
             style={{
               display: "flex", flexDirection: "column", minWidth: 0,
-              background: PANEL, borderRadius: "0.6vw", padding: "1.4vh 1vw",
+              /* Two layers: the ember wash sits over the vertical shading, so
+                 the top of the box is warm and the foot falls away. PANEL
+                 stays underneath as the flat base for anything that cannot
+                 paint a gradient. */
+              background: `${PANEL_GLOW}, ${PANEL_LIT}, ${PANEL}`,
+              border: `0.09vw solid ${PANEL_BORDER}`,
+              boxShadow: PANEL_SHADOW,
+              borderRadius: "0.6vw", padding: "1.4vh 1vw",
             }}
           >
             <div className="text-cond" style={{ fontSize: "1.5vw", letterSpacing: "0.15em", color: LABEL, marginBottom: "0.9vh" }}>
