@@ -141,8 +141,16 @@ type Panel = {
   upcoming: Entry[];
 };
 
-/** How many bookings to list under the live one. Asked for by Aniket 8 Oct 2026. */
-const UPCOMING_COUNT = 5;
+/* How many bookings to list under the live one. Five on 8 Oct 2026, then ten
+   later the same day — Aniket's reasoning being that with only 3 badminton,
+   3 cricket and 4 squash courts, each bookable individually, a busy evening
+   produces rows faster than five can show, and the panel has the room.
+
+   Ten is close to the ceiling. Measured at 720p, a panel with a live booking
+   AND ten rows comes to roughly 490px of the ~640px available, so there is
+   headroom but not another ten. If this grows again the row height has to
+   come down with it. */
+const UPCOMING_COUNT = 10;
 
 /* Merge blocks into entries on (holder, from, to) — and on DATE too, now that
    the list runs past today.
@@ -177,11 +185,26 @@ function mergeBlocks(blocks: NamedBlock[], label: Map<string, string>): Entry[] 
    own parts rather than by parsing it — new Date("2026-10-09") is UTC
    midnight, which formats as the 8th in New York and would label every future
    booking a day early. */
-function dayLabel(date: string, today: string, tomorrow: string | undefined): string {
-  if (date === today) return "";
-  if (tomorrow && date === tomorrow) return "Tomorrow";
+function dayLabel(date: string, today: string): string {
+  const diff = dayDiff(date, today);
+  if (diff <= 0) return "";
+  if (diff === 1) return "Tomorrow";
   const [y, m, d] = date.split("-").map(Number);
-  return new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(new Date(y, m - 1, d));
+  const at = new Date(y, m - 1, d);
+  /* ⚠️ A WEEKDAY IS ONLY UNAMBIGUOUS INSIDE A WEEK. The list runs 21 days now
+     that it shows ten, and "Mon" for something sixteen days out is worse than
+     useless — somebody reads it as the Monday coming. Past six days ahead it
+     becomes a date. */
+  if (diff <= 6) return new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(at);
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(at);
+}
+
+/* Whole days between two club-local YYYY-MM-DD strings. Date.UTC on the parts,
+   so neither DST nor the viewer's zone can shift the answer by one. */
+function dayDiff(a: string, b: string): number {
+  const [ay, am, ad] = a.split("-").map(Number);
+  const [by, bm, bd] = b.split("-").map(Number);
+  return Math.round((Date.UTC(ay, am - 1, ad) - Date.UTC(by, bm - 1, bd)) / 86_400_000);
 }
 
 /* "1","2","3" -> "Courts 1–3"; "1","3" -> "Courts 1, 3". Ranges only collapse
@@ -292,7 +315,7 @@ export default function ReceptionBoard() {
   useEffect(() => {
     mounted.current = true;
     const key = readKey();
-    const url = key ? `${PLATFORM}/api/public/court-board?days=7` : "/api/court-slots";
+    const url = key ? `${PLATFORM}/api/public/court-board?days=21` : "/api/court-slots";
     const init: RequestInit = key
       ? { cache: "no-store", headers: { Authorization: `Bearer ${key}` } }
       : { cache: "no-store" };
@@ -319,15 +342,13 @@ export default function ReceptionBoard() {
     return () => { mounted.current = false; clearInterval(t); };
   }, []);
 
-  const view = useMemo((): { panels: Panel[]; today: string; tomorrow?: string } => {
+  const view = useMemo((): { panels: Panel[]; today: string } => {
     /* `tick` is 0 until the ticker subscribes on mount, which is also what the
        server rendered — so the first pass draws an empty shell and the data
        arrives on the next tick. Depending on the NUMBER rather than on a Date
        object is what keeps this memo from re-running every render. */
     if (!data || !tick) return { panels: [], today: "" };
     const { date: today, minutes } = clubNow(new Date(tick));
-    const i = data.days.indexOf(today);
-    const tomorrow = i >= 0 ? data.days[i + 1] : undefined;
 
     const sports = Array.from(new Set(data.courts.map((c) => c.sport)));
     sports.sort((a, b) => {
@@ -363,10 +384,10 @@ export default function ReceptionBoard() {
       };
     });
 
-    return { panels, today, tomorrow };
+    return { panels, today };
   }, [data, tick]);
 
-  const { panels, today, tomorrow } = view;
+  const { panels, today } = view;
 
   const courtsOf = (p: Panel, e: Entry) => courtsLabel(p.sport, e.courts);
 
@@ -478,7 +499,7 @@ export default function ReceptionBoard() {
                 </div>
               ) : (
                 p.upcoming.map((e) => {
-                  const day = dayLabel(e.date, today, tomorrow);
+                  const day = dayLabel(e.date, today);
                   return (
                     <div
                       key={`${e.date}-${e.from}-${e.who}`}
