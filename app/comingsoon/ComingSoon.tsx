@@ -210,7 +210,7 @@ export default function ComingSoon() {
             <span>Badminton</span>
           </span>
           <span className={s.partnerRule} aria-hidden />
-          <span className={s.seraLogo} role="img" aria-label="SeRa Dance and Fitness">
+          <span className={s.seraLogo} role="img" aria-label="SeRa Dance &amp; Fitness">
             <span>SeRa</span>
             <span>Dance &amp; Fitness</span>
           </span>
