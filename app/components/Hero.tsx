@@ -1148,8 +1148,13 @@ function AcademyDetail({
    like a feed. Turn it back on with the endpoint, not before. */
 const SHOW_NEXT_SLOT = false;
 
+/* ⚠️ THE REPEAT COUNT IS RATE_BANDS.length, NEVER A LITERAL. It was `repeat(3,…)`
+   from the three-band era, and when #81 abolished late night the third track
+   stayed: an empty 66px / 0.5fr column parked to the right of Off-peak. Both
+   price columns were the same width, but the table was not symmetric about
+   them, so Off-peak read as the wider one. Reported 2026-10-08. */
 const rateGrid = (open: boolean) =>
-  `minmax(84px,1fr) repeat(3,minmax(66px,0.5fr)) minmax(0,${open ? "1.1fr" : "0fr"})`;
+  `minmax(84px,1fr) repeat(${RATE_BANDS.length},minmax(66px,0.5fr)) minmax(0,${open ? "1.1fr" : "0fr"})`;
 
 /* The recreation panel's type scale.
  *
@@ -1776,6 +1781,9 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
                 </a>
               );
             })}
+            {/* Gated like its header label above, not just faded: an opacity-0
+                cell still ships in the HTML and still reads out. */}
+            {SHOW_NEXT_SLOT && (
             <span
               className="text-cond tracking-[0.02em] whitespace-nowrap overflow-hidden transition-opacity duration-300"
               style={{
@@ -1791,6 +1799,7 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
                 <span className="text-white/45"> · {slotFor(r.sport)!.court}</span>
               )}
             </span>
+            )}
           </div>
           {stacked && week && openSports.includes(r.sport) && (
             <MobileHeat
