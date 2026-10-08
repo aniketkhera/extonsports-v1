@@ -133,14 +133,21 @@ const PANEL = "rgba(255,255,255,0.075)";
    Shadow opacity is high because it is cast on #0B1623: a 0.25 shadow that
    looks right on a laptop is invisible from fifteen feet on a dark screen. */
 const PANEL_LIT =
-  "linear-gradient(180deg, rgba(255,255,255,0.115) 0%, rgba(255,255,255,0.065) 42%, rgba(255,255,255,0.028) 100%)";
+  "linear-gradient(180deg, rgba(255,255,255,0.145) 0%, rgba(255,255,255,0.07) 45%, rgba(255,255,255,0.018) 100%)";
 const PANEL_GLOW =
-  "radial-gradient(120% 70% at 50% -10%, rgba(255,190,151,0.14) 0%, rgba(255,190,151,0) 70%)";
-const PANEL_BORDER = "rgba(255,190,151,0.52)";
+  "radial-gradient(120% 75% at 50% -12%, rgba(248,155,114,0.22) 0%, rgba(248,155,114,0) 72%)";
+/* ⚠️ THE BORDER IS THE BRAND ORANGE AT FULL STRENGTH, not the pale header
+   salmon at half opacity. The first attempt (2026-10-08) used EMBER #FFBE97 at
+   0.52 and read as a warm grey line from the desk — "orange should be visible".
+   #F89B72 is the same orange the website uses, and at full opacity it still
+   belongs to the board rather than fighting the GREEN "ALL OPEN". */
+const PANEL_BORDER = "#F89B72";
 const PANEL_SHADOW = [
-  "0 0.9vh 2.4vh rgba(0,0,0,0.50)",            // the box sits off the wall
-  "inset 0 0.14vh 0 rgba(255,255,255,0.26)",   // lit top edge
-  "inset 0 -0.3vh 0.7vh rgba(0,0,0,0.30)",     // shaded foot
+  "0 1.7vh 3.8vh rgba(0,0,0,0.66)",            // the box sits off the wall
+  "0 0.5vh 1.1vh rgba(0,0,0,0.45)",            // the contact shadow under it
+  "0 0 1.4vh rgba(248,155,114,0.22)",          // the edge picks up its own light
+  "inset 0 0.18vh 0 rgba(255,255,255,0.34)",   // lit top edge
+  "inset 0 -0.45vh 1vh rgba(0,0,0,0.38)",      // shaded foot
 ].join(", ");
 
 const SPORT_ORDER = ["Badminton", "Cricket", "Squash"];
@@ -515,7 +522,10 @@ export default function ReceptionBoard() {
                  stays underneath as the flat base for anything that cannot
                  paint a gradient. */
               background: `${PANEL_GLOW}, ${PANEL_LIT}, ${PANEL}`,
-              border: `0.09vw solid ${PANEL_BORDER}`,
+              /* 0.09vw read as a hairline from the desk — roughly 1.7px on the
+                 55". 0.22vw is ~4px there and ~8px on the 75", which is the
+                 same line to the eye at both distances. */
+              border: `0.22vw solid ${PANEL_BORDER}`,
               boxShadow: PANEL_SHADOW,
               borderRadius: "0.6vw", padding: "1.4vh 1vw",
             }}
