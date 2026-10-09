@@ -288,32 +288,26 @@ export default function BookingsCalendar({
     return `${BOOK_COURTS_URL}?${p.toString()}`;
   }
 
-  /* The cell's state, the holder's initials, and whether this row is where the
-     block STARTS — all from one lookup.
-     ────────────────────────────────────────────────────────────────────────
-     Resolved together rather than by a second helper because this runs for
-     every one of ~500 cells, and a sibling function would repeat the same
-     find for a value this one has already located.
+  /* ⛔ THIS CALENDAR NAMES NOBODY, 2026-10-08. It used to stamp the holder's
+     INITIALS on the first row of each booking. Aniket asked for them off, and
+     the reason to keep them off is stronger than the reason they went on: this
+     page is public, Google indexes it, and the link is emailed around. Two
+     initials plus a court and an hour is not anonymous to anybody who knows the
+     club — and the feed is shared, so this page could quietly start naming
+     people again the day somebody widens `who`. The field still arrives on the
+     payload for the keyed TELEVISION board, which is not public; it is simply
+     not read here.
 
-     `atStart` exists so the initials are drawn ONCE per booking rather than
-     on each of its half-hour rows: a two-hour hire is four rows at 15px, and
-     "RK" stamped down all four reads as four bookings. A block that begins
-     before the visible window starts is labelled on the window's first row
-     instead, so scrolling never hides the only copy. */
+     The cell's state is resolved in one lookup because this runs for every one
+     of ~500 cells and a sibling helper would repeat the same find. */
   function cellOf(
     courtId: string,
     sport: string,
     slot: number,
-  ): { st: CellState; who?: string; atStart: boolean } {
+  ): { st: CellState } {
     const hit = byCourt.get(courtId)?.find((b) => slot >= b.from && slot < b.to);
-    if (hit) {
-      return {
-        st: hit.kind,
-        ...(hit.who ? { who: hit.who } : {}),
-        atStart: slot === hit.from || slot === winFrom,
-      };
-    }
-    return { st: stateOf(sport, slot), atStart: false };
+    if (hit) return { st: hit.kind };
+    return { st: stateOf(sport, slot) };
   }
 
   function stateOf(sport: string, slot: number): CellState {
@@ -378,9 +372,9 @@ export default function BookingsCalendar({
             <h2 className="text-cond text-white" style={{ fontSize: "clamp(1.25rem, 2.6vw, 1.9rem)" }}>
               Calendar of bookings
             </h2>
-            <p className="text-white/45 mt-1" style={{ fontSize: "0.72rem", maxWidth: "48ch" }}>
-              Every court, as it stands. A booked hour shows the initials of whoever
-              holds it; academy and coaching hours are not named.
+            <p className="text-white/45 mt-1" style={{ fontSize: "0.8rem", maxWidth: "48ch" }}>
+              Every court, as it stands. Booked hours are shaded; who holds them is
+              not shown.
             </p>
           </div>
           {!standalone && (
@@ -389,7 +383,7 @@ export default function BookingsCalendar({
             onClick={close}
             aria-label="Close the calendar"
             className="text-mono text-white/55 hover:text-white border border-white/20 hover:border-white/50 transition-colors shrink-0"
-            style={{ fontSize: "0.58rem", padding: "7px 12px" }}
+            style={{ fontSize: "0.64rem", padding: "7px 12px" }}
           >
             Close
           </button>
@@ -397,7 +391,7 @@ export default function BookingsCalendar({
         </div>
 
         {failed && (
-          <p className="text-white/50 py-8" style={{ fontSize: "0.8rem" }}>
+          <p className="text-white/50 py-8" style={{ fontSize: "0.86rem" }}>
             The calendar is not loading just now. Court availability is live on{" "}
             <a
               href={BOOK_COURTS_URL}
@@ -411,7 +405,7 @@ export default function BookingsCalendar({
         )}
 
         {!failed && !data && (
-          <p className="text-white/40 py-8" style={{ fontSize: "0.8rem" }}>Loading the week…</p>
+          <p className="text-white/40 py-8" style={{ fontSize: "0.86rem" }}>Loading the week…</p>
         )}
 
         {data && (
@@ -424,7 +418,7 @@ export default function BookingsCalendar({
                 everything, and no date field renders. */}
             {data.days.length > DAY_WINDOW && (
               <div className="flex items-center gap-2 pb-2">
-                <label className="text-mono text-white/40" style={{ fontSize: "0.5rem" }} htmlFor="cal-jump">
+                <label className="text-mono text-white/40" style={{ fontSize: "0.56rem" }} htmlFor="cal-jump">
                   Jump to
                 </label>
                 <input
@@ -441,11 +435,11 @@ export default function BookingsCalendar({
                   }}
                   className="text-mono bg-transparent text-white/80"
                   style={{
-                    fontSize: "0.56rem", padding: "4px 7px",
+                    fontSize: "0.62rem", padding: "4px 7px",
                     border: "1px solid rgba(var(--cal-fg),0.22)", colorScheme: "dark",
                   }}
                 />
-                <span className="text-white/30" style={{ fontSize: "0.5rem" }}>
+                <span className="text-white/30" style={{ fontSize: "0.56rem" }}>
                   to {dayLabel(data.days[data.days.length - 1]).dow} {dayLabel(data.days[data.days.length - 1]).num}{" "}
                   {data.days[data.days.length - 1].slice(0, 4)}
                 </span>
@@ -460,7 +454,7 @@ export default function BookingsCalendar({
                   disabled={winStart === 0}
                   aria-label="Earlier days"
                   className="text-mono shrink-0 transition-colors disabled:opacity-25"
-                  style={{ fontSize: "0.56rem", padding: "5px 7px", border: "1px solid rgba(var(--cal-fg),0.22)", color: "rgba(var(--cal-fg),0.70)" }}
+                  style={{ fontSize: "0.62rem", padding: "5px 7px", border: "1px solid rgba(var(--cal-fg),0.22)", color: "rgba(var(--cal-fg),0.70)" }}
                 >
                   &lsaquo;
                 </button>
@@ -477,7 +471,7 @@ export default function BookingsCalendar({
                     aria-pressed={on}
                     className="text-mono shrink-0 transition-colors"
                     style={{
-                      fontSize: "0.56rem",
+                      fontSize: "0.62rem",
                       padding: "5px 9px",
                       background: on ? "var(--color-ember)" : "transparent",
                       color: on ? "#0A1019" : "rgba(var(--cal-fg),0.70)",
@@ -495,7 +489,7 @@ export default function BookingsCalendar({
                   disabled={winStart >= data.days.length - DAY_WINDOW}
                   aria-label="Later days"
                   className="text-mono shrink-0 transition-colors disabled:opacity-25"
-                  style={{ fontSize: "0.56rem", padding: "5px 7px", border: "1px solid rgba(var(--cal-fg),0.22)", color: "rgba(var(--cal-fg),0.70)" }}
+                  style={{ fontSize: "0.62rem", padding: "5px 7px", border: "1px solid rgba(var(--cal-fg),0.22)", color: "rgba(var(--cal-fg),0.70)" }}
                 >
                   &rsaquo;
                 </button>
@@ -512,7 +506,7 @@ export default function BookingsCalendar({
                     aria-pressed={i === effSportIdx}
                     className="text-mono flex-1 transition-colors"
                     style={{
-                      fontSize: "0.56rem",
+                      fontSize: "0.62rem",
                       padding: "7px 4px",
                       background: i === effSportIdx ? "rgba(var(--cal-fg),0.11)" : "transparent",
                       color: i === effSportIdx ? "rgba(var(--cal-fg),0.95)" : "rgba(var(--cal-fg),0.62)",
@@ -525,7 +519,7 @@ export default function BookingsCalendar({
               </div>
             )}
 
-            <div className="mt-3" style={{ fontSize: "0.56rem" }}>
+            <div className="mt-3" style={{ fontSize: "0.65rem" }}>
               <div
                 className="grid"
                 style={{ gridTemplateColumns: `${gutter}px repeat(${courts.length}, minmax(0, 1fr))` }}
@@ -565,7 +559,7 @@ export default function BookingsCalendar({
                         style={{
                           height: rowH,
                           color: "rgba(var(--cal-fg),0.48)",
-                          fontSize: "0.52rem",
+                          fontSize: "0.6rem",
                           lineHeight: `${rowH}px`,
                           borderTop: onHour ? "1px solid rgba(var(--cal-fg),0.13)" : "none",
                           paddingRight: 6,
@@ -575,7 +569,7 @@ export default function BookingsCalendar({
                         {onHour ? clockLabel(slot) : ""}
                       </span>
                       {courts.map((c, ci) => {
-                        const { st, who, atStart } = cellOf(c.id, c.sport, slot);
+                        const { st } = cellOf(c.id, c.sport, slot);
                         const first = ci === 0 || courts[ci - 1].sport !== c.sport;
                         const common: CSSProperties = {
                           height: rowH,
@@ -598,42 +592,25 @@ export default function BookingsCalendar({
                             />
                           );
                         }
-                        const label = who && atStart ? who : "";
                         return (
                           <span
                             key={c.id}
                             style={{
                               ...common,
                               borderStyle: st === "shut" ? "dashed" : "solid",
-                              // Only the labelled cell becomes a flex box. Every
-                              // other cell stays a plain block, which is ~490 of
-                              // them on a busy day.
-                              ...(label
-                                ? {
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    // 15px rows, so this is deliberately tiny and
-                                    // clipped rather than allowed to push the row
-                                    // taller and knock the grid out of alignment.
-                                    fontSize: narrow ? "0.5rem" : "0.44rem",
-                                    lineHeight: 1,
-                                    letterSpacing: "0.02em",
-                                    overflow: "hidden",
-                                    color: "rgba(var(--cal-fg),0.62)",
-                                  }
-                                : null),
                             }}
+                            /* The tooltip is a holder-free sentence too: it said
+                               "booked by RK" until the initials came off, which
+                               would have left the name on hover after taking it
+                               off the grid. */
                             title={
                               st === "booking"
-                                ? `${c.name} · ${clockLabel(slot)} — booked${who ? ` by ${who}` : ""}`
+                                ? `${c.name} · ${clockLabel(slot)} — booked`
                                 : st === "programme" ? `${c.name} · ${clockLabel(slot)} — academy or coaching`
                                   : st === "shut" ? `${c.sport} is not bookable on this day yet`
                                     : `${clockLabel(slot)} has passed`
                             }
-                          >
-                            {label}
-                          </span>
+                          />
                         );
                       })}
                     </Fragment>
@@ -643,7 +620,7 @@ export default function BookingsCalendar({
             </div>
 
             {allShut && (
-              <p className="text-white/60 mt-2.5" style={{ fontSize: "0.68rem" }}>
+              <p className="text-white/60 mt-2.5" style={{ fontSize: "0.75rem" }}>
                 {shown.length === 1
                   ? `${shown[0].sport} opens for booking ${SPORT_BOOKING_OPENS_LABEL[shown[0].sport] ?? "shortly"}.`
                   : "None of these courts can be booked on this day yet."}{" "}
@@ -651,10 +628,10 @@ export default function BookingsCalendar({
               </p>
             )}
 
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 text-white/45" style={{ fontSize: "0.55rem" }}>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 text-white/45" style={{ fontSize: "0.63rem" }}>
               {([
                 ["free to book", FILL.free, "solid"],
-                ["booked — initials are the holder", FILL.booking, "solid"],
+                ["booked", FILL.booking, "solid"],
                 ["academy or coaching", FILL.programme, "solid"],
                 ["not bookable yet", FILL.shut, "dashed"],
               ] as const).map(([label, bg, bs]) => (
@@ -670,13 +647,13 @@ export default function BookingsCalendar({
                 type="button"
                 onClick={() => setAllHours((v) => !v)}
                 className="text-mono text-white/50 hover:text-white transition-colors"
-                style={{ fontSize: "0.52rem", borderBottom: "1px solid rgba(var(--cal-fg),0.35)" }}
+                style={{ fontSize: "0.6rem", borderBottom: "1px solid rgba(var(--cal-fg),0.35)" }}
               >
                 {allHours ? "Afternoon and evening" : "Show every hour"}
               </button>
             </div>
 
-            <p className="text-white/35 mt-3" style={{ fontSize: "0.62rem" }}>
+            <p className="text-white/35 mt-3" style={{ fontSize: "0.69rem" }}>
               Tap any free slot and it opens on app.orangish.io, on that court and hour,
               ready to book. The club is open round the clock
               {standalone
