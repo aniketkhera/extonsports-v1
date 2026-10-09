@@ -6,7 +6,7 @@ import useReloadOnDeploy from "../components/useReloadOnDeploy";
 /* The feed shape, the key handoff, club-local time and the holder-naming rules
    are shared with /reception — see board-lib.ts for why they are not duplicated. */
 import {
-  PLATFORM, readKey, clubNow, clock, span, kindLabel, holderLabel,
+  PLATFORM, readKey, clubNow, clock, span, holderLabel,
   type NamedBlock, type NamedSlots, type Row,
 } from "./board-lib";
 

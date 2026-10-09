@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import Image from "next/image";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
 import {
-  PLATFORM, readKey, clubNow, span, holderLabel, brandOf,
+  PLATFORM, readKey, clubNow, span, holderLabel, brandFor,
   type BrandKey, type NamedBlock, type NamedSlots,
 } from "../board/board-lib";
 
@@ -235,7 +235,7 @@ function mergeBlocks(blocks: NamedBlock[], label: Map<string, string>): Entry[] 
         else {
           byWho.set(who, {
             date, from, to, who,
-            brand: brandOf(b.who), courts: [label.get(b.courtId) ?? ""],
+            brand: brandFor(b), courts: [label.get(b.courtId) ?? ""],
           });
         }
       }
@@ -377,10 +377,46 @@ function Lockup({ brand, who }: { brand: BrandKey | null; who: string }) {
       </div>
     );
   }
-  /* Unbranded holder — a member's own hire. Their name (or initials) is the
-     lockup, which is why this prints `who` rather than nothing. */
+  if (brand === "sera") {
+    /* The studio's own split: script name, caps descriptor — the same lockup
+       the homepage partner strip draws, in the board's palette. The flyer
+       artwork is a portrait raster with a photograph in it and would not
+       survive being dropped into a dark panel. */
+    return (
+      <div style={{ display: "flex", alignItems: "baseline", gap: "0.5vw" }}>
+        <span
+          style={{
+            fontFamily: "var(--font-caveat), cursive",
+            fontWeight: 700, fontSize: "2vw", lineHeight: 1, color: EMBER,
+          }}
+        >
+          SeRa
+        </span>
+        <span
+          className="text-cond"
+          style={{ fontSize: "1.05vw", letterSpacing: "0.18em", color: INK, whiteSpace: "nowrap" }}
+        >
+          DANCE &amp; FITNESS
+        </span>
+      </div>
+    );
+  }
+  /* Not a partner — somebody's own hire. On reception that is their name; on
+     the vestibule the feed carries no name and holderLabel has already made it
+     "PRIVATE" (board-lib, 2026-10-09). Printing `who` either way keeps one
+     source of truth for the wording; only the weight differs, because PRIVATE
+     is a placeholder and a name is a fact. */
+  const isPrivate = who === "PRIVATE";
   return (
-    <div className="text-cond" style={{ fontSize: "1.5vw", color: INK, letterSpacing: "0.03em", lineHeight: 1.1 }}>
+    <div
+      className="text-cond"
+      style={{
+        fontSize: "1.5vw",
+        color: isPrivate ? MUTED : INK,
+        letterSpacing: isPrivate ? "0.06em" : "0.03em",
+        lineHeight: 1.1,
+      }}
+    >
       {who}
     </div>
   );
