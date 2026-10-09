@@ -12,7 +12,7 @@ import type { CourtSlots, SlotBlock, CourtRef } from "../api/court-slots/route";
 import { CLUB_TZ } from "../../lib/opening";
 
 /** The keyed feed returns the same shape plus a holder per block. */
-export type NamedBlock = SlotBlock & { who?: string };
+export type NamedBlock = SlotBlock & { who?: string; org?: BrandKey };
 export type NamedSlots = Omit<CourtSlots, "blocks"> & { blocks: NamedBlock[] };
 
 export type Row = {
@@ -94,6 +94,11 @@ export function span(from: number, to: number): string {
    noise. "COURT HIRE" is somebody who paid for the floor; "COACHING" is a
    squad, an academy session or a lesson — the same wording the public
    calendar's legend uses, so the two never read as different things. */
+/* ⛔ kindLabel() IS NO LONGER A FALLBACK, and nothing calls it as of
+   2026-10-08: holderLabel answers for every block now — a partner's name, or
+   PRIVATE. Kept because an UNKEYED screen (no board_screens token) still has
+   nothing but the kind to print, and that is the state /board ships in before
+   anyone pairs it. */
 export function kindLabel(kind: SlotBlock["kind"]): string {
   return kind === "booking" ? "COURT HIRE" : "COACHING";
 }
@@ -111,9 +116,34 @@ export function kindLabel(kind: SlotBlock["kind"]): string {
    the student for a lesson, 'Reserved' for anyone under 18 — all live server
    side in the platform's lib/court-holders.ts, which is the only place they can
    be enforced. Do not add a second set of rules here; add them there. */
+/* ⛔ WHETHER A MEMBER IS NAMED IS NOT THIS FILE'S DECISION, 2026-10-09. The
+   platform redacts per screen (board_screens.names_visible), so:
+
+     reception  — behind the desk, where staff answer "who has court 2 at
+                  eight?". The feed carries names and this prints them.
+     vestibule  — the airlock anybody walks through. Its feed carries the four
+                  partner organisations and NOTHING else, so `who` is absent
+                  and this prints PRIVATE.
+
+   That is deliberately a server-side split: the vestibule's payload never
+   contains a name, which matters because its token sits in a config file on a
+   box in a cupboard. A page-level flag would have shipped the names and asked
+   the screen not to draw them. A screen with no key at all never had names.
+
+   PARTNER_TEXT is the fallback for a screen that draws text rather than a
+   lockup — /board's rows — and for a brand whose mark has not been drawn. */
+export const PARTNER_TEXT: Record<BrandKey, string> = {
+  "philadelphia-badminton": "PHILADELPHIA BADMINTON",
+  ccca: "CHESTER COUNTY CRICKET ACADEMY",
+  squashtigers: "SQUASHTIGERS",
+  sera: "SERA DANCE & FITNESS",
+};
+
 export function holderLabel(b: NamedBlock): string {
+  const brand = brandFor(b);
+  if (brand) return PARTNER_TEXT[brand];
   const who = (b.who || "").trim();
-  return who ? who.toUpperCase() : kindLabel(b.kind);
+  return who ? who.toUpperCase() : "PRIVATE";
 }
 
 /* ── WHICH PARTNER HOLDS THIS HOUR ────────────────────────────────────────────
@@ -130,7 +160,26 @@ export function holderLabel(b: NamedBlock): string {
    the source strings come from events.name and squad_programs.name, which are
    typed by hand in the admin and have already varied — "Philadelphia Badminton"
    and "Philadelphia Badminton Academy" are both in the data. */
-export type BrandKey = "philadelphia-badminton" | "ccca" | "squashtigers";
+export type BrandKey = "philadelphia-badminton" | "ccca" | "squashtigers" | "sera";
+
+/* ⛔ PREFER THE FEED'S KEY, AND NEVER MATCH A PERSON'S NAME. `org` is resolved
+   in the platform from the event or squad row (lib/court-partners.ts) and is a
+   closed vocabulary of four — what this file's own comment above asked for.
+
+   The string matcher stays underneath it, but ONLY for a programme block. The
+   reason is that `org` is absent in two different situations — "not a partner"
+   and "this deployment predates partner keys" — and nothing in the payload
+   tells them apart, so a bare `b.org ?? brandOf(b.who)` would keep matching
+   for ever. On the keyed television feed `who` for a court hire is the
+   MEMBER'S OWN NAME, so that version would hang a partner's logo on a member
+   called Kasera or Serafina. Caught in review, 2026-10-09.
+
+   By lib/court-holders.ts's contract a programme label is an organisation, a
+   programme or a coach — never the name of whoever hired the court. */
+export function brandFor(b: { org?: BrandKey; who?: string; kind?: SlotBlock["kind"] }): BrandKey | null {
+  if (b.org) return b.org;
+  return b.kind === "programme" ? brandOf(b.who) : null;
+}
 
 export function brandOf(who: string | undefined): BrandKey | null {
   const s = (who || "").toLowerCase();
@@ -142,5 +191,9 @@ export function brandOf(who: string | undefined): BrandKey | null {
      squad carries their mark even when the string is just the squad's name
      ("Junior Squad", "Elite Squad"). Confirmed by Aniket 2026-10-07. */
   if (s.includes("squad")) return "squashtigers";
+  /* The studio's classes are labelled by the CLASS ("Bollywood Fitness"), not
+     by the studio, so the class name routes here too. Not 'dance' on its own:
+     a session the club runs itself must not inherit a partner's mark. */
+  if (s.includes("sera") || s.includes("bollywood")) return "sera";
   return null;
 }

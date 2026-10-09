@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { brandFor, type BrandKey } from "../board/board-lib";
 import type { CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import type { CourtSlots, SlotBlock } from "../api/court-slots/route";
@@ -288,15 +289,21 @@ export default function BookingsCalendar({
     return `${BOOK_COURTS_URL}?${p.toString()}`;
   }
 
-  /* ⛔ THIS CALENDAR NAMES NOBODY, 2026-10-08. It used to stamp the holder's
-     INITIALS on the first row of each booking. Aniket asked for them off, and
-     the reason to keep them off is stronger than the reason they went on: this
-     page is public, Google indexes it, and the link is emailed around. Two
-     initials plus a court and an hour is not anonymous to anybody who knows the
-     club — and the feed is shared, so this page could quietly start naming
-     people again the day somebody widens `who`. The field still arrives on the
-     payload for the keyed TELEVISION board, which is not public; it is simply
-     not read here.
+  /* ⛔ THIS CALENDAR NAMES THE FOUR PARTNERS AND NOBODY ELSE, 2026-10-08.
+     It stamped the holder's INITIALS on the first row of each booking until
+     that morning. They came off because this page is public, Google indexes
+     it and the link gets emailed around: two initials plus a court and an hour
+     is not anonymous at a club this size.
+
+     Partners are a different question and went ON the same day: SquashTigers,
+     Chester County, Philadelphia Badminton and Sera Dance & Fitness are
+     businesses advertising on the club's floor, and the site already prints
+     all four in its partner strip. An individual's hour reads "Private".
+
+     ⚠️ THE IDENTITY COMES FROM `org`, A CLOSED VOCABULARY OF FOUR
+     (lib/court-partners.ts in the platform), never from a name on the payload.
+     That is the whole safety property: this page cannot print a person even if
+     a future feed starts sending one, because it does not read that field.
 
      The cell's state is resolved in one lookup because this runs for every one
      of ~500 cells and a sibling helper would repeat the same find. */
@@ -304,10 +311,21 @@ export default function BookingsCalendar({
     courtId: string,
     sport: string,
     slot: number,
-  ): { st: CellState } {
+  ): { st: CellState; org?: BrandKey; atStart: boolean } {
     const hit = byCourt.get(courtId)?.find((b) => slot >= b.from && slot < b.to);
-    if (hit) return { st: hit.kind };
-    return { st: stateOf(sport, slot) };
+    if (hit) {
+      const org = brandFor(hit);
+      return {
+        st: hit.kind,
+        ...(org ? { org } : {}),
+        /* Labelled ONCE per block, not on each half-hour row: a two-hour hire
+           is four rows at 15px and four "Private"s read as four bookings. A
+           block that starts before the visible window is labelled on the
+           window's first row instead, so scrolling never hides the only copy. */
+        atStart: slot === hit.from || slot === winFrom,
+      };
+    }
+    return { st: stateOf(sport, slot), atStart: false };
   }
 
   function stateOf(sport: string, slot: number): CellState {
@@ -342,6 +360,35 @@ export default function BookingsCalendar({
     past: "rgba(var(--cal-fg),0.03)",
   };
 
+  /* ONE COLOUR PER PARTNER, because a 15px row cannot hold a logo. The colour
+     does the telling-apart at a glance and the legend below carries each
+     partner's actual mark; the two or four letters in the cell are a label for
+     the colour, not a thing anybody has to decode cold. Tuned to sit at the
+     same weight as FILL.programme, which they replace, so a day does not
+     suddenly read as four different intensities of busy. */
+  const PARTNER_FILL: Record<BrandKey, string> = {
+    squashtigers: "rgba(248,155,114,0.42)",
+    /* Amber, not the green it started as: FILL.programme below is that same
+       green, so Chester County and "other coaching" were two legend rows a
+       reader could not tell apart — in a change whose whole point is telling
+       people whose hour it is. Nothing in the site ties cricket to green. */
+    ccca: "rgba(255,196,61,0.42)",
+    "philadelphia-badminton": "rgba(120,170,255,0.38)",
+    sera: "rgba(214,130,220,0.36)",
+  };
+  const PARTNER_SHORT: Record<BrandKey, string> = {
+    squashtigers: "ST",
+    ccca: "CCCA",
+    "philadelphia-badminton": "PHILA",
+    sera: "SeRa",
+  };
+  const PARTNER_FULL: Record<BrandKey, string> = {
+    squashtigers: "SquashTigers",
+    ccca: "Chester County Cricket Academy",
+    "philadelphia-badminton": "Philadelphia Badminton",
+    sera: "Sera Dance & Fitness",
+  };
+
   const shell = (
     <div
       {...(standalone ? {} : { role: "dialog", "aria-modal": true })}
@@ -373,8 +420,8 @@ export default function BookingsCalendar({
               Calendar of bookings
             </h2>
             <p className="text-white/45 mt-1" style={{ fontSize: "0.8rem", maxWidth: "48ch" }}>
-              Every court, as it stands. Booked hours are shaded; who holds them is
-              not shown.
+              Every court, as it stands. The club's resident academies are named;
+              everything else is somebody's private hire.
             </p>
           </div>
           {!standalone && (
@@ -569,11 +616,11 @@ export default function BookingsCalendar({
                         {onHour ? clockLabel(slot) : ""}
                       </span>
                       {courts.map((c, ci) => {
-                        const { st } = cellOf(c.id, c.sport, slot);
+                        const { st, org, atStart } = cellOf(c.id, c.sport, slot);
                         const first = ci === 0 || courts[ci - 1].sport !== c.sport;
                         const common: CSSProperties = {
                           height: rowH,
-                          background: FILL[st],
+                          background: org ? PARTNER_FILL[org] : FILL[st],
                           borderTop: `1px solid rgba(var(--cal-fg),${onHour ? 0.13 : 0.06})`,
                           borderLeft: `1px solid rgba(var(--cal-fg),${first ? 0.15 : 0.07})`,
                           display: "block",
@@ -592,25 +639,49 @@ export default function BookingsCalendar({
                             />
                           );
                         }
+                        /* "Private" for an individual's hour, the partner's
+                           short mark for the four. Only this cell becomes a
+                           flex box; the other ~490 on a busy day stay plain
+                           blocks. */
+                        const mark = !atStart ? "" : org ? PARTNER_SHORT[org] : st === "booking" ? "Private" : "";
                         return (
                           <span
                             key={c.id}
                             style={{
                               ...common,
                               borderStyle: st === "shut" ? "dashed" : "solid",
+                              ...(mark
+                                ? {
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    // Clipped rather than allowed to push the
+                                    // row taller and knock the grid out of line.
+                                    fontSize: narrow ? "0.56rem" : "0.5rem",
+                                    lineHeight: 1,
+                                    letterSpacing: "0.02em",
+                                    overflow: "hidden",
+                                    whiteSpace: "nowrap",
+                                    color: "rgba(var(--cal-fg),0.78)",
+                                  }
+                                : null),
                             }}
-                            /* The tooltip is a holder-free sentence too: it said
-                               "booked by RK" until the initials came off, which
-                               would have left the name on hover after taking it
-                               off the grid. */
+                            /* Never a person on hover either: the tooltip said
+                               "booked by RK" until the initials came off, and
+                               putting a name back here would undo the grid
+                               change one hover at a time. */
                             title={
-                              st === "booking"
-                                ? `${c.name} · ${clockLabel(slot)} — booked`
-                                : st === "programme" ? `${c.name} · ${clockLabel(slot)} — academy or coaching`
-                                  : st === "shut" ? `${c.sport} is not bookable on this day yet`
-                                    : `${clockLabel(slot)} has passed`
+                              org
+                                ? `${c.name} · ${clockLabel(slot)} — ${PARTNER_FULL[org]}`
+                                : st === "booking"
+                                  ? `${c.name} · ${clockLabel(slot)} — booked, privately held`
+                                  : st === "programme" ? `${c.name} · ${clockLabel(slot)} — academy or coaching`
+                                    : st === "shut" ? `${c.sport} is not bookable on this day yet`
+                                      : `${clockLabel(slot)} has passed`
                             }
-                          />
+                          >
+                            {mark}
+                          </span>
                         );
                       })}
                     </Fragment>
@@ -631,8 +702,12 @@ export default function BookingsCalendar({
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 text-white/45" style={{ fontSize: "0.63rem" }}>
               {([
                 ["free to book", FILL.free, "solid"],
-                ["booked", FILL.booking, "solid"],
-                ["academy or coaching", FILL.programme, "solid"],
+                ["Private — somebody's hire", FILL.booking, "solid"],
+                ["ST — SquashTigers", PARTNER_FILL.squashtigers, "solid"],
+                ["CCCA — Chester County Cricket Academy", PARTNER_FILL.ccca, "solid"],
+                ["PHILA — Philadelphia Badminton", PARTNER_FILL["philadelphia-badminton"], "solid"],
+                ["SeRa — Sera Dance & Fitness", PARTNER_FILL.sera, "solid"],
+                ["other coaching", FILL.programme, "solid"],
                 ["not bookable yet", FILL.shut, "dashed"],
               ] as const).map(([label, bg, bs]) => (
                 <span key={label} className="inline-flex items-center gap-1.5">

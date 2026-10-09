@@ -48,14 +48,18 @@ export type SlotBlock = {
   /** 'booking' = somebody hired it. 'programme' = academy, squad or lesson. */
   kind: 'booking' | 'programme'
   /**
-   * The holder's INITIALS — "RK" — on a booking block only (2026-10-07).
+   * ⛔ THE ONLY IDENTITY THIS PROXY WILL CARRY, and it is four fixed strings.
    *
-   * Absent on a programme block, and absent for an under-18 holder, both
-   * decided upstream in the platform's lib/court-slots.ts. Treat it as
-   * optional everywhere: a block with no `who` is the normal case, not a
-   * failure, and the overlay must still render it as simply "booked".
+   * The partner organisation holding the hour — SquashTigers, Chester County
+   * Cricket Academy, Philadelphia Badminton, Sera Dance & Fitness — resolved
+   * upstream in the platform's lib/court-partners.ts. Absent on everything
+   * else, which the calendar draws as "Private".
+   *
+   * `who` was here until 2026-10-08 and carried the holder's initials ("RK").
+   * It is gone: initials plus an exact court and hour identify a person at a
+   * club this size, and this page is public and indexed.
    */
-  who?: string
+  org?: 'squashtigers' | 'ccca' | 'philadelphia-badminton' | 'sera'
 }
 
 export type CourtRef = {
@@ -76,6 +80,9 @@ export type CourtSlots = {
 }
 
 const EMPTY: CourtSlots = { timeZone: 'America/New_York', days: [], courts: [], blocks: [] }
+
+/** The four keys this proxy will forward. Anything else is dropped silently. */
+const PARTNERS = ['squashtigers', 'ccca', 'philadelphia-badminton', 'sera'] as const
 
 /* How many days to ask the platform for.
  *
@@ -128,15 +135,17 @@ export async function GET(req: Request) {
           && typeof b.from === 'number' && typeof b.to === 'number'
           && (b.kind === 'booking' || b.kind === 'programme'))
         .map((b) => {
-          // Capped and stripped rather than forwarded. This value is rendered
-          // into the overlay, and the upstream reduces to initials — so
-          // anything longer than a few characters means that reduction did not
-          // happen, and forwarding a full name to a public page on the strength
-          // of a remote response is exactly the mistake worth refusing here.
-          const who = typeof b.who === 'string' ? b.who.trim().slice(0, 4) : ''
+          // ⛔ AN ALLOW-LIST, NOT A PASS-THROUGH, and that is the whole guard:
+          // whatever the upstream sends, the only identity that can reach this
+          // public page is one of four fixed keys. The previous version capped
+          // `who` at four characters on the same reasoning — the upstream was
+          // meant to have reduced it to initials, and forwarding a full name to
+          // a public page on the strength of a remote response is the mistake
+          // worth refusing locally. Now nothing textual is forwarded at all.
+          const org = PARTNERS.find((k) => k === b.org)
           return {
             date: b.date, courtId: b.courtId, from: b.from, to: b.to, kind: b.kind,
-            ...(who && b.kind === 'booking' ? { who } : {}),
+            ...(org ? { org } : {}),
           }
         }),
     } satisfies CourtSlots)
