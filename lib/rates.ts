@@ -34,6 +34,20 @@
 // Note the weekend inversion, which survives: Saturday and Sunday mornings are
 // peak, weekday mornings are not.
 //
+// ── CRICKET $55 / $65 FROM 2026-10-10 ──────────────────────────────────────
+// Aniket: "change those to $65 and $55 for peak and off-peak ... keep the peak
+// and non-peak hours same". Cricket only — badminton and squash stay $40/$45.
+//
+//   Cricket   off-peak $50 → $55   peak $55 → $65
+//
+// The platform's 42 published cricket rows in court_rate_rules were changed
+// FIRST, the same day, because that grid is what charges; for the few minutes
+// between the two deploys this page under-stated the price, which is the
+// direction the 2026-08-30 note above warns about. Bands untouched: still
+// 54 peak hours and 114 off-peak a week. Peak is now $10 over off-peak where it
+// was $5, so cricket is the one sport whose two numbers are not $5 apart —
+// nothing here derives one from the other, but check before assuming it.
+//
 // ── WHY THIS IS STILL A HARDCODED COPY, AND WHAT REPLACES IT ────────────────
 // The platform actually has FOUR day-kinds, not two — Mon–Thu, Fri, Sat and Sun
 // each differ — so this two-column model cannot express it exactly. The Fri/Sat
@@ -126,7 +140,7 @@ export type SportRate = {
    panel in the hero. Not alphabetical and not cheapest-first; changing it here
    changes the hero table, and SPORT_ORDER below keeps the footer in step. */
 export const COURT_RATES: SportRate[] = [
-  { sport: 'Cricket', offPeak: 50, peak: 55 },
+  { sport: 'Cricket', offPeak: 55, peak: 65 },
   { sport: 'Badminton', offPeak: 40, peak: 45 },
   { sport: 'Squash', offPeak: 40, peak: 45 },
 ]
