@@ -348,20 +348,27 @@ function Clock() {
   /* Tabular figures: without them the colon jitters left and right every
      second as the digit widths change, which is very visible on a wall. */
   return (
-    <span style={{ display: "block", textAlign: "right" }}>
+    /* One line, as asked (2026-10-10). Baseline alignment, so the small date
+       sits on the same footing as the big numerals instead of floating at
+       their centre. */
+    <span style={{ display: "inline-flex", alignItems: "baseline", gap: "0.6em" }}>
       {/* 0.42 of the clock's own size, so it reads as a label rather than
           competing with the time from across the lobby. Not uppercased -- the
           title beside it already is, and two shouting lines flatten the
-          hierarchy the desk reads this screen by. */}
+          hierarchy the desk reads this screen by.
+
+          nowrap because this sits in a space-between header: without it the
+          date is the only wrappable thing in the row and it would break mid
+          month rather than push. */}
       <span
         style={{
-          display: "block", fontSize: "0.42em", letterSpacing: "0.14em",
-          color: MUTED, lineHeight: 1.2, marginBottom: "0.25em",
+          fontSize: "0.42em", letterSpacing: "0.14em",
+          color: MUTED, whiteSpace: "nowrap",
         }}
       >
         {dateText}
       </span>
-      <span style={{ display: "block", fontVariantNumeric: "tabular-nums", letterSpacing: "0.01em" }}>
+      <span style={{ fontVariantNumeric: "tabular-nums", letterSpacing: "0.01em" }}>
         {text}
       </span>
     </span>
