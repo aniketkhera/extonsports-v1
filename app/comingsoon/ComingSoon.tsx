@@ -6,6 +6,7 @@ import { CONTACT_PHONE, CONTACT_PHONE_E164 } from "@/lib/legal";
 import QrCode from "./QrCode";
 import s from "./comingsoon.module.css";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
+import { makeTicker, useTick } from "../components/ticker";
 
 // Zone colours are Facility3D's own (its `C` table), so each legend dot matches the floor
 // it names in the rendering above it.
@@ -38,6 +39,7 @@ export default function ComingSoon() {
     <main className={s.root}>
       <Backdrop />
       <Diag />
+      <TodayLine />
 
       <section className={s.copy}>
         <div className={`${s.brand} ${s.rise}`}>
@@ -218,6 +220,40 @@ export default function ComingSoon() {
       </div>
     </main>
   );
+}
+
+/* Today's day and date, top centre — the outside TV (2026-10-10, "add the date and
+   day to the outside tv too", alongside the two court boards).
+
+   Set in the wordmark's face (.today), so it reads as part of the screen's own
+   header rather than a caption. Shown in the TV layout only: this page is also a
+   public URL, and on a phone the top band is where the brand lockup sits.
+
+   ⚠️ IT SITS DIRECTLY ABOVE "COMING THE WEEK OF OCT 5TH!" — the first heading
+   slide, which the comment on that slide already says goes stale from Mon 12 Oct.
+   With today's date printed on the same screen the contradiction is visible to
+   anyone on the street, so that slide wants changing (or reading from
+   lib/opening.ts) before Monday. Not changed here: it is copy, and nobody asked.
+
+   Thirty-second ticker on the shared external-store clock (see
+   app/components/ticker.ts), so the date turns over within half a minute of
+   midnight and nothing is set from an effect. The server snapshot is 0, so it
+   renders nothing until the TV has a real time: no hydration mismatch with the
+   build-time render, and never yesterday's date baked into static HTML.
+
+   America/New_York, not the browser's zone: the VIZIO carries whatever timezone
+   it shipped with and tv-keeper does not set it. The year is in it deliberately —
+   on a screen nobody checks, a wrong year is the one stale-tell nobody misses. */
+const dateTicker = makeTicker(30_000);
+
+function TodayLine() {
+  const ms = useTick(dateTicker);
+  if (!ms) return null;
+  const text = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "long", month: "long", day: "numeric", year: "numeric",
+  }).format(new Date(ms));
+  return <div className={s.today}>{text}</div>;
 }
 
 function Backdrop() {

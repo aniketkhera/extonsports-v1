@@ -120,8 +120,9 @@ export default function CourtBoard() {
   }, [data, now]);
 
   const stamp = now ? clubNow(now) : null;
-  /* Day AND date, sat with the time rather than tucked beside the title.
-     Aniket asked for it on all the televisions, 2026-10-10.
+  /* Day AND date, on the header's centre line in the title's own face and
+     size. Aniket asked for it on all the televisions, 2026-10-10, then "a bit
+     larger, same font as the header row, top center".
 
      The year is included, which it was not before. On a screen that runs for
      months unattended this is the one thing that makes a stale board obvious:
@@ -142,20 +143,19 @@ export default function CourtBoard() {
       <header className="bhead">
         <div>
           <div className="btitle">EXTON SPORTS CENTER</div>
-          {/* The date used to live here. It moved to the clock block so there is
-              exactly one place on the screen that says what time it is, and so
-              both televisions read the same way round. */}
           <div className="bsub">COURT BOARD</div>
         </div>
-        <div className="bstamp">
-          <div className="bdate">{heading ? heading.toUpperCase() : ""}</div>
-          <div className="bclock">
-            {stamp ? clock(stamp.minutes) : "—"}
-            {/* Deliberately small and unlabelled. The board is for members, not
-                for diagnosing it; the dot is for whoever walks past and wonders
-                why nothing has changed since this morning. */}
-            {stale && <span className="bdot" title="not updating" />}
-          </div>
+        {/* Its own grid column, so it sits on the screen's centre line whatever
+            the title and the clock happen to measure — space-between would put it
+            midway between their edges instead, which drifts as the time changes
+            width. See .bhead. */}
+        <div className="bdate">{heading ? heading.toUpperCase() : ""}</div>
+        <div className="bclock">
+          {stamp ? clock(stamp.minutes) : "—"}
+          {/* Deliberately small and unlabelled. The board is for members, not
+              for diagnosing it; the dot is for whoever walks past and wonders
+              why nothing has changed since this morning. */}
+          {stale && <span className="bdot" title="not updating" />}
         </div>
       </header>
 

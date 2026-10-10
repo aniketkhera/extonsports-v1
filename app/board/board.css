@@ -34,11 +34,17 @@
 
 /* ── Header ─────────────────────────────────────────────────────────── */
 
+/* Three columns, 1fr auto 1fr: title, date, clock. The equal outer tracks are
+   what put the date on the screen's true centre line (2026-10-10, "top
+   center"); with flex space-between it would sit midway between the title's
+   right edge and the clock's left edge, and drift every time the time changes
+   width. Rows still bottom-align, as before, so the big clock and the
+   title/subtitle block keep their shared foot. */
 .bhead {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 2vw;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: end;
+  column-gap: 2vw;
   border-bottom: 0.25vh solid #F89B72;
   padding-bottom: 1.2vh;
 }
@@ -60,31 +66,24 @@
   margin-top: 0.7vh;
 }
 
-/* Day, date and time on ONE line (2026-10-10, as asked). Baseline-aligned so
-   the small date sits on the same footing as the big numerals rather than
-   floating at their centre.
+/* The day and date: the TITLE's face, weight, size, tracking and case, so it
+   reads as part of the header row rather than a caption (2026-10-10 — "a bit
+   larger, same font as the header row"). Colour is inherited, as .btitle's is.
 
-   It was stacked first, on the theory that the longest string
-   ("WEDNESDAY, SEPTEMBER 30, 2026") would squeeze the title at 75". Measured
-   instead of assumed: at 16:9 the date runs ~340px and the time ~200px of
-   1600, so the row uses about a third of the width and the title is never
-   crowded. nowrap on .bdate keeps it one line; if a future font ever did make
-   it tight, .btitle is the thing that should shrink, not this. */
-.bstamp {
-  display: flex;
-  flex-direction: row;
-  align-items: baseline;
-  justify-content: flex-end;
-  gap: 1.2vw;
-}
-
-/* Matches .bsub, so the date reads as a label against the big time. */
+   align-self: start, not the row's `end`: at the same size and line-height as
+   .btitle it then shares the title's top line exactly, instead of dropping to
+   the subtitle's foot. nowrap so the longest date ("WEDNESDAY, SEPTEMBER 30,
+   2026") stays one line — the auto track simply takes the width it needs. */
 .bdate {
+  font-family: var(--font-cond), system-ui, sans-serif;
   font-weight: 600;
-  font-size: 1.6vh;
-  letter-spacing: 0.18em;
-  color: #6E7A88;
+  font-size: 3.6vh;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   white-space: nowrap;
+  justify-self: center;
+  align-self: start;
 }
 
 .bclock {
@@ -97,6 +96,7 @@
   display: flex;
   align-items: center;
   gap: 1vh;
+  justify-self: end;
 }
 
 /* Deliberately tiny: a reader does not need it, and whoever is wondering why
