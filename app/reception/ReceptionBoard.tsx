@@ -316,17 +316,54 @@ function courtsLabel(sport: string, labels: string[]): string {
    board's own clock stays on the slower tick that decides which hour is "now". */
 function Clock() {
   const ms = useTick(secondTicker);
-  const text = ms
+  const at = ms ? new Date(ms) : null;
+  const text = at
     ? new Intl.DateTimeFormat("en-US", {
         timeZone: "America/New_York",
         hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true,
-      }).format(new Date(ms))
+      }).format(at)
+    : " ";
+  /* Day AND date above the time. Aniket asked for it on all the televisions,
+     2026-10-10; this screen carried no date at all, only the time.
+
+     The year is in it deliberately. This board runs for months unattended, and
+     a frozen clock still reads like a plausible time of day while a weekday
+     alone repeats every seven days -- neither tells anyone the picture is
+     stale. A wrong year is unmistakable. (The faint dot by the title is the
+     honest staleness signal, but it only shows when a FETCH fails; a tv-keeper
+     relaunch onto a cached page would show neither.)
+
+     Formatted in America/New_York like the time, not in the browser's zone: the
+     VIZIOs have whatever timezone they shipped with and tv-keeper does not set
+     it, so trusting the device is how the wall ends up a day out.
+
+     The non-breaking space above is load-bearing and is kept: an empty string
+     collapses the span before the first tick and the header jumps. */
+  const dateText = at
+    ? new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/New_York",
+        weekday: "long", month: "long", day: "numeric", year: "numeric",
+      }).format(at)
     : " ";
   /* Tabular figures: without them the colon jitters left and right every
      second as the digit widths change, which is very visible on a wall. */
   return (
-    <span style={{ fontVariantNumeric: "tabular-nums", letterSpacing: "0.01em" }}>
-      {text}
+    <span style={{ display: "block", textAlign: "right" }}>
+      {/* 0.42 of the clock's own size, so it reads as a label rather than
+          competing with the time from across the lobby. Not uppercased -- the
+          title beside it already is, and two shouting lines flatten the
+          hierarchy the desk reads this screen by. */}
+      <span
+        style={{
+          display: "block", fontSize: "0.42em", letterSpacing: "0.14em",
+          color: MUTED, lineHeight: 1.2, marginBottom: "0.25em",
+        }}
+      >
+        {dateText}
+      </span>
+      <span style={{ display: "block", fontVariantNumeric: "tabular-nums", letterSpacing: "0.01em" }}>
+        {text}
+      </span>
     </span>
   );
 }
