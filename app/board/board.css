@@ -60,6 +60,33 @@
   margin-top: 0.7vh;
 }
 
+/* Day, date and time on ONE line (2026-10-10, as asked). Baseline-aligned so
+   the small date sits on the same footing as the big numerals rather than
+   floating at their centre.
+
+   It was stacked first, on the theory that the longest string
+   ("WEDNESDAY, SEPTEMBER 30, 2026") would squeeze the title at 75". Measured
+   instead of assumed: at 16:9 the date runs ~340px and the time ~200px of
+   1600, so the row uses about a third of the width and the title is never
+   crowded. nowrap on .bdate keeps it one line; if a future font ever did make
+   it tight, .btitle is the thing that should shrink, not this. */
+.bstamp {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 1.2vw;
+}
+
+/* Matches .bsub, so the date reads as a label against the big time. */
+.bdate {
+  font-weight: 600;
+  font-size: 1.6vh;
+  letter-spacing: 0.18em;
+  color: #6E7A88;
+  white-space: nowrap;
+}
+
 .bclock {
   font-family: var(--font-cond), system-ui, sans-serif;
   font-weight: 600;

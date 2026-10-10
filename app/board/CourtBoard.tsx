@@ -120,9 +120,20 @@ export default function CourtBoard() {
   }, [data, now]);
 
   const stamp = now ? clubNow(now) : null;
+  /* Day AND date, sat with the time rather than tucked beside the title.
+     Aniket asked for it on all the televisions, 2026-10-10.
+
+     The year is included, which it was not before. On a screen that runs for
+     months unattended this is the one thing that makes a stale board obvious:
+     a frozen clock still reads like a plausible time of day, and a weekday
+     alone repeats every seven days, so neither tells you the picture is old.
+     A wrong YEAR is unmistakable.
+
+     Still formatted in CLUB_TZ, not the browser's. A television on the wall has
+     whatever timezone the VIZIO shipped with, and tv-keeper does not set it. */
   const heading = now
     ? new Intl.DateTimeFormat("en-US", {
-        timeZone: CLUB_TZ, weekday: "long", month: "long", day: "numeric",
+        timeZone: CLUB_TZ, weekday: "long", month: "long", day: "numeric", year: "numeric",
       }).format(now)
     : "";
 
@@ -131,14 +142,20 @@ export default function CourtBoard() {
       <header className="bhead">
         <div>
           <div className="btitle">EXTON SPORTS CENTER</div>
-          <div className="bsub">COURT BOARD{heading ? ` · ${heading.toUpperCase()}` : ""}</div>
+          {/* The date used to live here. It moved to the clock block so there is
+              exactly one place on the screen that says what time it is, and so
+              both televisions read the same way round. */}
+          <div className="bsub">COURT BOARD</div>
         </div>
-        <div className="bclock">
-          {stamp ? clock(stamp.minutes) : "—"}
-          {/* Deliberately small and unlabelled. The board is for members, not
-              for diagnosing it; the dot is for whoever walks past and wonders
-              why nothing has changed since this morning. */}
-          {stale && <span className="bdot" title="not updating" />}
+        <div className="bstamp">
+          <div className="bdate">{heading ? heading.toUpperCase() : ""}</div>
+          <div className="bclock">
+            {stamp ? clock(stamp.minutes) : "—"}
+            {/* Deliberately small and unlabelled. The board is for members, not
+                for diagnosing it; the dot is for whoever walks past and wonders
+                why nothing has changed since this morning. */}
+            {stale && <span className="bdot" title="not updating" />}
+          </div>
         </div>
       </header>
 
