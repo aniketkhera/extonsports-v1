@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { makeTicker, useTick } from "../components/ticker";
 import Image from "next/image";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
 import {
@@ -8,54 +9,12 @@ import {
   type BrandKey, type NamedBlock, type NamedSlots,
 } from "../board/board-lib";
 
-/* A clock as an EXTERNAL STORE, not as state set from an effect.
-   ──────────────────────────────────────────────────────────────────────────
-   Time is not React state — it is an outside system that changes on its own,
-   which is precisely what useSyncExternalStore is for. Doing it the obvious
-   way (useState + setState inside useEffect) trips react-hooks/set-state-in-
-   effect and causes a cascading render on every mount; /board still has that
-   shape and should be moved onto this when it is next touched.
-
-   The snapshot is 0 until something subscribes, and getServerSnapshot returns
-   0 too, so the server and the first client render agree and there is no
-   hydration mismatch. The interval is shared by every subscriber and is torn
-   down when the last one leaves, which matters on a screen that stays open
-   for weeks. */
-function makeTicker(ms: number) {
-  let snapshot = 0;
-  let timer: ReturnType<typeof setInterval> | null = null;
-  const subs = new Set<() => void>();
-  return {
-    subscribe(cb: () => void) {
-      subs.add(cb);
-      if (!timer) {
-        snapshot = Date.now();
-        timer = setInterval(() => {
-          snapshot = Date.now();
-          subs.forEach((f) => f());
-        }, ms);
-      }
-      return () => {
-        subs.delete(cb);
-        if (!subs.size && timer) { clearInterval(timer); timer = null; }
-      };
-    },
-    /* Must be referentially stable between calls within one render pass, which
-       it is: only the interval ever writes it. Returning Date.now() here would
-       loop forever. */
-    get: () => snapshot,
-    getServer: () => 0,
-  };
-}
-
+/* The clock is an external store, shared with /comingsoon — see
+   app/components/ticker.ts for why it is not useState + useEffect. */
 /** Visible seconds for the clock. */
 const secondTicker = makeTicker(1_000);
 /** Decides which hour counts as "now". Slower on purpose — see the board below. */
 const quarterMinuteTicker = makeTicker(15_000);
-
-function useTick(t: ReturnType<typeof makeTicker>): number {
-  return useSyncExternalStore(t.subscribe, t.get, t.getServer);
-}
 
 /* The reception desk screen — the 55" M55Q6-L4 at 10.1.10.72.
    ──────────────────────────────────────────────────────────────────────────
@@ -316,64 +275,54 @@ function courtsLabel(sport: string, labels: string[]): string {
    board's own clock stays on the slower tick that decides which hour is "now". */
 function Clock() {
   const ms = useTick(secondTicker);
-  const at = ms ? new Date(ms) : null;
-  const text = at
+  const text = ms
     ? new Intl.DateTimeFormat("en-US", {
         timeZone: "America/New_York",
         hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true,
-      }).format(at)
-    : " ";
-  /* Day AND date above the time. Aniket asked for it on all the televisions,
-     2026-10-10; this screen carried no date at all, only the time.
-
-     The year is in it deliberately. This board runs for months unattended, and
-     a frozen clock still reads like a plausible time of day while a weekday
-     alone repeats every seven days -- neither tells anyone the picture is
-     stale. A wrong year is unmistakable. (The faint dot by the title is the
-     honest staleness signal, but it only shows when a FETCH fails; a tv-keeper
-     relaunch onto a cached page would show neither.)
-
-     Formatted in America/New_York like the time, not in the browser's zone: the
-     VIZIOs have whatever timezone they shipped with and tv-keeper does not set
-     it, so trusting the device is how the wall ends up a day out.
-
-     The non-breaking space above is load-bearing and is kept: an empty string
-     collapses the span before the first tick and the header jumps. */
-  const dateText = at
-    ? new Intl.DateTimeFormat("en-US", {
-        timeZone: "America/New_York",
-        weekday: "long", month: "long", day: "numeric", year: "numeric",
-      }).format(at)
+      }).format(new Date(ms))
     : " ";
   /* Tabular figures: without them the colon jitters left and right every
      second as the digit widths change, which is very visible on a wall. */
   return (
-    /* One line, as asked (2026-10-10). Baseline alignment, so the small date
-       sits on the same footing as the big numerals instead of floating at
-       their centre. */
-    <span style={{ display: "inline-flex", alignItems: "baseline", gap: "0.6em" }}>
-      {/* 0.42 of the clock's own size, so it reads as a label rather than
-          competing with the time from across the lobby. Not uppercased -- the
-          title beside it already is, and two shouting lines flatten the
-          hierarchy the desk reads this screen by.
-
-          nowrap because this sits in a space-between header: without it the
-          date is the only wrappable thing in the row and it would break mid
-          month rather than push. */}
-      <span
-        style={{
-          fontSize: "0.42em", letterSpacing: "0.14em",
-          color: MUTED, whiteSpace: "nowrap",
-        }}
-      >
-        {dateText}
-      </span>
-      <span style={{ fontVariantNumeric: "tabular-nums", letterSpacing: "0.01em" }}>
-        {text}
-      </span>
+    <span style={{ fontVariantNumeric: "tabular-nums", letterSpacing: "0.01em" }}>
+      {text}
     </span>
   );
 }
+
+/* The day and date, on the header's centre line (2026-10-10).
+
+   Asked for in three steps: "show the date and day too", then "on the same line
+   as the time", then "a bit larger, same font as the header row, top center".
+   So it left the clock and became the header's middle column, set in the
+   title's own face, size and colour by the caller.
+
+   The year stays in. This board runs for months unattended; a frozen clock still
+   reads like a plausible time of day and a weekday repeats every seven days, so a
+   wrong YEAR is the only unmistakable sign the picture is stale. (The faint dot
+   by the title only appears when a fetch fails — a tv-keeper relaunch onto a
+   cached page would show neither.)
+
+   America/New_York, not the browser's zone: the VIZIOs carry whatever timezone
+   they shipped with and tv-keeper does not set it.
+
+   Same one-second ticker as the clock, so the date turns over exactly at
+   midnight rather than up to a tick late. It is its own component for the same
+   reason the clock is: only this text re-renders, never the board. */
+function DateLine() {
+  const ms = useTick(secondTicker);
+  return (
+    <>
+      {ms
+        ? new Intl.DateTimeFormat("en-US", {
+            timeZone: "America/New_York",
+            weekday: "long", month: "long", day: "numeric", year: "numeric",
+          }).format(new Date(ms)).toUpperCase()
+        : " "}
+    </>
+  );
+}
+
 
 function Lockup({ brand, who }: { brand: BrandKey | null; who: string }) {
   if (brand === "philadelphia-badminton") {
@@ -567,9 +516,14 @@ export default function ReceptionBoard() {
         overflow: "hidden",
       }}
     >
+      {/* 1fr auto 1fr, not flex space-between (2026-10-10, "top center"). The
+          equal outer tracks put the date on the SCREEN's centre line; with three
+          flex children it would sit midway between the title's edge and the
+          clock's instead, and the clock changes width every second. */}
       <div
         style={{
-          display: "flex", justifyContent: "space-between", alignItems: "baseline",
+          display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "baseline",
+          columnGap: "2vw",
           borderBottom: `1px solid ${RULE}`,
           paddingBottom: "1.2vh", marginBottom: "1.6vh",
         }}
@@ -586,7 +540,15 @@ export default function ReceptionBoard() {
             />
           )}
         </div>
-        <div className="text-cond" style={{ color: EMBER, fontSize: "2.4vw", lineHeight: 1 }}>
+        {/* The title's exact style — face, size, tracking, colour — so the date
+            reads as part of the header row rather than a caption under it. */}
+        <div
+          className="text-cond"
+          style={{ color: EMBER, fontSize: "2.1vw", letterSpacing: "0.10em", whiteSpace: "nowrap", justifySelf: "center" }}
+        >
+          <DateLine />
+        </div>
+        <div className="text-cond" style={{ color: EMBER, fontSize: "2.4vw", lineHeight: 1, justifySelf: "end" }}>
           <Clock />
         </div>
       </div>
