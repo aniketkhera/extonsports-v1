@@ -194,13 +194,15 @@
   will-change: opacity;
   animation: slide-turn 42s ease-in-out infinite both;
 }
-/* 6.4u, not 10u: slideA went to THREE lines on 2026-09-30 ("Coming / the week of /
-   Oct 5th!"). Two independent limits, both binding at about 6.6u, so 6.4 leaves a little
-   room — WIDTH: "THE WEEK OF" is 11 characters against slideB's 8-character "BOOKINGS",
-   which already measures ~482 of the 501px available on the TV. HEIGHT: three lines at
-   6.4u and line-height 0.86 is 16.5u, under the two-line slides' 17.2u, so slideC still
-   sets the shared grid cell and nothing below the heading shifts when the slides turn. */
-.slideA { font-size: calc(var(--u) * 6.4); animation-delay: 0s; }
+/* slideA is NOW OPEN (2026-10-10): two lines, "Now / open", at 10u — the same size and
+   line count as slideC's "Pay and / play". It spent 2026-09-30 to 10-10 at 6.4u because it
+   was three lines ("Coming / the week of / Oct 5th!") and "THE WEEK OF" was the binding
+   width; with that gone it returns to slideC's size. Measured at 1920x1080, as the
+   BADMINTON note below demands: "OPEN" is the wider line at 415px of the heading's 751px,
+   and the slide is 330px tall — identical to slideC, and under slideB ("Bulk / bookings /
+   Call us", 420px), which is the slide that actually sets the shared grid cell. So nothing
+   below the heading moves when the slides turn. */
+.slideA { font-size: calc(var(--u) * 10); animation-delay: 0s; }
 .slideB { font-size: calc(var(--u) * 8.8); animation-delay: 7s; }   /* "BOOKINGS" is the widest line: ~482 of 501 px on the TV */
 .slideC { font-size: calc(var(--u) * 10); animation-delay: 14s; }
 /* The three court sports, 2026-09-30. One word each, so they take the full 10u — the
@@ -696,7 +698,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /* No rotation: COMING SOON! stays, the other messages are not shown. */
+  /* No rotation: NOW OPEN stays, the other messages are not shown. */
   .slideB, .slideC { display: none; }
   .slideA { opacity: 1; }
   .slideA, .rise, .riseStage, .blob, .line::after, .qrTile::before, .phoneBadge svg, .phoneBadge::after, .stageTagDot {

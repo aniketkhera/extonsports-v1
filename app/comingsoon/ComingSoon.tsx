@@ -64,28 +64,28 @@ export default function ComingSoon() {
         <h1
           className={`${s.title} ${s.rise}`}
           style={delay(0.15)}
-          aria-label="Coming the week of Oct 5th! Bulk bookings — call us. Pay and play. Badminton. Cricket. Squash."
+          aria-label="Now open. Bulk bookings — call us. Pay and play. Badminton. Cricket. Squash."
         >
-          {/* ⚠️ THIS SLIDE NOW CARRIES A DATE, reversing the 2026-09-19 decision recorded on
-              the page component ("a screen on the wall would outlive a slipped date"). The
-              date is settled — lib/opening.ts has OPENING_DATE 2026-10-05, bookings open
-              Tue Oct 6 — and Aniket asked for it on 2026-09-30.
+          {/* NOW OPEN — 2026-10-10, at Aniket's instruction, replacing "Coming / the week of /
+              Oct 5th!", which had been true for one week and then would have stood on the
+              street-facing screen telling passers-by an open building was still coming. It went
+              stale for real on Mon 12 Oct, and from 10 Oct it sat beside today's date (the
+              TodayLine at the top), which made the contradiction legible to anyone outside.
 
-              ⏰ SO IT GOES STALE ON ITS OWN. From Mon Oct 12 this reads "coming the week of
-              Oct 5th" to somebody standing in an open building, which is worse than the
-              "soon!" it replaced. Whoever is here after opening week: change it, or make it
-              read from lib/opening.ts and fall back once isOpen() is true.
+              No date in it on purpose. The 2026-09-19 rule this slide once broke — "a screen on
+              the wall would outlive a slipped date" — holds again: "Now open" stays true for as
+              long as the club is, so nobody has to remember to come back and change it.
 
-              THREE LINES, not two, and the size drops from 10u to 6.4u to pay for it. Both
-              limits were checked: "THE WEEK OF" is the widest line at 11 characters against
-              slideB's "BOOKINGS" at 8 (~482 of 501px on the TV), and three lines at 6.4u is
-              16.5u tall against the two-line slides' 17.2u — so slideC still sets the grid
-              height and nothing below this heading moves. Change the wording and you must
-              re-check both. */}
+              Two lines at 10u, back from the 6.4u that three lines needed: the same size and
+              line count as slideC ("Pay and / play"), and shorter than slideB, which sets the
+              shared grid cell — so nothing below the heading moves when the slides turn.
+              Width was MEASURED at 1920x1080, not counted — see .slideA in the module CSS.
+              This is also
+              the slide the reduced-motion fallback shows on its own, so for those viewers it is
+              the whole message. */}
           <span className={`${s.slide} ${s.slideA}`} aria-hidden>
-            <span className={s.line} data-text="Coming">Coming</span>
-            <span className={s.line} data-text="the week of">the week of</span>
-            <span className={s.line} data-text="Oct 5th!">Oct 5th!</span>
+            <span className={s.line} data-text="Now">Now</span>
+            <span className={s.line} data-text="open">open</span>
           </span>
           <span className={`${s.slide} ${s.slideB}`} aria-hidden>
             <span className={s.line} data-text="Bulk">Bulk</span>
@@ -229,11 +229,9 @@ export default function ComingSoon() {
    header rather than a caption. Shown in the TV layout only: this page is also a
    public URL, and on a phone the top band is where the brand lockup sits.
 
-   ⚠️ IT SITS DIRECTLY ABOVE "COMING THE WEEK OF OCT 5TH!" — the first heading
-   slide, which the comment on that slide already says goes stale from Mon 12 Oct.
-   With today's date printed on the same screen the contradiction is visible to
-   anyone on the street, so that slide wants changing (or reading from
-   lib/opening.ts) before Monday. Not changed here: it is copy, and nobody asked.
+   It sits above the heading slides, the first of which used to read "Coming the
+   week of Oct 5th!" — with today's date beside it that read as a contradiction
+   from the street, so the slide became NOW OPEN the same day.
 
    Thirty-second ticker on the shared external-store clock (see
    app/components/ticker.ts), so the date turns over within half a minute of
