@@ -89,6 +89,20 @@ export const BOLLYWOOD_CLASS_URL = `${APP_URL}/c/bollywood`
 export const SQUAD_CLASS_URL = `${APP_URL}/c/exton-junior-squad`
 
 /**
+ * The Starter Pack's self-serve checkout: five 30-minute lessons, $195, juniors
+ * only, one per player ever. Added 2026-10-13.
+ *
+ * The path segment is Exton's locations.slug ('exton-sports'), not anything this
+ * site names — the platform resolves the club from it, prices from Exton's own
+ * rates row, and checks age and the once-ever rule before any money moves. The
+ * page reads without signing in; Buy asks the player to sign in and returns them
+ * here. Exton's staff book the five sessions afterwards.
+ *
+ * Hartford sells the same pack desk-only; this is the Exton-only public door.
+ */
+export const STARTER_PACK_URL = `${APP_URL}/starter/exton-sports`
+
+/**
  * ⛔ ONLINE REGISTRATION. Governs the Register buttons on the squash and
  * dance/fitness rows — cricket and badminton deliberately have none, because
  * their bookings are not managed on the platform (Aniket, 2026-10-05).
