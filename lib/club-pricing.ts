@@ -1,9 +1,11 @@
 /**
- * ⚠️ NOT RENDERED since 2026-10-13. The footer stopped publishing player caps that day
- * (Aniket: "let's not put these numbers up") and now prints a recommendation — 4 per
- * squash court, 6 per badminton court, 8 per cricket lane. Nothing imports this file;
- * it is kept because it is how to publish them again without retyping the platform's
- * rows. Everything below describes how it worked while it was rendered.
+ * ⚠️ DEAD since 2026-10-13. The footer stopped publishing player caps that day (Aniket:
+ * "let's not put these numbers up") and now prints a recommendation — 4 per squash
+ * court, 6 per badminton court, 8 per cricket lane. The same day the platform took the
+ * caps OUT of the club card this reads (orangish-app #627: "just don't want it
+ * published outside"), so the fetch below now always falls back to the local copy.
+ * Nothing imports this file; it is kept only as a record of how the tables were built.
+ * Do not wire it back up: the caps are deliberately not published outside the app.
  *
  * Player caps, fetched from the platform rather than retyped here.
  *
