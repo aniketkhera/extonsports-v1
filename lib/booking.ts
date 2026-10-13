@@ -89,6 +89,24 @@ export const BOLLYWOOD_CLASS_URL = `${APP_URL}/c/bollywood`
 export const SQUAD_CLASS_URL = `${APP_URL}/c/exton-junior-squad`
 
 /**
+ * Where a partner's hour on the calendar of bookings leads, 2026-10-13 — Aniket: their
+ * websites for Philadelphia Badminton and CCCA, the squad booking for SquashTigers, the
+ * class booking for Sera. The same four destinations the platform's booking page uses
+ * (orangish-app lib/guest-court-booking-rules.ts PARTNER_LINK); the two sites are the
+ * ones the partner strip in Hero.tsx already links. Keys are the platform's closed
+ * vocabulary (lib/court-partners.ts there; BrandKey in app/board/board-lib.ts here).
+ */
+export const PARTNER_LINK: Record<
+  'squashtigers' | 'ccca' | 'philadelphia-badminton' | 'sera',
+  { href: string; label: string }
+> = {
+  'philadelphia-badminton': { href: 'https://philadelphiabadminton.com', label: 'Learn more' },
+  ccca: { href: 'https://cccricketacademy.com', label: 'Learn more' },
+  squashtigers: { href: SQUAD_CLASS_URL, label: 'Book a squad' },
+  sera: { href: BOLLYWOOD_CLASS_URL, label: 'Book a class' },
+}
+
+/**
  * The Starter Pack's self-serve checkout: five 30-minute lessons, $195, juniors
  * only, one per player ever. Added 2026-10-13.
  *

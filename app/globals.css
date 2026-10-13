@@ -274,6 +274,16 @@ html { scroll-behavior: smooth; }
   box-shadow: inset 0 0 0 1px var(--color-ember);
 }
 
+/* A partner's hour (2026-10-13): a link to the partner, so it answers the pointer the
+   way a free cell does — but with an outline, not ember fill, because the partner's own
+   tint is the information. !important for the same reason as .xcal-free above: the
+   resting styles are inline. */
+.xcal-partner:hover,
+.xcal-partner:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--color-ember) !important;
+  outline: none;
+}
+
 /* ── Shared chrome utilities ───────────────────────────────────── */
 .label-chip {
   display: inline-flex;

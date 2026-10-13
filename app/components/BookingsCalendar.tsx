@@ -7,7 +7,8 @@ import { createPortal } from "react-dom";
 import type { CourtSlots, SlotBlock } from "../api/court-slots/route";
 import { SPORT_ORDER } from "../../lib/rates";
 import { SPORT_BOOKING_OPENS_LABEL, sportShutOnDate, CLUB_TZ } from "../../lib/opening";
-import { BOOK_COURT_URL } from "../../lib/booking";
+import { BOOK_COURT_URL, PARTNER_LINK } from "../../lib/booking";
+import CalPartnerMark from "./CalPartnerMark";
 
 /* The public calendar of bookings.
    ────────────────────────────────────────────────────────────────────────
@@ -316,7 +317,7 @@ export default function BookingsCalendar({
     courtId: string,
     sport: string,
     slot: number,
-  ): { st: CellState; org?: BrandKey; atStart: boolean } {
+  ): { st: CellState; org?: BrandKey; atStart: boolean; from?: number; to?: number } {
     const hit = byCourt.get(courtId)?.find((b) => slot >= b.from && slot < b.to);
     if (hit) {
       const org = brandFor(hit);
@@ -328,6 +329,8 @@ export default function BookingsCalendar({
            block that starts before the visible window is labelled on the
            window's first row instead, so scrolling never hides the only copy. */
         atStart: slot === hit.from || slot === winFrom,
+        from: hit.from,
+        to: hit.to,
       };
     }
     return { st: stateOf(sport, slot), atStart: false };
@@ -621,7 +624,7 @@ export default function BookingsCalendar({
                         {onHour ? clockLabel(slot) : ""}
                       </span>
                       {courts.map((c, ci) => {
-                        const { st, org, atStart } = cellOf(c.id, c.sport, slot);
+                        const { st, org, atStart, from: hitFrom, to: hitTo } = cellOf(c.id, c.sport, slot);
                         const first = ci === 0 || courts[ci - 1].sport !== c.sport;
                         const common: CSSProperties = {
                           height: rowH,
@@ -642,6 +645,50 @@ export default function BookingsCalendar({
                               title={`${c.name} · ${clockLabel(slot)} — free. Opens this slot on app.orangish.io.`}
                               aria-label={`Book ${c.name} at ${clockLabel(slot)}`}
                             />
+                          );
+                        }
+                        /* A partner's hour, 2026-10-13: every cell of the block is a
+                           link to the partner (their site, or their squad / class
+                           booking), and the block's first visible cell carries
+                           the partner's MARK, laid over the whole block so it is
+                           not squeezed into one 15px row. The overlay ignores the
+                           pointer, so a click anywhere lands on a cell's link. */
+                        if (org && st !== "past" && hitFrom !== undefined && hitTo !== undefined) {
+                          const link = PARTNER_LINK[org];
+                          const span = Math.max(1, (Math.min(hitTo, winTo) - Math.max(hitFrom, winFrom)) / STEP);
+                          return (
+                            <a
+                              key={c.id}
+                              href={link.href}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="xcal-partner"
+                              style={{ ...common, position: "relative" }}
+                              title={`${c.name} · ${clockLabel(slot)} — ${PARTNER_FULL[org]}. ${link.label}.`}
+                              aria-label={`${c.name} at ${clockLabel(slot)}: ${PARTNER_FULL[org]}. ${link.label}.`}
+                            >
+                              {atStart && (
+                                <span
+                                  style={{
+                                    position: "absolute", left: 0, right: 0, top: 0,
+                                    height: span * rowH, zIndex: 2, pointerEvents: "none",
+                                    display: "flex", flexDirection: "column",
+                                    alignItems: "center", justifyContent: "center",
+                                    gap: 3, overflow: "hidden", textAlign: "center",
+                                  }}
+                                >
+                                  <CalPartnerMark org={org} rows={span} />
+                                  {span >= 4 && (
+                                    <span
+                                      className="text-mono"
+                                      style={{ fontSize: "0.42rem", letterSpacing: "0.08em", color: "var(--ember-ink)" }}
+                                    >
+                                      {link.label}
+                                    </span>
+                                  )}
+                                </span>
+                              )}
+                            </a>
                           );
                         }
                         /* "Private" for an individual's hour, the partner's
@@ -714,15 +761,28 @@ export default function BookingsCalendar({
                 ["SeRa — Sera Dance & Fitness", PARTNER_FILL.sera, "solid"],
                 ["other coaching", FILL.programme, "solid"],
                 ["not bookable yet", FILL.shut, "dashed"],
-              ] as const).map(([label, bg, bs]) => (
-                <span key={label} className="inline-flex items-center gap-1.5">
+              ] as const).map(([label, bg, bs]) => {
+                /* The four partner entries link to the partner, as their hours do. */
+                const key = (Object.keys(PARTNER_FULL) as BrandKey[]).find((k) => label.endsWith(PARTNER_FULL[k]));
+                const swatch = (
                   <span
                     className="inline-block"
                     style={{ width: 11, height: 11, background: bg, border: `1px ${bs} rgba(var(--cal-fg),0.30)` }}
                   />
-                  {label}
-                </span>
-              ))}
+                );
+                return key ? (
+                  <a key={label} href={PARTNER_LINK[key].href} target="_blank" rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 hover:text-white transition-colors">
+                    {swatch}
+                    {label}
+                  </a>
+                ) : (
+                  <span key={label} className="inline-flex items-center gap-1.5">
+                    {swatch}
+                    {label}
+                  </span>
+                );
+              })}
               <button
                 type="button"
                 onClick={() => setAllHours((v) => !v)}
