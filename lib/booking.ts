@@ -141,8 +141,9 @@ export const STARTER_PACK_URL = `${APP_URL}/starter/exton-sports`
  * not be a paying customer of the Studio's.
  *
  * What this hides is ONLY the "Book online" button in the studio class pane.
- * "Call to register" stays — it is the flyer's own route, it needs no account,
- * and it is how the class actually takes bookings until this flips.
+ * "Call to register" is the other side of the same switch (2026-10-13): hidden
+ * while this is true, so the class shows one Register button, and shown again
+ * the moment this is false — the flyer's own route, needing no account.
  *
  * ⚠️ IT HIDES THE BUTTON, NOT THE PAGE. https://app.orangish.io/c/bollywood is
  * public and stays reachable by anyone holding the link. This is a soft close
