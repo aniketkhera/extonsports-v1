@@ -9,7 +9,29 @@ import { isOpen } from './opening'
 
 const APP_URL = (process.env.NEXT_PUBLIC_ORANGISH_APP_URL || 'https://app.orangish.io').replace(/\/$/, '')
 
+/** The MEMBER path: signed-in booking on the platform, with member pricing and perks.
+ *  Since 2026-10-13 nothing on this site links here directly — the guest path below
+ *  offers "Already a member? Sign in to book", which arrives here with the same slot. */
 export const BOOK_COURTS_URL = `${APP_URL}/book/courts`
+
+/**
+ * The GUEST path, 2026-10-13, and where every court CTA and every free calendar cell
+ * now points. Aniket: "click book a court or go to the calendar — enter your email id,
+ * enter the number of players, enter the time and number of courts and pay via credit
+ * card ... that button or the calendar by clicking the timeslot takes to this path."
+ *
+ * No login: pick sport, time, courts and players, give an email, pay by card. The
+ * platform emails the confirmation, how to get in and a sign-the-waiver link, and makes
+ * an Orangish account for an address that has none, at Exton. It takes the same
+ * ?sport_id=&court_id=&date=&start_time= the member deep link does, so the calendar's
+ * links work unchanged. Spec: orangish-app docs/guest-court-booking.md.
+ *
+ * ⚠️ 'exton-sports' IS THE PLATFORM'S SLUG for this club (locations.slug), the same one
+ * lib/club-pricing.ts reads. The page refuses — politely, with a sign-in link — until the
+ * club's features.guest_court_booking is switched on, so this site must not ship ahead of
+ * that switch.
+ */
+export const BOOK_COURT_URL = `${APP_URL}/book-court/exton-sports`
 /**
  * ⛔ NOT /book/events. That is the platform's club EVENTS page — tournaments,
  * socials, facility events — and it reads the `events` table. A class is a

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { bookingOpensLabel, openSportsLabel } from "../../lib/opening";
 import { SPORT_ORDER } from "../../lib/rates";
-import { BOOK_COURTS_URL } from "../../lib/booking";
+import { BOOK_COURT_URL } from "../../lib/booking";
 import ThemeToggle from "./ThemeToggle";
 
 const navLinks = [
@@ -101,14 +101,14 @@ export default function Nav() {
             a date, this is an action, and they do not compete for the same
             spot. Revisit once the doors open and the chip reads as stale. */}
         <a
-          href={BOOK_COURTS_URL}
+          href={BOOK_COURT_URL}
           target="_blank"
           rel="noreferrer"
-          className="hidden md:inline-flex items-center ml-4 px-4 py-2 bg-[var(--color-ember)] text-black text-mono text-[0.66rem] hover:bg-[var(--color-ember-hi)] transition-colors whitespace-nowrap"
+          className="book-glow hidden md:inline-flex items-center ml-4 px-4 py-2 bg-[var(--color-ember)] text-black text-mono text-[0.66rem] hover:bg-[var(--color-ember-hi)] transition-colors whitespace-nowrap"
         >
           {/* Carries the date until booking actually works, so the button is
               never an invitation to a page that cannot sell you anything. */}
-          {opensLabel ? `Booking opens ${opensLabel}` : "Book a court"}
+          {opensLabel ? `Booking opens ${opensLabel}` : "Book a court or lane"}
         </a>
 
         {/* Theme switch sits outside the link list so it survives the md:

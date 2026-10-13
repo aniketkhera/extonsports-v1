@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { Analytics } from "@vercel/analytics/react";
 import TrackBeacon from "mailer-admin/TrackBeacon";
 import WhatsAppFab from "./WhatsAppFab";
+import BookingThemeCarry from "./BookingThemeCarry";
 
 // The site-wide extras the root layout used to mount directly, now skipped on pages that
 // are screens rather than places a person visits.
@@ -32,6 +33,7 @@ export default function SiteChrome() {
   return (
     <>
       <WhatsAppFab />
+      <BookingThemeCarry />
       <Analytics />
       <TrackBeacon />
     </>

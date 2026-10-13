@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { WHATSAPP_CHANNEL_URL, WhatsAppIcon } from "./WhatsAppButton";
-import { BOOK_COURTS_URL } from "../../lib/booking";
+import { BOOK_COURT_URL } from "../../lib/booking";
 import { bookingOpensLabel } from "../../lib/opening";
 
 // Floating WhatsApp bubble, rendered site-wide from the root layout.
@@ -50,14 +50,14 @@ export default function WhatsAppFab() {
   return (
     <>
       <a
-        href={BOOK_COURTS_URL}
+        href={BOOK_COURT_URL}
         target="_blank"
         rel="noreferrer"
-        aria-label={opensLabel ? `Court booking opens ${opensLabel}` : "Book a court at Exton Sports Center"}
+        aria-label={opensLabel ? `Court booking opens ${opensLabel}` : "Book a court or lane at Exton Sports Center"}
         className={`${shared} fab-glow md:hidden rounded-full bg-[var(--color-ember)] hover:bg-[var(--color-ember-hi)] text-black text-mono text-center leading-[1.15] px-1`}
         style={{ ...box, width: 68, height: 68, fontSize: "0.5rem" }}
       >
-        {opensLabel ? <span>Opens<br />{opensLabel}</span> : <span>Book a<br />court</span>}
+        {opensLabel ? <span>Opens<br />{opensLabel}</span> : <span>Book a<br />court or<br />lane</span>}
       </a>
 
       <a
