@@ -104,11 +104,11 @@ export default function Nav() {
           href={BOOK_COURT_URL}
           target="_blank"
           rel="noreferrer"
-          className="hidden md:inline-flex items-center ml-4 px-4 py-2 bg-[var(--color-ember)] text-black text-mono text-[0.66rem] hover:bg-[var(--color-ember-hi)] transition-colors whitespace-nowrap"
+          className="book-glow hidden md:inline-flex items-center ml-4 px-4 py-2 bg-[var(--color-ember)] text-black text-mono text-[0.66rem] hover:bg-[var(--color-ember-hi)] transition-colors whitespace-nowrap"
         >
           {/* Carries the date until booking actually works, so the button is
               never an invitation to a page that cannot sell you anything. */}
-          {opensLabel ? `Booking opens ${opensLabel}` : "Book a court / lane"}
+          {opensLabel ? `Booking opens ${opensLabel}` : "Book a court or lane"}
         </a>
 
         {/* Theme switch sits outside the link list so it survives the md:

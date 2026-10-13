@@ -1,5 +1,6 @@
 import WhatsAppButton from "./WhatsAppButton";
 import { CONTACT_EMAIL } from "../../lib/legal";
+import { BOOK_COURT_URL } from "../../lib/booking";
 import { RATE_BANDS, BAND_BLURB, capFor, CAP_HOURS, SPORT_ORDER } from "../../lib/rates";
 import { playerCapsOrFallback } from "../../lib/club-pricing";
 
@@ -170,7 +171,7 @@ export default async function Footer() {
           title="Play"
           links={[
             { label: "Court rates", href: "/#top" },
-            { label: "Book a court", href: "/#top" },
+            { label: "Book a court or lane", href: BOOK_COURT_URL },
             { label: "Bulk & block bookings", href: `mailto:${CONTACT_EMAIL}` },
             { label: "Academies & juniors", href: "/#top" },
           ]}

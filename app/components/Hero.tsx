@@ -1954,12 +1954,12 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
             href={BOOK_COURT_URL}
             target="_blank"
             rel="noreferrer"
-            className={`text-mono bg-[var(--color-ember)] text-black border border-[var(--color-ember)] hover:bg-[var(--color-ember-hi)] hover:border-[var(--color-ember-hi)] transition-colors ${
+            className={`book-glow text-mono bg-[var(--color-ember)] text-black border border-[var(--color-ember)] hover:bg-[var(--color-ember-hi)] hover:border-[var(--color-ember-hi)] transition-colors ${
               stacked ? "block text-center py-[13px] px-5" : "inline-block py-[11px] px-[22px]"
             }`}
             style={{ fontSize: RATE_LABEL }}
           >
-            Book a court / lane
+            Book a court or lane
           </a>
 
           {/* The whole floor, hour by hour. It sits next to the CTA rather

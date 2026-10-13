@@ -57,7 +57,7 @@ export default function WhatsAppFab() {
         className={`${shared} fab-glow md:hidden rounded-full bg-[var(--color-ember)] hover:bg-[var(--color-ember-hi)] text-black text-mono text-center leading-[1.15] px-1`}
         style={{ ...box, width: 68, height: 68, fontSize: "0.5rem" }}
       >
-        {opensLabel ? <span>Opens<br />{opensLabel}</span> : <span>Book a<br />court</span>}
+        {opensLabel ? <span>Opens<br />{opensLabel}</span> : <span>Book a<br />court or<br />lane</span>}
       </a>
 
       <a
