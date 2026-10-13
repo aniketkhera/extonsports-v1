@@ -924,6 +924,13 @@ function ClassDetail({
   c: (typeof STUDIO_CLASSES)[number];
   schedule: DetailSchedule | null;
 }) {
+  const registerHref = "registerHref" in c ? (c as { registerHref?: string }).registerHref : undefined;
+  /* Register, not "Call to register" as well — Aniket, 2026-10-13: "let's remove
+     'call to register' too - just register is ok". The phone route is kept as the
+     class's FALLBACK rather than deleted: it shows only while online registration
+     is off, so switching CLASS_ONLINE_BOOKING_LIVE off (RegisterCta then renders
+     nothing) can never leave a class with no way to book at all. */
+  const onlineRegister = !!registerHref && CLASS_ONLINE_BOOKING_LIVE;
   return (
     <div>
       {c.logo && <span className="block leading-none mb-3.5">{c.logo}</span>}
@@ -941,9 +948,9 @@ function ClassDetail({
       <DetailBody
         blurb={c.blurb ?? c.desc}
         schedule={schedule}
-        action={c.action}
+        action={onlineRegister ? undefined : c.action}
         book={c.book}
-        registerHref={"registerHref" in c ? (c as { registerHref?: string }).registerHref : undefined}
+        registerHref={registerHref}
       />
     </div>
   );
@@ -2236,10 +2243,10 @@ const STUDIO_CLASSES: {
        VIBES!". Nothing here is invented. */
     blurb:
       "A fun, Bollywood-inspired dance fitness workout from SeRa Dance & Fitness. High energy, easy to follow, and all fitness levels are welcome — come for the workout, stay for the vibes.",
-    /* The flyer's own registration route ("CALL TO REGISTER"), which beats the
-       waitlist: it is a line that actually takes bookings today. Still not a
-       platform deep-link — anonymous enrolment 401s and Exton is
-       public_join:false with access_paused:true. */
+    /* The flyer's own registration route ("CALL TO REGISTER"). Since 2026-10-13
+       it is the FALLBACK only: ClassDetail hides it while the online Register
+       button shows (Aniket: "just register is ok"), and it comes back by itself
+       if CLASS_ONLINE_BOOKING_LIVE is switched off. */
     action: { label: "Call to register", href: "tel:+12019252710" },
     /* Added once the platform could actually take this booking: orangish-app
        #553 lets somebody with no membership reach the class list and enrol, and
@@ -2263,7 +2270,7 @@ const STUDIO_CLASSES: {
        2026-10-05, so there is one Register button per class and it sits to the
        right, beside the times — see registerHref below and RegisterCta. Leaving
        it here too would print two buttons to the same page. "Call to register"
-       above is unaffected and still the account-free route the flyer prints. */
+       above is now shown only when online registration is off (ClassDetail). */
     registerHref: BOLLYWOOD_CLASS_URL,
     /* A wordmark in the site's own materials rather than the flyer artwork: the
        flyer is a portrait raster with a photograph in it and would not survive
