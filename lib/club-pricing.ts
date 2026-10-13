@@ -14,8 +14,8 @@
  *
  * ⚠️ THE CAP HAS TWO DIMENSIONS. `max_players` is the ONE-HOUR number;
  * `max_players_step` is how many more each hour beyond the first admits. A
- * consumer that reads only the first publishes "cricket seats 10" for a
- * three-hour lane that seats 20.
+ * consumer that reads only the first publishes "cricket seats 8" for a
+ * three-hour lane that seats 16.
  *
  * ── FALLING BACK IS DELIBERATE ──────────────────────────────────────────────
  * Every failure returns null and the caller renders its local constants. A

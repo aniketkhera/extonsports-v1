@@ -118,10 +118,16 @@ export type SportCap = {
  * hardcoded copy, and the durable fix is to render it from the club endpoint
  * rather than retype it here.
  */
+// Re-copied from the live rows 2026-10-13, when cricket came down to 8 a lane (+4 an
+// hour: 8 / 12 / 16) — Aniket: "cricket - change 10 to 8 ... and change 2 and 3 hours
+// in the same proportion". Squash and badminton were already one cap all day on the
+// platform (4 / 6 / 8 and 6 / 8 / 10); this copy still had their old, lower peak figures.
+// Lanes booked TOGETHER seat fewer than lanes x this (two cricket lanes 15, three 20, for
+// an hour); the platform's booking page enforces and shows that, not this table.
 export const PLAYER_CAPS: Record<string, { peak: SportCap; offPeak: SportCap }> = {
-  Squash: { peak: { base: 2, step: 2 }, offPeak: { base: 4, step: 2 } },
-  Badminton: { peak: { base: 4, step: 2 }, offPeak: { base: 6, step: 2 } },
-  Cricket: { peak: { base: 6, step: 2 }, offPeak: { base: 10, step: 5 } },
+  Squash: { peak: { base: 4, step: 2 }, offPeak: { base: 4, step: 2 } },
+  Badminton: { peak: { base: 6, step: 2 }, offPeak: { base: 6, step: 2 } },
+  Cricket: { peak: { base: 8, step: 4 }, offPeak: { base: 8, step: 4 } },
 }
 
 /** How many the court seats for a booking of `hours`, including the booker. */

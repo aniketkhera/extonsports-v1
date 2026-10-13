@@ -12,7 +12,7 @@ export default async function Footer() {
   const sports = SPORT_ORDER.filter((s) => caps[s]);
 
   /* ⚠️ CONDITIONAL, NOT DELETED. Every Exton cap is currently identical across
-     peak and off-peak — 6 badminton, 10 cricket, 4 squash — so the
+     peak and off-peak — 6 badminton, 8 cricket (10 until 2026-10-13), 4 squash — so the
      bracketed peak figure repeated the number beside it on every row and read as
      though the two might differ. Printing "6 (6)" nine times is noise.
 
