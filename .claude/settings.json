@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "mcp__Supabase"
+      "mcp__Supabase",
+      "mcp__Supabase__*",
+      "mcp__Supabase__execute_sql"
     ]
   }
 }
