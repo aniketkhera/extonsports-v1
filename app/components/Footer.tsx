@@ -1,33 +1,10 @@
 import WhatsAppButton from "./WhatsAppButton";
 import { CONTACT_EMAIL } from "../../lib/legal";
 import { BOOK_COURT_URL } from "../../lib/booking";
-import { RATE_BANDS, BAND_BLURB, capFor, groupCapFor, CAP_HOURS, SPORT_ORDER } from "../../lib/rates";
-import { playerCapsOrFallback, groupCapsOrFallback } from "../../lib/club-pricing";
+import { RATE_BANDS, BAND_BLURB } from "../../lib/rates";
 
-export default async function Footer() {
+export default function Footer() {
   const year = new Date().getFullYear();
-  // Read from the platform, which owns these rows. Falls back to the local
-  // copy when it cannot be reached — see lib/club-pricing.ts.
-  const [{ caps }, groups] = await Promise.all([playerCapsOrFallback(), groupCapsOrFallback()]);
-  const sports = SPORT_ORDER.filter((s) => caps[s]);
-  // Courts booked together, for a sport the table already shows (the totals scale by
-  // that sport's per-court caps, so they mean nothing without them).
-  const together = sports.filter((s) => groups[s]?.length);
-
-  /* ⚠️ CONDITIONAL, NOT DELETED. Every Exton cap is currently identical across
-     peak and off-peak — 6 badminton, 8 cricket (10 until 2026-10-13), 4 squash — so the
-     bracketed peak figure repeated the number beside it on every row and read as
-     though the two might differ. Printing "6 (6)" nine times is noise.
-
-     But these caps are LIVE platform data (court_player_limits, via
-     playerCapsOrFallback), not constants, and they HAVE diverged before. So the
-     brackets are hidden while the bands agree and come back by themselves the
-     moment they do not — rather than being deleted, which would silently
-     under-state a peak cap the next time somebody changes one in the admin.
-     Aniket, 2026-10-05. */
-  const bandsDiffer = sports.some((s) =>
-    CAP_HOURS.some((h) => capFor(caps[s].peak, h) !== capFor(caps[s].offPeak, h)),
-  );
   return (
     <footer className="bg-[var(--footer-bg)] border-t border-[var(--footer-line)]">
       {/* ── HOW PRICING WORKS ────────────────────────────────────────────
@@ -38,8 +15,8 @@ export default async function Footer() {
           say what a band IS rather than just when it runs, which is the part a
           first-time visitor actually needs.
 
-          Everything is derived from lib/rates.ts, so the hours, the caps and
-          the hero's table cannot disagree with each other. They already did
+          Everything is derived from lib/rates.ts, so the hours and the hero's
+          table cannot disagree with each other. They already did
           once: this page advertised weekday peak as 4–9pm while the club
           charged peak until 10pm, and weekend peak as 8am–4pm against an
           actual 8am–8pm. Every gap under-stated the price. */}
@@ -56,8 +33,7 @@ export default async function Footer() {
         </h3>
         <p className="text-white/55 text-sm max-w-[62ch] mb-4 leading-relaxed">
           Courts are booked by the hour and priced by when you play. One rate
-          covers the whole court — nobody pays separately, up to the limit for
-          that time.
+          covers the whole court — nobody pays separately.
         </p>
         {/* Sits with the pricing rather than buried in the legal pages. It is a
             condition of playing, and somebody reading "one rate covers the
@@ -98,100 +74,21 @@ export default async function Footer() {
               off-peak rate. With late night abolished there is no exception
               left to draw — all seven nights are off-peak from 10pm — so the
               paragraph went rather than being reworded into a tautology. */}
+          {/* A recommendation, not a table of limits — Aniket, 2026-10-13: "let's remove
+              the number of people only - just say we recommend no more than 4 per court
+              for squash, 6 per court for badminton and 8 per lane for cricket. let's not
+              put these numbers up, either on the website or on the booking window."
+              The per-court and lanes-together tables that stood here earlier that day
+              (#97, #98) are in git; the caps they printed still live on the platform
+              (court_player_limits, court_group_player_limits) and are still enforced
+              there — they are just no longer published. The booking page says the same
+              (orangish-app lib/guest-court-booking-rules.ts recommendedPerCourt). */}
           <p className="m-0">
-            <span className="text-white/65">How many can share a court depends on the band and on how long you book.</span>{" "}
-            A longer booking is people rotating on and off, so it takes more of
-            them. The person who books counts towards the total.
-          </p>
-
-          {/* A table, not a sentence. The rule has two dimensions now — band and
-              duration — and the prose version had to say "that doubles", which
-              was true of squash and of nothing else. */}
-          <div className="overflow-x-auto -mx-1 px-1">
-            <table className="w-full max-w-[430px] border-collapse text-[0.8rem]">
-              <caption className="text-left text-mono text-[0.56rem] tracking-widest uppercase text-white/35 pb-2">
-                Players per court, including you
-              </caption>
-              <thead>
-                <tr className="text-white/45">
-                  <th scope="col" className="text-left font-normal py-1 pr-3" />
-                  {CAP_HOURS.map((h) => (
-                    <th key={h} scope="col" className="text-right font-normal py-1 px-2 tabular-nums">
-                      {h} hr{h > 1 ? "s" : ""}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {sports.map((sport) => (
-                  <tr key={sport} className="border-t border-[var(--footer-line)]">
-                    <th scope="row" className="text-left font-normal text-white/65 py-[5px] pr-3 whitespace-nowrap">
-                      {sport}
-                    </th>
-                    {CAP_HOURS.map((h) => (
-                      <td key={h} className="text-right py-[5px] px-2 tabular-nums text-white/70">
-                        {capFor(caps[sport].offPeak, h)}
-                        {bandsDiffer && (
-                          <span className="text-white/30"> ({capFor(caps[sport].peak, h)})</span>
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-              {/* Lanes booked TOGETHER, 2026-10-13 — Aniket: "yes add the
-                  lanes-together line on the site". Two cricket lanes seat 15 for an
-                  hour, not 2 x 8, so the rows above cannot be multiplied; these are
-                  the totals the booking page enforces. Same columns, so each number
-                  sits under its length. */}
-              {together.map((sport) => {
-                const unit = sport === "Cricket" ? "lanes" : "courts";
-                return (
-                  <tbody key={`${sport}-together`}>
-                    <tr className="border-t border-[var(--footer-line)]">
-                      <th
-                        scope="rowgroup"
-                        colSpan={CAP_HOURS.length + 1}
-                        className="text-left font-normal text-mono text-[0.56rem] tracking-widest uppercase text-white/35 pt-3 pb-1"
-                      >
-                        {/* "in total": under a "Players per court" caption, a bare
-                            "2 lanes 15" reads as 15 a lane — 30 people, double the
-                            real limit (review, 2026-10-13). */}
-                        {sport} {unit} booked together, in total
-                      </th>
-                    </tr>
-                    {groups[sport].map((g) => (
-                      <tr key={g.courts} className="border-t border-[var(--footer-line)]">
-                        <th scope="row" className="text-left font-normal text-white/65 py-[5px] pr-3 whitespace-nowrap">
-                          {g.courts} {unit}
-                        </th>
-                        {CAP_HOURS.map((h) => (
-                          <td key={h} className="text-right py-[5px] px-2 tabular-nums text-white/70">
-                            {groupCapFor(g, caps[sport].offPeak, h)}
-                            {bandsDiffer && (
-                              <span className="text-white/30"> ({groupCapFor(g, caps[sport].peak, h)})</span>
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                );
-              })}
-            </table>
-          </div>
-          <p className="m-0 text-white/35 text-[0.76rem]">
-            {bandsDiffer ? (
-              <>
-                Off-peak, with{" "}
-                <span className="text-white/50">peak in brackets</span>.
-              </>
-            ) : (
-              /* Said rather than left silent: a reader who knows the PRICE changes
-                 with the time of day will reasonably wonder whether the headcount
-                 does too. It does not. */
-              <>The same at peak and off-peak.</>
-            )}
+            <span className="text-white/65">
+              We recommend no more than 4 players per court for squash, 6 per court for
+              badminton and 8 per lane for cricket.
+            </span>{" "}
+            The person who books counts towards the total.
           </p>
 
         </div>

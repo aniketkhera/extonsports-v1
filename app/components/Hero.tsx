@@ -1678,7 +1678,7 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
            roughly 1150px a hovered panel is still narrower than the table's
            own column minimums, and without this the panel's overflow:hidden
            silently amputates the peak price. Scrolling degrades; clipping
-           lies. Same idiom the caps table in Footer.tsx already uses. */
+           lies. (The footer's caps table used the same idiom until 2026-10-13.) */
         className="w-full border border-white/10 bg-white/[0.05] overflow-x-auto"
         variants={{
           hidden: { opacity: 0, y: 18 },

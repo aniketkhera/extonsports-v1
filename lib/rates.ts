@@ -123,7 +123,8 @@ export type SportCap = {
 // in the same proportion". Squash and badminton were already one cap all day on the
 // platform (4 / 6 / 8 and 6 / 8 / 10); this copy still had their old, lower peak figures.
 // Lanes booked TOGETHER seat fewer than lanes x this (two cricket lanes 15, three 20, for
-// an hour): GROUP_CAPS below, which the footer shows under the per-court rows.
+// an hour): GROUP_CAPS below. Not rendered since 2026-10-13 — the footer publishes a
+// recommendation (4 / 6 / 8) instead of any caps; see lib/club-pricing.ts.
 export const PLAYER_CAPS: Record<string, { peak: SportCap; offPeak: SportCap }> = {
   Squash: { peak: { base: 4, step: 2 }, offPeak: { base: 4, step: 2 } },
   Badminton: { peak: { base: 6, step: 2 }, offPeak: { base: 6, step: 2 } },
@@ -203,9 +204,12 @@ export const RATE_FROM = Math.min(...COURT_RATES.map((r) => r.offPeak))
  * stays here is only what a buyer needs AT the moment they read a price: the
  * rate is per COURT, and it moves with the clock.
  */
+// "a longer booking can take more people" came out 2026-10-13 with the footer's players
+// tables (Aniket: "let's not put these numbers up"); the footer now gives one flat
+// recommendation, so the old half of this sentence pointed at nothing.
 export const RATE_FOOTNOTE =
   'One rate covers the whole court, not per person. Rates change with the time ' +
-  'of day, and a longer booking can take more people — both are explained below.'
+  'of day — explained below.'
 
 /**
  * ⛔ RATE_FEES_NOTE WAS HERE AND IS DELETED, 2026-09-30.
