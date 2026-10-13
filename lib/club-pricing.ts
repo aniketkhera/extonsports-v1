@@ -1,4 +1,10 @@
 /**
+ * ⚠️ NOT RENDERED since 2026-10-13. The footer stopped publishing player caps that day
+ * (Aniket: "let's not put these numbers up") and now prints a recommendation — 4 per
+ * squash court, 6 per badminton court, 8 per cricket lane. Nothing imports this file;
+ * it is kept because it is how to publish them again without retyping the platform's
+ * rows. Everything below describes how it worked while it was rendered.
+ *
  * Player caps, fetched from the platform rather than retyped here.
  *
  * ── WHY THIS EXISTS ─────────────────────────────────────────────────────────
