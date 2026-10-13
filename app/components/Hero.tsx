@@ -8,7 +8,7 @@ import type { CourtAvailability } from "../api/court-availability/route";
 import type { SchedulePayload } from "../api/schedule/route";
 import type { ProgramSchedule } from "@/lib/club-schedule";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, CLASS_FEES_NOTE } from "../../lib/rates";
-import { BOLLYWOOD_CLASS_URL, SQUAD_CLASS_URL, BOOK_COURTS_URL, CLASS_ONLINE_BOOKING_LIVE } from "../../lib/booking";
+import { BOLLYWOOD_CLASS_URL, SQUAD_CLASS_URL, BOOK_COURT_URL, CLASS_ONLINE_BOOKING_LIVE } from "../../lib/booking";
 import { SPORT_BOOKING_OPENS_LABEL, sportBookingOpen, sportShutOnDate, sportsNotYetOpen } from "../../lib/opening";
 import { PBA_SCHEDULE, PBA_EXPANDS, PBA_COURTS } from "../../lib/pba-schedule";
 import { SQUAD_SCHEDULE, SQUAD_NOTE, SQUAD_TERM } from "../../lib/squad-schedule";
@@ -1451,7 +1451,7 @@ function WeekChips({
           return (
             <a
               key={d}
-              href={BOOK_COURTS_URL}
+              href={`${BOOK_COURT_URL}?date=${d}`}
               target="_blank"
               rel="noreferrer"
               className="flex flex-col items-center gap-[2px] no-underline rounded-[3px] focus:outline-none"
@@ -1814,7 +1814,7 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
               return (
                 <a
                   key={b.key}
-                  href={BOOK_COURTS_URL}
+                  href={BOOK_COURT_URL}
                   target="_blank"
                   rel="noreferrer"
                   /* ⚠️ THE ACTIVE CELL IS MARKED FROM STATE, NOT :hover. The
@@ -1951,7 +1951,7 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
               pointing somewhere else was the odd one out. bookingTarget() is
               consequently no longer consulted here. */}
           <a
-            href={BOOK_COURTS_URL}
+            href={BOOK_COURT_URL}
             target="_blank"
             rel="noreferrer"
             className={`text-mono bg-[var(--color-ember)] text-black border border-[var(--color-ember)] hover:bg-[var(--color-ember-hi)] hover:border-[var(--color-ember-hi)] transition-colors ${
@@ -1959,7 +1959,7 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
             }`}
             style={{ fontSize: RATE_LABEL }}
           >
-            Book a court
+            Book a court / lane
           </a>
 
           {/* The whole floor, hour by hour. It sits next to the CTA rather

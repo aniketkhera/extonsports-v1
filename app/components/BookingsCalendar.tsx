@@ -7,7 +7,7 @@ import { createPortal } from "react-dom";
 import type { CourtSlots, SlotBlock } from "../api/court-slots/route";
 import { SPORT_ORDER } from "../../lib/rates";
 import { SPORT_BOOKING_OPENS_LABEL, sportShutOnDate, CLUB_TZ } from "../../lib/opening";
-import { BOOK_COURTS_URL } from "../../lib/booking";
+import { BOOK_COURT_URL } from "../../lib/booking";
 
 /* The public calendar of bookings.
    ────────────────────────────────────────────────────────────────────────
@@ -280,13 +280,18 @@ export default function BookingsCalendar({
      sport_id is included because the booking page picks its tab from it;
      without it a court-only link lands on whichever sport sorts first for
      that member. */
+  /* 2026-10-13: the cell now opens the GUEST booking page (lib/booking.ts,
+     BOOK_COURT_URL) — book and pay with an email address, no sign-in — which takes
+     these same four parameters and opens with that sport, date and start chosen and
+     that court tried first. Members get there too: it links on to /book/courts with
+     the slot intact. */
   function bookHref(court: { id: string; sportId: string }, slot: number): string {
     const p = new URLSearchParams();
     if (court.sportId) p.set("sport_id", court.sportId);
     p.set("court_id", court.id);
     p.set("date", date);
     p.set("start_time", apiTime(slot));
-    return `${BOOK_COURTS_URL}?${p.toString()}`;
+    return `${BOOK_COURT_URL}?${p.toString()}`;
   }
 
   /* ⛔ THIS CALENDAR NAMES THE FOUR PARTNERS AND NOBODY ELSE, 2026-10-08.
@@ -441,7 +446,7 @@ export default function BookingsCalendar({
           <p className="text-white/50 py-8" style={{ fontSize: "0.86rem" }}>
             The calendar is not loading just now. Court availability is live on{" "}
             <a
-              href={BOOK_COURTS_URL}
+              href={BOOK_COURT_URL}
               target="_blank"
               rel="noreferrer"
               className="text-white border-b border-[var(--color-ember)]/55 hover:border-[var(--color-ember)] transition-colors"
