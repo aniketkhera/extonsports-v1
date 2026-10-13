@@ -1,15 +1,18 @@
 import WhatsAppButton from "./WhatsAppButton";
 import { CONTACT_EMAIL } from "../../lib/legal";
 import { BOOK_COURT_URL } from "../../lib/booking";
-import { RATE_BANDS, BAND_BLURB, capFor, CAP_HOURS, SPORT_ORDER } from "../../lib/rates";
-import { playerCapsOrFallback } from "../../lib/club-pricing";
+import { RATE_BANDS, BAND_BLURB, capFor, groupCapFor, CAP_HOURS, SPORT_ORDER } from "../../lib/rates";
+import { playerCapsOrFallback, groupCapsOrFallback } from "../../lib/club-pricing";
 
 export default async function Footer() {
   const year = new Date().getFullYear();
   // Read from the platform, which owns these rows. Falls back to the local
   // copy when it cannot be reached — see lib/club-pricing.ts.
-  const { caps } = await playerCapsOrFallback();
+  const [{ caps }, groups] = await Promise.all([playerCapsOrFallback(), groupCapsOrFallback()]);
   const sports = SPORT_ORDER.filter((s) => caps[s]);
+  // Courts booked together, for a sport the table already shows (the totals scale by
+  // that sport's per-court caps, so they mean nothing without them).
+  const together = sports.filter((s) => groups[s]?.length);
 
   /* ⚠️ CONDITIONAL, NOT DELETED. Every Exton cap is currently identical across
      peak and off-peak — 6 badminton, 8 cricket (10 until 2026-10-13), 4 squash — so the
@@ -136,6 +139,45 @@ export default async function Footer() {
                   </tr>
                 ))}
               </tbody>
+              {/* Lanes booked TOGETHER, 2026-10-13 — Aniket: "yes add the
+                  lanes-together line on the site". Two cricket lanes seat 15 for an
+                  hour, not 2 x 8, so the rows above cannot be multiplied; these are
+                  the totals the booking page enforces. Same columns, so each number
+                  sits under its length. */}
+              {together.map((sport) => {
+                const unit = sport === "Cricket" ? "lanes" : "courts";
+                return (
+                  <tbody key={`${sport}-together`}>
+                    <tr className="border-t border-[var(--footer-line)]">
+                      <th
+                        scope="rowgroup"
+                        colSpan={CAP_HOURS.length + 1}
+                        className="text-left font-normal text-mono text-[0.56rem] tracking-widest uppercase text-white/35 pt-3 pb-1"
+                      >
+                        {/* "in total": under a "Players per court" caption, a bare
+                            "2 lanes 15" reads as 15 a lane — 30 people, double the
+                            real limit (review, 2026-10-13). */}
+                        {sport} {unit} booked together, in total
+                      </th>
+                    </tr>
+                    {groups[sport].map((g) => (
+                      <tr key={g.courts} className="border-t border-[var(--footer-line)]">
+                        <th scope="row" className="text-left font-normal text-white/65 py-[5px] pr-3 whitespace-nowrap">
+                          {g.courts} {unit}
+                        </th>
+                        {CAP_HOURS.map((h) => (
+                          <td key={h} className="text-right py-[5px] px-2 tabular-nums text-white/70">
+                            {groupCapFor(g, caps[sport].offPeak, h)}
+                            {bandsDiffer && (
+                              <span className="text-white/30"> ({groupCapFor(g, caps[sport].peak, h)})</span>
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                );
+              })}
             </table>
           </div>
           <p className="m-0 text-white/35 text-[0.76rem]">

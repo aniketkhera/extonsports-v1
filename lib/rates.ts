@@ -123,7 +123,7 @@ export type SportCap = {
 // in the same proportion". Squash and badminton were already one cap all day on the
 // platform (4 / 6 / 8 and 6 / 8 / 10); this copy still had their old, lower peak figures.
 // Lanes booked TOGETHER seat fewer than lanes x this (two cricket lanes 15, three 20, for
-// an hour); the platform's booking page enforces and shows that, not this table.
+// an hour): GROUP_CAPS below, which the footer shows under the per-court rows.
 export const PLAYER_CAPS: Record<string, { peak: SportCap; offPeak: SportCap }> = {
   Squash: { peak: { base: 4, step: 2 }, offPeak: { base: 4, step: 2 } },
   Badminton: { peak: { base: 6, step: 2 }, offPeak: { base: 6, step: 2 } },
@@ -133,6 +133,42 @@ export const PLAYER_CAPS: Record<string, { peak: SportCap; offPeak: SportCap }> 
 /** How many the court seats for a booking of `hours`, including the booker. */
 export function capFor(cap: SportCap, hours: number): number {
   return cap.base + Math.max(0, Math.floor(hours) - 1) * cap.step
+}
+
+/** Courts of one sport booked TOGETHER, as one booking: how many, and the ONE-HOUR
+ *  total for the lot, including the booker. */
+export type GroupCap = { courts: number; base: number }
+
+/**
+ * Where courts booked together seat FEWER than that many single courts — Aniket,
+ * 2026-10-13: "cricket - change 10 to 8, 20 to 15 and 30 to 20". Two lanes take 15 for
+ * an hour, not 2 x 8 = 16; three take 20, not 24. Only these are listed; any other
+ * number of courts is that many times one court.
+ *
+ * Mirrors `court_group_player_limits` on the platform, which the guest booking page
+ * enforces. Same standing caveat as PLAYER_CAPS: a copy, used only when the club card
+ * cannot be read (lib/club-pricing.ts).
+ */
+export const GROUP_CAPS: Record<string, GroupCap[]> = {
+  Cricket: [{ courts: 2, base: 15 }, { courts: 3, base: 20 }],
+}
+
+/**
+ * How many courts booked together seat for a booking of `hours`: the one-hour total
+ * grown as ONE court of the sport grows, rounded down. Cricket two lanes: 15, then
+ * 15 x 12/8 = 22.5 -> 22, then 15 x 16/8 = 30. The same arithmetic, and the same
+ * rounding, as the platform's cb_group_player_cap_for_slot, so this table and the
+ * booking page cannot disagree.
+ */
+export function groupCapFor(group: GroupCap, cap: SportCap, hours: number): number {
+  const each = capFor(cap, hours)
+  const one = capFor(cap, 1)
+  const scaled = one > 0 ? Math.floor((group.base * each) / one) : group.base
+  // Never more than that many single courts: the booking checks EACH court against its
+  // own cap as well, so a together total above courts x one court could never be seated
+  // (a group row left at 20 after a lane dropped to 8 would print 20 where 16 is the
+  // most). The booking page clamps the same way (orangish-app groupPlayerCaps).
+  return Math.min(scaled, group.courts * each)
 }
 
 /** The durations the booking sheet actually offers. */
