@@ -8,7 +8,7 @@ import type { CourtAvailability } from "../api/court-availability/route";
 import type { SchedulePayload } from "../api/schedule/route";
 import type { ProgramSchedule } from "@/lib/club-schedule";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, CLASS_FEES_NOTE } from "../../lib/rates";
-import { BOLLYWOOD_CLASS_URL, SQUAD_CLASS_URL, BOOK_COURT_URL, CLASS_ONLINE_BOOKING_LIVE } from "../../lib/booking";
+import { BOLLYWOOD_CLASS_URL, SQUAD_CLASS_URL, STARTER_PACK_URL, BOOK_COURT_URL, CLASS_ONLINE_BOOKING_LIVE } from "../../lib/booking";
 import { SPORT_BOOKING_OPENS_LABEL, sportBookingOpen, sportShutOnDate, sportsNotYetOpen } from "../../lib/opening";
 import { PBA_SCHEDULE, PBA_EXPANDS, PBA_COURTS } from "../../lib/pba-schedule";
 import { SQUAD_SCHEDULE, SQUAD_NOTE, SQUAD_TERM } from "../../lib/squad-schedule";
@@ -1056,6 +1056,7 @@ function AcademyDetail({
   const blurb = "blurb" in ac ? (ac as { blurb?: string }).blurb : undefined;
   const desc = "desc" in ac ? (ac as { desc?: string }).desc : undefined;
   const action = "action" in ac ? (ac as { action?: { label: string; href: string } }).action : undefined;
+  const starter = "starter" in ac ? (ac as { starter?: { label: string; href: string } }).starter : undefined;
 
   const isBadminton = ac.name === "Philadelphia Badminton";
   const isSquash = ac.name === "SquashTigers";
@@ -1110,7 +1111,7 @@ function AcademyDetail({
                 <BadmintonEnquiry />
               </div>
             ) : (
-              <DetailAction action={action} />
+              <DetailAction action={action} book={starter} />
             )}
           </div>
           {table}
@@ -2458,6 +2459,12 @@ const ACADEMY_PARTNERS = [
        landed. That form carries an "Exton, PA" location checkbox, so someone
        arriving from here can say where they mean in one click. */
     action: { label: "Register for a Trial", href: "https://www.squashtigers.com/#contact" },
+    /* The paid entry offer, beside the free trial rather than instead of it: the
+       trial places a player in a squad, the Starter Pack is five private
+       30-minute lessons for a family that wants one-to-one first. Rendered as
+       DetailAction's filled `book` button, so it leads. Price in the label
+       because this tile is the only place on the site that states it. */
+    starter: { label: "Buy the Starter Pack — $195", href: STARTER_PACK_URL },
     logo: (
       <span
         style={{
