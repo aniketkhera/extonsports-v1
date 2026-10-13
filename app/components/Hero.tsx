@@ -2314,7 +2314,11 @@ const RECREATION = {
   bigWord: "EXTON",
   bg: "var(--hero-rec-bg)",
   label: "No membership required",
-  headline: { line1: "Book a court.", line2: "Pay by the hour." },
+  // "or lane" — Aniket, 2026-10-13: "the title of extonsports.com says 'BOOK A COURT'..
+  // change to 'BOOK A COURT OR LANE'". Cricket is played in lanes, and every booking button
+  // already says "Book a court or lane". The NO-BREAK space keeps "or lane." together, so
+  // where the line wraps it reads BOOK A COURT / OR LANE., never BOOK A COURT OR / LANE.
+  headline: { line1: "Book a court or lane.", line2: "Pay by the hour." },
   body: "Squash, badminton and cricket. Open 24×7. Anyone can book.",
   cta: "Book a court",
 };
