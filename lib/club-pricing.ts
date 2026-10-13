@@ -23,7 +23,8 @@
  * are a day stale, and this fetch sits in the footer of every render.
  */
 
-import { PLAYER_CAPS, type SportCap } from './rates'
+import { cache } from 'react'
+import { PLAYER_CAPS, GROUP_CAPS, type SportCap, type GroupCap } from './rates'
 
 const API_BASE = (process.env.ORANGISH_API_BASE || 'https://app.orangish.io').replace(/\/$/, '')
 const SLUG = process.env.EXTON_CLUB_SLUG || 'exton-sports'
@@ -40,6 +41,37 @@ type CardRow = {
 
 export type SportCaps = { peak: SportCap; offPeak: SportCap }
 
+/** One entry of the platform's `court_group_caps`: courts booked together. */
+type GroupRow = { sport: string; courts: number; max_players: number }
+
+type ClubCard = { court_rate_card?: CardRow[]; court_group_caps?: GroupRow[] | null }
+
+/**
+ * The club card, fetched ONCE per render and shared by both readers below, or null
+ * when it could not be had.
+ *
+ * ⚠️ ONE FETCH, NOT TWO (2026-10-13). Two fetch() calls to this URL are NOT one
+ * request, whatever the URL and cache options: a `signal` (the timeout below)
+ * switches off Next's render-pass dedupe (next/dist/server/lib/dedupe-fetch.js). Had
+ * the per-court caps and the courts-together totals each fetched, one could fail
+ * while the other did not, and the footer would print live per-court caps beside the
+ * local together totals, or the reverse (caught in review before it shipped). React's
+ * cache() makes it one call, so both halves of the table come from one answer.
+ */
+const fetchClubCard = cache(async (): Promise<ClubCard | null> => {
+  try {
+    const res = await fetch(`${API_BASE}/api/public/clubs/${SLUG}`, {
+      next: { revalidate: 300 },
+      signal: AbortSignal.timeout(4000),
+    })
+    if (!res.ok) return null
+    const json = (await res.json()) as { club?: ClubCard }
+    return json.club ?? null
+  } catch {
+    return null
+  }
+})
+
 /**
  * Caps per sport, or null when the platform could not be reached.
  *
@@ -49,13 +81,7 @@ export type SportCaps = { peak: SportCap; offPeak: SportCap }
  */
 export async function fetchPlayerCaps(): Promise<Record<string, SportCaps> | null> {
   try {
-    const res = await fetch(`${API_BASE}/api/public/clubs/${SLUG}`, {
-      next: { revalidate: 300 },
-      signal: AbortSignal.timeout(4000),
-    })
-    if (!res.ok) return null
-    const json = (await res.json()) as { club?: { court_rate_card?: CardRow[] } }
-    const card = json.club?.court_rate_card
+    const card = (await fetchClubCard())?.court_rate_card
     if (!Array.isArray(card) || card.length === 0) return null
 
     // ⛔ EACH SLOT IS FILLED ONLY FROM ITS OWN BANDS. An earlier version seeded
@@ -110,6 +136,39 @@ export async function fetchPlayerCaps(): Promise<Record<string, SportCaps> | nul
   } catch {
     return null
   }
+}
+
+/**
+ * Courts booked TOGETHER, per sport, or null when the platform could not say.
+ *
+ * ⚠️ NULL IS NOT EMPTY. The club card publishes `court_group_caps: null` when it
+ * could not read its table, and an older deployment omits the field altogether;
+ * both mean "unknown" and keep the local copy. Only an ARRAY is the platform's
+ * answer — and an empty one is a real answer ("no such limits"), which drops the
+ * line rather than printing a copy the platform has since removed.
+ *
+ * Read from the same single fetch as fetchPlayerCaps (fetchClubCard).
+ */
+export async function fetchGroupCaps(): Promise<Record<string, GroupCap[]> | null> {
+  try {
+    const rows = (await fetchClubCard())?.court_group_caps
+    if (!Array.isArray(rows)) return null
+
+    const out: Record<string, GroupCap[]> = {}
+    for (const r of rows) {
+      if (typeof r?.sport !== 'string' || !Number.isInteger(r.courts) || typeof r.max_players !== 'number') continue
+      ;(out[r.sport] ??= []).push({ courts: r.courts, base: r.max_players })
+    }
+    for (const list of Object.values(out)) list.sort((a, b) => a.courts - b.courts)
+    return out
+  } catch {
+    return null
+  }
+}
+
+/** The courts-together limits to render: the platform's if it answered, the copy otherwise. */
+export async function groupCapsOrFallback(): Promise<Record<string, GroupCap[]>> {
+  return (await fetchGroupCaps()) ?? GROUP_CAPS
 }
 
 /**
