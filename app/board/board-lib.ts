@@ -172,13 +172,34 @@ export type BrandKey = "philadelphia-badminton" | "ccca" | "squashtigers" | "ser
    coaching and 7:30-9:30 open play. This
    file only prints it. A closed vocabulary of two, read through sessionOf so an
    unknown value prints nothing rather than whatever the feed happened to send.
-   Only the keyed feed carries it; the public proxy's allow-list drops it. */
+   Both feeds carry it since 2026-10-14 — the keyed one, and the public proxy
+   (app/api/court-slots), whose allow-list passes the same two words. */
 export type SessionKey = "junior-coaching" | "open-play";
 
 export const SESSION_TEXT: Record<SessionKey, string> = {
   "junior-coaching": "JUNIOR COACHING",
   "open-play": "OPEN PLAY",
 };
+
+/* The other half of the split, for the screens that print no session — /board and
+   extonsports.com/calendar. Without it "Next" on /board shows the same partner's
+   second half, and the calendar draws the partner's mark twice in one evening.
+   Only the same partner, back to back, with DIFFERENT sessions is joined, so two
+   members' consecutive hours never merge. */
+export function joinSessions<T extends NamedBlock>(bs: T[]): T[] {
+  const out: T[] = [];
+  for (const b of [...bs].sort((a, c) => a.date.localeCompare(c.date) || a.courtId.localeCompare(c.courtId) || a.from - c.from)) {
+    const p = out[out.length - 1];
+    if (
+      p && p.date === b.date && p.courtId === b.courtId && p.to === b.from && p.kind === b.kind &&
+      p.org && p.org === b.org && p.who === b.who &&
+      p.session && b.session && p.session !== b.session
+    ) {
+      out[out.length - 1] = { ...p, to: b.to, session: undefined };
+    } else out.push(b);
+  }
+  return out;
+}
 
 export function sessionOf(b: NamedBlock): SessionKey | null {
   return b.session === "junior-coaching" || b.session === "open-play" ? b.session : null;
