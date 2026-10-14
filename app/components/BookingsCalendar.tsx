@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { brandFor, type BrandKey } from "../board/board-lib";
+import { brandFor, joinSessions, type BrandKey } from "../board/board-lib";
 import type { CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import type { CourtSlots, SlotBlock } from "../api/court-slots/route";
@@ -233,8 +233,11 @@ export default function BookingsCalendar({
      nothing a reader can act on, and has to say why rather than look broken. */
   const allShut = shown.length > 0 && shown.every((g) => sportShutOnDate(g.sport, date));
 
+  /* joinSessions (2026-10-14): the feed now splits a partner's evening where junior
+     coaching becomes open play. This grid prints no session, so it re-joins them
+     and draws the partner's hold once, as it always did. */
   const dayBlocks = useMemo(
-    () => (data ? data.blocks.filter((b) => b.date === date) : []),
+    () => (data ? joinSessions(data.blocks.filter((b) => b.date === date)) : []),
     [data, date],
   );
 

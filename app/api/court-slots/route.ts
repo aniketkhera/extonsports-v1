@@ -60,6 +60,14 @@ export type SlotBlock = {
    * club this size, and this page is public and indexed.
    */
   org?: 'squashtigers' | 'ccca' | 'philadelphia-badminton' | 'sera'
+  /**
+   * A partner's session — junior coaching or open play (2026-10-14, Aniket: show
+   * the reception board's tags "on the public page too"). Two fixed words that name
+   * nobody; the upstream splits a partner's hours where one becomes the other.
+   * extonsports.com/calendar re-joins the split (joinSessions in board-lib), so its
+   * grid draws as it did.
+   */
+  session?: 'junior-coaching' | 'open-play'
 }
 
 export type CourtRef = {
@@ -83,6 +91,7 @@ const EMPTY: CourtSlots = { timeZone: 'America/New_York', days: [], courts: [], 
 
 /** The four keys this proxy will forward. Anything else is dropped silently. */
 const PARTNERS = ['squashtigers', 'ccca', 'philadelphia-badminton', 'sera'] as const
+const SESSIONS = ['junior-coaching', 'open-play'] as const
 
 /* How many days to ask the platform for.
  *
@@ -106,7 +115,8 @@ export async function GET(req: Request) {
 
   try {
     const res = await fetch(
-      `${API_BASE}/api/public/court-slots?club=${encodeURIComponent(CLUB_ID)}&days=${days}`,
+      // sessions=1: ask for the partners' JUNIOR COACHING / OPEN PLAY split (2026-10-14).
+      `${API_BASE}/api/public/court-slots?club=${encodeURIComponent(CLUB_ID)}&days=${days}&sessions=1`,
       { next: { revalidate: 60 }, signal: AbortSignal.timeout(5000) },
     )
     if (!res.ok) return NextResponse.json(EMPTY)
@@ -143,9 +153,12 @@ export async function GET(req: Request) {
           // a public page on the strength of a remote response is the mistake
           // worth refusing locally. Now nothing textual is forwarded at all.
           const org = PARTNERS.find((k) => k === b.org)
+          // Same rule for the session: one of two fixed words, or nothing.
+          const session = SESSIONS.find((k) => k === b.session)
           return {
             date: b.date, courtId: b.courtId, from: b.from, to: b.to, kind: b.kind,
             ...(org ? { org } : {}),
+            ...(session ? { session } : {}),
           }
         }),
     } satisfies CourtSlots)

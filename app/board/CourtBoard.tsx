@@ -7,29 +7,8 @@ import useReloadOnDeploy from "../components/useReloadOnDeploy";
    are shared with /reception — see board-lib.ts for why they are not duplicated. */
 import {
   PLATFORM, readKey, clubNow, clock, span, holderLabel,
-  type NamedBlock, type NamedSlots, type Row,
+  joinSessions, type NamedSlots, type Row,
 } from "./board-lib";
-
-/* The keyed feed splits a partner's hours where junior coaching becomes open play
-   (2026-10-14) — Wednesday's PBA 5:30-9:30 arrives as 5:30-7:30 and 7:30-9:30.
-   This board prints no session, so it stitches them back together; otherwise
-   "Next" would show the same partner's second half instead of whoever really
-   follows. Only the same partner, back to back, with DIFFERENT sessions is
-   joined, so two members' consecutive hours never merge. */
-function joinSessions(bs: NamedBlock[]): NamedBlock[] {
-  const out: NamedBlock[] = [];
-  for (const b of [...bs].sort((a, c) => a.date.localeCompare(c.date) || a.from - c.from)) {
-    const p = out[out.length - 1];
-    if (
-      p && p.date === b.date && p.to === b.from && p.kind === b.kind &&
-      p.org && p.org === b.org && p.who === b.who &&
-      p.session && b.session && p.session !== b.session
-    ) {
-      out[out.length - 1] = { ...p, to: b.to, session: undefined };
-    } else out.push(b);
-  }
-  return out;
-}
 
 /* The court board, as shown on the reception and vestibule televisions.
    ────────────────────────────────────────────────────────────────────────
@@ -39,13 +18,12 @@ function joinSessions(bs: NamedBlock[]): NamedBlock[] {
    shows a whole week nobody can read from fifteen feet away.
 
    ⛔ NO HEADCOUNTS, NO BOOKING IDS, AND NO FULL NAMES FROM THE UNKEYED FEED.
-   This said "NO NAMES" flatly until 2026-10-07. It is no longer true of the
-   unkeyed path: /api/court-slots now carries the holder's INITIALS on a
-   booking block, because the public calendar wanted them and both surfaces
-   share that proxy. That is a widening of what this screen shows when it has
-   no key, and it was not asked for here — it is a consequence of the shared
-   endpoint, and it is acceptable only because the KEYED feed this screen
-   normally runs on already shows full names by design.
+   The unkeyed path (/api/court-slots) names only the four partner
+   organisations: an individual's hour comes back anonymous and prints
+   "PRIVATE". (It carried the holder's INITIALS from 2026-10-07 until they came
+   off the next day.) Since 2026-10-14 a partner's hour may also carry a
+   session — junior coaching or open play — which this board does not print; it
+   re-joins the split (joinSessions in board-lib).
 
    What has NOT changed: if the payload ever grows a FULL name on the unkeyed
    path, do NOT print it — a lobby television is read by everyone who walks
