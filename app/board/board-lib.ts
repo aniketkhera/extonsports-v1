@@ -11,8 +11,9 @@
 import type { CourtSlots, SlotBlock, CourtRef } from "../api/court-slots/route";
 import { CLUB_TZ } from "../../lib/opening";
 
-/** The keyed feed returns the same shape plus a holder per block. */
-export type NamedBlock = SlotBlock & { who?: string; org?: BrandKey };
+/** The keyed feed returns the same shape plus a holder per block, and — for a
+ *  partner's hours — which kind of session it is (2026-10-14). */
+export type NamedBlock = SlotBlock & { who?: string; org?: BrandKey; session?: SessionKey };
 export type NamedSlots = Omit<CourtSlots, "blocks"> & { blocks: NamedBlock[] };
 
 export type Row = {
@@ -161,6 +162,27 @@ export function holderLabel(b: NamedBlock): string {
    typed by hand in the admin and have already varied — "Philadelphia Badminton"
    and "Philadelphia Badminton Academy" are both in the data. */
 export type BrandKey = "philadelphia-badminton" | "ccca" | "squashtigers" | "sera";
+
+/* ── WHAT KIND OF SESSION (2026-10-14) ───────────────────────────────────────────
+   Aniket: with Philadelphia Badminton's hours, "also write if its JUNIOR COACHING
+   or OPEN PLAY" — then the same day, every Chester County Cricket Academy and
+   SquashTigers hour is junior coaching too. The platform decides which
+   (lib/court-partners.ts, from his timetable) and splits PBA's blocks where one
+   becomes the other, so Wednesday's 5:30-9:30 arrives as 5:30-7:30 junior
+   coaching and 7:30-9:30 open play. This
+   file only prints it. A closed vocabulary of two, read through sessionOf so an
+   unknown value prints nothing rather than whatever the feed happened to send.
+   Only the keyed feed carries it; the public proxy's allow-list drops it. */
+export type SessionKey = "junior-coaching" | "open-play";
+
+export const SESSION_TEXT: Record<SessionKey, string> = {
+  "junior-coaching": "JUNIOR COACHING",
+  "open-play": "OPEN PLAY",
+};
+
+export function sessionOf(b: NamedBlock): SessionKey | null {
+  return b.session === "junior-coaching" || b.session === "open-play" ? b.session : null;
+}
 
 /* ⛔ PREFER THE FEED'S KEY, AND NEVER MATCH A PERSON'S NAME. `org` is resolved
    in the platform from the event or squad row (lib/court-partners.ts) and is a

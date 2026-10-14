@@ -10,6 +10,27 @@ import {
   type NamedBlock, type NamedSlots, type Row,
 } from "./board-lib";
 
+/* The keyed feed splits a partner's hours where junior coaching becomes open play
+   (2026-10-14) — Wednesday's PBA 5:30-9:30 arrives as 5:30-7:30 and 7:30-9:30.
+   This board prints no session, so it stitches them back together; otherwise
+   "Next" would show the same partner's second half instead of whoever really
+   follows. Only the same partner, back to back, with DIFFERENT sessions is
+   joined, so two members' consecutive hours never merge. */
+function joinSessions(bs: NamedBlock[]): NamedBlock[] {
+  const out: NamedBlock[] = [];
+  for (const b of [...bs].sort((a, c) => a.date.localeCompare(c.date) || a.from - c.from)) {
+    const p = out[out.length - 1];
+    if (
+      p && p.date === b.date && p.to === b.from && p.kind === b.kind &&
+      p.org && p.org === b.org && p.who === b.who &&
+      p.session && b.session && p.session !== b.session
+    ) {
+      out[out.length - 1] = { ...p, to: b.to, session: undefined };
+    } else out.push(b);
+  }
+  return out;
+}
+
 /* The court board, as shown on the reception and vestibule televisions.
    ────────────────────────────────────────────────────────────────────────
    One row per court: what is on it now, and what is on it next. Nothing else.
@@ -107,7 +128,7 @@ export default function CourtBoard() {
     const tomorrow = i >= 0 ? data.days[i + 1] : undefined;
 
     return data.courts.map((court) => {
-      const mine = data.blocks.filter((b) => b.courtId === court.id);
+      const mine = joinSessions(data.blocks.filter((b) => b.courtId === court.id));
       const todays = mine.filter((b) => b.date === today).sort((a, b) => a.from - b.from);
       const onNow = todays.find((b) => b.from <= minutes && minutes < b.to) ?? null;
       const laterToday = todays.find((b) => b.from > minutes) ?? null;
