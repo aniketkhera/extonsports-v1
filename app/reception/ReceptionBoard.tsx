@@ -5,8 +5,8 @@ import { makeTicker, useTick } from "../components/ticker";
 import Image from "next/image";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
 import {
-  PLATFORM, readKey, clubNow, span, holderLabel, brandFor,
-  type BrandKey, type NamedBlock, type NamedSlots,
+  PLATFORM, readKey, clubNow, span, holderLabel, brandFor, sessionOf, SESSION_TEXT,
+  type BrandKey, type NamedBlock, type NamedSlots, type SessionKey,
 } from "../board/board-lib";
 
 /* The clock is an external store, shared with /comingsoon — see
@@ -70,7 +70,6 @@ const EMBER = "#FFBE97";
 /** Brighter than --color-green-hi (#5CC766) — "open" has to carry the room. */
 const GREEN = "#79EA92";
 const LABEL = "rgba(255,255,255,0.86)";
-const META = "rgba(255,255,255,0.80)";
 const NEXT_VAL = "rgba(255,255,255,0.88)";
 const NEXT_LBL = "rgba(255,255,255,0.62)";
 const MUTED = "rgba(255,255,255,0.70)";
@@ -101,6 +100,10 @@ const PANEL_GLOW =
    #F89B72 is the same orange the website uses, and at full opacity it still
    belongs to the board rather than fighting the GREEN "ALL OPEN". */
 const PANEL_BORDER = "#F89B72";
+/* The brand orange as a TEXT colour: JUNIOR COACHING. OPEN PLAY is white — never
+   GREEN, which on this board means a free court ("ALL OPEN", "N OF 3 FREE NOW"),
+   and a green "OPEN PLAY" would read as "court open" from the desk. */
+const SESSION_ORANGE = "#F89B72";
 const PANEL_SHADOW = [
   "0 1.7vh 3.8vh rgba(0,0,0,0.66)",            // the box sits off the wall
   "0 0.5vh 1.1vh rgba(0,0,0,0.45)",            // the contact shadow under it
@@ -119,6 +122,10 @@ type Entry = {
   to: number;
   who: string;
   brand: BrandKey | null;
+  /** A partner's session: junior coaching or open play for Philadelphia Badminton
+   *  (by its timetable), always junior coaching for CCCA and SquashTigers; null for
+   *  everything else. */
+  session: SessionKey | null;
   /** Court labels in the order they appear, e.g. ["1","2","3"]. */
   courts: string[];
 };
@@ -126,6 +133,8 @@ type Entry = {
 type Panel = {
   sport: string;
   total: number;
+  /** Every court label in this sport, in court order — one box each. */
+  labels: string[];
   freeNow: number;
   now: Entry[];
   upcoming: Entry[];
@@ -186,14 +195,19 @@ function mergeBlocks(blocks: NamedBlock[], label: Map<string, string>): Entry[] 
       const to = bounds[i + 1];
       const covering = list.filter((b) => b.from <= from && b.to >= to);
 
+      /* Keyed on the SESSION as well as the holder (2026-10-14): PBA's junior
+         coaching and its open play share the holder text, and keyed on that
+         alone the 7:30 split would be grouped straight back into one row. */
       const byWho = new Map<string, Entry>();
       for (const b of covering) {
         const who = holderLabel(b);
-        const found = byWho.get(who);
+        const session = sessionOf(b);
+        const key = `${session ?? ""}|${who}`;
+        const found = byWho.get(key);
         if (found) found.courts.push(label.get(b.courtId) ?? "");
         else {
-          byWho.set(who, {
-            date, from, to, who,
+          byWho.set(key, {
+            date, from, to, who, session,
             brand: brandFor(b), courts: [label.get(b.courtId) ?? ""],
           });
         }
@@ -212,6 +226,7 @@ function mergeBlocks(blocks: NamedBlock[], label: Map<string, string>): Entry[] 
             e.date === date &&
             e.to === band.from &&
             e.who === band.who &&
+            e.session === band.session &&
             e.courts.length === band.courts.length &&
             e.courts.every((c, n) => c === band.courts[n]),
         );
@@ -250,7 +265,94 @@ function dayDiff(a: string, b: string): number {
   return Math.round((Date.UTC(ay, am - 1, ad) - Date.UTC(by, bm - 1, bd)) / 86_400_000);
 }
 
+/* ONE BOX PER COURT, an X where it is taken (2026-10-14).
+   ──────────────────────────────────────────────────────────────────────────
+   Aniket: "maybe have 3 boxes for badminton, and put a x in them for occupied
+   and nothing in them for open... same for cricket and squash". They replace
+   "Courts 1, 2, 3" on the board: from the desk the PATTERN says which courts,
+   where a list had to be read — and three boxes are narrower than "Courts 1, 2,
+   3", which gives the holder back the width the session word takes. The boxes
+   run in court order; the numbers over the COMING UP column say which is which.
+
+   Sizes in vw like everything else here. An empty box is drawn at 0.55 white —
+   deliberately quieter than a taken one, because a free court is the absence of
+   something — and a taken one is near-opaque with a white X, because anything
+   under about 0.75 alpha reads grey from the desk. The words survive as the
+   aria-label (courtsLabel below). */
+function CourtBoxes({
+  sport, labels, taken, big,
+}: { sport: string; labels: string[]; taken: string[]; big?: boolean }) {
+  const on = new Set(taken);
+  const size = big ? "2.1vw" : "1.02vw";
+  return (
+    <span
+      role="img"
+      aria-label={courtsLabel(sport, taken)}
+      style={{ display: "inline-flex", alignItems: "center", gap: big ? "0.5vw" : "0.26vw" }}
+    >
+      {labels.map((l) => {
+        const isOn = on.has(l);
+        return (
+          <span
+            key={l}
+            style={{
+              width: size, height: size, flex: "none", boxSizing: "border-box",
+              borderRadius: big ? "0.22vw" : "0.14vw",
+              border: `${big ? "0.18vw" : "0.12vw"} solid ${isOn ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.55)"}`,
+              background: isOn ? "rgba(255,255,255,0.10)" : "transparent",
+              display: "inline-flex",
+            }}
+          >
+            {isOn && (
+              <svg viewBox="0 0 10 10" width="100%" height="100%" aria-hidden>
+                <path d="M1.4 1.4 L8.6 8.6 M8.6 1.4 L1.4 8.6" stroke={INK} strokeWidth={big ? 1.3 : 1.8} strokeLinecap="round" />
+              </svg>
+            )}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+/* The court numbers over the COMING UP boxes, at the boxes' own pitch. */
+function CourtNumbers({ labels }: { labels: string[] }) {
+  return (
+    <span style={{ display: "inline-flex", gap: "0.26vw" }}>
+      {labels.map((l) => (
+        <span key={l} style={{ width: "1.02vw", textAlign: "center", fontSize: "0.82vw", letterSpacing: 0 }}>{l}</span>
+      ))}
+    </span>
+  );
+}
+
+/* A partner's session (PBA, CCCA, SquashTigers) beside its lockup while it is on
+   court: JUNIOR COACHING filled in the brand orange, OPEN PLAY outlined in white.
+   In the lockup row, never a new line — the NOW area has no spare height. Three
+   live entries fit only because the boxes go compact at three (see the NOW list),
+   and the panels' grid row is minmax(0, 1fr), so a fourth clips inside NOW
+   instead of pushing every panel off the bottom of the screen. */
+function SessionTag({ session }: { session: SessionKey }) {
+  const junior = session === "junior-coaching";
+  return (
+    <span
+      className="text-cond"
+      style={{
+        fontSize: "1.25vw", letterSpacing: "0.08em", lineHeight: 1, whiteSpace: "nowrap",
+        padding: "0.32vw 0.62vw", borderRadius: "0.3vw",
+        background: junior ? SESSION_ORANGE : "transparent",
+        color: junior ? BG : INK,
+        border: junior ? "none" : `0.15vw solid ${INK}`,
+      }}
+    >
+      {SESSION_TEXT[session]}
+    </span>
+  );
+}
+
 /* "1","2","3" -> "Courts 1, 2, 3". EVERY COURT IS NAMED; there is no range.
+   (2026-10-14: no longer drawn — the boxes above replaced it on the board — but
+   kept as their aria-label, and for the reasoning below.)
    ──────────────────────────────────────────────────────────────────────────
    This collapsed consecutive numbers into "Courts 1–3" until 8 Oct 2026, when
    Aniket asked for each one spelled out. The reason is worth keeping: on a
@@ -495,6 +597,8 @@ export default function ReceptionBoard() {
       return {
         sport,
         total: courts.length,
+        labels: [...new Set(courts.map((c) => label.get(c.id) ?? ""))]
+          .sort((a, b) => Number(a) - Number(b) || a.localeCompare(b)),
         freeNow: courts.length - busyIds.size,
         now: mergeBlocks(live, label),
         upcoming: mergeBlocks(ahead, label).slice(0, UPCOMING_COUNT),
@@ -505,8 +609,6 @@ export default function ReceptionBoard() {
   }, [data, tick]);
 
   const { panels, today } = view;
-
-  const courtsOf = (p: Panel, e: Entry) => courtsLabel(p.sport, e.courts);
 
   return (
     <div
@@ -553,7 +655,12 @@ export default function ReceptionBoard() {
         </div>
       </div>
 
-      <div style={{ flex: 1, display: "grid", gridTemplateColumns: `repeat(${Math.max(panels.length, 1)}, 1fr)`, gap: "1.4vw", minHeight: 0 }}>
+      {/* gridTemplateRows minmax(0, 1fr) (review, 2026-10-14): with the default
+          `auto` row a panel grew to its content, so three live entries with the
+          court boxes pushed all three panels — and their last COMING UP rows —
+          off the bottom of the screen. Now the row is the screen's, and the NOW
+          area's own overflow:hidden is what gives. */}
+      <div style={{ flex: 1, display: "grid", gridTemplateColumns: `repeat(${Math.max(panels.length, 1)}, 1fr)`, gridTemplateRows: "minmax(0, 1fr)", gap: "1.4vw", minHeight: 0 }}>
         {panels.map((p) => (
           <div
             key={p.sport}
@@ -592,15 +699,20 @@ export default function ReceptionBoard() {
                 </div>
               ) : (
                 p.now.map((e) => (
-                  <div key={`${e.who}-${e.from}-${e.to}`} style={{ marginBottom: "1.2vh" }}>
-                    <div style={{ minHeight: "3.2vw", display: "flex", alignItems: "center", marginBottom: "0.4vh" }}>
+                  <div key={`${e.who}-${e.session ?? ""}-${e.from}-${e.to}`} style={{ marginBottom: "1.2vh" }}>
+                    <div style={{ minHeight: "3.2vw", display: "flex", alignItems: "center", gap: "0.8vw", marginBottom: "0.4vh" }}>
                       <Lockup brand={e.brand} who={e.who} />
+                      {e.session && <SessionTag session={e.session} />}
                     </div>
                     <div className="text-cond" style={{ fontSize: "3.1vw", color: INK, lineHeight: 1.03 }}>
                       {span(e.from, e.to)}
                     </div>
-                    <div className="text-cond" style={{ fontSize: "1.3vw", color: META, letterSpacing: "0.04em" }}>
-                      {courtsOf(p, e)}
+                    {/* display:flex so the row has no inherited 16px/1.5 line box
+                        under it, and the compact boxes once three are on court —
+                        measured (review, 2026-10-14): three entries with the big
+                        boxes ran past the NOW area; compact, they fit with room. */}
+                    <div style={{ display: "flex", marginTop: "0.5vh" }}>
+                      <CourtBoxes sport={p.sport} labels={p.labels} taken={e.courts} big={p.now.length < 3} />
                     </div>
                   </div>
                 ))
@@ -630,8 +742,16 @@ export default function ReceptionBoard() {
                 The day prefix appears only when it is not today, so a list
                 that stays inside today carries no repeated noise. */}
             <div style={{ borderTop: `1px solid ${RULE_SOFT}`, paddingTop: "0.6vh" }}>
-              <div className="text-cond" style={{ fontSize: "1vw", letterSpacing: "0.16em", color: NEXT_LBL }}>
-                COMING UP
+              <div
+                className="text-cond"
+                style={{
+                  display: "grid", gridTemplateColumns: "auto minmax(0,1fr) auto", gap: "0 0.5vw",
+                  alignItems: "baseline", fontSize: "1vw", letterSpacing: "0.16em", color: NEXT_LBL,
+                }}
+              >
+                <span>COMING UP</span>
+                <span />
+                <CourtNumbers labels={p.labels} />
               </div>
               {p.upcoming.length === 0 ? (
                 <div className="text-cond" style={{ fontSize: "1.2vw", color: NEXT_VAL, lineHeight: 1.35 }}>
@@ -642,12 +762,12 @@ export default function ReceptionBoard() {
                   const day = dayLabel(e.date, today);
                   return (
                     <div
-                      key={`${e.date}-${e.from}-${e.who}`}
+                      key={`${e.date}-${e.from}-${e.session ?? ""}-${e.who}`}
                       className="text-cond"
                       style={{
                         display: "grid",
                         gridTemplateColumns: "auto minmax(0,1fr) auto",
-                        gap: "0 0.5vw",
+                        gap: "0 0.5vw", alignItems: "center",
                         fontSize: "1.12vw", lineHeight: 1.34, color: NEXT_VAL,
                         whiteSpace: "nowrap",
                       }}
@@ -655,8 +775,19 @@ export default function ReceptionBoard() {
                       <span style={{ color: INK }}>
                         {day ? `${day} ` : ""}{span(e.from, e.to)}
                       </span>
-                      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{e.who}</span>
-                      <span style={{ color: NEXT_LBL }}>{courtsOf(p, e)}</span>
+                      {/* The session word FIRST and never truncated; the holder after
+                          it is what gives way. Only partners carry a session —
+                          PBA, CCCA and SquashTigers, one per column — so a cut-off
+                          "CHESTER COUNTY CRICKET…" still says who it is. */}
+                      <span style={{ display: "flex", gap: "0.45vw", minWidth: 0, overflow: "hidden" }}>
+                        {e.session && (
+                          <span style={{ flex: "none", color: e.session === "junior-coaching" ? SESSION_ORANGE : INK }}>
+                            {SESSION_TEXT[e.session]}
+                          </span>
+                        )}
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{e.who}</span>
+                      </span>
+                      <CourtBoxes sport={p.sport} labels={p.labels} taken={e.courts} />
                     </div>
                   );
                 })
