@@ -301,18 +301,21 @@ html { scroll-behavior: smooth; }
 /* "OPEN 24×7" beside the nav wordmark, 2026-10-14 — Aniket: "have a green OPEN
    24x7 to the right of Exton Sports Center … make it prominent".
 
-   The hero's .label-chip shape in the logo's green, a size up, with the 2.8s
-   breath the booking buttons use so the header keeps one rhythm. A SOLID fill
-   with near-black type, not green text: the nav is white in the light theme,
-   and #42B54D on white is about 2.6:1 — it would read as a smudge. Fill plus
-   dark type is 7.6:1 on either nav. Literal hexes, not --color-* tokens, for
-   the same reason as the TV screens: nothing here should flip with the theme. */
+   First built as a SOLID green chip with a breathing glow; Aniket, the same
+   day: "doesn't look too good. green color is ok, maybe a bit subtle". Of
+   three quieter mock-ups he chose this one: a soft green TINT, green type and a
+   pulsing dot, no glow. It keeps the hero .label-chip's shape so it still reads
+   as a badge.
+
+   The green TYPE has to change with the theme, which a solid fill did not:
+   #5CC766 on the near-black nav, but on the light theme's white nav that is
+   about 2.3:1 and reads as a smudge, so light uses #1E7A32 (about 5.4:1). */
 .open-chip {
   /* NO display here — Nav.tsx sets it with Tailwind (hidden sm:inline-flex).
      A display in this unlayered rule beats Tailwind's layered utilities, so
      `hidden` was ignored and the chip overflowed every phone (caught at 390). */
-  background: #42B54D;
-  color: #0A1019;
+  background: rgba(66, 181, 77, 0.14);
+  color: #5CC766;
   font-family: var(--font-cond);
   font-weight: 700;
   font-size: 0.82rem;
@@ -321,23 +324,14 @@ html { scroll-behavior: smooth; }
   line-height: 1;
   padding: 7px 12px;
   white-space: nowrap;
-  animation: open-breathe 2.8s ease-in-out infinite;
 }
-.open-chip .open-dot {
-  width: 7px;
-  height: 7px;
+.open-chip .open-dot,
+.open-sub .open-dot {
   border-radius: 50%;
-  background: #0A1019;
+  background: currentColor;
   animation: open-dot 1.4s ease-in-out infinite;
 }
-@keyframes open-breathe {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(66, 181, 77, 0.55), 0 0 14px rgba(66, 181, 77, 0.35);
-  }
-  50% {
-    box-shadow: 0 0 0 7px rgba(66, 181, 77, 0), 0 0 26px rgba(66, 181, 77, 0.60);
-  }
-}
+.open-chip .open-dot { width: 7px; height: 7px; }
 @keyframes open-dot {
   0%, 100% { opacity: 1; }
   50%      { opacity: 0.3; }
@@ -348,8 +342,8 @@ html { scroll-behavior: smooth; }
    scaled font size and 0.16em brand tracking. */
 .open-sub {
   /* Display comes from Tailwind in Nav.tsx, for the reason given on .open-chip. */
-  background: #42B54D;
-  color: #0A1019;
+  background: rgba(66, 181, 77, 0.14);
+  color: #5CC766;
   font-family: var(--font-cond);
   font-weight: 700;
   font-size: 0.62rem;
@@ -358,18 +352,14 @@ html { scroll-behavior: smooth; }
   line-height: 1;
   padding: 3px 7px;
   white-space: nowrap;
-  animation: open-breathe 2.8s ease-in-out infinite;
 }
-.open-sub .open-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #0A1019;
-  animation: open-dot 1.4s ease-in-out infinite;
+.open-sub .open-dot { width: 5px; height: 5px; }
+:root[data-theme="light"] .open-chip,
+:root[data-theme="light"] .open-sub {
+  background: rgba(66, 181, 77, 0.12);
+  color: #1E7A32;
 }
-/* Same courtesy as .opening-glow: keep the glow, drop the pulse. */
 @media (prefers-reduced-motion: reduce) {
-  .open-chip, .open-sub { animation: none; box-shadow: 0 0 18px rgba(66, 181, 77, 0.50); }
   .open-chip .open-dot, .open-sub .open-dot { animation: none; }
 }
 

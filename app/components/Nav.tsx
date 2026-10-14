@@ -78,9 +78,9 @@ export default function Nav() {
         </Link>
 
         {/* OPEN 24×7, 2026-10-14 — the club never closes, and that is the fact
-            worth a glowing badge now the "booking opens" chip below has nothing
-            left to say. Styles and the reasoning for a solid fill: .open-chip in
-            globals.css. Not a link: it is a statement, and the booking button
+            worth a badge now the "booking opens" chip below has nothing left to
+            say. Styles, and why it is a soft tint rather than the solid glowing
+            chip it started as: .open-chip in globals.css. Not a link: it is a statement, and the booking button
             on the right is the action.
 
             WIDTHS, measured at 1440 / 1024 / 900 / 768 / 640 / 390, not guessed:
