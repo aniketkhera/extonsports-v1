@@ -10,7 +10,7 @@ import type { ProgramSchedule } from "@/lib/club-schedule";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, CLASS_FEES_NOTE } from "../../lib/rates";
 import { BOLLYWOOD_CLASS_URL, SQUAD_CLASS_URL, STARTER_PACK_URL, BOOK_COURT_URL, CLASS_ONLINE_BOOKING_LIVE } from "../../lib/booking";
 import { SPORT_BOOKING_OPENS_LABEL, sportBookingOpen, sportShutOnDate, sportsNotYetOpen } from "../../lib/opening";
-import { PBA_SCHEDULE, PBA_EXPANDS, PBA_COURTS } from "../../lib/pba-schedule";
+import { pbaScheduleOn, PBA_COURTS } from "../../lib/pba-schedule";
 import { SQUAD_SCHEDULE, SQUAD_NOTE, SQUAD_TERM } from "../../lib/squad-schedule";
 import BadmintonEnquiry from "./BadmintonEnquiry";
 import BookingsCalendar from "./BookingsCalendar";
@@ -1067,11 +1067,14 @@ function AcademyDetail({
 
   const isBadminton = ac.name === "Philadelphia Badminton";
   const isSquash = ac.name === "SquashTigers";
-  const table = isBadminton ? (
+  /* Chosen by today's club-local date, like rosterIntro: the timetable changes on
+     2 and 30 November by itself (lib/pba-schedule.ts). */
+  const pba = isBadminton ? pbaScheduleOn() : null;
+  const table = pba ? (
     <AcademyScheduleTable
       headers={["Day", "Coaching", "Open play"]}
-      rows={PBA_SCHEDULE.map((r) => [r.day, r.coaching ?? "", r.openPlay ?? ""])}
-      notes={[`${PBA_COURTS}. ${PBA_EXPANDS}`]}
+      rows={pba.slots.map((r) => [r.day, r.coaching ?? "", r.openPlay ?? ""])}
+      notes={[pba.note ? `${PBA_COURTS}. ${pba.note}` : `${PBA_COURTS}.`]}
     />
   ) : isSquash ? (
     <AcademyScheduleTable

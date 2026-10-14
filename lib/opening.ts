@@ -84,7 +84,7 @@ export function sportsNotYetOpen(sports: string[], now: Date = new Date()): stri
 export const CLUB_TZ = 'America/New_York'
 
 /** A club-local calendar date, YYYY-MM-DD, for an instant. */
-function clubDate(d: Date): string {
+export function clubDate(d: Date): string {
   const f = new Intl.DateTimeFormat('en-CA', {
     timeZone: CLUB_TZ, year: 'numeric', month: '2-digit', day: '2-digit',
   })
