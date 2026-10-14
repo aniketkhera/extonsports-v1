@@ -2006,15 +2006,20 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
             className={`flex gap-2 text-white/70 ${stacked ? "items-start" : "items-center"}`}
             style={{ fontSize: RATE_NOTE }}
           >
-            <span
-              className="inline-block rounded-full shrink-0"
-              style={{
-                width: "7px",
-                height: "7px",
-                marginTop: stacked ? "0.45em" : undefined,
-                background: pendingSports.length === 0 ? "var(--color-green)" : "var(--color-ember)",
-              }}
-            />
+            {/* The green "open" dot is gone, 2026-10-14 — Aniket: "remove this
+                dot", once the nav carried the green OPEN 24×7. Only the ember
+                "not all open yet" dot is left, for the staged-week branch. */}
+            {pendingSports.length > 0 && (
+              <span
+                className="inline-block rounded-full shrink-0"
+                style={{
+                  width: "7px",
+                  height: "7px",
+                  marginTop: stacked ? "0.45em" : undefined,
+                  background: "var(--color-ember)",
+                }}
+              />
+            )}
             {pendingSports.length === 0 ? (
               <span>
                 {/* The {" "} is load-bearing: JSX drops the literal space that

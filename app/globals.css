@@ -298,6 +298,71 @@ html { scroll-behavior: smooth; }
   padding: 5px 12px;
 }
 
+/* "OPEN 24×7" beside the nav wordmark, 2026-10-14 — Aniket: "have a green OPEN
+   24x7 to the right of Exton Sports Center … make it prominent".
+
+   First built as a SOLID green chip with a breathing glow; Aniket, the same
+   day: "doesn't look too good. green color is ok, maybe a bit subtle". Of
+   three quieter mock-ups he chose this one: a soft green TINT, green type and a
+   pulsing dot, no glow. It keeps the hero .label-chip's shape so it still reads
+   as a badge.
+
+   The green TYPE has to change with the theme, which a solid fill did not:
+   #5CC766 on the near-black nav, but on the light theme's white nav that is
+   about 2.3:1 and reads as a smudge, so light uses #1E7A32 (about 5.4:1). */
+.open-chip {
+  /* NO display here — Nav.tsx sets it with Tailwind (hidden sm:inline-flex).
+     A display in this unlayered rule beats Tailwind's layered utilities, so
+     `hidden` was ignored and the chip overflowed every phone (caught at 390). */
+  background: rgba(66, 181, 77, 0.14);
+  color: #5CC766;
+  font-family: var(--font-cond);
+  font-weight: 700;
+  font-size: 0.82rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  line-height: 1;
+  padding: 7px 12px;
+  white-space: nowrap;
+}
+.open-chip .open-dot,
+.open-sub .open-dot {
+  border-radius: 50%;
+  background: currentColor;
+  animation: open-dot 1.4s ease-in-out infinite;
+}
+.open-chip .open-dot { width: 7px; height: 7px; }
+@keyframes open-dot {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}
+/* The phone version: a small tag on a second line under the wordmark (see
+   Nav.tsx for why it cannot sit beside it). Explicit size and tracking, because
+   it lives inside the wordmark link and would otherwise inherit its viewport-
+   scaled font size and 0.16em brand tracking. */
+.open-sub {
+  /* Display comes from Tailwind in Nav.tsx, for the reason given on .open-chip. */
+  background: rgba(66, 181, 77, 0.14);
+  color: #5CC766;
+  font-family: var(--font-cond);
+  font-weight: 700;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1;
+  padding: 3px 7px;
+  white-space: nowrap;
+}
+.open-sub .open-dot { width: 5px; height: 5px; }
+:root[data-theme="light"] .open-chip,
+:root[data-theme="light"] .open-sub {
+  background: rgba(66, 181, 77, 0.12);
+  color: #1E7A32;
+}
+@media (prefers-reduced-motion: reduce) {
+  .open-chip .open-dot, .open-sub .open-dot { animation: none; }
+}
+
 .brand-wordmark {
   font-family: var(--font-cond);
   font-weight: 700;
