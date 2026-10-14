@@ -17,6 +17,13 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
+/* Rebuilt at most hourly (review, 2026-10-14). The page is prerendered, and two
+   things on it are chosen by today's club-local date — the PBA timetable
+   (lib/pba-schedule.ts, which changes on 2 and 30 November) and rosterIntro on the
+   academies row. Without this the HTML only moved on to a new date's copy when the
+   site was next deployed, and crawlers and first paint showed the old one. */
+export const revalidate = 3600
+
 export default function Home() {
   return (
     <div className="relative pb-[320px] sm:pb-[200px] md:pb-[90px]">

@@ -78,7 +78,11 @@ export const FLOOR_HOLDS: FloorHold[] = [
   {
     sport: 'Badminton',
     claim: 'Philadelphia Badminton has all three courts',
-    when: 'Mon 5:30–7:30pm, Wed 5:30–9:30pm, Sat & Sun 9–11am and 4–6pm',
+    // Sunday morning is 7–9am since 2026-10-04, and the licence ramps on 2 Nov and
+    // 30 Nov — pbaScheduleOn() in lib/pba-schedule.ts is the per-date timetable.
+    // Nothing renders FLOOR_HOLDS any more, but a wrong time should not sit here to
+    // be copied.
+    when: 'Mon 5:30–7:30pm (to 9:30pm from 2 Nov), Wed 5:30–9:30pm, Tue, Thu & Fri 5:30–9:30pm from 30 Nov, Sat 9–11am and 4–6pm, Sun 7–9am and 4–6pm',
   },
   {
     sport: 'Cricket',
