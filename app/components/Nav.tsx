@@ -60,10 +60,39 @@ export default function Nav() {
             height={38}
             style={{ display: "block", flexShrink: 0 }}
           />
-          <span>
-            EXTON <span className="brand-accent">SPORTS CENTER</span>
+          {/* Below sm the name gets a second line carrying OPEN 24×7, because
+              a chip BESIDE it does not fit on a phone: the size formula above
+              already spends every spare pixel, and reserving ~120px more would
+              shrink the wordmark to about 12px at 390 and 7px at 320. From sm
+              up this wrapper is a plain block holding the one line it always
+              held, and the chip beside the wordmark takes over. */}
+          <span className="flex flex-col items-start gap-[4px] sm:block">
+            <span>
+              EXTON <span className="brand-accent">SPORTS CENTER</span>
+            </span>
+            <span className="open-sub inline-flex items-center gap-[5px] sm:hidden" aria-hidden="true">
+              <span className="open-dot" />
+              Open 24×7
+            </span>
           </span>
         </Link>
+
+        {/* OPEN 24×7, 2026-10-14 — the club never closes, and that is the fact
+            worth a glowing badge now the "booking opens" chip below has nothing
+            left to say. Styles and the reasoning for a solid fill: .open-chip in
+            globals.css. Not a link: it is a statement, and the booking button
+            on the right is the action.
+
+            WIDTHS, measured at 1440 / 1024 / 900 / 768 / 640 / 390, not guessed:
+            the full 115px chip collides with the nav links from 1024 to ~1050
+            and with the booking button from 768 to ~810. So between md and xl
+            it drops the word "Open" — the green dot already says it — and the
+            full label shows from sm to md and from xl up. Phones: see the
+            second line under the wordmark above. */}
+        <span className="open-chip hidden sm:inline-flex items-center gap-2 shrink-0" aria-label="Open 24 hours a day, 7 days a week">
+          <span className="open-dot" aria-hidden="true" />
+          <span className="md:hidden xl:inline">Open&nbsp;</span>24×7
+        </span>
 
         {/* The status chip beside the title — persistent (nav is sticky) and links
             to the booking section. Same glow and same breathing dot it has always

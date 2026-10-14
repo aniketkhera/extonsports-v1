@@ -298,6 +298,81 @@ html { scroll-behavior: smooth; }
   padding: 5px 12px;
 }
 
+/* "OPEN 24×7" beside the nav wordmark, 2026-10-14 — Aniket: "have a green OPEN
+   24x7 to the right of Exton Sports Center … make it prominent".
+
+   The hero's .label-chip shape in the logo's green, a size up, with the 2.8s
+   breath the booking buttons use so the header keeps one rhythm. A SOLID fill
+   with near-black type, not green text: the nav is white in the light theme,
+   and #42B54D on white is about 2.6:1 — it would read as a smudge. Fill plus
+   dark type is 7.6:1 on either nav. Literal hexes, not --color-* tokens, for
+   the same reason as the TV screens: nothing here should flip with the theme. */
+.open-chip {
+  /* NO display here — Nav.tsx sets it with Tailwind (hidden sm:inline-flex).
+     A display in this unlayered rule beats Tailwind's layered utilities, so
+     `hidden` was ignored and the chip overflowed every phone (caught at 390). */
+  background: #42B54D;
+  color: #0A1019;
+  font-family: var(--font-cond);
+  font-weight: 700;
+  font-size: 0.82rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  line-height: 1;
+  padding: 7px 12px;
+  white-space: nowrap;
+  animation: open-breathe 2.8s ease-in-out infinite;
+}
+.open-chip .open-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #0A1019;
+  animation: open-dot 1.4s ease-in-out infinite;
+}
+@keyframes open-breathe {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(66, 181, 77, 0.55), 0 0 14px rgba(66, 181, 77, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(66, 181, 77, 0), 0 0 26px rgba(66, 181, 77, 0.60);
+  }
+}
+@keyframes open-dot {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}
+/* The phone version: a small tag on a second line under the wordmark (see
+   Nav.tsx for why it cannot sit beside it). Explicit size and tracking, because
+   it lives inside the wordmark link and would otherwise inherit its viewport-
+   scaled font size and 0.16em brand tracking. */
+.open-sub {
+  /* Display comes from Tailwind in Nav.tsx, for the reason given on .open-chip. */
+  background: #42B54D;
+  color: #0A1019;
+  font-family: var(--font-cond);
+  font-weight: 700;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1;
+  padding: 3px 7px;
+  white-space: nowrap;
+  animation: open-breathe 2.8s ease-in-out infinite;
+}
+.open-sub .open-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #0A1019;
+  animation: open-dot 1.4s ease-in-out infinite;
+}
+/* Same courtesy as .opening-glow: keep the glow, drop the pulse. */
+@media (prefers-reduced-motion: reduce) {
+  .open-chip, .open-sub { animation: none; box-shadow: 0 0 18px rgba(66, 181, 77, 0.50); }
+  .open-chip .open-dot, .open-sub .open-dot { animation: none; }
+}
+
 .brand-wordmark {
   font-family: var(--font-cond);
   font-weight: 700;
