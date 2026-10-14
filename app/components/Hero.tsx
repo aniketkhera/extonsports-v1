@@ -1362,8 +1362,8 @@ function weekCells(sport: string, bandKey: string, data: CourtAvailability, offs
   const page = data.days.slice(offset * 7, offset * 7 + 7);
   /* A day with no cell is not zero — it is a band with no hours left today.
      The example used to be late night vanishing after 6am; with that band gone
-     (2026-10-08) the live case is today's PEAK column after 10pm on a weekday,
-     or after 8pm at the weekend. Rendered as a gap, not a zero. */
+     (2026-10-08) the live case is today's PEAK column after 10pm, any day
+     (weekend peak ended at 8pm until 2026-10-14). Rendered as a gap, not a zero. */
   const cells = page.map((d) =>
     data.cells.find((c) => c.sport === sport && c.band === apiBand && c.date === d) ?? null);
   return { page, cells, hasNext: data.days.length > 7 };
