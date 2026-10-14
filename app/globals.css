@@ -202,7 +202,11 @@ html { scroll-behavior: smooth; }
 }
 
 /* The phone's booking bubble.
-   A SOLID ember disc cannot glow from its border the way the nav chip does —
+   GREEN since 2026-10-14 — Aniket: "make it glowing green - and make it 20%
+   larger" (size in WhatsAppFab.tsx). It was ember like every other booking
+   button; the halo below is the logo green (#42B54D) to match its new fill.
+
+   A SOLID disc cannot glow from its border the way the nav chip does —
    .opening-glow breathes border-color, and this element has no border — so
    this is an outer halo plus an expanding ring instead. The ring is what the
    eye catches; the halo is what makes it look lit rather than outlined.
@@ -215,17 +219,17 @@ html { scroll-behavior: smooth; }
 }
 @keyframes fab-breathe {
   0%, 100% {
-    box-shadow: var(--fab-shadow), 0 0 0 0 rgba(248, 155, 114, 0.50), 0 0 16px rgba(248, 155, 114, 0.35);
+    box-shadow: var(--fab-shadow), 0 0 0 0 rgba(66, 181, 77, 0.55), 0 0 18px rgba(66, 181, 77, 0.40);
   }
   50% {
-    box-shadow: var(--fab-shadow), 0 0 0 11px rgba(248, 155, 114, 0), 0 0 30px rgba(248, 155, 114, 0.60);
+    box-shadow: var(--fab-shadow), 0 0 0 13px rgba(66, 181, 77, 0), 0 0 34px rgba(66, 181, 77, 0.65);
   }
 }
 /* Same courtesy as .opening-glow: keep the glow, drop the pulse. */
 @media (prefers-reduced-motion: reduce) {
   .fab-glow {
     animation: none;
-    box-shadow: var(--fab-shadow), 0 0 22px rgba(248, 155, 114, 0.50);
+    box-shadow: var(--fab-shadow), 0 0 24px rgba(66, 181, 77, 0.55);
   }
 }
 

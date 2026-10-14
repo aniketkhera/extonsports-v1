@@ -54,8 +54,11 @@ export default function WhatsAppFab() {
         target="_blank"
         rel="noreferrer"
         aria-label={opensLabel ? `Court booking opens ${opensLabel}` : "Book a court or lane at Exton Sports Center"}
-        className={`${shared} fab-glow md:hidden rounded-full bg-[var(--color-ember)] hover:bg-[var(--color-ember-hi)] text-black text-mono text-center leading-[1.15] px-1`}
-        style={{ ...box, width: 68, height: 68, fontSize: "0.5rem" }}
+        className={`${shared} fab-glow md:hidden rounded-full bg-[var(--color-green)] hover:bg-[var(--color-green-hi)] text-[#0A1019] text-mono text-center leading-[1.15] px-1`}
+        /* 2026-10-14 — Aniket: "make it glowing green - and make it 20% larger".
+           68 → 82px and 0.5 → 0.6rem, so the three lines keep their proportions.
+           Dark type on the logo green, not white: ~7.6:1 against ~2.6:1. */
+        style={{ ...box, width: 82, height: 82, fontSize: "0.6rem" }}
       >
         {opensLabel ? <span>Opens<br />{opensLabel}</span> : <span>Book a<br />court or<br />lane</span>}
       </a>
