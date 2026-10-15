@@ -104,6 +104,13 @@ const PANEL_BORDER = "#F89B72";
    GREEN, which on this board means a free court ("ALL OPEN", "N OF 3 FREE NOW"),
    and a green "OPEN PLAY" would read as "court open" from the desk. */
 const SESSION_ORANGE = "#F89B72";
+/* FREE Girls-Only Class (2026-10-15): gold, filled like JUNIOR COACHING so it reads
+   as a tag of the same family, and not GREEN for the reason above — doubly so here,
+   where the word FREE in green would tell the desk the lane is free. The same amber
+   the public calendar paints CCCA's hours, at full strength, so the hour carries
+   CCCA's colour on both; a yellow, not an orange, so it never reads as JUNIOR
+   COACHING from across the room. */
+const SESSION_GOLD = "#FFC43D";
 const PANEL_SHADOW = [
   "0 1.7vh 3.8vh rgba(0,0,0,0.66)",            // the box sits off the wall
   "0 0.5vh 1.1vh rgba(0,0,0,0.45)",            // the contact shadow under it
@@ -123,8 +130,8 @@ type Entry = {
   who: string;
   brand: BrandKey | null;
   /** A partner's session: junior coaching or open play for Philadelphia Badminton
-   *  (by its timetable), always junior coaching for CCCA and SquashTigers; null for
-   *  everything else. */
+   *  (by its timetable), junior coaching for CCCA and SquashTigers — except CCCA's
+   *  free girls' hour, 2026-10-15; null for everything else. */
   session: SessionKey | null;
   /** Court labels in the order they appear, e.g. ["1","2","3"]. */
   courts: string[];
@@ -331,23 +338,39 @@ function CourtNumbers({ labels }: { labels: string[] }) {
    In the lockup row, never a new line — the NOW area has no spare height. Three
    live entries fit only because the boxes go compact at three (see the NOW list),
    and the panels' grid row is minmax(0, 1fr), so a fourth clips inside NOW
-   instead of pushing every panel off the bottom of the screen. */
+   instead of pushing every panel off the bottom of the screen.
+
+   FREE Girls-Only Class (2026-10-15) is filled gold and set in its own case:
+   textTransform 'none' undoes .text-cond, because the owner asked for those exact
+   words, and the tracking comes down to 0.03em because 0.08em suits capitals but
+   spaces lower case apart — and at 0.08em it would no longer fit beside the CCCA
+   lockup in a panel a third of the screen wide. */
 function SessionTag({ session }: { session: SessionKey }) {
   const junior = session === "junior-coaching";
+  const free = session === "free-girls-class";
+  const filled = junior || free;
   return (
     <span
       className="text-cond"
       style={{
-        fontSize: "1.25vw", letterSpacing: "0.08em", lineHeight: 1, whiteSpace: "nowrap",
+        fontSize: "1.25vw", letterSpacing: free ? "0.03em" : "0.08em", lineHeight: 1, whiteSpace: "nowrap",
         padding: "0.32vw 0.62vw", borderRadius: "0.3vw",
-        background: junior ? SESSION_ORANGE : "transparent",
-        color: junior ? BG : INK,
-        border: junior ? "none" : `0.15vw solid ${INK}`,
+        background: junior ? SESSION_ORANGE : free ? SESSION_GOLD : "transparent",
+        color: filled ? BG : INK,
+        border: filled ? "none" : `0.15vw solid ${INK}`,
+        ...(free ? { textTransform: "none" as const } : {}),
       }}
     >
       {SESSION_TEXT[session]}
     </span>
   );
+}
+
+/* The session word's colour in a COMING UP row, where there is no room for a tag. */
+function sessionInk(session: SessionKey): string {
+  if (session === "junior-coaching") return SESSION_ORANGE;
+  if (session === "free-girls-class") return SESSION_GOLD;
+  return INK;
 }
 
 /* "1","2","3" -> "Courts 1, 2, 3". EVERY COURT IS NAMED; there is no range.
@@ -778,10 +801,16 @@ export default function ReceptionBoard() {
                       {/* The session word FIRST and never truncated; the holder after
                           it is what gives way. Only partners carry a session —
                           PBA, CCCA and SquashTigers, one per column — so a cut-off
-                          "CHESTER COUNTY CRICKET…" still says who it is. */}
+                          "CHESTER COUNTY CRICKET…" still says who it is. The free
+                          girls' words keep their own case, as on the tag above. */}
                       <span style={{ display: "flex", gap: "0.45vw", minWidth: 0, overflow: "hidden" }}>
                         {e.session && (
-                          <span style={{ flex: "none", color: e.session === "junior-coaching" ? SESSION_ORANGE : INK }}>
+                          <span
+                            style={{
+                              flex: "none", color: sessionInk(e.session),
+                              ...(e.session === "free-girls-class" ? { textTransform: "none" as const } : {}),
+                            }}
+                          >
                             {SESSION_TEXT[e.session]}
                           </span>
                         )}
