@@ -72,7 +72,7 @@ export default function Footer() {
               here until 2026-10-08. It existed only because every OTHER night
               from 10pm was late night, and those two were the exception at the
               off-peak rate. With late night abolished there is no exception
-              left to draw — all seven nights are off-peak from 10pm — so the
+              left to draw — all seven nights are off-peak from 9pm (10pm until 2026-10-15) — so the
               paragraph went rather than being reworded into a tautology. */}
           {/* A recommendation, not a table of limits — Aniket, 2026-10-13: "let's remove
               the number of people only - just say we recommend no more than 4 per court

@@ -1362,14 +1362,15 @@ function weekCells(sport: string, bandKey: string, data: CourtAvailability, offs
   const page = data.days.slice(offset * 7, offset * 7 + 7);
   /* A day with no cell is not zero — it is a band with no hours left today.
      The example used to be late night vanishing after 6am; with that band gone
-     (2026-10-08) the live case is today's PEAK column after 10pm, any day
-     (weekend peak ended at 8pm until 2026-10-14). Rendered as a gap, not a zero. */
+     (2026-10-08) the live case is today's PEAK column after 9pm, any day
+     (10pm until 2026-10-15; weekend peak ended at 8pm until 2026-10-14). Rendered
+     as a gap, not a zero. */
   const cells = page.map((d) =>
     data.cells.find((c) => c.sport === sport && c.band === apiBand && c.date === d) ?? null);
   return { page, cells, hasNext: data.days.length > 7 };
 }
 
-/* "3 cricket courts × 6 peak hours = 18 court-hours on a typical day."
+/* "3 cricket courts × 4 peak hours = 12 court-hours on a typical day."
    Asked twice what the numbers meant, which is twice more than a term should
    need. Derived from the commonest day rather than hardcoded: the bands have
    different widths at weekends, and squash has four courts where the others

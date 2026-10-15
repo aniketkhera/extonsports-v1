@@ -64,11 +64,27 @@
 // rather than under-stating it, which is the safe direction the 2026-08-30 note
 // above asks for. Record: orangish-app supabase/migrate_exton_weekend_peak_to_22.sql.
 //
+// ── PEAK NARROWS TO 5PM–9PM WEEKDAYS, 8AM–9PM WEEKENDS, FROM 2026-10-15 ─────
+// Aniket: "make weekdays 5pm to 9pm peak hours, weekends 8am to 9pm peak hours.
+// All else off-peak ... for all sports." Prices do not move; only the edges do.
+//
+//   Peak      5pm–9pm Mon–Fri · 8am–9pm Sat/Sun
+//   Off-peak  every other hour — from 9pm every night
+//
+// ⚠️ A PRICE CUT, NOT A RELABEL. Mon–Fri 4–5pm and 9–10pm, and Sat/Sun 9–10pm,
+// move peak → off-peak: badminton and squash $45 → $40, cricket $65 → $55 an
+// hour. No hour gets dearer. Per sport the week goes from 58 to 46 peak hours and
+// 110 to 122 off-peak. Because it is a cut, the order is the REVERSE of
+// 2026-10-14: the platform's court_rate_rules changed FIRST (18:00 UTC) and this
+// page straight after, so for the minutes between this page over-stated the price —
+// the safe direction the 2026-08-30 note above asks for.
+// Record: orangish-app supabase/migrate_exton_peak_17_21.sql.
+//
 // ── WHY THIS IS STILL A HARDCODED COPY, AND WHAT REPLACES IT ────────────────
 // (Stale since 2026-10-08, kept for the history: the platform had FOUR day-kinds
-// — Mon–Thu, Fri, Sat and Sun — while late night existed. Since then, and since
-// 2026-10-14, it is exactly two: Mon–Fri peak 4pm–10pm, Sat/Sun peak 8am–10pm,
-// off-peak every other hour, which this two-column model expresses exactly.)
+// — Mon–Thu, Fri, Sat and Sun — while late night existed. Since then it is exactly
+// two — from 2026-10-15 Mon–Fri peak 5pm–9pm, Sat/Sun peak 8am–9pm, off-peak every
+// other hour — which this two-column model expresses exactly.)
 //
 // The durable fix is not to widen this table: it is to stop retyping the hours.
 // orangish-app now serves `court_band_windows` (already coalesced, 42 rows to
@@ -93,14 +109,14 @@ export type Band = {
    most people are actually shopping for, so it leads and late night (a genuine
    edge case) trails. Both the hero rate card and the footer map this array, so
    changing the order here moves both — which is the point, they should agree.
-   `4pm–10pm` is spelled with both meridiems on purpose: `4–10pm` can be read as
-   4am. `8am–10pm` (weekend peak, from 2026-10-14) needs both for the same reason. */
+   `5pm–9pm` is spelled with both meridiems on purpose: `5–9pm` can be read as
+   5am. `8am–9pm` (weekend peak, from 2026-10-15) needs both for the same reason. */
 export const RATE_BANDS: Band[] = [
-  { key: 'peak', label: 'Peak', weekday: '4pm–10pm', weekend: '8am–10pm' },
+  { key: 'peak', label: 'Peak', weekday: '5pm–9pm', weekend: '8am–9pm' },
   /* Off-peak is now "whatever peak is not", and is written that way rather
-     than as a window. The honest window wraps midnight — weekday 10pm–4pm,
-     weekend 10pm–8am (from 2026-10-14; it was 8pm–8am) — and a reader parses
-     that as a typo before they parse it as a wrap. */
+     than as a window. The honest window wraps midnight — weekday 9pm–5pm,
+     weekend 9pm–8am (from 2026-10-15; before that 10pm–4pm and 10pm–8am) — and a
+     reader parses that as a typo before they parse it as a wrap. */
   { key: 'offPeak', label: 'Off-peak', weekday: 'all other hours', weekend: 'all other hours' },
 ]
 
@@ -304,5 +320,8 @@ export const BAND_BLURB: Record<BandKey, string> = {
      daytime" would not know what a 2am court costs. */
   /* "The weekend wind-down" (Sat/Sun 8–10pm) came out on 2026-10-14, when those
      hours became peak — the weekend's only off-peak now is overnight. */
-  offPeak: 'Weekday daytime, and every hour overnight.',
+  /* "Every hour overnight" became "every night from 9pm" on 2026-10-15, when 9–10pm
+     turned off-peak on all seven days — 9pm is not overnight, and it is the new
+     cheap hour worth naming. It still covers the small hours. */
+  offPeak: 'Weekday daytime until 5pm, and every night from 9pm.',
 }
