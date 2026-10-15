@@ -330,7 +330,7 @@ export default function BookingsCalendar({
      of ~500 cells and a sibling helper would repeat the same find.
 
      `session` (2026-10-15) is read for ONE purpose: CCCA's free girls' hour, which
-     the owner wants to read "FREE Girls-Only Class" here too. It is a fixed word
+     the owner wants to read "Only Girls – Free Coaching" here too. It is a fixed word
      from the same closed vocabulary, through sessionOf, which drops it on any hour
      not keyed to CCCA — so it is still never a name off the payload. */
   function cellOf(
@@ -721,7 +721,7 @@ export default function BookingsCalendar({
                           );
                         }
                         /* "Private" for an individual's hour, the partner's
-                           short mark for the four ("FREE Girls" on CCCA's free
+                           short mark for the four ("Only Girls" on CCCA's free
                            girls' hour). Only this cell becomes a flex box; the
                            other ~490 on a busy day stay plain blocks. */
                         const mark = !atStart ? ""

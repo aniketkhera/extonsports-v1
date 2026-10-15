@@ -12,8 +12,10 @@ import { SESSION_TEXT, type BrandKey } from "../board/board-lib";
 
 /* CCCA's free girls' hour in one 15px row, 2026-10-15. The full words do not fit a
    court column at that height, and this is the part that still says what it is; the
-   cell's tooltip, its aria-label and the legend carry "FREE Girls-Only Class" whole. */
-export const FREE_GIRLS_SHORT = "FREE Girls";
+   cell's tooltip, its aria-label and the legend carry "Only Girls – Free Coaching" whole.
+   "Only Girls" since the rename (2026-10-15): the same ten characters as "FREE Girls"
+   was, so it fits wherever that did. */
+export const FREE_GIRLS_SHORT = "Only Girls";
 
 const SHORT: Record<BrandKey, string> = {
   squashtigers: "ST",
@@ -73,17 +75,17 @@ export default function CalPartnerMark({ org, rows }: { org: BrandKey; rows: num
 /* In place of CCCA's shield on their free girls' hour (2026-10-15). With two rows
    or more — the hour is two — the exact words, allowed to wrap; one row gets the
    short form. Never .text-cond, which would uppercase what the owner asked to read
-   exactly. "FREE" in the accent so the one word that differs from every other
-   CCCA hour is the one the eye lands on. Decorative, like the marks above: the
+   exactly. The name before the dash ("Only Girls") in the accent, the rest after
+   it, so the part that differs from every other CCCA hour is what the eye lands on. Decorative, like the marks above: the
    cell around it carries the full label for a screen reader. */
 export function CalFreeMark({ rows }: { rows: number }) {
   if (rows < 2) {
     return <span style={{ fontSize: "0.5rem", letterSpacing: "0.02em", color: FG }}>{FREE_GIRLS_SHORT}</span>;
   }
-  const [first, ...rest] = SESSION_TEXT["free-girls-class"].split(" ");
+  const [first, ...rest] = SESSION_TEXT["free-girls-class"].split(" – ");
   return (
     <span aria-hidden style={{ fontSize: "0.52rem", fontWeight: 600, lineHeight: 1.05, color: FG, padding: "0 2px" }}>
-      <span style={{ color: ACCENT }}>{first}</span> {rest.join(" ")}
+      <span style={{ color: ACCENT }}>{first}</span>{rest.length ? ` – ${rest.join(" – ")}` : ""}
     </span>
   );
 }

@@ -104,7 +104,7 @@ const PANEL_BORDER = "#F89B72";
    GREEN, which on this board means a free court ("ALL OPEN", "N OF 3 FREE NOW"),
    and a green "OPEN PLAY" would read as "court open" from the desk. */
 const SESSION_ORANGE = "#F89B72";
-/* FREE Girls-Only Class (2026-10-15): gold, filled like JUNIOR COACHING so it reads
+/* Only Girls – Free Coaching (2026-10-15): gold, filled like JUNIOR COACHING so it reads
    as a tag of the same family, and not GREEN for the reason above — doubly so here,
    where the word FREE in green would tell the desk the lane is free. The same amber
    the public calendar paints CCCA's hours, at full strength, so the hour carries
@@ -340,11 +340,14 @@ function CourtNumbers({ labels }: { labels: string[] }) {
    and the panels' grid row is minmax(0, 1fr), so a fourth clips inside NOW
    instead of pushing every panel off the bottom of the screen.
 
-   FREE Girls-Only Class (2026-10-15) is filled gold and set in its own case:
+   Only Girls – Free Coaching (2026-10-15) is filled gold and set in its own case:
    textTransform 'none' undoes .text-cond, because the owner asked for those exact
    words, and the tracking comes down to 0.03em because 0.08em suits capitals but
-   spaces lower case apart — and at 0.08em it would no longer fit beside the CCCA
-   lockup in a panel a third of the screen wide. */
+   spaces lower case apart. It is also set SMALLER, 1.1vw against 1.25vw: renamed
+   from "FREE Girls-Only Class" the same day, the label grew from 21 characters to
+   26, and measured in Oswald at the board's width it came to 266px at 1.25vw
+   against roughly 260px free beside the CCCA lockup in a panel a third of the
+   screen wide. 1.1vw is 237px. If the words change again, measure before shipping. */
 function SessionTag({ session }: { session: SessionKey }) {
   const junior = session === "junior-coaching";
   const free = session === "free-girls-class";
@@ -353,7 +356,7 @@ function SessionTag({ session }: { session: SessionKey }) {
     <span
       className="text-cond"
       style={{
-        fontSize: "1.25vw", letterSpacing: free ? "0.03em" : "0.08em", lineHeight: 1, whiteSpace: "nowrap",
+        fontSize: free ? "1.1vw" : "1.25vw", letterSpacing: free ? "0.03em" : "0.08em", lineHeight: 1, whiteSpace: "nowrap",
         padding: "0.32vw 0.62vw", borderRadius: "0.3vw",
         background: junior ? SESSION_ORANGE : free ? SESSION_GOLD : "transparent",
         color: filled ? BG : INK,
