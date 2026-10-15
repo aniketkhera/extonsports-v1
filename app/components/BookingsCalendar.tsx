@@ -253,6 +253,17 @@ export default function BookingsCalendar({
     return m;
   }, [dayBlocks]);
 
+  /* The legend's free girls' entry (2026-10-15) is drawn only when that hour is
+     on a court this grid is showing. The four partner entries are standing facts
+     about the floor; this one is a single hour on a single day, and on a public,
+     indexed page a permanent entry advertised a free class on every date and on a
+     phone's squash-only view. Same test as the cell: sessionOf, so it is CCCA's
+     closed-vocabulary word and never anything read off a name. */
+  const shownCourtIds = new Set(courts.map((c) => c.id));
+  const freeGirlsShown = dayBlocks.some(
+    (b) => shownCourtIds.has(b.courtId) && sessionOf(b) === "free-girls-class",
+  );
+
   const [winFrom, winTo] = useMemo(() => {
     if (allHours) return [0, 1440];
     let lo = CORE_FROM;
@@ -778,8 +789,13 @@ export default function BookingsCalendar({
                 ["ST — SquashTigers", PARTNER_FILL.squashtigers, "solid"],
                 ["CCCA — Chester County Cricket Academy", PARTNER_FILL.ccca, "solid"],
                 /* 2026-10-15. CCCA's amber because it is CCCA's hour on CCCA's
-                   account; the words in the cell, not the colour, set it apart. */
-                [`${SESSION_TEXT["free-girls-class"]} (CCCA)`, PARTNER_FILL.ccca, "solid", "ccca"],
+                   account; the words in the cell, not the colour, set it apart.
+                   Only when that hour is on the grid being viewed (see
+                   freeGirlsShown): otherwise it advertises a free class that
+                   is not there. */
+                ...(freeGirlsShown
+                  ? [[`${SESSION_TEXT["free-girls-class"]} (CCCA)`, PARTNER_FILL.ccca, "solid", "ccca"] as const]
+                  : []),
                 ["PHILA — Philadelphia Badminton", PARTNER_FILL["philadelphia-badminton"], "solid"],
                 ["SeRa — Sera Dance & Fitness", PARTNER_FILL.sera, "solid"],
                 ["other coaching", FILL.programme, "solid"],
