@@ -177,7 +177,8 @@ export type BrandKey = "philadelphia-badminton" | "ccca" | "squashtigers" | "ser
 
    A THIRD WORD, 2026-10-15: 'free-girls-class', CCCA's free Girls-Only hour. It is
    booked on CCCA's account like any of their lanes but not billed, and Aniket wants
-   it to read exactly "FREE Girls-Only Class" on every Exton screen — so unlike the
+   it to read exactly "Only Girls – Free Coaching" on every Exton screen (renamed from "FREE Girls-Only
+   Class" the same day, at his request) — so unlike the
    other two it is mixed case, and the screens that print it set textTransform
    'none' against .text-cond. It also differs in kind: the other two describe a
    partner's hour, this one NAMES it, so /board prints it in place of the partner
@@ -187,7 +188,7 @@ export type SessionKey = "junior-coaching" | "open-play" | "free-girls-class";
 export const SESSION_TEXT: Record<SessionKey, string> = {
   "junior-coaching": "JUNIOR COACHING",
   "open-play": "OPEN PLAY",
-  "free-girls-class": "FREE Girls-Only Class",
+  "free-girls-class": "Only Girls – Free Coaching",
 };
 
 /* The other half of the split, for the screens that print no session — /board and
@@ -219,7 +220,7 @@ export function joinSessions<T extends NamedBlock>(bs: T[]): T[] {
 /* The free girls' word only on an hour the feed also keys to CCCA (2026-10-15).
    The platform is built to send it on nothing else, so this should never bite; it
    is here so that if a feed ever mislabels a block, the result is a plain holder
-   with no tag — never "FREE Girls-Only Class" printed over somebody's own hire.
+   with no tag — never the free girls' label printed over somebody's own hire.
    Keyed on `org` alone, never on the `who` string, for the reason brandFor gives
    below. */
 export function sessionOf(b: NamedBlock): SessionKey | null {

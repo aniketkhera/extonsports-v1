@@ -68,7 +68,7 @@ export type SlotBlock = {
    * grid draws as it did.
    *
    * 'free-girls-class' (2026-10-15): CCCA's free Girls-Only hour, which every Exton
-   * screen prints as exactly "FREE Girls-Only Class". A third fixed word that names
+   * screen prints as exactly "Only Girls – Free Coaching". A third fixed word that names
    * nobody. The platform sends it only on an hour it has already named CCCA (exact
    * title AND an on-account hire) that also carries the closed-vocabulary marker on
    * the hire row — never from a title or a note, which a booker can edit. The

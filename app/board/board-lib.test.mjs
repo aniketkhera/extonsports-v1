@@ -10,7 +10,7 @@
    below passes `tsc` when broken. Generalise the "different sessions" rule in
    joinSessions and 9-10 silently becomes a "9 AM - 12 PM" CCCA block on /board and
    /calendar, the one hour the owner asked to see named. Drop `org === "ccca"` from
-   sessionOf and a mislabelled block can print "FREE Girls-Only Class" over somebody's
+   sessionOf and a mislabelled block can print the free girls' label over somebody's
    own hire. Loosen the relay's allow-list and a name reaches a public page. */
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -39,7 +39,7 @@ const free = { ...base, from: 540, to: 600, org: "ccca", who, session: "free-gir
 const junior = { ...base, from: 600, to: 720, org: "ccca", who, session: "junior-coaching" };
 
 test("the label is the owner's exact words, in their case", () => {
-  assert.equal(L.SESSION_TEXT["free-girls-class"], "FREE Girls-Only Class");
+  assert.equal(L.SESSION_TEXT["free-girls-class"], "Only Girls – Free Coaching");
 });
 
 test("sessionOf: the free word is accepted on an hour keyed to CCCA", () => {
@@ -50,7 +50,7 @@ test("sessionOf: the free word is refused without org 'ccca', whatever `who` say
   assert.equal(L.sessionOf({ ...free, org: undefined }), null);
   assert.equal(L.sessionOf({ ...free, org: "sera" }), null);
   // A holder string that reads like the label must not confer it either.
-  assert.equal(L.sessionOf({ ...free, org: undefined, who: "FREE Girls-Only Class" }), null);
+  assert.equal(L.sessionOf({ ...free, org: undefined, who: "Only Girls – Free Coaching" }), null);
 });
 
 test("sessionOf: the two older words pass as before, unknown words do not", () => {
@@ -91,7 +91,7 @@ test("joinSessions never joins two members' back-to-back hours", () => {
 });
 
 test("boardLabel: the free hour prints the label, exact case", () => {
-  assert.equal(L.boardLabel(free), "FREE Girls-Only Class");
+  assert.equal(L.boardLabel(free), "Only Girls – Free Coaching");
 });
 
 test("boardLabel: CCCA's regular hours still print CCCA", () => {
@@ -118,7 +118,7 @@ test("/api/court-slots passes only the fixed words and never forwards `who`", as
       { ...base, from: 540, to: 600, org: "ccca", who, session: "free-girls-class" },
       { ...base, from: 600, to: 720, org: "ccca", session: "junior-coaching" },
       // The label typed as text, and an unknown word: both dropped.
-      { ...base, from: 720, to: 780, session: "FREE Girls-Only Class" },
+      { ...base, from: 720, to: 780, session: "Only Girls – Free Coaching" },
       { ...base, from: 780, to: 840, session: "vip" },
     ],
   };

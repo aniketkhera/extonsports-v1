@@ -24,7 +24,7 @@ import {
    off the next day.) Since 2026-10-14 a partner's hour may also carry a
    session — junior coaching or open play — which this board does not print; it
    re-joins the split (joinSessions in board-lib). The one exception, 2026-10-15:
-   CCCA's free girls' hour prints "FREE Girls-Only Class" IN PLACE of the
+   CCCA's free girls' hour prints "Only Girls – Free Coaching" IN PLACE of the
    partner's name (boardLabel), in exactly that case — .bnow i and .bnext i do not
    uppercase, the capitals on every other row come from holderLabel itself.
 
