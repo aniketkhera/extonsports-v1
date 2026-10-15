@@ -66,8 +66,15 @@ export type SlotBlock = {
    * nobody; the upstream splits a partner's hours where one becomes the other.
    * extonsports.com/calendar re-joins the split (joinSessions in board-lib), so its
    * grid draws as it did.
+   *
+   * 'free-girls-class' (2026-10-15): CCCA's free Girls-Only hour, which every Exton
+   * screen prints as exactly "FREE Girls-Only Class". A third fixed word that names
+   * nobody. The platform sends it only on an hour it has already named CCCA (exact
+   * title AND an on-account hire) that also carries the closed-vocabulary marker on
+   * the hire row — never from a title or a note, which a booker can edit. The
+   * screens still refuse it without org 'ccca' (sessionOf in board-lib).
    */
-  session?: 'junior-coaching' | 'open-play'
+  session?: 'junior-coaching' | 'open-play' | 'free-girls-class'
 }
 
 export type CourtRef = {
@@ -91,7 +98,7 @@ const EMPTY: CourtSlots = { timeZone: 'America/New_York', days: [], courts: [], 
 
 /** The four keys this proxy will forward. Anything else is dropped silently. */
 const PARTNERS = ['squashtigers', 'ccca', 'philadelphia-badminton', 'sera'] as const
-const SESSIONS = ['junior-coaching', 'open-play'] as const
+const SESSIONS = ['junior-coaching', 'open-play', 'free-girls-class'] as const
 
 /* How many days to ask the platform for.
  *
@@ -153,7 +160,7 @@ export async function GET(req: Request) {
           // a public page on the strength of a remote response is the mistake
           // worth refusing locally. Now nothing textual is forwarded at all.
           const org = PARTNERS.find((k) => k === b.org)
-          // Same rule for the session: one of two fixed words, or nothing.
+          // Same rule for the session: one of three fixed words, or nothing.
           const session = SESSIONS.find((k) => k === b.session)
           return {
             date: b.date, courtId: b.courtId, from: b.from, to: b.to, kind: b.kind,

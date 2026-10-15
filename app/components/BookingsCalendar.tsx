@@ -1,14 +1,14 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { brandFor, joinSessions, type BrandKey } from "../board/board-lib";
+import { brandFor, joinSessions, sessionOf, SESSION_TEXT, type BrandKey, type SessionKey } from "../board/board-lib";
 import type { CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import type { CourtSlots, SlotBlock } from "../api/court-slots/route";
 import { SPORT_ORDER } from "../../lib/rates";
 import { SPORT_BOOKING_OPENS_LABEL, sportShutOnDate, CLUB_TZ } from "../../lib/opening";
 import { BOOK_COURT_URL, PARTNER_LINK } from "../../lib/booking";
-import CalPartnerMark from "./CalPartnerMark";
+import CalPartnerMark, { CalFreeMark, FREE_GIRLS_SHORT } from "./CalPartnerMark";
 
 /* The public calendar of bookings.
    ────────────────────────────────────────────────────────────────────────
@@ -235,7 +235,8 @@ export default function BookingsCalendar({
 
   /* joinSessions (2026-10-14): the feed now splits a partner's evening where junior
      coaching becomes open play. This grid prints no session, so it re-joins them
-     and draws the partner's hold once, as it always did. */
+     and draws the partner's hold once, as it always did — except CCCA's free girls'
+     hour (2026-10-15), which joinSessions never joins and the cell below names. */
   const dayBlocks = useMemo(
     () => (data ? joinSessions(data.blocks.filter((b) => b.date === date)) : []),
     [data, date],
@@ -251,6 +252,17 @@ export default function BookingsCalendar({
     }
     return m;
   }, [dayBlocks]);
+
+  /* The legend's free girls' entry (2026-10-15) is drawn only when that hour is
+     on a court this grid is showing. The four partner entries are standing facts
+     about the floor; this one is a single hour on a single day, and on a public,
+     indexed page a permanent entry advertised a free class on every date and on a
+     phone's squash-only view. Same test as the cell: sessionOf, so it is CCCA's
+     closed-vocabulary word and never anything read off a name. */
+  const shownCourtIds = new Set(courts.map((c) => c.id));
+  const freeGirlsShown = dayBlocks.some(
+    (b) => shownCourtIds.has(b.courtId) && sessionOf(b) === "free-girls-class",
+  );
 
   const [winFrom, winTo] = useMemo(() => {
     if (allHours) return [0, 1440];
@@ -315,18 +327,25 @@ export default function BookingsCalendar({
      a future feed starts sending one, because it does not read that field.
 
      The cell's state is resolved in one lookup because this runs for every one
-     of ~500 cells and a sibling helper would repeat the same find. */
+     of ~500 cells and a sibling helper would repeat the same find.
+
+     `session` (2026-10-15) is read for ONE purpose: CCCA's free girls' hour, which
+     the owner wants to read "FREE Girls-Only Class" here too. It is a fixed word
+     from the same closed vocabulary, through sessionOf, which drops it on any hour
+     not keyed to CCCA — so it is still never a name off the payload. */
   function cellOf(
     courtId: string,
     sport: string,
     slot: number,
-  ): { st: CellState; org?: BrandKey; atStart: boolean; from?: number; to?: number } {
+  ): { st: CellState; org?: BrandKey; session?: SessionKey; atStart: boolean; from?: number; to?: number } {
     const hit = byCourt.get(courtId)?.find((b) => slot >= b.from && slot < b.to);
     if (hit) {
       const org = brandFor(hit);
+      const session = sessionOf(hit);
       return {
         st: hit.kind,
         ...(org ? { org } : {}),
+        ...(session ? { session } : {}),
         /* Labelled ONCE per block, not on each half-hour row: a two-hour hire
            is four rows at 15px and four "Private"s read as four bookings. A
            block that starts before the visible window is labelled on the
@@ -627,7 +646,14 @@ export default function BookingsCalendar({
                         {onHour ? clockLabel(slot) : ""}
                       </span>
                       {courts.map((c, ci) => {
-                        const { st, org, atStart, from: hitFrom, to: hitTo } = cellOf(c.id, c.sport, slot);
+                        const { st, org, session, atStart, from: hitFrom, to: hitTo } = cellOf(c.id, c.sport, slot);
+                        /* Whose hour, in words, for the tooltip and the screen reader:
+                           the partner, or — on CCCA's free girls' hour — the label
+                           whole, then the partner (2026-10-15). */
+                        const free = session === "free-girls-class";
+                        const whose = org
+                          ? free ? `${SESSION_TEXT["free-girls-class"]} (${PARTNER_FULL[org]})` : PARTNER_FULL[org]
+                          : "";
                         const first = ci === 0 || courts[ci - 1].sport !== c.sport;
                         const common: CSSProperties = {
                           height: rowH,
@@ -667,8 +693,8 @@ export default function BookingsCalendar({
                               rel="noreferrer"
                               className="xcal-partner"
                               style={{ ...common, position: "relative" }}
-                              title={`${c.name} · ${clockLabel(slot)} — ${PARTNER_FULL[org]}. ${link.label}.`}
-                              aria-label={`${c.name} at ${clockLabel(slot)}: ${PARTNER_FULL[org]}. ${link.label}.`}
+                              title={`${c.name} · ${clockLabel(slot)} — ${whose}. ${link.label}.`}
+                              aria-label={`${c.name} at ${clockLabel(slot)}: ${whose}. ${link.label}.`}
                             >
                               {atStart && (
                                 <span
@@ -680,7 +706,7 @@ export default function BookingsCalendar({
                                     gap: 3, overflow: "hidden", textAlign: "center",
                                   }}
                                 >
-                                  <CalPartnerMark org={org} rows={span} />
+                                  {free ? <CalFreeMark rows={span} /> : <CalPartnerMark org={org} rows={span} />}
                                   {span >= 4 && (
                                     <span
                                       className="text-mono"
@@ -695,10 +721,12 @@ export default function BookingsCalendar({
                           );
                         }
                         /* "Private" for an individual's hour, the partner's
-                           short mark for the four. Only this cell becomes a
-                           flex box; the other ~490 on a busy day stay plain
-                           blocks. */
-                        const mark = !atStart ? "" : org ? PARTNER_SHORT[org] : st === "booking" ? "Private" : "";
+                           short mark for the four ("FREE Girls" on CCCA's free
+                           girls' hour). Only this cell becomes a flex box; the
+                           other ~490 on a busy day stay plain blocks. */
+                        const mark = !atStart ? ""
+                          : org ? (free ? FREE_GIRLS_SHORT : PARTNER_SHORT[org])
+                            : st === "booking" ? "Private" : "";
                         return (
                           <span
                             key={c.id}
@@ -727,7 +755,7 @@ export default function BookingsCalendar({
                                change one hover at a time. */
                             title={
                               org
-                                ? `${c.name} · ${clockLabel(slot)} — ${PARTNER_FULL[org]}`
+                                ? `${c.name} · ${clockLabel(slot)} — ${whose}`
                                 : st === "booking"
                                   ? `${c.name} · ${clockLabel(slot)} — booked, privately held`
                                   : st === "programme" ? `${c.name} · ${clockLabel(slot)} — academy or coaching`
@@ -760,13 +788,22 @@ export default function BookingsCalendar({
                 ["Private — somebody's hire", FILL.booking, "solid"],
                 ["ST — SquashTigers", PARTNER_FILL.squashtigers, "solid"],
                 ["CCCA — Chester County Cricket Academy", PARTNER_FILL.ccca, "solid"],
+                /* 2026-10-15. CCCA's amber because it is CCCA's hour on CCCA's
+                   account; the words in the cell, not the colour, set it apart.
+                   Only when that hour is on the grid being viewed (see
+                   freeGirlsShown): otherwise it advertises a free class that
+                   is not there. */
+                ...(freeGirlsShown
+                  ? [[`${SESSION_TEXT["free-girls-class"]} (CCCA)`, PARTNER_FILL.ccca, "solid", "ccca"] as const]
+                  : []),
                 ["PHILA — Philadelphia Badminton", PARTNER_FILL["philadelphia-badminton"], "solid"],
                 ["SeRa — Sera Dance & Fitness", PARTNER_FILL.sera, "solid"],
                 ["other coaching", FILL.programme, "solid"],
                 ["not bookable yet", FILL.shut, "dashed"],
-              ] as const).map(([label, bg, bs]) => {
-                /* The four partner entries link to the partner, as their hours do. */
-                const key = (Object.keys(PARTNER_FULL) as BrandKey[]).find((k) => label.endsWith(PARTNER_FULL[k]));
+              ] as Array<[label: string, bg: string, bs: "solid" | "dashed", linkTo?: BrandKey]>).map(([label, bg, bs, linkTo]) => {
+                /* The four partner entries link to the partner, as their hours do —
+                   and so does the free girls' entry, to CCCA, as its cells do. */
+                const key = linkTo ?? (Object.keys(PARTNER_FULL) as BrandKey[]).find((k) => label.endsWith(PARTNER_FULL[k]));
                 const swatch = (
                   <span
                     className="inline-block"

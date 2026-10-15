@@ -39,16 +39,21 @@
 //   • Philadelphia Badminton holds ALL THREE badminton courts at once, not
 //     some of them. During its windows badminton availability is zero, not
 //     reduced.
-//   • Chester County Cricket holds CRICKET 1 AND 2 ONLY — never CRICKET 3.
-//     Lane 3 is bookable through every academy hour, which is why the line
-//     says so: it is the difference between "cricket is taken" and "cricket is
-//     two-thirds taken", and it is the useful half of the sentence.
+//   • Chester County Cricket held CRICKET 1 AND 2 ONLY until 2026-10-18, with
+//     lane 3 bookable through every academy hour. That stopped being true on
+//     Mon 2026-10-19: Aniket gave CCCA a new weekly schedule on 2026-10-15 and
+//     it now holds ALL THREE lanes in its hours (weekdays 6-8pm, weekends
+//     10am-12pm), plus lane 1 alone for its free girls' class, Sat 9-10am.
+//     The cricket line below says so. The lane-3 reasoning that comments in
+//     BookingsCalendar.tsx and orangish-app still cite was right for the
+//     contract as it stood; it is no longer the current fact.
 //
-// ⚠️ THE RECURRENCE IS MATERIALISED, NOT COMPUTED. Those events exist in the
-// database as individual rows, currently out to 2026-11-01. The strings below
-// are the PATTERN, hand-transcribed, so they do not fall off a cliff when the
-// series ends. If a licence changes, this file is the thing to change — nothing
-// here reads the database at runtime.
+// ⚠️ THE RECURRENCE IS MATERIALISED, NOT COMPUTED. CCCA's hours were `events`
+// rows out to 2026-11-01; from 2026-10-15 they are on-account court bookings,
+// one row per lane per session, out to the end of Season 1 (2027-03-31). The
+// strings below are the PATTERN, hand-transcribed, so they do not fall off a
+// cliff when a series ends. If a licence changes, this file is the thing to
+// change — nothing here reads the database at runtime.
 
 /** One standing hold on a sport's courts. */
 export type FloorHold = {
@@ -86,9 +91,11 @@ export const FLOOR_HOLDS: FloorHold[] = [
   },
   {
     sport: 'Cricket',
-    claim: 'Chester County Cricket has lanes 1 and 2',
-    when: 'weekdays 5–8pm, Sat 10am–12:30pm',
-    stillOpen: 'Lane 3 stays open.',
+    claim: 'Chester County Cricket has all three lanes',
+    // From Mon 2026-10-19 (the schedule Aniket set on 2026-10-15). There is no
+    // stillOpen half any more: no lane stays free during these hours. The Sat 9-10am
+    // hour is lane 1 only, CCCA's free girls' class.
+    when: 'weekdays 6–8pm, Sat & Sun 10am–12pm, plus lane 1 Sat 9–10am',
   },
   {
     sport: 'Squash',

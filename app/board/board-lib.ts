@@ -173,19 +173,33 @@ export type BrandKey = "philadelphia-badminton" | "ccca" | "squashtigers" | "ser
    file only prints it. A closed vocabulary of two, read through sessionOf so an
    unknown value prints nothing rather than whatever the feed happened to send.
    Both feeds carry it since 2026-10-14 — the keyed one, and the public proxy
-   (app/api/court-slots), whose allow-list passes the same two words. */
-export type SessionKey = "junior-coaching" | "open-play";
+   (app/api/court-slots), whose allow-list passes the same two words.
+
+   A THIRD WORD, 2026-10-15: 'free-girls-class', CCCA's free Girls-Only hour. It is
+   booked on CCCA's account like any of their lanes but not billed, and Aniket wants
+   it to read exactly "FREE Girls-Only Class" on every Exton screen — so unlike the
+   other two it is mixed case, and the screens that print it set textTransform
+   'none' against .text-cond. It also differs in kind: the other two describe a
+   partner's hour, this one NAMES it, so /board prints it in place of the partner
+   (boardLabel) and nothing joins it to a neighbour (joinSessions). */
+export type SessionKey = "junior-coaching" | "open-play" | "free-girls-class";
 
 export const SESSION_TEXT: Record<SessionKey, string> = {
   "junior-coaching": "JUNIOR COACHING",
   "open-play": "OPEN PLAY",
+  "free-girls-class": "FREE Girls-Only Class",
 };
 
 /* The other half of the split, for the screens that print no session — /board and
    extonsports.com/calendar. Without it "Next" on /board shows the same partner's
    second half, and the calendar draws the partner's mark twice in one evening.
    Only the same partner, back to back, with DIFFERENT sessions is joined, so two
-   members' consecutive hours never merge. */
+   members' consecutive hours never merge.
+
+   ⛔ NEVER ACROSS THE FREE GIRLS' HOUR (2026-10-15). It sits right before CCCA's
+   own 10:00-12:00 on a Saturday, same partner, different session — exactly the
+   shape this joins — and joined, 9-10 would vanish into a "9 AM - 12 PM CCCA"
+   block on /board and the calendar, the one hour the owner asked to see named. */
 export function joinSessions<T extends NamedBlock>(bs: T[]): T[] {
   const out: T[] = [];
   for (const b of [...bs].sort((a, c) => a.date.localeCompare(c.date) || a.courtId.localeCompare(c.courtId) || a.from - c.from)) {
@@ -193,7 +207,8 @@ export function joinSessions<T extends NamedBlock>(bs: T[]): T[] {
     if (
       p && p.date === b.date && p.courtId === b.courtId && p.to === b.from && p.kind === b.kind &&
       p.org && p.org === b.org && p.who === b.who &&
-      p.session && b.session && p.session !== b.session
+      p.session && b.session && p.session !== b.session &&
+      p.session !== "free-girls-class" && b.session !== "free-girls-class"
     ) {
       out[out.length - 1] = { ...p, to: b.to, session: undefined };
     } else out.push(b);
@@ -201,8 +216,25 @@ export function joinSessions<T extends NamedBlock>(bs: T[]): T[] {
   return out;
 }
 
+/* The free girls' word only on an hour the feed also keys to CCCA (2026-10-15).
+   The platform is built to send it on nothing else, so this should never bite; it
+   is here so that if a feed ever mislabels a block, the result is a plain holder
+   with no tag — never "FREE Girls-Only Class" printed over somebody's own hire.
+   Keyed on `org` alone, never on the `who` string, for the reason brandFor gives
+   below. */
 export function sessionOf(b: NamedBlock): SessionKey | null {
-  return b.session === "junior-coaching" || b.session === "open-play" ? b.session : null;
+  if (b.session === "junior-coaching" || b.session === "open-play") return b.session;
+  if (b.session === "free-girls-class" && b.org === "ccca") return b.session;
+  return null;
+}
+
+/* /board's single line under the time (2026-10-15). Its rows print no session, so
+   the free girls' hour would otherwise read as CCCA's name like any of their lanes;
+   for that one session the label replaces the partner. Everything else is
+   holderLabel, unchanged. */
+export function boardLabel(b: NamedBlock): string {
+  const s = sessionOf(b);
+  return s === "free-girls-class" ? SESSION_TEXT[s] : holderLabel(b);
 }
 
 /* ⛔ PREFER THE FEED'S KEY, AND NEVER MATCH A PERSON'S NAME. `org` is resolved
