@@ -2005,7 +2005,8 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
               For money that is not a court booking (a lesson, an invoice, an agreed amount),
               by Zelle or card. Outlined like the calendar button, so "Book a court or lane"
               stays the one filled, primary action; a new tab, like the booking CTA, because
-              it is the app. */}
+              it is the app. Renamed "Make an adhoc payment" the same day (Aniket) — it is for
+              one-off amounts, not the way to pay for a booking. */}
           <a
             href={PAY_URL}
             target="_blank"
@@ -2015,7 +2016,7 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
             }`}
             style={{ fontSize: RATE_LABEL }}
           >
-            Make a payment
+            Make an adhoc payment
           </a>
 
           {/* ⚠️ THE THREE SPORTS DO NOT OPEN TOGETHER, so this cannot be one

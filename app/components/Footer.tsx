@@ -112,7 +112,7 @@ export default function Footer() {
           links={[
             { label: "Court rates", href: "/#top" },
             { label: "Book a court or lane", href: BOOK_COURT_URL },
-            { label: "Make a payment", href: PAY_URL },
+            { label: "Make an adhoc payment", href: PAY_URL },
             { label: "Bulk & block bookings", href: `mailto:${CONTACT_EMAIL}` },
             { label: "Academies & juniors", href: "/#top" },
           ]}
