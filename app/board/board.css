@@ -213,6 +213,12 @@
   letter-spacing: 0.18em;
   color: #F89B72;
   margin-right: 0.9vw;
+  /* One width for both words, so every row's time starts at the same x. Sized to
+     itself, "UP NEXT" is ~6px wider than "ON NOW" at 1080p, and with the two mixed
+     down the column the big white times — the thing being read — had a jagged left
+     edge (review, 2026-10-16). 5.3em fits "UP NEXT" at this tracking. */
+  display: inline-block;
+  width: 5.3em;
 }
 .bnow i { font-size: 1.4vh; color: #9FAAB6; }
 
@@ -222,7 +228,11 @@
 
 /* Green, not ember: on this board ember is the clock and the brand rule, and
    a free court is the one thing somebody standing here wants to spot without
-   reading. Same token globals.css uses for availability elsewhere. */
+   reading. Same token globals.css uses for availability elsewhere.
+   Since 2026-10-16 it is narrower than "free": a court that is free now but has
+   something later today or tomorrow shows that booking under UP NEXT instead
+   (courtRow), so green OPEN means nothing on court AND nothing still to come today
+   or tomorrow — which can be a court that was played on earlier today. */
 .bopen {
   font-family: var(--font-cond), system-ui, sans-serif;
   font-weight: 600;

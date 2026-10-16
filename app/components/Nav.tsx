@@ -4,6 +4,7 @@ import Link from "next/link";
 import { bookingOpensLabel, openSportsLabel } from "../../lib/opening";
 import { SPORT_ORDER } from "../../lib/rates";
 import { BOOK_COURT_URL } from "../../lib/booking";
+import LogoGlobe from "./LogoGlobe";
 import ThemeToggle from "./ThemeToggle";
 
 const navLinks = [
@@ -53,13 +54,10 @@ export default function Nav() {
           className="brand-wordmark whitespace-nowrap"
           style={{ fontSize: "min(1.45rem, calc((100vw - 135px) / 12.4))" }}
         >
-          <img
-            src="/logo.png"
-            alt="Exton Sports Center"
-            width={38}
-            height={38}
-            style={{ display: "block", flexShrink: 0 }}
-          />
+          {/* The mark as the turning globe (2026-10-16, "put the same globe on
+              extonsports.com"). No ring or glow here — that is the TVs' dressing on
+              navy, and the site has a light theme. */}
+          <LogoGlobe size="38px" label="Exton Sports Center" />
           {/* Below sm the name gets a second line carrying OPEN 24×7, because
               a chip BESIDE it does not fit on a phone: the size formula above
               already spends every spare pixel, and reserving ~120px more would

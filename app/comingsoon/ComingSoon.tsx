@@ -7,6 +7,7 @@ import QrCode from "./QrCode";
 import s from "./comingsoon.module.css";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
 import OrangishPill from "../components/OrangishPill";
+import LogoGlobe from "../components/LogoGlobe";
 import { makeTicker, useTick } from "../components/ticker";
 
 // Zone colours are Facility3D's own (its `C` table), so each legend dot matches the floor
@@ -48,8 +49,10 @@ export default function ComingSoon() {
 
       <section className={s.copy}>
         <div className={`${s.brand} ${s.rise}`}>
-          {/* The 1254px mark, not /logo.png: that one is 128px and goes soft on a TV. */}
-          <img className={s.logo} src="/favicon.png" alt="" width={1254} height={1254} />
+          {/* The mark as the turning globe (2026-10-16, "...and on the vestible and
+              entrance tvs too"), drawn at the screen's own pixel size so it stays sharp
+              on a TV. Size, ring and glow from .logo. */}
+          <LogoGlobe className={s.logo} />
           <div>
             <div className={s.wordmark}>
               EXTON <span>SPORTS CENTER</span>
