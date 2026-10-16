@@ -852,6 +852,27 @@ export default function ReceptionBoard() {
       >
         <OrangishPill tv />
       </div>
+
+      {/* 2026-10-15, Aniket: "on the reception page also show — view this screen at
+          extonsports.com/reception" — approved from a mock-up of the live board. The
+          public page reads the same feed without a TV key, so a member can keep the
+          desk's view on a phone.
+
+          Same strip as the pill, flush left with the text INSIDE the badminton box:
+          the root's 2.2vw padding + the panel's 0.22vw border + its 1vw padding. The
+          address is in the board's own orange so it is the part the eye lands on;
+          the lead-in is soft white, a step brighter than a credit because this one
+          is meant to be read. Absolute for the same reason as the pill: in flow it
+          would take height from the panels' 1fr row. */}
+      <div
+        style={{
+          position: "absolute", left: "3.42vw", bottom: "0.5vw",
+          fontSize: "0.8vw", letterSpacing: "0.12em", color: "rgba(255,255,255,0.62)",
+          whiteSpace: "nowrap", pointerEvents: "none",
+        }}
+      >
+        view this screen at <span style={{ color: SESSION_ORANGE, fontWeight: 500 }}>extonsports.com/reception</span>
+      </div>
     </div>
   );
 }
