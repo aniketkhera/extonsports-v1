@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 100">
+<defs>
+ <clipPath id="sq-ball"><circle cx="32.7" cy="46.3" r="29.7"/></clipPath>
+ <filter id="sq-sha" filterUnits="userSpaceOnUse" x="-9" y="0" width="108" height="100"><feGaussianBlur stdDeviation=".5"/></filter>
+<filter id="sq-shb" filterUnits="userSpaceOnUse" x="-9" y="0" width="108" height="100"><feGaussianBlur stdDeviation="1.5"/></filter>
+<filter id="sq-shc" filterUnits="userSpaceOnUse" x="-9" y="0" width="108" height="100"><feGaussianBlur stdDeviation="3.5"/></filter>
+<linearGradient id="sq-shg" gradientUnits="userSpaceOnUse" x1="0" y1="75.5" x2="0" y2="76"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff"/></linearGradient>
+<mask id="sq-shm" maskUnits="userSpaceOnUse" x="-9" y="0" width="108" height="100"><rect x="-9" y="0" width="108" height="100" fill="url(#sq-shg)"/></mask>
+ <filter id="sq-b02" filterUnits="userSpaceOnUse" x="-10" y="-10" width="110" height="120"><feGaussianBlur stdDeviation="0.18"/></filter>
+ <filter id="sq-bdot" filterUnits="userSpaceOnUse" x="-10" y="-10" width="110" height="120"><feGaussianBlur stdDeviation="0.12"/></filter>
+ <filter id="sq-b15" filterUnits="userSpaceOnUse" x="-10" y="-10" width="110" height="120"><feGaussianBlur stdDeviation="1.5"/></filter>
+ <filter id="sq-bwin" filterUnits="userSpaceOnUse" x="-10" y="-10" width="110" height="120"><feGaussianBlur stdDeviation="1.78"/></filter>
+ <filter id="sq-rc" filterUnits="userSpaceOnUse" x="-10" y="-10" width="110" height="120"><feGaussianBlur stdDeviation="0.27"/></filter>
+ <filter id="sq-rw" filterUnits="userSpaceOnUse" x="-10" y="-10" width="110" height="120"><feGaussianBlur stdDeviation="0.3"/></filter>
+ <filter id="sq-grain" filterUnits="userSpaceOnUse" x="0" y="0" width="90" height="100">
+  <feTurbulence type="fractalNoise" baseFrequency="2.4" numOctaves="2" seed="7"/>
+  <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1.6 0 0 0 -0.78"/>
+ </filter>
+
+ <!-- diffuse: black rubber, lit from the upper left; the core floor is #08090B, never pure black -->
+ <radialGradient id="sq-diff" gradientUnits="userSpaceOnUse" cx="29.73" cy="42.74" r="33.86" fx="20.23" fy="32.04">
+  <stop offset="0" stop-color="#3a3c42"/><stop offset="0.2" stop-color="#28292e"/><stop offset="0.42" stop-color="#18191c"/>
+  <stop offset="0.66" stop-color="#0f1012"/><stop offset="0.86" stop-color="#0a0b0d"/><stop offset="1" stop-color="#08090b"/>
+ </radialGradient>
+ <!-- reflected light from the panel below lifts the far side a touch, so the core reads as a band -->
+ <radialGradient id="sq-refl" gradientUnits="userSpaceOnUse" cx="41.61" cy="79.56" r="28.21">
+  <stop offset="0" stop-color="#8e878a" stop-opacity="0.18"/><stop offset="0.5" stop-color="#8e878a" stop-opacity="0.07"/><stop offset="1" stop-color="#8e878a" stop-opacity="0"/>
+ </radialGradient>
+ <!-- cool neutral fill: from the front left, and a lift of the core so it is never a void -->
+ <linearGradient id="sq-fl" gradientUnits="userSpaceOnUse" x1="3" y1="46.3" x2="41.61" y2="49.27">
+  <stop offset="0" stop-color="#AEB8C8" stop-opacity="0.14"/><stop offset="1" stop-color="#AEB8C8" stop-opacity="0"/>
+ </linearGradient>
+ <radialGradient id="sq-flc" gradientUnits="userSpaceOnUse" cx="46.07" cy="61.15" r="28.21">
+  <stop offset="0" stop-color="#AEB8C8" stop-opacity="0.07"/><stop offset="1" stop-color="#AEB8C8" stop-opacity="0"/>
+ </radialGradient>
+ <!-- matte sheen: broad soft lobe centred on the half vector (0.80r x 0.65r) -->
+ <radialGradient id="sq-sheen" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="1" gradientTransform="translate(23.31 35.21) rotate(-38) scale(23.76 19.3)">
+  <stop offset="0" stop-color="#EEF1F5" stop-opacity="0.22"/><stop offset="0.4" stop-color="#EEF1F5" stop-opacity="0.10"/><stop offset="1" stop-color="#EEF1F5" stop-opacity="0"/>
+ </radialGradient>
+ <!-- fresnel: rubber brightens a little at grazing angles, all round -->
+ <radialGradient id="sq-fres" gradientUnits="userSpaceOnUse" cx="32.7" cy="46.3" r="29.7">
+  <stop offset="0.8" stop-color="#c8ccd4" stop-opacity="0"/><stop offset="0.95" stop-color="#c8ccd4" stop-opacity="0.07"/><stop offset="1" stop-color="#c8ccd4" stop-opacity="0.14"/>
+ </radialGradient>
+ <!-- the grain and the moulding seam show only where there is light to catch them -->
+ <radialGradient id="sq-grainFade" gradientUnits="userSpaceOnUse" cx="23.31" cy="35.21" r="32.67">
+  <stop offset="0" stop-color="#fff" stop-opacity="0.6"/><stop offset="0.5" stop-color="#fff" stop-opacity="0.22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+ </radialGradient>
+ <mask id="sq-mGrain" maskUnits="userSpaceOnUse" x="0" y="0" width="90" height="100">
+  <circle cx="23.31" cy="35.21" r="32.67" fill="url(#sq-grainFade)"/>
+ </mask>
+ <radialGradient id="sq-seamFade" gradientUnits="userSpaceOnUse" cx="23.31" cy="35.21" r="28.21">
+  <stop offset="0" stop-color="#fff"/><stop offset="0.45" stop-color="#fff" stop-opacity="0.75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+ </radialGradient>
+ <mask id="sq-mSeam" maskUnits="userSpaceOnUse" x="0" y="0" width="90" height="100">
+  <rect x="0" y="0" width="90" height="100" fill="url(#sq-seamFade)"/>
+ </mask>
+ <radialGradient id="sq-dot1" gradientUnits="userSpaceOnUse" cx="40.48" cy="50.62" r="3.82"><stop offset="0" stop-color="#EEC843"/><stop offset=".55" stop-color="#E7BC3B"/><stop offset="1" stop-color="#DCA92E"/></radialGradient>
+ <radialGradient id="sq-dot2" gradientUnits="userSpaceOnUse" cx="45.11" cy="43.14" r="3.82"><stop offset="0" stop-color="#F7D046"/><stop offset=".55" stop-color="#EFC33D"/><stop offset="1" stop-color="#E4AF30"/></radialGradient>
+</defs>
+
+<!-- contact shadow on the ground line: occlusion, penumbra, cast (shared recipe) -->
+<g fill="#0C0B10" mask="url(#sq-shm)">
+<ellipse cx="43.1" cy="78" rx="37.13" ry="5" opacity="0.2" filter="url(#sq-shc)"/>
+<ellipse cx="36.26" cy="77" rx="22.28" ry="2.8" opacity="0.45" filter="url(#sq-shb)"/>
+<ellipse cx="33.59" cy="76.3" rx="8.91" ry="1" opacity="0.8" filter="url(#sq-sha)"/>
+</g>
+
+<!-- the ball -->
+<g clip-path="url(#sq-ball)">
+ <circle cx="32.7" cy="46.3" r="29.7" fill="url(#sq-diff)"/>
+ <circle cx="32.7" cy="46.3" r="29.7" fill="url(#sq-fl)"/>
+ <circle cx="32.7" cy="46.3" r="29.7" fill="url(#sq-refl)"/>
+ <circle cx="32.7" cy="46.3" r="29.7" fill="url(#sq-flc)"/>
+ <!-- ground bounce under the core shadow (neutral, never orange at the ground) -->
+ <ellipse cx="34.19" cy="75.41" rx="18.41" ry="4.75" fill="#86808a" opacity="0.18" filter="url(#sq-b15)"/>
+ <!-- moulding seam: a hairline that shows only where it crosses the sheen, and dies in the core -->
+ <g mask="url(#sq-mSeam)">
+  <path d="M53.95 67.01L53.26 67.59L52.5 68.11L51.69 68.57L50.83 68.97L49.92 69.31L48.97 69.59L47.96 69.8L46.92 69.95L45.84 70.03L44.72 70.05L43.57 70L42.39 69.89L41.18 69.72L39.95 69.47L38.69 69.17L37.43 68.8L36.15 68.38L34.86 67.89L33.56 67.34L32.26 66.73L30.97 66.07L29.67 65.35L28.39 64.59L27.12 63.77L25.86 62.9L24.62 61.99L23.41 61.03L22.22 60.04L21.05 59.01L19.92 57.94L18.83 56.84L17.77 55.71L16.76 54.55L15.78 53.38L14.86 52.18L13.98 50.97L13.16 49.74L12.38 48.51L11.67 47.27L11.01 46.03L10.41 44.78L9.87 43.54L9.4 42.31L8.98 41.09L8.64 39.89L8.36 38.7L8.14 37.53L8 36.39L7.92 35.27L7.91 34.19L7.96 33.13L8.09 32.12L8.28 31.14L8.54 30.2L8.86 29.31L9.25 28.47L9.71 27.67L10.23 26.92" fill="none" stroke="#000" stroke-opacity="0.13" stroke-width="0.5" filter="url(#sq-b02)"/>
+  <path d="M53.95 67.01L53.26 67.59L52.5 68.11L51.69 68.57L50.83 68.97L49.92 69.31L48.97 69.59L47.96 69.8L46.92 69.95L45.84 70.03L44.72 70.05L43.57 70L42.39 69.89L41.18 69.72L39.95 69.47L38.69 69.17L37.43 68.8L36.15 68.38L34.86 67.89L33.56 67.34L32.26 66.73L30.97 66.07L29.67 65.35L28.39 64.59L27.12 63.77L25.86 62.9L24.62 61.99L23.41 61.03L22.22 60.04L21.05 59.01L19.92 57.94L18.83 56.84L17.77 55.71L16.76 54.55L15.78 53.38L14.86 52.18L13.98 50.97L13.16 49.74L12.38 48.51L11.67 47.27L11.01 46.03L10.41 44.78L9.87 43.54L9.4 42.31L8.98 41.09L8.64 39.89L8.36 38.7L8.14 37.53L8 36.39L7.92 35.27L7.91 34.19L7.96 33.13L8.09 32.12L8.28 31.14L8.54 30.2L8.86 29.31L9.25 28.47L9.71 27.67L10.23 26.92" transform="translate(-0.35 -0.35)" fill="none" stroke="#e6eaf0" stroke-opacity="0.12" stroke-width="0.3"/>
+ </g>
+ <!-- the two yellow dots: printed into the rubber (soft 0.3-unit edge), the one nearer the key with a faint sheen -->
+ <g filter="url(#sq-bdot)">
+  <path d="M37.74 51.19L37.8 50.68L37.94 50.18L38.16 49.7L38.44 49.27L38.78 48.88L39.18 48.54L39.62 48.27L40.09 48.08L40.58 47.96L41.08 47.92L41.58 47.96L42.06 48.08L42.51 48.27L42.92 48.54L43.29 48.88L43.59 49.27L43.83 49.7L44 50.18L44.09 50.68L44.11 51.19L44.04 51.7L43.9 52.2L43.69 52.68L43.41 53.11L43.07 53.51L42.67 53.84L42.23 54.11L41.76 54.3L41.27 54.42L40.77 54.46L40.27 54.42L39.79 54.3L39.34 54.11L38.93 53.84L38.56 53.51L38.26 53.11L38.02 52.68L37.85 52.2L37.76 51.7Z" fill="url(#sq-dot1)"/>
+  <path d="M42.54 43.75L42.56 43.23L42.65 42.73L42.81 42.25L43.04 41.8L43.32 41.41L43.67 41.07L44.06 40.8L44.48 40.6L44.93 40.48L45.4 40.44L45.87 40.48L46.33 40.6L46.77 40.8L47.18 41.07L47.55 41.41L47.87 41.8L48.13 42.25L48.33 42.73L48.46 43.23L48.51 43.75L48.5 44.27L48.4 44.77L48.24 45.25L48.02 45.69L47.73 46.09L47.38 46.42L46.99 46.7L46.57 46.89L46.12 47.01L45.65 47.06L45.18 47.01L44.72 46.89L44.28 46.7L43.87 46.42L43.5 46.09L43.18 45.69L42.92 45.25L42.72 44.77L42.59 44.27Z" fill="url(#sq-dot2)"/>
+ </g>
+ <ellipse cx="44.61" cy="42.57" rx="1.39" ry="0.93" transform="rotate(-35 44.61 42.57)" fill="#FFF6D8" opacity="0.32" filter="url(#sq-b02)"/>
+ <!-- light -->
+ <circle cx="32.7" cy="46.3" r="29.7" fill="url(#sq-sheen)"/>
+ <!-- the same softbox the cricket ball mirrors, diffused by matte rubber into a soft window -->
+ <rect x="19.6" y="32.98" width="7.42" height="4.46" rx="1.34" transform="rotate(-30 23.31 35.21)" fill="#f4f6fa" opacity="0.10" filter="url(#sq-bwin)"/>
+ <rect x="0" y="0" width="90" height="100" fill="none" filter="url(#sq-grain)" mask="url(#sq-mGrain)" opacity="0.28"/>
+ <circle cx="32.7" cy="46.3" r="29.7" fill="url(#sq-fres)"/>
+ <!-- rims: crisp cool key-side rim (8 to 12 o'clock), warm bounce of the panel glow on the lower right -->
+ <g filter="url(#sq-rc)"><g fill="none" stroke="#C8D3E2" stroke-width="2.08"><path d="M6.98 61.15A29.7 29.7 0 0 1 5.05 57.15" stroke-opacity=".02"/><path d="M5.05 57.15A29.7 29.7 0 0 1 3.74 52.91" stroke-opacity=".13"/><path d="M3.74 52.91A29.7 29.7 0 0 1 3.08 48.52" stroke-opacity=".29"/><path d="M3.08 48.52A29.7 29.7 0 0 1 3.08 44.08" stroke-opacity=".42"/><path d="M3.08 44.08A29.7 29.7 0 0 1 3.74 39.69" stroke-opacity=".45"/><path d="M3.74 39.69A29.7 29.7 0 0 1 5.05 35.45" stroke-opacity=".45"/><path d="M5.05 35.45A29.7 29.7 0 0 1 6.98 31.45" stroke-opacity=".45"/><path d="M6.98 31.45A29.7 29.7 0 0 1 9.48 27.78" stroke-opacity=".45"/><path d="M9.48 27.78A29.7 29.7 0 0 1 12.5 24.53" stroke-opacity=".45"/><path d="M12.5 24.53A29.7 29.7 0 0 1 15.97 21.76" stroke-opacity=".45"/><path d="M15.97 21.76A29.7 29.7 0 0 1 19.81 19.54" stroke-opacity=".42"/><path d="M19.81 19.54A29.7 29.7 0 0 1 23.95 17.92" stroke-opacity=".29"/><path d="M23.95 17.92A29.7 29.7 0 0 1 28.27 16.93" stroke-opacity=".13"/><path d="M28.27 16.93A29.7 29.7 0 0 1 32.7 16.6" stroke-opacity=".02"/></g></g>
+ <g filter="url(#sq-rw)"><g fill="none" stroke="#F89B72" stroke-width="1.78"><path d="M61.39 53.99A29.7 29.7 0 0 1 60.73 56.11" stroke-opacity=".01"/><path d="M60.73 56.11A29.7 29.7 0 0 1 59.92 58.18" stroke-opacity=".08"/><path d="M59.92 58.18A29.7 29.7 0 0 1 58.96 60.18" stroke-opacity=".18"/><path d="M58.96 60.18A29.7 29.7 0 0 1 57.85 62.1" stroke-opacity=".28"/><path d="M57.85 62.1A29.7 29.7 0 0 1 56.6 63.94" stroke-opacity=".34"/><path d="M56.6 63.94A29.7 29.7 0 0 1 55.21 65.67" stroke-opacity=".35"/><path d="M55.21 65.67A29.7 29.7 0 0 1 53.7 67.3" stroke-opacity=".35"/><path d="M53.7 67.3A29.7 29.7 0 0 1 52.07 68.81" stroke-opacity=".35"/><path d="M52.07 68.81A29.7 29.7 0 0 1 50.34 70.2" stroke-opacity=".35"/><path d="M50.34 70.2A29.7 29.7 0 0 1 48.5 71.45" stroke-opacity=".34"/><path d="M48.5 71.45A29.7 29.7 0 0 1 46.58 72.56" stroke-opacity=".28"/><path d="M46.58 72.56A29.7 29.7 0 0 1 44.58 73.52" stroke-opacity=".18"/><path d="M44.58 73.52A29.7 29.7 0 0 1 42.51 74.33" stroke-opacity=".08"/><path d="M42.51 74.33A29.7 29.7 0 0 1 40.39 74.99" stroke-opacity=".01"/></g></g>
+</g>
+</svg>

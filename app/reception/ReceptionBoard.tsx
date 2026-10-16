@@ -122,6 +122,32 @@ const PANEL_SHADOW = [
 
 const SPORT_ORDER = ["Badminton", "Cricket", "Squash"];
 
+/* The object beside each sport's title (2026-10-16).
+   ──────────────────────────────────────────────────────────────────────────
+   Aniket asked for "a caricature of someone playing" each sport; cartoon players
+   were mocked and turned down — "need more classy.. maybe just a shuttle, a
+   cricket ball and a squash ball - tastefully done with shadow and depth". These
+   are those three, drawn as SVG with one light from the upper left (the panel's
+   own light comes from above) and a soft shadow on the ground line.
+
+   ⚠️ NO GREEN IN THEM, and none of SESSION_GOLD: green on this board means a
+   court is free, and a green object beside a sport name would read as status.
+
+   PLACED SO IT COSTS NO HEIGHT. Each SVG is drawn with its ground line at 76% of
+   its height, and the title's span puts that line on the text baseline: top =
+   the baseline's depth in the span (1.182em, Oswald's ascent as measured on the
+   live board) minus 76% of the 4.2vh image. Absolute, so the title row stays one
+   line of type. Measured 2026-10-16 at 1080p with three groups on court in every
+   panel — the case with ~6px of NOW height to spare — the image clears the
+   panel's top border by ~6.6px and the first live booking by ~2.7px, and the NOW
+   list is untouched. In flow, even this small, it would have clipped that list.
+   A sport not listed here simply has no object. */
+const SPORT_OBJECT: Record<string, string> = {
+  Badminton: "/reception/shuttle.svg",
+  Cricket: "/reception/cricket-ball.svg",
+  Squash: "/reception/squash-ball.svg",
+};
+
 /** One holder's hours, after courts have been merged. */
 type Entry = {
   /** Club-local YYYY-MM-DD. Needed now that the list runs past today. */
@@ -774,7 +800,25 @@ export default function ReceptionBoard() {
             }}
           >
             <div className="text-cond" style={{ fontSize: "1.5vw", letterSpacing: "0.15em", color: LABEL, marginBottom: "0.9vh" }}>
-              {p.sport.toUpperCase()}
+              <span style={{ position: "relative" }}>
+                {p.sport.toUpperCase()}
+                {SPORT_OBJECT[p.sport] && (
+                  /* A plain <img>: a static SVG needs none of next/image's
+                     resizing, and next/image refuses SVG without a config flag.
+                     maxWidth none overrides the reset's 100%, which here would
+                     mean 100% of the WORD and squash the image. */
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={SPORT_OBJECT[p.sport]}
+                    alt=""
+                    aria-hidden
+                    style={{
+                      position: "absolute", left: "calc(100% + 0.9vw)", top: "calc(1.182em - 3.192vh)",
+                      height: "4.2vh", width: "auto", maxWidth: "none", pointerEvents: "none",
+                    }}
+                  />
+                )}
+              </span>
             </div>
 
             {/* Centred, not top-aligned. A panel holding one booking against a
