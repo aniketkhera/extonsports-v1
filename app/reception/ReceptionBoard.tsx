@@ -130,17 +130,24 @@ const SPORT_ORDER = ["Badminton", "Cricket", "Squash"];
    are those three, drawn as SVG with one light from the upper left (the panel's
    own light comes from above) and a soft shadow on the ground line.
 
-   ⚠️ NO GREEN IN THEM, and none of SESSION_GOLD: green on this board means a
-   court is free, and a green object beside a sport name would read as status.
+   ⚠️ NO GREEN IN THEM: green on this board means a court is free, and a green
+   object beside a sport name would read as status. Nor SESSION_GOLD as a colour of
+   its own — the squash ball's two small dots are the only yellow, there because a
+   double-yellow-dot ball has them.
 
    PLACED SO IT COSTS NO HEIGHT. Each SVG is drawn with its ground line at 76% of
-   its height, and the title's span puts that line on the text baseline: top =
-   the baseline's depth in the span (1.182em, Oswald's ascent as measured on the
-   live board) minus 76% of the 4.2vh image. Absolute, so the title row stays one
-   line of type. Measured 2026-10-16 at 1080p with three groups on court in every
-   panel — the case with ~6px of NOW height to spare — the image clears the
-   panel's top border by ~6.6px and the first live booking by ~2.7px, and the NOW
-   list is untouched. In flow, even this small, it would have clipped that list.
+   its height, and the title's span puts that line on the text baseline. Absolute,
+   so the title row stays one line of type; in flow, even this small, it would have
+   clipped the NOW list. All in em of the title (1.5vw), so it is locked to the
+   word at any screen shape — it was in vh first, and on the public page in a
+   portrait phone or tablet the vh image outgrew the vw type and rose through the
+   panel's top border (review, 2026-10-16). The numbers, at 16:9 the same as that
+   first build: height 1.575em (= 4.2vh); top = the baseline's depth in the span
+   (1.182em, Oswald's ascent as measured on the live board) minus 76% of the
+   height (1.197em) = -0.015em; 0.6em (= 0.9vw) after the word.
+   Measured 2026-10-16 at 1080p with three groups on court in every panel — the
+   case with ~6px of NOW height to spare — the image clears the panel's top border
+   by ~6.6px and the first live booking by ~2.7px, and the NOW list is untouched.
    A sport not listed here simply has no object. */
 const SPORT_OBJECT: Record<string, string> = {
   Badminton: "/reception/shuttle.svg",
@@ -606,10 +613,7 @@ function BigEntry({
       <div className="text-cond" style={{ fontSize: "3.1vw", color: INK, lineHeight: 1.03 }}>
         {span(e.from, e.to)}
       </div>
-      {/* display:flex so the row has no inherited 16px/1.5 line box
-          under it, and the compact boxes once three are on court —
-          measured (review, 2026-10-14): three entries with the big
-          boxes ran past the NOW area; compact, they fit with room. */}
+      {/* display:flex so the row has no inherited 16px/1.5 line box under it. */}
       <div style={{ display: "flex", marginTop: "0.5vh" }}>
         <CourtBoxes sport={sport} labels={labels} taken={e.courts} big={big} />
       </div>
@@ -618,8 +622,9 @@ function BigEntry({
 }
 
 /* "UP NEXT", and the day when it is not today — "UP NEXT · TOMORROW". The day
-   goes here rather than in front of the big time, because "OCT 24 5:30 – 6:30 PM"
-   at the time's 3.1vw runs wider than the panel. In the header's orange, not
+   goes here rather than in front of the big time, because "TOMORROW 5:30 – 6:30 PM"
+   at the time's 3.1vw is ~607px against ~548px of panel at 1080p (measured
+   2026-10-16). In the header's orange, not
    GREEN: green on this board means a court is free, and this line is about a
    booking. */
 function UpNextLine({ day }: { day: string }) {
@@ -803,18 +808,18 @@ export default function ReceptionBoard() {
               <span style={{ position: "relative" }}>
                 {p.sport.toUpperCase()}
                 {SPORT_OBJECT[p.sport] && (
-                  /* A plain <img>: a static SVG needs none of next/image's
-                     resizing, and next/image refuses SVG without a config flag.
-                     maxWidth none overrides the reset's 100%, which here would
-                     mean 100% of the WORD and squash the image. */
+                  /* A plain <img>: next/image serves an .svg unoptimised anyway,
+                     so here it would add nothing but required width/height props
+                     on an image sized in em. maxWidth none overrides the reset's
+                     100%, which here would mean 100% of the WORD and squash it. */
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={SPORT_OBJECT[p.sport]}
                     alt=""
                     aria-hidden
                     style={{
-                      position: "absolute", left: "calc(100% + 0.9vw)", top: "calc(1.182em - 3.192vh)",
-                      height: "4.2vh", width: "auto", maxWidth: "none", pointerEvents: "none",
+                      position: "absolute", left: "calc(100% + 0.6em)", top: "-0.015em",
+                      height: "1.575em", width: "auto", maxWidth: "none", pointerEvents: "none",
                     }}
                   />
                 )}
@@ -831,6 +836,10 @@ export default function ReceptionBoard() {
                 display: "flex", flexDirection: "column", justifyContent: "center",
               }}
             >
+              {/* Compact boxes once three are on court — measured (review,
+                  2026-10-14): three entries with the big boxes ran past the NOW
+                  area; compact, they fit with room. UP NEXT shows at most two
+                  (UP_NEXT_MAX), so it always gets the big ones. */}
               {p.now.length > 0 ? (
                 p.now.map((e) => (
                   <BigEntry
@@ -867,7 +876,7 @@ export default function ReceptionBoard() {
               {p.freeNow} OF {p.total} FREE NOW
             </div>
 
-            {/* COMING UP — the next five, each with its court.
+            {/* COMING UP — the next UPCOMING_COUNT, each with its court.
                 ────────────────────────────────────────────────────────────
                 Three columns on one line per booking: time, holder, court.
                 A single wrapped line per booking would cost ten lines for
