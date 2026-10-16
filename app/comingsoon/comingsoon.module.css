@@ -760,7 +760,9 @@
 
    In the same top padding band as the date, centred on the date's line (.today
    is 0.5u + 1.6u/2 = 1.3u to its middle), right edge just inside the stage
-   frame's. Body face, small and translucent: a credit, not information. */
+   frame's. Later the same day it became a pill (OrangishPill, `tv`), which
+   brings its own face and colours at full opacity; this box only places it and
+   sets the size its 1.05em is taken from. Small: a credit, not information. */
 .credit { display: none; }
 @media (min-aspect-ratio: 4/3) and (min-width: 900px) {
   .credit {
@@ -771,10 +773,8 @@
     transform: translateY(-50%);
     z-index: 2;
     font-size: calc(var(--u) * 0.78);
-    letter-spacing: 0.18em;
     line-height: 1;
     white-space: nowrap;
-    color: rgba(255, 255, 255, 0.45);
     pointer-events: none;
   }
 }

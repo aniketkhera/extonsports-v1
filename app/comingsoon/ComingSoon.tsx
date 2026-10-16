@@ -6,6 +6,7 @@ import { CONTACT_PHONE, CONTACT_PHONE_E164 } from "@/lib/legal";
 import QrCode from "./QrCode";
 import s from "./comingsoon.module.css";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
+import OrangishPill from "../components/OrangishPill";
 import { makeTicker, useTick } from "../components/ticker";
 
 // Zone colours are Facility3D's own (its `C` table), so each legend dot matches the floor
@@ -41,8 +42,9 @@ export default function ComingSoon() {
       <Diag />
       <TodayLine />
       {/* 2026-10-15: Aniket asked for a small orangish.io credit on every Exton
-          surface. Plain text — nobody can tap a television. See .credit. */}
-      <div className={s.credit}>orangish.io</div>
+          surface, and later that day for it as a pill. The `tv` pill is not a link —
+          nobody can tap a television. See .credit. */}
+      <div className={s.credit}><OrangishPill tv /></div>
 
       <section className={s.copy}>
         <div className={`${s.brand} ${s.rise}`}>

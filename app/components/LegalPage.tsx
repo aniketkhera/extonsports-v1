@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { LEGAL_NAME, LEGAL_ADDRESS_LINE, CONTACT_PHONE, CONTACT_EMAIL } from '@/lib/legal'
+import OrangishPill from './OrangishPill'
 
 // Shared shell for the four legal pages (privacy, terms, disclaimer, sms).
 //
@@ -83,10 +84,11 @@ export default function LegalPage({
             <Link href="/sms" className="hover:text-white/60 transition">SMS Terms</Link>
           </p>
           {/* 2026-10-15: Aniket asked for a small orangish.io credit on every Exton
-              surface. Under the legal links, in their size and grey, on its own line so
-              it is not read as a fifth legal document. */}
-          <p className="text-white/25 text-[0.72rem] mt-2.5">
-            <a href="https://orangish.io" className="underline underline-offset-2">orangish.io</a>
+              surface — later that day as a pill (OrangishPill), sized off the legal
+              links' text. Under them, on its own line, so it is not read as a fifth
+              legal document. */}
+          <p className="text-[0.72rem] mt-2.5">
+            <OrangishPill />
           </p>
         </div>
       </div>

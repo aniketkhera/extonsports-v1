@@ -9,6 +9,7 @@ import { SPORT_ORDER } from "../../lib/rates";
 import { SPORT_BOOKING_OPENS_LABEL, sportShutOnDate, CLUB_TZ } from "../../lib/opening";
 import { BOOK_COURT_URL, PARTNER_LINK } from "../../lib/booking";
 import CalPartnerMark, { CalFreeMark, FREE_GIRLS_SHORT } from "./CalPartnerMark";
+import OrangishPill from "./OrangishPill";
 
 /* The public calendar of bookings.
    ────────────────────────────────────────────────────────────────────────
@@ -842,13 +843,12 @@ export default function BookingsCalendar({
             </p>
 
             {/* 2026-10-15: Aniket asked for a small orangish.io credit on every Exton
-                surface. A line of its own under the note, in the note's grey, so it
-                reads as the calendar's foot rather than part of the instructions —
-                and it rides along into the hero's pop-up, which is this same panel. */}
-            <p className="text-white/35 text-center" style={{ fontSize: "11px", letterSpacing: "0.02em", margin: "14px 0 24px" }}>
-              <a href="https://orangish.io" className="underline underline-offset-2 whitespace-nowrap">
-                orangish.io
-              </a>
+                surface — later that day as a pill (OrangishPill), sized off this 11px.
+                A line of its own under the note, so it reads as the calendar's foot
+                rather than part of the instructions — and it rides along into the
+                hero's pop-up, which is this same panel. */}
+            <p className="text-center" style={{ fontSize: "11px", margin: "14px 0 24px" }}>
+              <OrangishPill />
             </p>
           </>
         )}

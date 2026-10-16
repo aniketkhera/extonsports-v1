@@ -228,14 +228,19 @@
 }
 
 /* The orangish.io credit (2026-10-15 — Aniket asked for a small one on every
-   Exton surface). .bcta2's exact type, a step quieter, so it reads as the
-   footer's own small print and never competes with the club's address. */
+   Exton surface, then for it as a pill: OrangishPill, `tv`). This box only
+   sets the size the pill's 1.05em is taken from — .bcta2's, so it reads as
+   the footer's own small print and never outshouts the club's address. The
+   pill brings its own face and colours, at full opacity.
+
+   The negative bottom margin keeps the footer exactly as tall as it was. On the
+   shared baseline the pill hangs ~0.3vh lower than the CTA's own descent, which
+   grew the footer 2px at 1080p and nudged the CTAs and every court row up
+   (measured 2026-10-15). The margin only stops it counting toward the row's
+   height; it does not move the pill, which still sits where the mock-up put it. */
 .bcredit {
-  font-weight: 600;
   font-size: 1.7vh;
-  letter-spacing: 0.16em;
-  color: #6E7A88;
-  opacity: 0.85;
   white-space: nowrap;
   justify-self: center;
+  margin-bottom: -0.5vh;
 }

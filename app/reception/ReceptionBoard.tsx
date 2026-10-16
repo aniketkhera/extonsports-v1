@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { makeTicker, useTick } from "../components/ticker";
 import Image from "next/image";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
+import OrangishPill from "../components/OrangishPill";
 import {
   PLATFORM, readKey, clubNow, span, holderLabel, brandFor, sessionOf, SESSION_TEXT,
   type BrandKey, type NamedBlock, type NamedSlots, type SessionKey,
@@ -830,20 +831,20 @@ export default function ReceptionBoard() {
       </div>
 
       {/* 2026-10-15: Aniket asked for a small orangish.io credit on every Exton
-          surface. Plain text — nobody can tap a television.
+          surface, and later that day for it as a pill. The `tv` pill is not a link —
+          nobody can tap a television.
 
           Absolute, in the root's bottom padding strip, so it takes no height from the
-          panels' 1fr row: in flow it would shrink all three boxes. Deliberately well
-          under the 0.75 alpha the palette note above sets for READABLE text — it is a
-          credit, not information anyone at the desk needs to read from across the lobby. */}
+          panels' 1fr row: in flow it would shrink all three boxes. Small (the pill is
+          1.05em of this 0.68vw) — a credit, not information anyone at the desk needs
+          to read from across the lobby. */}
       <div
         style={{
           position: "absolute", left: "50%", bottom: "0.42vw", transform: "translateX(-50%)",
-          fontSize: "0.68vw", letterSpacing: "0.18em", color: "rgba(255,255,255,0.42)",
-          whiteSpace: "nowrap", pointerEvents: "none",
+          fontSize: "0.68vw", whiteSpace: "nowrap", pointerEvents: "none",
         }}
       >
-        orangish.io
+        <OrangishPill tv />
       </div>
     </div>
   );

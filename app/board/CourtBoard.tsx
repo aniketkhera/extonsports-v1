@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CLUB_TZ } from "../../lib/opening";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
+import OrangishPill from "../components/OrangishPill";
 /* The feed shape, the key handoff, club-local time and the holder-naming rules
    are shared with /reception — see board-lib.ts for why they are not duplicated. */
 import {
@@ -204,8 +205,9 @@ export default function CourtBoard() {
       <footer className="bfoot">
         <div className="bcta">BOOK A COURT BY THE HOUR</div>
         {/* 2026-10-15: Aniket asked for a small orangish.io credit on every Exton
-            surface. Plain text, not a link — nobody can tap a television. */}
-        <div className="bcredit">orangish.io</div>
+            surface, and later that day for it as a pill. The `tv` pill is not a
+            link — nobody can tap a television. */}
+        <div className="bcredit"><OrangishPill tv /></div>
         <div className="bcta2">extonsports.com</div>
       </footer>
     </div>
