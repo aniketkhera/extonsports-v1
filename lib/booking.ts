@@ -121,6 +121,13 @@ export const PARTNER_LINK: Record<
 export const STARTER_PACK_URL = `${APP_URL}/starter/exton-sports`
 
 /**
+ * The pay page: anyone pays Exton any amount, by Zelle or card (orangish-app /pay/[slug],
+ * live 2026-10-16). extonsports.com/pay redirects here too (next.config.ts) — that short
+ * form is for Aniket's email footer; on the site we link straight to the page.
+ */
+export const PAY_URL = `${APP_URL}/pay/exton-sports`
+
+/**
  * ⛔ ONLINE REGISTRATION. Governs the Register buttons on the squash and
  * dance/fitness rows — cricket and badminton deliberately have none, because
  * their bookings are not managed on the platform (Aniket, 2026-10-05).

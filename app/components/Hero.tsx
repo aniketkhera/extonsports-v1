@@ -8,7 +8,7 @@ import type { CourtAvailability } from "../api/court-availability/route";
 import type { SchedulePayload } from "../api/schedule/route";
 import type { ProgramSchedule } from "@/lib/club-schedule";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, CLASS_FEES_NOTE } from "../../lib/rates";
-import { BOLLYWOOD_CLASS_URL, SQUAD_CLASS_URL, STARTER_PACK_URL, BOOK_COURT_URL, CLASS_ONLINE_BOOKING_LIVE } from "../../lib/booking";
+import { BOLLYWOOD_CLASS_URL, SQUAD_CLASS_URL, STARTER_PACK_URL, BOOK_COURT_URL, PAY_URL, CLASS_ONLINE_BOOKING_LIVE } from "../../lib/booking";
 import { SPORT_BOOKING_OPENS_LABEL, sportBookingOpen, sportShutOnDate, sportsNotYetOpen } from "../../lib/opening";
 import { pbaScheduleOn, PBA_COURTS } from "../../lib/pba-schedule";
 import { SQUAD_SCHEDULE, SQUAD_NOTE, SQUAD_TERM } from "../../lib/squad-schedule";
@@ -1999,6 +1999,24 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
             Show calendar of bookings
           </button>
           <BookingsCalendar open={calOpen} onClose={() => setCalOpen(false)} />
+
+          {/* MAKE A PAYMENT, 2026-10-16 — Aniket, once the pay page went live: "add a MAKE
+              A PAYMENT link/button alongwith a BOOK A COURT and SHOW CALENDAR OF BOOKINGS".
+              For money that is not a court booking (a lesson, an invoice, an agreed amount),
+              by Zelle or card. Outlined like the calendar button, so "Book a court or lane"
+              stays the one filled, primary action; a new tab, like the booking CTA, because
+              it is the app. */}
+          <a
+            href={PAY_URL}
+            target="_blank"
+            rel="noreferrer"
+            className={`text-mono text-[var(--color-ember)] border border-[var(--color-ember)]/50 hover:border-[var(--color-ember)] hover:text-white transition-colors ${
+              stacked ? "block w-full text-center py-[13px] px-5" : "inline-block py-[11px] px-[22px]"
+            }`}
+            style={{ fontSize: RATE_LABEL }}
+          >
+            Make a payment
+          </a>
 
           {/* ⚠️ THE THREE SPORTS DO NOT OPEN TOGETHER, so this cannot be one
               date. The doors are Mon 5 Oct but the courts come online across
