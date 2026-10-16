@@ -5,6 +5,7 @@ import { makeTicker, useTick } from "../components/ticker";
 import Image from "next/image";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
 import OrangishPill from "../components/OrangishPill";
+import { CONTACT_PHONE } from "../../lib/legal";
 import {
   PLATFORM, readKey, clubNow, span, holderLabel, brandFor, sessionOf, splitUpNext, SESSION_TEXT,
   type BrandKey, type NamedBlock, type NamedSlots, type SessionKey,
@@ -102,7 +103,7 @@ const PANEL_GLOW =
    belongs to the board rather than fighting the GREEN "ALL OPEN". */
 const PANEL_BORDER = "#F89B72";
 /* The brand orange as a TEXT colour: JUNIOR COACHING. OPEN PLAY is white — never
-   GREEN, which on this board means a free court ("ALL OPEN", "N OF 3 FREE NOW"),
+   GREEN, which on this board means a free court ("ALL OPEN"; "N OF 3 FREE NOW" until 2026-10-16),
    and a green "OPEN PLAY" would read as "court open" from the desk. */
 const SESSION_ORANGE = "#F89B72";
 /* Only Girls – Free Coaching (2026-10-15): gold, filled like JUNIOR COACHING so it reads
@@ -173,10 +174,8 @@ type Entry = {
 
 type Panel = {
   sport: string;
-  total: number;
   /** Every court label in this sport, in court order — one box each. */
   labels: string[];
-  freeNow: number;
   now: Entry[];
   /** Nobody on court: the next booking(s), shown big in place of ALL OPEN. */
   upNext: Entry[];
@@ -197,7 +196,8 @@ const UPCOMING_COUNT = 10;
 /* How many simultaneous starts UP NEXT shows in the big area — see splitUpNext in
    board-lib. Two, because the UP NEXT line costs about one entry's lockup row:
    measured 2026-10-16 at 1080p, the line plus two entries with the big boxes is
-   ~410px of the ~500px NOW area, and a third would push it past the bottom. */
+   ~400px of the ~534px NOW area, and a third (~185px) would push it past the
+   bottom. */
 const UP_NEXT_MAX = 2;
 
 /* The strip under the three boxes that holds the orangish.io pill and "view this
@@ -209,7 +209,8 @@ const UP_NEXT_MAX = 2;
    slack: measured 2026-10-15, three live bookings per sport plus ten COMING UP rows
    still show every row at 1080p, 768p and 2160p, exactly as at 2.7vh. That case
    now has ~6px of NOW height to spare at 1080p, so this is close to the most the
-   strip can take without the first live booking losing its top. */
+   strip can take without the first live booking losing its top. (~9px since
+   2026-10-16: the FREE NOW line came out and an ON NOW line went in.) */
 const CREDIT_STRIP = "4.8vh";
 
 /* Blocks -> entries, by cutting the day into TIME BANDS.
@@ -599,13 +600,14 @@ function Lockup({ brand, who }: { brand: BrandKey | null; who: string }) {
 
 /* One booking, big — what the NOW area draws for a live entry and, since
    2026-10-16, for an UP NEXT one. Same drawing for both on purpose: the line above
-   it (UP NEXT, or nothing) is what says which, and the green "N OF 3 FREE NOW"
-   under the area still says whether the courts are free right now. */
+   them, ON NOW or UP NEXT, is what says which. */
 function BigEntry({
-  e, sport, labels, big,
-}: { e: Entry; sport: string; labels: string[]; big: boolean }) {
+  e, sport, labels, big, last,
+}: { e: Entry; sport: string; labels: string[]; big: boolean; last: boolean }) {
+  /* No margin under the last one: in a centred column it only added height,
+     and the ON NOW / UP NEXT line above now spends it (2026-10-16). */
   return (
-    <div style={{ marginBottom: "1.2vh" }}>
+    <div style={{ marginBottom: last ? 0 : "1.2vh" }}>
       <div style={{ minHeight: "3.2vw", display: "flex", alignItems: "center", gap: "0.8vw", marginBottom: "0.4vh" }}>
         <Lockup brand={e.brand} who={e.who} />
         {e.session && <SessionTag session={e.session} />}
@@ -621,21 +623,40 @@ function BigEntry({
   );
 }
 
-/* "UP NEXT", and the day when it is not today — "UP NEXT · TOMORROW". The day
+/* "ON NOW" over what is on court, "UP NEXT" over what is not on yet (2026-10-16,
+   Aniket: "change up next to on now when the timing of the event matches the
+   current time") — and for UP NEXT the day when it is not today, "UP NEXT ·
+   TOMORROW". One style for both, so the WORDS are the difference. The day
    goes here rather than in front of the big time, because "TOMORROW 5:30 – 6:30 PM"
    at the time's 3.1vw is ~607px against ~548px of panel at 1080p (measured
    2026-10-16). In the header's orange, not
    GREEN: green on this board means a court is free, and this line is about a
    booking. */
-function UpNextLine({ day }: { day: string }) {
+function SlotLine({ text, day }: { text: "ON NOW" | "UP NEXT"; day: string }) {
   return (
     <div
       className="text-cond"
       style={{ fontSize: "1.45vw", letterSpacing: "0.12em", color: EMBER, lineHeight: 1, marginBottom: "1.4vh" }}
     >
-      UP NEXT
+      {text}
       {day && <span style={{ color: INK }}> · {day}</span>}
     </div>
+  );
+}
+
+/* A mobile phone, outline, in the brand orange: says "phone" without a word. Drawn
+   here rather than pulled from an icon set — eight lines, and nothing to install
+   in a node_modules that is shared between checkouts. */
+function PhoneIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24" width="1.3em" height="1.3em" aria-hidden
+      fill="none" stroke={SESSION_ORANGE} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
+    >
+      <rect x="6" y="2" width="12" height="20" rx="2.6" />
+      <path d="M10.4 5.2h3.2" />
+      <circle cx="12" cy="18.4" r="0.9" fill={SESSION_ORANGE} stroke="none" />
+    </svg>
   );
 }
 
@@ -714,16 +735,13 @@ export default function ReceptionBoard() {
         (b) => (b.date === today && b.from > minutes) || b.date > today,
       );
 
-      const busyIds = new Set(live.map((b) => b.courtId));
       const nowEntries = mergeBlocks(live, label);
       const { upNext, rest } = splitUpNext(nowEntries, mergeBlocks(ahead, label), UP_NEXT_MAX);
 
       return {
         sport,
-        total: courts.length,
         labels: [...new Set(courts.map((c) => label.get(c.id) ?? ""))]
           .sort((a, b) => Number(a) - Number(b) || a.localeCompare(b)),
-        freeNow: courts.length - busyIds.size,
         now: nowEntries,
         upNext,
         upcoming: rest.slice(0, UPCOMING_COUNT),
@@ -836,24 +854,36 @@ export default function ReceptionBoard() {
                 display: "flex", flexDirection: "column", justifyContent: "center",
               }}
             >
+              {/* ON NOW or UP NEXT, then the bookings (2026-10-16). The line
+                  that sat here, "N OF 3 FREE NOW", came off the same day —
+                  Aniket: "we don't need 3 of 3 free now - not neccessary.. just
+                  what's next, and what's upcoming" — and the label above the big
+                  entries took its height: "change up next to on now when the
+                  timing of the event matches the current time". Measured with
+                  three groups on court in every panel, the tightest case. */}
               {/* Compact boxes once three are on court — measured (review,
                   2026-10-14): three entries with the big boxes ran past the NOW
                   area; compact, they fit with room. UP NEXT shows at most two
                   (UP_NEXT_MAX), so it always gets the big ones. */}
               {p.now.length > 0 ? (
-                p.now.map((e) => (
-                  <BigEntry
-                    key={`${e.who}-${e.session ?? ""}-${e.from}-${e.to}`}
-                    e={e} sport={p.sport} labels={p.labels} big={p.now.length < 3}
-                  />
-                ))
+                <>
+                  <SlotLine text="ON NOW" day="" />
+                  {p.now.map((e, n) => (
+                    <BigEntry
+                      key={`${e.who}-${e.session ?? ""}-${e.from}-${e.to}`}
+                      e={e} sport={p.sport} labels={p.labels} big={p.now.length < 3}
+                      last={n === p.now.length - 1}
+                    />
+                  ))}
+                </>
               ) : p.upNext.length > 0 ? (
                 <>
-                  <UpNextLine day={dayLabel(p.upNext[0].date, today)} />
-                  {p.upNext.map((e) => (
+                  <SlotLine text="UP NEXT" day={dayLabel(p.upNext[0].date, today)} />
+                  {p.upNext.map((e, n) => (
                     <BigEntry
                       key={`${e.date}-${e.who}-${e.session ?? ""}-${e.from}-${e.to}`}
                       e={e} sport={p.sport} labels={p.labels} big
+                      last={n === p.upNext.length - 1}
                     />
                   ))}
                 </>
@@ -864,16 +894,6 @@ export default function ReceptionBoard() {
                   ALL OPEN
                 </div>
               )}
-            </div>
-
-            <div
-              className="text-cond"
-              style={{
-                fontSize: "1.45vw", letterSpacing: "0.06em", marginBottom: "0.7vh",
-                color: p.freeNow ? GREEN : MUTED,
-              }}
-            >
-              {p.freeNow} OF {p.total} FREE NOW
             </div>
 
             {/* COMING UP — the next UPCOMING_COUNT, each with its court.
@@ -998,6 +1018,27 @@ export default function ReceptionBoard() {
         }}
       >
         <span>view this screen at <span style={{ color: SESSION_ORANGE, fontWeight: 500 }}>extonsports.com/reception</span></span>
+      </div>
+
+      {/* The club's number, bottom right (2026-10-16, Aniket: "the right bottom,
+          write our phone number with a cellphone icon to signify thats a phone").
+          The mirror of the address on the left: same strip, same absolute
+          placement (in flow it would take height from the panels' 1fr row), and
+          flush right with the text INSIDE the squash box — 2.2vw + 0.22vw + 1vw,
+          as on the left. A little larger and in full white, because a number is
+          only any use if it can be read off the wall and dialled; the icon carries
+          the orange. CONTACT_PHONE is the main line (the IVR), the same one the
+          site prints everywhere — never a second copy typed in here. */}
+      <div
+        style={{
+          position: "absolute", right: "3.42vw", bottom: 0, height: CREDIT_STRIP,
+          display: "flex", alignItems: "center", gap: "0.4vw",
+          fontSize: "1vw", letterSpacing: "0.06em", color: INK, fontWeight: 500,
+          fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", pointerEvents: "none",
+        }}
+      >
+        <PhoneIcon />
+        <span>{CONTACT_PHONE}</span>
       </div>
     </div>
   );
