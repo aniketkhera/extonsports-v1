@@ -27,13 +27,27 @@ import { createGlobe, globeAngleAt, msUntilNextTurn, loadGlobeTexture, GLOBE_TEX
    - prefers-reduced-motion: the rest frame, once, and no loop.
    - It follows its box: the size is any CSS length (vw/vh on the TVs), and a
      ResizeObserver rebuilds the canvas at the new pixel size. */
+/* The halo, in multiples of the ball's own size so it reads the same at 38px and on a
+   75" panel. 2026-10-16, Aniket, of the live globe: "add more glow to the globe..
+   looks good..". It was a 0.35x blur at 0.28; now two layers — a tight bright one
+   that hugs the ball and a wide soft one — with a little spread so the light leaves
+   the edge rather than starting outside it. The ring (TVs only) is a touch brighter
+   to match. The ball's own orange rim light went up with it (RIM in lib/logo-globe). */
+function halo(s: string, ring: boolean): string {
+  const near = `0 0 calc(${s} * 0.2) calc(${s} * 0.02) rgba(248, 155, 114, 0.55)`;
+  const far = `0 0 calc(${s} * 0.6) calc(${s} * 0.06) rgba(248, 155, 114, 0.32)`;
+  return ring ? `0 0 0 calc(${s} * 0.035) rgba(248, 155, 114, 0.75), ${near}, ${far}` : `${near}, ${far}`;
+}
+
 export default function LogoGlobe({
-  size, ring = false, label, className, style,
+  size, ring = false, glow = ring, label, className, style,
 }: {
   /** Any CSS length. Omit it to size from `className` instead. */
   size?: string;
-  /** The thin orange ring and soft glow the TV headers use. Off on the website. */
+  /** The thin orange ring the TV headers use (it brings the glow with it). */
   ring?: boolean;
+  /** The orange glow around the ball, without the ring — the website's header. */
+  glow?: boolean;
   /** Accessible name when the mark stands alone (the site header). Otherwise decorative. */
   label?: string;
   className?: string;
@@ -112,9 +126,7 @@ export default function LogoGlobe({
       style={{
         position: "relative", display: "inline-block", flex: "none", borderRadius: "50%",
         ...(size ? { width: size, height: size } : {}),
-        ...(ring
-          ? { boxShadow: `0 0 0 calc(${size ?? "1em"} * 0.035) rgba(248, 155, 114, 0.6), 0 0 calc(${size ?? "1em"} * 0.35) rgba(248, 155, 114, 0.28)` }
-          : {}),
+        ...(ring || glow ? { boxShadow: halo(size ?? "1em", ring) } : {}),
         ...style,
       }}
     >
