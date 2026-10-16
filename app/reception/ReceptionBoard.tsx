@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { makeTicker, useTick } from "../components/ticker";
 import Image from "next/image";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
+import OrangishPill from "../components/OrangishPill";
 import {
   PLATFORM, readKey, clubNow, span, holderLabel, brandFor, sessionOf, SESSION_TEXT,
   type BrandKey, type NamedBlock, type NamedSlots, type SessionKey,
@@ -827,6 +828,50 @@ export default function ReceptionBoard() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* 2026-10-15: Aniket asked for a small orangish.io credit on every Exton
+          surface, and later that day for it as a pill. The `tv` pill is not a link —
+          nobody can tap a television.
+
+          Absolute, in the root's bottom padding strip, so it takes no height from the
+          panels' 1fr row: in flow it would shrink all three boxes. Small (the pill is
+          1.05em of this 0.68vw) — a credit, not information anyone at the desk needs
+          to read from across the lobby.
+
+          The pill is taller than the plain text was, and `bottom` stayed put, so its
+          top edge now just meets the middle box's orange bottom border (~1.3px over at
+          1080p, measured 2026-10-15). The approved mock-up shows exactly that, so it is
+          left as approved. If it should clear the box, bottom "0.3vw" does it and keeps
+          the pill inside this strip. */}
+      <div
+        style={{
+          position: "absolute", left: "50%", bottom: "0.42vw", transform: "translateX(-50%)",
+          fontSize: "0.68vw", whiteSpace: "nowrap", pointerEvents: "none",
+        }}
+      >
+        <OrangishPill tv />
+      </div>
+
+      {/* 2026-10-15, Aniket: "on the reception page also show — view this screen at
+          extonsports.com/reception" — approved from a mock-up of the live board. The
+          public page reads the same feed without a TV key, so a member can keep the
+          desk's view on a phone.
+
+          Same strip as the pill, flush left with the text INSIDE the badminton box:
+          the root's 2.2vw padding + the panel's 0.22vw border + its 1vw padding. The
+          address is in the board's own orange so it is the part the eye lands on;
+          the lead-in is soft white, a step brighter than a credit because this one
+          is meant to be read. Absolute for the same reason as the pill: in flow it
+          would take height from the panels' 1fr row. */}
+      <div
+        style={{
+          position: "absolute", left: "3.42vw", bottom: "0.5vw",
+          fontSize: "0.8vw", letterSpacing: "0.12em", color: "rgba(255,255,255,0.62)",
+          whiteSpace: "nowrap", pointerEvents: "none",
+        }}
+      >
+        view this screen at <span style={{ color: SESSION_ORANGE, fontWeight: 500 }}>extonsports.com/reception</span>
       </div>
     </div>
   );

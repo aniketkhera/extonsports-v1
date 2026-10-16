@@ -1,4 +1,5 @@
 import WhatsAppButton from "./WhatsAppButton";
+import OrangishPill from "./OrangishPill";
 import { CONTACT_EMAIL } from "../../lib/legal";
 import { BOOK_COURT_URL } from "../../lib/booking";
 import { RATE_BANDS, BAND_BLURB } from "../../lib/rates";
@@ -141,6 +142,15 @@ export default function Footer() {
       >
         <p className="text-[0.7rem] text-white/25 text-center">
           © {year} Exton Sports Center · All rights reserved
+          {/* 2026-10-15: Aniket asked for a small orangish.io credit on every Exton
+              surface, and later that day for it as a pill (see OrangishPill), at
+              this line's own size. Joined with a dot where the line has room; on a
+              phone the joined line would wrap mid-phrase, so it takes a line of its
+              own instead. Same tab, deliberately. */}
+          <span className="block sm:inline">
+            <span className="hidden sm:inline">{" · "}</span>
+            <OrangishPill />
+          </span>
         </p>
       </div>
     </footer>

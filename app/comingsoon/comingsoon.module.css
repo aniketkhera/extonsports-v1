@@ -752,3 +752,29 @@
     pointer-events: none;
   }
 }
+
+/* ── The orangish.io credit, top right (2026-10-15) ───────────────────
+   Aniket asked for a small orangish.io credit on every Exton surface. TV layout
+   only, like .today and for the same reason: in the stacked phone layout the top
+   band is the brand lockup's.
+
+   In the same top padding band as the date, centred on the date's line (.today
+   is 0.5u + 1.6u/2 = 1.3u to its middle), right edge just inside the stage
+   frame's. Later the same day it became a pill (OrangishPill, `tv`), which
+   brings its own face and colours at full opacity; this box only places it and
+   sets the size its 1.05em is taken from. Small: a credit, not information. */
+.credit { display: none; }
+@media (min-aspect-ratio: 4/3) and (min-width: 900px) {
+  .credit {
+    display: block;
+    position: absolute;
+    top: calc(var(--u) * 1.3);
+    right: calc(var(--u) * 3.1);
+    transform: translateY(-50%);
+    z-index: 2;
+    font-size: calc(var(--u) * 0.78);
+    line-height: 1;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+}

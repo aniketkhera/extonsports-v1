@@ -9,6 +9,7 @@ import { SPORT_ORDER } from "../../lib/rates";
 import { SPORT_BOOKING_OPENS_LABEL, sportShutOnDate, CLUB_TZ } from "../../lib/opening";
 import { BOOK_COURT_URL, PARTNER_LINK } from "../../lib/booking";
 import CalPartnerMark, { CalFreeMark, FREE_GIRLS_SHORT } from "./CalPartnerMark";
+import OrangishPill from "./OrangishPill";
 
 /* The public calendar of bookings.
    ────────────────────────────────────────────────────────────────────────
@@ -839,6 +840,15 @@ export default function BookingsCalendar({
               {standalone
                 ? ", and every hour of it is shown."
                 : "; this view starts on the afternoon and evening, plus any hour already committed."}
+            </p>
+
+            {/* 2026-10-15: Aniket asked for a small orangish.io credit on every Exton
+                surface — later that day as a pill (OrangishPill), sized off this 11px.
+                A line of its own under the note, so it reads as the calendar's foot
+                rather than part of the instructions — and it rides along into the
+                hero's pop-up, which is this same panel. */}
+            <p className="text-center" style={{ fontSize: "11px", margin: "14px 0 24px" }}>
+              <OrangishPill />
             </p>
           </>
         )}
