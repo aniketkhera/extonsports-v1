@@ -837,7 +837,13 @@ export default function ReceptionBoard() {
           Absolute, in the root's bottom padding strip, so it takes no height from the
           panels' 1fr row: in flow it would shrink all three boxes. Small (the pill is
           1.05em of this 0.68vw) — a credit, not information anyone at the desk needs
-          to read from across the lobby. */}
+          to read from across the lobby.
+
+          The pill is taller than the plain text was, and `bottom` stayed put, so its
+          top edge now just meets the middle box's orange bottom border (~1.3px over at
+          1080p, measured 2026-10-15). The approved mock-up shows exactly that, so it is
+          left as approved. If it should clear the box, bottom "0.3vw" does it and keeps
+          the pill inside this strip. */}
       <div
         style={{
           position: "absolute", left: "50%", bottom: "0.42vw", transform: "translateX(-50%)",
