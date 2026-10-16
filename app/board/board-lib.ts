@@ -16,12 +16,18 @@ import { CLUB_TZ } from "../../lib/opening";
 export type NamedBlock = SlotBlock & { who?: string; org?: BrandKey; session?: SessionKey };
 export type NamedSlots = Omit<CourtSlots, "blocks"> & { blocks: NamedBlock[] };
 
+/** One court's row on /board — see courtRow. */
 export type Row = {
   court: CourtRef;
-  now: NamedBlock | null;
-  next: NamedBlock | null;
-  /** True when `next` is on tomorrow rather than today. */
-  nextIsTomorrow: boolean;
+  /** The middle column: on court now, else the first booking ahead (UP NEXT);
+   *  null only when nothing is booked today or tomorrow. */
+  first: NamedBlock | null;
+  /** True when `first` is on court now (ON NOW) rather than still to come (UP NEXT). */
+  firstIsNow: boolean;
+  firstIsTomorrow: boolean;
+  /** The last column, AFTER THAT: the booking after `first`. */
+  then: NamedBlock | null;
+  thenIsTomorrow: boolean;
 };
 
 export const PLATFORM = "https://app.orangish.io";
@@ -309,3 +315,65 @@ export function splitUpNext<T extends { date: string; from: number }>(
   }
   return { upNext, rest };
 }
+
+/* ONE COURT'S ROW ON /board (2026-10-16).
+   ──────────────────────────────────────────────────────────────────────────
+   Aniket, of the vestibule, after the same change on /reception: "do the same on
+   the vestibule /board". Reception's version: "instead of showing ALL OPEN, show UP
+   NEXT so that there is always one booking always shown", then "change up next to
+   on now when the timing of the event matches the current time", and the "N OF 3
+   FREE NOW" status off as "not neccessary.. just what's next, and what's upcoming".
+
+   So a row is two bookings, not a status and a booking. The middle column is what
+   is on court now (ON NOW) or, if nothing is, the first booking still to come (UP
+   NEXT) — where it used to say OPEN. The last column is the booking after that one
+   either way, which is why it can be headed AFTER THAT for every row. OPEN is left
+   only for a court with nothing at all booked in the window.
+
+   The window is today and tomorrow, as it always was here: the keyed feed asks for
+   two days, and "TOMORROW" is the only day word this board prints. `blocks` must be
+   this court's alone, already through joinSessions. */
+export function courtRow(
+  court: CourtRef,
+  blocks: readonly NamedBlock[],
+  today: string,
+  tomorrow: string | undefined,
+  minutes: number,
+): Row {
+  const byStart = (a: NamedBlock, b: NamedBlock) => a.from - b.from;
+  const todays = blocks.filter((b) => b.date === today).sort(byStart);
+  const onNow = todays.find((b) => b.from <= minutes && minutes < b.to) ?? null;
+  const ahead: { b: NamedBlock; tomorrow: boolean }[] = [
+    ...todays.filter((b) => b.from > minutes).map((b) => ({ b, tomorrow: false })),
+    ...(tomorrow ? blocks.filter((b) => b.date === tomorrow).sort(byStart) : []).map((b) => ({ b, tomorrow: true })),
+  ];
+  const [first, then] = onNow ? [{ b: onNow, tomorrow: false }, ahead[0]] : [ahead[0], ahead[1]];
+  return {
+    court,
+    first: first?.b ?? null,
+    firstIsNow: Boolean(onNow),
+    firstIsTomorrow: first?.tomorrow ?? false,
+    then: then?.b ?? null,
+    thenIsTomorrow: then?.tomorrow ?? false,
+  };
+}
+
+/* The object beside each sport's name on both in-club screens (2026-10-16).
+   ──────────────────────────────────────────────────────────────────────────
+   Aniket asked for "a caricature of someone playing" each sport; cartoon players
+   were mocked and turned down — "need more classy.. maybe just a shuttle, a
+   cricket ball and a squash ball - tastefully done with shadow and depth". These
+   are those three, drawn as SVG with one light from the upper left and a soft
+   shadow on a ground line drawn at 76% of each image's height, which each screen
+   puts on its text baseline (see the placement notes in ReceptionBoard.tsx and
+   board.css).
+
+   ⚠️ NO GREEN IN THEM: green on both boards means a court is free, and a green
+   object beside a sport name would read as status. Nor SESSION_GOLD as a colour of
+   its own — the squash ball's two small dots are the only yellow, there because a
+   double-yellow-dot ball has them. A sport not listed here simply has no object. */
+export const SPORT_OBJECT: Record<string, string> = {
+  Badminton: "/reception/shuttle.svg",
+  Cricket: "/reception/cricket-ball.svg",
+  Squash: "/reception/squash-ball.svg",
+};

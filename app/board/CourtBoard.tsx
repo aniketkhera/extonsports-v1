@@ -4,16 +4,19 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CLUB_TZ } from "../../lib/opening";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
 import OrangishPill from "../components/OrangishPill";
+import PhoneIcon from "../components/PhoneIcon";
+import { CONTACT_PHONE } from "../../lib/legal";
 /* The feed shape, the key handoff, club-local time and the holder-naming rules
    are shared with /reception — see board-lib.ts for why they are not duplicated. */
 import {
   PLATFORM, readKey, clubNow, clock, span, boardLabel,
-  joinSessions, type NamedSlots, type Row,
+  joinSessions, courtRow, SPORT_OBJECT, type NamedSlots, type Row,
 } from "./board-lib";
 
 /* The court board, as shown on the reception and vestibule televisions.
    ────────────────────────────────────────────────────────────────────────
-   One row per court: what is on it now, and what is on it next. Nothing else.
+   One row per court: what is on it now — or, when nothing is, what is up next
+   (2026-10-16; it said OPEN there before) — and the booking after that. Nothing else.
    Somebody standing in the vestibule wants two facts — can I play now, and if
    not, when — and a board that answers those in three seconds beats one that
    shows a whole week nobody can read from fifteen feet away.
@@ -109,17 +112,10 @@ export default function CourtBoard() {
     const i = data.days.indexOf(today);
     const tomorrow = i >= 0 ? data.days[i + 1] : undefined;
 
-    return data.courts.map((court) => {
-      const mine = joinSessions(data.blocks.filter((b) => b.courtId === court.id));
-      const todays = mine.filter((b) => b.date === today).sort((a, b) => a.from - b.from);
-      const onNow = todays.find((b) => b.from <= minutes && minutes < b.to) ?? null;
-      const laterToday = todays.find((b) => b.from > minutes) ?? null;
-      if (laterToday) return { court, now: onNow, next: laterToday, nextIsTomorrow: false };
-      const firstTomorrow = tomorrow
-        ? mine.filter((b) => b.date === tomorrow).sort((a, b) => a.from - b.from)[0] ?? null
-        : null;
-      return { court, now: onNow, next: firstTomorrow, nextIsTomorrow: Boolean(firstTomorrow) };
-    });
+    /* ON NOW or UP NEXT, then AFTER THAT — courtRow in board-lib (2026-10-16). */
+    return data.courts.map((court) =>
+      courtRow(court, joinSessions(data.blocks.filter((b) => b.courtId === court.id)), today, tomorrow, minutes),
+    );
   }, [data, now]);
 
   const stamp = now ? clubNow(now) : null;
@@ -163,38 +159,55 @@ export default function CourtBoard() {
       </header>
 
       <div className="btable">
+        {/* The middle column says per row whether it is ON NOW or UP NEXT, so its
+            header names both; the last is AFTER THAT for every row (courtRow). */}
         <div className="brow bhrow">
           <span>COURT</span>
-          <span>ON NOW</span>
-          <span>NEXT</span>
+          <span>ON NOW · UP NEXT</span>
+          <span>AFTER THAT</span>
         </div>
         {rows.length === 0 ? (
           <div className="bempty">LOADING COURTS…</div>
         ) : (
           rows.map((r) => (
             <div className="brow" key={r.court.id}>
-              <span className="bcourt">{r.court.name}</span>
-              <span className={r.now ? "bnow" : "bopen"}>
-                {r.now ? (
-                  <>
-                    <b>{span(r.now.from, r.now.to)}</b>
-                    <i>{boardLabel(r.now)}</i>
-                  </>
-                ) : (
-                  "OPEN"
-                )}
+              <span className="bcourt">
+                <span className="bname">
+                  {r.court.name}
+                  {SPORT_OBJECT[r.court.sport] && (
+                    /* A plain <img>, as on /reception: next/image serves an .svg
+                       unoptimised anyway, and would only add width/height props on
+                       an image sized in em. Placement: .bobj in board.css. */
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img className="bobj" src={SPORT_OBJECT[r.court.sport]} alt="" aria-hidden />
+                  )}
+                </span>
               </span>
+              {r.first ? (
+                <span className="bnow">
+                  <b>
+                    <em className="btag">{r.firstIsNow ? "ON NOW" : "UP NEXT"}</em>
+                    {r.firstIsTomorrow ? "TOMORROW " : ""}
+                    {span(r.first.from, r.first.to)}
+                  </b>
+                  <i>{boardLabel(r.first)}</i>
+                </span>
+              ) : (
+                /* Nothing on court and nothing booked today or tomorrow — the one
+                   case OPEN is still the whole story. */
+                <span className="bopen">OPEN</span>
+              )}
               <span className="bnext">
-                {r.next ? (
+                {r.then ? (
                   <>
                     <b>
-                      {r.nextIsTomorrow ? "TOMORROW " : ""}
-                      {span(r.next.from, r.next.to)}
+                      {r.thenIsTomorrow ? "TOMORROW " : ""}
+                      {span(r.then.from, r.then.to)}
                     </b>
-                    <i>{boardLabel(r.next)}</i>
+                    <i>{boardLabel(r.then)}</i>
                   </>
                 ) : (
-                  <em>NOTHING BOOKED</em>
+                  <em>{r.first ? "NOTHING ELSE BOOKED" : "NOTHING BOOKED"}</em>
                 )}
               </span>
             </div>
@@ -208,7 +221,13 @@ export default function CourtBoard() {
             surface, and later that day for it as a pill. The `tv` pill is not a
             link — nobody can tap a television. */}
         <div className="bcredit"><OrangishPill tv /></div>
-        <div className="bcta2">extonsports.com</div>
+        {/* The club's number beside the address (2026-10-16): Aniket asked for it,
+            with a phone icon, at the bottom right of /reception, then for /board to
+            match. CONTACT_PHONE is the main line, the one the site prints everywhere. */}
+        <div className="bcta2">
+          <span className="bphone"><PhoneIcon />{CONTACT_PHONE}</span>
+          extonsports.com
+        </div>
       </footer>
     </div>
   );

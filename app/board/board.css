@@ -152,6 +152,27 @@
   white-space: nowrap;
 }
 
+/* The sport's object after the court name — a shuttle, a cricket ball, a squash
+   ball (SPORT_OBJECT in board-lib; 2026-10-16, the same as /reception's titles).
+   Absolute inside the name's own span, so the row's height and the name's place
+   in it do not move. Every number in em of the name, so it stays locked to the
+   word whatever the screen reports: the image is drawn with its ground line at 76%
+   of its height, and top = the baseline's depth in the span (1.182em — Oswald's
+   ascent, measured on /reception) minus 76% of the 1.575em height = -0.015em,
+   which puts that line on the name's baseline. Same numbers as /reception, where
+   the title is the same face. max-width: none undoes the reset's 100%, which here
+   would mean 100% of the WORD. */
+.bname { position: relative; }
+.bobj {
+  position: absolute;
+  left: calc(100% + 0.6em);
+  top: -0.015em;
+  height: 1.575em;
+  width: auto;
+  max-width: none;
+  pointer-events: none;
+}
+
 /* "On now" and "Next" share a shape: the time on top in condensed, what kind
    of session it is underneath in small caps. b and i are structural here, not
    emphasis — reset the italic. */
@@ -169,6 +190,21 @@
 }
 
 .bnow b { font-weight: 500; font-size: 2.9vh; color: #FFFFFF; }
+
+/* ON NOW or UP NEXT in front of the middle column's time (2026-10-16): the column
+   holds either, row by row, so each row says which. In the brand orange, as the
+   same words are on /reception, and never green — green here is OPEN. Small and
+   tracked like the holder line, and on the time's baseline, so the time still
+   leads. An <em> inside the <b>, hence the resets. */
+.btag {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 1.45vh;
+  letter-spacing: 0.18em;
+  color: #F89B72;
+  margin-right: 0.9vw;
+}
 .bnow i { font-size: 1.4vh; color: #9FAAB6; }
 
 .bnext b { font-weight: 400; font-size: 2.4vh; color: #9FAAB6; }
@@ -226,6 +262,21 @@
   color: #6E7A88;
   justify-self: end;
 }
+
+/* The club's number, before the address (2026-10-16). Larger and near-white,
+   because a number is only any use if it can be read off the wall and dialled;
+   the phone icon carries the orange. The icon is an inline SVG with no baseline
+   of its own, so it is nudged down onto the text rather than flexed — in a flex
+   box the whole group would take the icon's foot as its baseline and drop out of
+   line with the CTA on the left. */
+.bphone {
+  font-size: 2.1vh;
+  letter-spacing: 0.06em;
+  color: #FAFAFA;
+  margin-right: 1.6vw;
+  white-space: nowrap;
+}
+.bphone svg { vertical-align: -0.28em; margin-right: 0.35em; }
 
 /* The orangish.io credit (2026-10-15 — Aniket asked for a small one on every
    Exton surface, then for it as a pill: OrangishPill, `tv`). This box only
