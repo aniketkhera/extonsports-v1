@@ -159,6 +159,18 @@ type Panel = {
    come down with it. */
 const UPCOMING_COUNT = 10;
 
+/* The strip under the three boxes that holds the orangish.io pill and "view this
+   screen at" — the root's bottom padding, so the boxes end where it begins.
+   2026-10-15, Aniket, at the desk: "very less space". It was the top padding's
+   2.7vh, and the pill overlapped the middle box's border while the address hugged
+   the boxes. 4.8vh gives both clear room above and below (~15px each at 1080p).
+   It costs the boxes 2.1vh, all of it from the NOW area, which centres and has
+   slack: measured 2026-10-15, three live bookings per sport plus ten COMING UP rows
+   still show every row at 1080p, 768p and 2160p, exactly as at 2.7vh. That case
+   now has ~6px of NOW height to spare at 1080p, so this is close to the most the
+   strip can take without the first live booking losing its top. */
+const CREDIT_STRIP = "4.8vh";
+
 /* Blocks -> entries, by cutting the day into TIME BANDS.
    ──────────────────────────────────────────────────────────────────────────
    This grouped on (date, holder, from, to) until 8 Oct 2026. That matched the
@@ -641,7 +653,7 @@ export default function ReceptionBoard() {
     <div
       style={{
         position: "absolute", inset: 0, background: BG, color: INK,
-        display: "flex", flexDirection: "column", padding: "2.7vh 2.2vw",
+        display: "flex", flexDirection: "column", padding: `2.7vh 2.2vw ${CREDIT_STRIP}`,
         overflow: "hidden",
       }}
     >
@@ -834,19 +846,18 @@ export default function ReceptionBoard() {
           surface, and later that day for it as a pill. The `tv` pill is not a link —
           nobody can tap a television.
 
-          Absolute, in the root's bottom padding strip, so it takes no height from the
-          panels' 1fr row: in flow it would shrink all three boxes. Small (the pill is
-          1.05em of this 0.68vw) — a credit, not information anyone at the desk needs
-          to read from across the lobby.
+          Absolute, in the root's bottom padding strip (CREDIT_STRIP), so it takes no
+          height from the panels' 1fr row: in flow it would shrink all three boxes.
+          Small (the pill is 1.05em of this 0.68vw) — a credit, not information anyone
+          at the desk needs to read from across the lobby.
 
-          The pill is taller than the plain text was, and `bottom` stayed put, so its
-          top edge now just meets the middle box's orange bottom border (~1.3px over at
-          1080p, measured 2026-10-15). The approved mock-up shows exactly that, so it is
-          left as approved. If it should clear the box, bottom "0.3vw" does it and keeps
-          the pill inside this strip. */}
+          Centred in the strip by flex, not placed by a `bottom` offset (2026-10-15,
+          "very less space"): the pill's height is in vw and the strip's in vh, and
+          the offset that was here left its top edge over the middle box's border. */}
       <div
         style={{
-          position: "absolute", left: "50%", bottom: "0.42vw", transform: "translateX(-50%)",
+          position: "absolute", left: "50%", bottom: 0, height: CREDIT_STRIP, transform: "translateX(-50%)",
+          display: "flex", alignItems: "center",
           fontSize: "0.68vw", whiteSpace: "nowrap", pointerEvents: "none",
         }}
       >
@@ -863,15 +874,18 @@ export default function ReceptionBoard() {
           address is in the board's own orange so it is the part the eye lands on;
           the lead-in is soft white, a step brighter than a credit because this one
           is meant to be read. Absolute for the same reason as the pill: in flow it
-          would take height from the panels' 1fr row. */}
+          would take height from the panels' 1fr row. Centred in the strip the same
+          way as the pill (2026-10-15), on one line with it; the inner span keeps the
+          words one flex item, so the space before the address is not dropped. */}
       <div
         style={{
-          position: "absolute", left: "3.42vw", bottom: "0.5vw",
+          position: "absolute", left: "3.42vw", bottom: 0, height: CREDIT_STRIP,
+          display: "flex", alignItems: "center",
           fontSize: "0.8vw", letterSpacing: "0.12em", color: "rgba(255,255,255,0.62)",
           whiteSpace: "nowrap", pointerEvents: "none",
         }}
       >
-        view this screen at <span style={{ color: SESSION_ORANGE, fontWeight: 500 }}>extonsports.com/reception</span>
+        <span>view this screen at <span style={{ color: SESSION_ORANGE, fontWeight: 500 }}>extonsports.com/reception</span></span>
       </div>
     </div>
   );
