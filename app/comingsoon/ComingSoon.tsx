@@ -40,6 +40,9 @@ export default function ComingSoon() {
       <Backdrop />
       <Diag />
       <TodayLine />
+      {/* 2026-10-15: Aniket asked for a small orangish.io credit on every Exton
+          surface. Plain text — nobody can tap a television. See .credit. */}
+      <div className={s.credit}>orangish.io</div>
 
       <section className={s.copy}>
         <div className={`${s.brand} ${s.rise}`}>

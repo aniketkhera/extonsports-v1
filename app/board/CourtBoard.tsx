@@ -203,6 +203,9 @@ export default function CourtBoard() {
 
       <footer className="bfoot">
         <div className="bcta">BOOK A COURT BY THE HOUR</div>
+        {/* 2026-10-15: Aniket asked for a small orangish.io credit on every Exton
+            surface. Plain text, not a link — nobody can tap a television. */}
+        <div className="bcredit">orangish.io</div>
         <div className="bcta2">extonsports.com</div>
       </footer>
     </div>

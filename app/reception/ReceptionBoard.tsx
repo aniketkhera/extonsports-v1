@@ -828,6 +828,23 @@ export default function ReceptionBoard() {
           </div>
         ))}
       </div>
+
+      {/* 2026-10-15: Aniket asked for a small orangish.io credit on every Exton
+          surface. Plain text — nobody can tap a television.
+
+          Absolute, in the root's bottom padding strip, so it takes no height from the
+          panels' 1fr row: in flow it would shrink all three boxes. Deliberately well
+          under the 0.75 alpha the palette note above sets for READABLE text — it is a
+          credit, not information anyone at the desk needs to read from across the lobby. */}
+      <div
+        style={{
+          position: "absolute", left: "50%", bottom: "0.42vw", transform: "translateX(-50%)",
+          fontSize: "0.68vw", letterSpacing: "0.18em", color: "rgba(255,255,255,0.42)",
+          whiteSpace: "nowrap", pointerEvents: "none",
+        }}
+      >
+        orangish.io
+      </div>
     </div>
   );
 }

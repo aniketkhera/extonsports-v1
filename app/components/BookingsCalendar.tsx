@@ -840,6 +840,16 @@ export default function BookingsCalendar({
                 ? ", and every hour of it is shown."
                 : "; this view starts on the afternoon and evening, plus any hour already committed."}
             </p>
+
+            {/* 2026-10-15: Aniket asked for a small orangish.io credit on every Exton
+                surface. A line of its own under the note, in the note's grey, so it
+                reads as the calendar's foot rather than part of the instructions —
+                and it rides along into the hero's pop-up, which is this same panel. */}
+            <p className="text-white/35 text-center" style={{ fontSize: "11px", letterSpacing: "0.02em", margin: "14px 0 24px" }}>
+              <a href="https://orangish.io" className="underline underline-offset-2 whitespace-nowrap">
+                orangish.io
+              </a>
+            </p>
           </>
         )}
       </div>

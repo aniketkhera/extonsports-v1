@@ -141,6 +141,17 @@ export default function Footer() {
       >
         <p className="text-[0.7rem] text-white/25 text-center">
           © {year} Exton Sports Center · All rights reserved
+          {/* 2026-10-15: Aniket asked for a small orangish.io credit on every Exton
+              surface — the address alone, in this line's own size and grey, so it
+              reads as part of the page rather than a badge. Joined with a dot where
+              the line has room; on a phone the joined line would wrap mid-phrase,
+              so it takes a line of its own instead. Same tab, deliberately. */}
+          <span className="block sm:inline">
+            <span className="hidden sm:inline">{" · "}</span>
+            <a href="https://orangish.io" className="underline underline-offset-2 whitespace-nowrap">
+              orangish.io
+            </a>
+          </span>
         </p>
       </div>
     </footer>

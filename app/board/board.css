@@ -198,13 +198,17 @@
 
 /* ── Footer ─────────────────────────────────────────────────────────── */
 
+/* 1fr auto 1fr, for the same reason as .bhead (2026-10-15): the orangish.io
+   credit sits in the middle track, and equal outer tracks put it on the
+   SCREEN's centre line. With flex space-between it would sit midway between
+   the two CTAs' inner edges, which are different widths. */
 .bfoot {
   border-top: 1px solid #1F2E3E;
   padding-top: 1.2vh;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 2vw;
+  column-gap: 2vw;
 }
 
 .bcta {
@@ -220,4 +224,18 @@
   font-size: 1.7vh;
   letter-spacing: 0.16em;
   color: #6E7A88;
+  justify-self: end;
+}
+
+/* The orangish.io credit (2026-10-15 — Aniket asked for a small one on every
+   Exton surface). .bcta2's exact type, a step quieter, so it reads as the
+   footer's own small print and never competes with the club's address. */
+.bcredit {
+  font-weight: 600;
+  font-size: 1.7vh;
+  letter-spacing: 0.16em;
+  color: #6E7A88;
+  opacity: 0.85;
+  white-space: nowrap;
+  justify-self: center;
 }
