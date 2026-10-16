@@ -273,3 +273,39 @@ export function brandOf(who: string | undefined): BrandKey | null {
   if (s.includes("sera") || s.includes("bollywood")) return "sera";
   return null;
 }
+
+/* UP NEXT, for a sport with nobody on court (2026-10-16).
+   ──────────────────────────────────────────────────────────────────────────
+   Aniket, at the reception screen: "instead of showing ALL OPEN, show UP NEXT so
+   that there is always one booking always shown. At the bottom, we can show AFTER
+   THAT." So when `now` is empty the earliest booking ahead moves up into the big
+   area, and the list under it carries on from the one after.
+
+   EVERYTHING STARTING AT THAT SAME MOMENT goes up together, not just the first
+   entry: two different people starting on two courts at 5 PM are both "next", and
+   leaving one in the list would print it under AFTER THAT at the same time as the
+   one above it. Capped at `max` (the screen passes 2): the big area has room for
+   the UP NEXT line plus two entries with the big court boxes, not three. A third
+   simultaneous start stays at the top of the list, which is the honest order.
+
+   Nothing on court and nothing ahead returns no UP NEXT, and the screen falls back
+   to ALL OPEN. Anything on court returns no UP NEXT either: the big area is for
+   what is happening, and what comes after it is the list's job, as before. */
+export function splitUpNext<T extends { date: string; from: number }>(
+  now: readonly unknown[],
+  ahead: readonly T[],
+  max: number,
+): { upNext: T[]; rest: T[] } {
+  if (now.length || !ahead.length || max < 1) return { upNext: [], rest: [...ahead] };
+  // The earliest start, not ahead[0]: callers sort, but this must not depend on it.
+  const first = ahead.reduce((a, b) =>
+    b.date < a.date || (b.date === a.date && b.from < a.from) ? b : a,
+  );
+  const upNext: T[] = [];
+  const rest: T[] = [];
+  for (const e of ahead) {
+    if (e.date === first.date && e.from === first.from && upNext.length < max) upNext.push(e);
+    else rest.push(e);
+  }
+  return { upNext, rest };
+}

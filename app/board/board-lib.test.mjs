@@ -137,3 +137,44 @@ test("/api/court-slots passes only the fixed words and never forwards `who`", as
   assert.deepEqual(body.blocks.map((b) => b.org ?? null), ["ccca", "ccca", null, null]);
   assert.ok(body.blocks.every((b) => !("who" in b)), "who is never forwarded");
 });
+
+/* UP NEXT on the reception screen (2026-10-16): what moves up out of the list when
+   no court in a sport is in use. Wrong in either direction is visible from the desk:
+   a booking shown twice (big AND first in AFTER THAT), or a simultaneous one left
+   under AFTER THAT as if it started later. */
+test("splitUpNext: nothing on court — the earliest start moves up, the rest follow", () => {
+  const a = { date: "2026-10-16", from: 1020, to: 1080, who: "A" };
+  const b = { date: "2026-10-16", from: 1260, to: 1320, who: "B" };
+  const c = { date: "2026-10-17", from: 540, to: 660, who: "C" };
+  const { upNext, rest } = L.splitUpNext([], [a, b, c], 2);
+  assert.deepEqual(upNext.map((e) => e.who), ["A"]);
+  assert.deepEqual(rest.map((e) => e.who), ["B", "C"]);
+});
+
+test("splitUpNext: two starting together both move up; a third stays first in the list", () => {
+  const at5 = (who) => ({ date: "2026-10-16", from: 1020, to: 1080, who });
+  const later = { date: "2026-10-16", from: 1080, to: 1200, who: "D" };
+  const two = L.splitUpNext([], [at5("A"), at5("B"), later], 2);
+  assert.deepEqual(two.upNext.map((e) => e.who), ["A", "B"]);
+  assert.deepEqual(two.rest.map((e) => e.who), ["D"]);
+  const three = L.splitUpNext([], [at5("A"), at5("B"), at5("C"), later], 2);
+  assert.deepEqual(three.upNext.map((e) => e.who), ["A", "B"]);
+  assert.deepEqual(three.rest.map((e) => e.who), ["C", "D"]);
+});
+
+test("splitUpNext: the earliest by date then time, even if the input is not sorted", () => {
+  const tomorrow = { date: "2026-10-17", from: 420, to: 480, who: "T" };
+  const tonight = { date: "2026-10-16", from: 1260, to: 1320, who: "N" };
+  const { upNext, rest } = L.splitUpNext([], [tomorrow, tonight], 2);
+  assert.deepEqual(upNext.map((e) => e.who), ["N"]);
+  assert.deepEqual(rest.map((e) => e.who), ["T"]);
+});
+
+test("splitUpNext: someone on court, or nothing ahead — no UP NEXT, list untouched", () => {
+  const a = { date: "2026-10-16", from: 1020, to: 1080, who: "A" };
+  const live = L.splitUpNext([{ who: "on court" }], [a], 2);
+  assert.deepEqual(live.upNext, []);
+  assert.deepEqual(live.rest, [a]);
+  const empty = L.splitUpNext([], [], 2);
+  assert.deepEqual(empty, { upNext: [], rest: [] });
+});

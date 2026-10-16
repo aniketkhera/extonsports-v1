@@ -6,7 +6,7 @@ import Image from "next/image";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
 import OrangishPill from "../components/OrangishPill";
 import {
-  PLATFORM, readKey, clubNow, span, holderLabel, brandFor, sessionOf, SESSION_TEXT,
+  PLATFORM, readKey, clubNow, span, holderLabel, brandFor, sessionOf, splitUpNext, SESSION_TEXT,
   type BrandKey, type NamedBlock, type NamedSlots, type SessionKey,
 } from "../board/board-lib";
 
@@ -122,6 +122,39 @@ const PANEL_SHADOW = [
 
 const SPORT_ORDER = ["Badminton", "Cricket", "Squash"];
 
+/* The object beside each sport's title (2026-10-16).
+   ──────────────────────────────────────────────────────────────────────────
+   Aniket asked for "a caricature of someone playing" each sport; cartoon players
+   were mocked and turned down — "need more classy.. maybe just a shuttle, a
+   cricket ball and a squash ball - tastefully done with shadow and depth". These
+   are those three, drawn as SVG with one light from the upper left (the panel's
+   own light comes from above) and a soft shadow on the ground line.
+
+   ⚠️ NO GREEN IN THEM: green on this board means a court is free, and a green
+   object beside a sport name would read as status. Nor SESSION_GOLD as a colour of
+   its own — the squash ball's two small dots are the only yellow, there because a
+   double-yellow-dot ball has them.
+
+   PLACED SO IT COSTS NO HEIGHT. Each SVG is drawn with its ground line at 76% of
+   its height, and the title's span puts that line on the text baseline. Absolute,
+   so the title row stays one line of type; in flow, even this small, it would have
+   clipped the NOW list. All in em of the title (1.5vw), so it is locked to the
+   word at any screen shape — it was in vh first, and on the public page in a
+   portrait phone or tablet the vh image outgrew the vw type and rose through the
+   panel's top border (review, 2026-10-16). The numbers, at 16:9 the same as that
+   first build: height 1.575em (= 4.2vh); top = the baseline's depth in the span
+   (1.182em, Oswald's ascent as measured on the live board) minus 76% of the
+   height (1.197em) = -0.015em; 0.6em (= 0.9vw) after the word.
+   Measured 2026-10-16 at 1080p with three groups on court in every panel — the
+   case with ~6px of NOW height to spare — the image clears the panel's top border
+   by ~6.6px and the first live booking by ~2.7px, and the NOW list is untouched.
+   A sport not listed here simply has no object. */
+const SPORT_OBJECT: Record<string, string> = {
+  Badminton: "/reception/shuttle.svg",
+  Cricket: "/reception/cricket-ball.svg",
+  Squash: "/reception/squash-ball.svg",
+};
+
 /** One holder's hours, after courts have been merged. */
 type Entry = {
   /** Club-local YYYY-MM-DD. Needed now that the list runs past today. */
@@ -145,6 +178,8 @@ type Panel = {
   labels: string[];
   freeNow: number;
   now: Entry[];
+  /** Nobody on court: the next booking(s), shown big in place of ALL OPEN. */
+  upNext: Entry[];
   upcoming: Entry[];
 };
 
@@ -158,6 +193,12 @@ type Panel = {
    headroom but not another ten. If this grows again the row height has to
    come down with it. */
 const UPCOMING_COUNT = 10;
+
+/* How many simultaneous starts UP NEXT shows in the big area — see splitUpNext in
+   board-lib. Two, because the UP NEXT line costs about one entry's lockup row:
+   measured 2026-10-16 at 1080p, the line plus two entries with the big boxes is
+   ~410px of the ~500px NOW area, and a third would push it past the bottom. */
+const UP_NEXT_MAX = 2;
 
 /* The strip under the three boxes that holds the orangish.io pill and "view this
    screen at" — the root's bottom padding, so the boxes end where it begins.
@@ -556,6 +597,48 @@ function Lockup({ brand, who }: { brand: BrandKey | null; who: string }) {
   );
 }
 
+/* One booking, big — what the NOW area draws for a live entry and, since
+   2026-10-16, for an UP NEXT one. Same drawing for both on purpose: the line above
+   it (UP NEXT, or nothing) is what says which, and the green "N OF 3 FREE NOW"
+   under the area still says whether the courts are free right now. */
+function BigEntry({
+  e, sport, labels, big,
+}: { e: Entry; sport: string; labels: string[]; big: boolean }) {
+  return (
+    <div style={{ marginBottom: "1.2vh" }}>
+      <div style={{ minHeight: "3.2vw", display: "flex", alignItems: "center", gap: "0.8vw", marginBottom: "0.4vh" }}>
+        <Lockup brand={e.brand} who={e.who} />
+        {e.session && <SessionTag session={e.session} />}
+      </div>
+      <div className="text-cond" style={{ fontSize: "3.1vw", color: INK, lineHeight: 1.03 }}>
+        {span(e.from, e.to)}
+      </div>
+      {/* display:flex so the row has no inherited 16px/1.5 line box under it. */}
+      <div style={{ display: "flex", marginTop: "0.5vh" }}>
+        <CourtBoxes sport={sport} labels={labels} taken={e.courts} big={big} />
+      </div>
+    </div>
+  );
+}
+
+/* "UP NEXT", and the day when it is not today — "UP NEXT · TOMORROW". The day
+   goes here rather than in front of the big time, because "TOMORROW 5:30 – 6:30 PM"
+   at the time's 3.1vw is ~607px against ~548px of panel at 1080p (measured
+   2026-10-16). In the header's orange, not
+   GREEN: green on this board means a court is free, and this line is about a
+   booking. */
+function UpNextLine({ day }: { day: string }) {
+  return (
+    <div
+      className="text-cond"
+      style={{ fontSize: "1.45vw", letterSpacing: "0.12em", color: EMBER, lineHeight: 1, marginBottom: "1.4vh" }}
+    >
+      UP NEXT
+      {day && <span style={{ color: INK }}> · {day}</span>}
+    </div>
+  );
+}
+
 export default function ReceptionBoard() {
   const [data, setData] = useState<NamedSlots | null>(null);
   const [stale, setStale] = useState(false);
@@ -632,6 +715,8 @@ export default function ReceptionBoard() {
       );
 
       const busyIds = new Set(live.map((b) => b.courtId));
+      const nowEntries = mergeBlocks(live, label);
+      const { upNext, rest } = splitUpNext(nowEntries, mergeBlocks(ahead, label), UP_NEXT_MAX);
 
       return {
         sport,
@@ -639,8 +724,9 @@ export default function ReceptionBoard() {
         labels: [...new Set(courts.map((c) => label.get(c.id) ?? ""))]
           .sort((a, b) => Number(a) - Number(b) || a.localeCompare(b)),
         freeNow: courts.length - busyIds.size,
-        now: mergeBlocks(live, label),
-        upcoming: mergeBlocks(ahead, label).slice(0, UPCOMING_COUNT),
+        now: nowEntries,
+        upNext,
+        upcoming: rest.slice(0, UPCOMING_COUNT),
       };
     });
 
@@ -719,7 +805,25 @@ export default function ReceptionBoard() {
             }}
           >
             <div className="text-cond" style={{ fontSize: "1.5vw", letterSpacing: "0.15em", color: LABEL, marginBottom: "0.9vh" }}>
-              {p.sport.toUpperCase()}
+              <span style={{ position: "relative" }}>
+                {p.sport.toUpperCase()}
+                {SPORT_OBJECT[p.sport] && (
+                  /* A plain <img>: next/image serves an .svg unoptimised anyway,
+                     so here it would add nothing but required width/height props
+                     on an image sized in em. maxWidth none overrides the reset's
+                     100%, which here would mean 100% of the WORD and squash it. */
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={SPORT_OBJECT[p.sport]}
+                    alt=""
+                    aria-hidden
+                    style={{
+                      position: "absolute", left: "calc(100% + 0.6em)", top: "-0.015em",
+                      height: "1.575em", width: "auto", maxWidth: "none", pointerEvents: "none",
+                    }}
+                  />
+                )}
+              </span>
             </div>
 
             {/* Centred, not top-aligned. A panel holding one booking against a
@@ -732,29 +836,33 @@ export default function ReceptionBoard() {
                 display: "flex", flexDirection: "column", justifyContent: "center",
               }}
             >
-              {p.now.length === 0 ? (
+              {/* Compact boxes once three are on court — measured (review,
+                  2026-10-14): three entries with the big boxes ran past the NOW
+                  area; compact, they fit with room. UP NEXT shows at most two
+                  (UP_NEXT_MAX), so it always gets the big ones. */}
+              {p.now.length > 0 ? (
+                p.now.map((e) => (
+                  <BigEntry
+                    key={`${e.who}-${e.session ?? ""}-${e.from}-${e.to}`}
+                    e={e} sport={p.sport} labels={p.labels} big={p.now.length < 3}
+                  />
+                ))
+              ) : p.upNext.length > 0 ? (
+                <>
+                  <UpNextLine day={dayLabel(p.upNext[0].date, today)} />
+                  {p.upNext.map((e) => (
+                    <BigEntry
+                      key={`${e.date}-${e.who}-${e.session ?? ""}-${e.from}-${e.to}`}
+                      e={e} sport={p.sport} labels={p.labels} big
+                    />
+                  ))}
+                </>
+              ) : (
+                /* Only when nothing at all is booked ahead in the feed's window —
+                   since 2026-10-16 an idle sport shows its UP NEXT instead. */
                 <div className="text-cond" style={{ fontSize: "3.1vw", color: GREEN, lineHeight: 1.03 }}>
                   ALL OPEN
                 </div>
-              ) : (
-                p.now.map((e) => (
-                  <div key={`${e.who}-${e.session ?? ""}-${e.from}-${e.to}`} style={{ marginBottom: "1.2vh" }}>
-                    <div style={{ minHeight: "3.2vw", display: "flex", alignItems: "center", gap: "0.8vw", marginBottom: "0.4vh" }}>
-                      <Lockup brand={e.brand} who={e.who} />
-                      {e.session && <SessionTag session={e.session} />}
-                    </div>
-                    <div className="text-cond" style={{ fontSize: "3.1vw", color: INK, lineHeight: 1.03 }}>
-                      {span(e.from, e.to)}
-                    </div>
-                    {/* display:flex so the row has no inherited 16px/1.5 line box
-                        under it, and the compact boxes once three are on court —
-                        measured (review, 2026-10-14): three entries with the big
-                        boxes ran past the NOW area; compact, they fit with room. */}
-                    <div style={{ display: "flex", marginTop: "0.5vh" }}>
-                      <CourtBoxes sport={p.sport} labels={p.labels} taken={e.courts} big={p.now.length < 3} />
-                    </div>
-                  </div>
-                ))
               )}
             </div>
 
@@ -768,7 +876,7 @@ export default function ReceptionBoard() {
               {p.freeNow} OF {p.total} FREE NOW
             </div>
 
-            {/* COMING UP — the next five, each with its court.
+            {/* COMING UP — the next UPCOMING_COUNT, each with its court.
                 ────────────────────────────────────────────────────────────
                 Three columns on one line per booking: time, holder, court.
                 A single wrapped line per booking would cost ten lines for
@@ -779,7 +887,11 @@ export default function ReceptionBoard() {
                 answering questions about ("who's got court 2 at eight?").
 
                 The day prefix appears only when it is not today, so a list
-                that stays inside today carries no repeated noise. */}
+                that stays inside today carries no repeated noise.
+
+                Headed AFTER THAT, not COMING UP, while the big area is showing
+                an UP NEXT (2026-10-16, Aniket's words for it) — the list then
+                starts from the booking after that one, so neither is shown twice. */}
             <div style={{ borderTop: `1px solid ${RULE_SOFT}`, paddingTop: "0.6vh" }}>
               <div
                 className="text-cond"
@@ -788,13 +900,13 @@ export default function ReceptionBoard() {
                   alignItems: "baseline", fontSize: "1vw", letterSpacing: "0.16em", color: NEXT_LBL,
                 }}
               >
-                <span>COMING UP</span>
+                <span>{p.upNext.length ? "AFTER THAT" : "COMING UP"}</span>
                 <span />
                 <CourtNumbers labels={p.labels} />
               </div>
               {p.upcoming.length === 0 ? (
                 <div className="text-cond" style={{ fontSize: "1.2vw", color: NEXT_VAL, lineHeight: 1.35 }}>
-                  Nothing booked
+                  {p.upNext.length ? "Nothing else booked" : "Nothing booked"}
                 </div>
               ) : (
                 p.upcoming.map((e) => {
