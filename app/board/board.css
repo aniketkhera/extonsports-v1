@@ -49,6 +49,15 @@
   padding-bottom: 1.2vh;
 }
 
+/* The club's mark, then the title and subtitle beside it (2026-10-16). Bottom-
+   aligned like the rest of the header row; the mark is sized to the two lines of
+   type (ClubMark size in CourtBoard), so the row is no taller than it was. */
+.bbrand {
+  display: flex;
+  align-items: center;
+  gap: 1.1vw;
+}
+
 .btitle {
   font-family: var(--font-cond), system-ui, sans-serif;
   font-weight: 600;
@@ -265,18 +274,17 @@
 
 /* The club's number, before the address (2026-10-16). Larger and near-white,
    because a number is only any use if it can be read off the wall and dialled;
-   the phone icon carries the orange. The icon is an inline SVG with no baseline
-   of its own, so it is nudged down onto the text rather than flexed — in a flex
-   box the whole group would take the icon's foot as its baseline and drop out of
-   line with the CTA on the left. */
+   the phone icon carries the orange. The icon is placed by PhoneNumber, out of
+   the line, so the footer keeps its height (measured: rows stay 81px at 1080p). */
 .bphone {
   font-size: 2.1vh;
+  line-height: 1;
   letter-spacing: 0.06em;
   color: #FAFAFA;
   margin-right: 1.6vw;
   white-space: nowrap;
 }
-.bphone svg { vertical-align: -0.28em; margin-right: 0.35em; }
+
 
 /* The orangish.io credit (2026-10-15 — Aniket asked for a small one on every
    Exton surface, then for it as a pill: OrangishPill, `tv`). This box only

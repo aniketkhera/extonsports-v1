@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CLUB_TZ } from "../../lib/opening";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
 import OrangishPill from "../components/OrangishPill";
-import PhoneIcon from "../components/PhoneIcon";
+import { PhoneNumber } from "../components/PhoneIcon";
+import ClubMark from "../components/ClubMark";
 import { CONTACT_PHONE } from "../../lib/legal";
 /* The feed shape, the key handoff, club-local time and the holder-naming rules
    are shared with /reception — see board-lib.ts for why they are not duplicated. */
@@ -140,9 +141,14 @@ export default function CourtBoard() {
   return (
     <div className="board">
       <header className="bhead">
-        <div>
-          <div className="btitle">EXTON SPORTS CENTER</div>
-          <div className="bsub">COURT BOARD</div>
+        {/* The club's mark left of the name and the subtitle (2026-10-16), as tall
+            as the two lines together, so the header keeps its height. */}
+        <div className="bbrand">
+          <ClubMark size="6.2vh" />
+          <div>
+            <div className="btitle">EXTON SPORTS CENTER</div>
+            <div className="bsub">COURT BOARD</div>
+          </div>
         </div>
         {/* Its own grid column, so it sits on the screen's centre line whatever
             the title and the clock happen to measure — space-between would put it
@@ -225,7 +231,7 @@ export default function CourtBoard() {
             with a phone icon, at the bottom right of /reception, then for /board to
             match. CONTACT_PHONE is the main line, the one the site prints everywhere. */}
         <div className="bcta2">
-          <span className="bphone"><PhoneIcon />{CONTACT_PHONE}</span>
+          <span className="bphone"><PhoneNumber number={CONTACT_PHONE} /></span>
           extonsports.com
         </div>
       </footer>

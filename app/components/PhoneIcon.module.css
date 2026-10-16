@@ -1,0 +1,39 @@
+/* The phone buzzes (2026-10-16, Aniket: "let's vibrate the cellphone").
+   ────────────────────────────────────────────────────────────────────────
+   A double buzz, the way a phone on silent does it, then about four seconds still
+   — not a constant shake. These are televisions left on for weeks in a lobby and at
+   a desk: something moving all the time stops being noticed and starts being
+   irritating, while a short buzz every few seconds catches an eye and lets it go.
+
+   Rotation only, about the phone's own centre (transform-box: fill-box), so the
+   number beside it never moves. The two arcs either side are already inside the
+   icon's 24-unit box — the phone is 12 wide — so they cost no layout width; they
+   show only while it buzzes. Transform and opacity only: both run on the
+   compositor, which matters on the N95's browser more than on a laptop. */
+.body {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: buzz 5s ease-in-out infinite;
+}
+.wave {
+  opacity: 0;
+  animation: wave 5s linear infinite;
+}
+
+@keyframes buzz {
+  0%, 11%, 15%, 26%, 100% { transform: rotate(0deg); }
+  1.5%, 16.5% { transform: rotate(-12deg); }
+  3%, 18% { transform: rotate(11deg); }
+  4.5%, 19.5% { transform: rotate(-10deg); }
+  6%, 21% { transform: rotate(9deg); }
+  7.5%, 22.5% { transform: rotate(-7deg); }
+  9%, 24% { transform: rotate(5deg); }
+}
+@keyframes wave {
+  0%, 11%, 15%, 26%, 100% { opacity: 0; }
+  1.5%, 9.5%, 16.5%, 24.5% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .body, .wave { animation: none; }
+}

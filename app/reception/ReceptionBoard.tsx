@@ -5,7 +5,8 @@ import { makeTicker, useTick } from "../components/ticker";
 import Image from "next/image";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
 import OrangishPill from "../components/OrangishPill";
-import PhoneIcon from "../components/PhoneIcon";
+import { PhoneNumber } from "../components/PhoneIcon";
+import ClubMark from "../components/ClubMark";
 import { CONTACT_PHONE } from "../../lib/legal";
 import {
   PLATFORM, readKey, clubNow, span, holderLabel, brandFor, sessionOf, splitUpNext, SESSION_TEXT, SPORT_OBJECT,
@@ -744,7 +745,17 @@ export default function ReceptionBoard() {
           paddingBottom: "1.2vh", marginBottom: "1.6vh",
         }}
       >
-        <div className="text-cond" style={{ color: EMBER, fontSize: "2.1vw", letterSpacing: "0.10em" }}>
+        {/* The club's mark left of the name (2026-10-16). Absolute, in room made by
+            the title's own left padding, so the header row — and so the panels'
+            1fr row under it — keeps its height: in flow, a mark taller than the
+            type would push the header down and take that from the NOW areas,
+            which have ~9px to spare when every court is busy. Centred on the
+            title's line box. */}
+        <div
+          className="text-cond"
+          style={{ color: EMBER, fontSize: "2.1vw", letterSpacing: "0.10em", position: "relative", paddingLeft: "3.6vw" }}
+        >
+          <ClubMark size="2.8vw" style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)" }} />
           EXTON SPORTS CENTER
           {stale && (
             <span
@@ -1003,13 +1014,12 @@ export default function ReceptionBoard() {
       <div
         style={{
           position: "absolute", right: "3.42vw", bottom: 0, height: CREDIT_STRIP,
-          display: "flex", alignItems: "center", gap: "0.4vw",
+          display: "flex", alignItems: "center",
           fontSize: "1vw", letterSpacing: "0.06em", color: INK, fontWeight: 500,
           fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", pointerEvents: "none",
         }}
       >
-        <PhoneIcon color={SESSION_ORANGE} />
-        <span>{CONTACT_PHONE}</span>
+        <PhoneNumber number={CONTACT_PHONE} color={SESSION_ORANGE} />
       </div>
     </div>
   );
