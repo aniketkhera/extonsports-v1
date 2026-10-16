@@ -20,7 +20,7 @@ export type NamedSlots = Omit<CourtSlots, "blocks"> & { blocks: NamedBlock[] };
 export type Row = {
   court: CourtRef;
   /** The middle column: on court now, else the first booking ahead (UP NEXT);
-   *  null only when nothing is booked today or tomorrow. */
+   *  null when nothing is on court and nothing is still to come today or tomorrow. */
   first: NamedBlock | null;
   /** True when `first` is on court now (ON NOW) rather than still to come (UP NEXT). */
   firstIsNow: boolean;
@@ -328,7 +328,8 @@ export function splitUpNext<T extends { date: string; from: number }>(
    is on court now (ON NOW) or, if nothing is, the first booking still to come (UP
    NEXT) — where it used to say OPEN. The last column is the booking after that one
    either way, which is why it can be headed AFTER THAT for every row. OPEN is left
-   only for a court with nothing at all booked in the window.
+   only for a court with nothing on court and nothing still to come today or
+   tomorrow — which can be one that was played on earlier today.
 
    The window is today and tomorrow, as it always was here: the keyed feed asks for
    two days, and "TOMORROW" is the only day word this board prints. `blocks` must be

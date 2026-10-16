@@ -199,8 +199,8 @@ export default function CourtBoard() {
                   <i>{boardLabel(r.first)}</i>
                 </span>
               ) : (
-                /* Nothing on court and nothing booked today or tomorrow — the one
-                   case OPEN is still the whole story. */
+                /* Nothing on court and nothing still to come today or tomorrow —
+                   the one case OPEN is still the whole story. */
                 <span className="bopen">OPEN</span>
               )}
               <span className="bnext">
