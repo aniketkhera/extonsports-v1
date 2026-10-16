@@ -5,9 +5,11 @@ import { makeTicker, useTick } from "../components/ticker";
 import Image from "next/image";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
 import OrangishPill from "../components/OrangishPill";
+import { PhoneNumber } from "../components/PhoneIcon";
+import ClubMark from "../components/ClubMark";
 import { CONTACT_PHONE } from "../../lib/legal";
 import {
-  PLATFORM, readKey, clubNow, span, holderLabel, brandFor, sessionOf, splitUpNext, SESSION_TEXT,
+  PLATFORM, readKey, clubNow, span, holderLabel, brandFor, sessionOf, splitUpNext, SESSION_TEXT, SPORT_OBJECT,
   type BrandKey, type NamedBlock, type NamedSlots, type SessionKey,
 } from "../board/board-lib";
 
@@ -123,18 +125,9 @@ const PANEL_SHADOW = [
 
 const SPORT_ORDER = ["Badminton", "Cricket", "Squash"];
 
-/* The object beside each sport's title (2026-10-16).
-   ──────────────────────────────────────────────────────────────────────────
-   Aniket asked for "a caricature of someone playing" each sport; cartoon players
-   were mocked and turned down — "need more classy.. maybe just a shuttle, a
-   cricket ball and a squash ball - tastefully done with shadow and depth". These
-   are those three, drawn as SVG with one light from the upper left (the panel's
-   own light comes from above) and a soft shadow on the ground line.
-
-   ⚠️ NO GREEN IN THEM: green on this board means a court is free, and a green
-   object beside a sport name would read as status. Nor SESSION_GOLD as a colour of
-   its own — the squash ball's two small dots are the only yellow, there because a
-   double-yellow-dot ball has them.
+/* The object beside each sport's title (2026-10-16) — a shuttle, a cricket ball, a
+   squash ball. What they are, why there is no green in them, and which file is
+   which sport: SPORT_OBJECT in board-lib, shared with /board. How they sit here:
 
    PLACED SO IT COSTS NO HEIGHT. Each SVG is drawn with its ground line at 76% of
    its height, and the title's span puts that line on the text baseline. Absolute,
@@ -149,12 +142,7 @@ const SPORT_ORDER = ["Badminton", "Cricket", "Squash"];
    Measured 2026-10-16 at 1080p with three groups on court in every panel — the
    case with ~6px of NOW height to spare — the image clears the panel's top border
    by ~6.6px and the first live booking by ~2.7px, and the NOW list is untouched.
-   A sport not listed here simply has no object. */
-const SPORT_OBJECT: Record<string, string> = {
-  Badminton: "/reception/shuttle.svg",
-  Cricket: "/reception/cricket-ball.svg",
-  Squash: "/reception/squash-ball.svg",
-};
+   A sport not listed there simply has no object. */
 
 /** One holder's hours, after courts have been merged. */
 type Entry = {
@@ -644,22 +632,6 @@ function SlotLine({ text, day }: { text: "ON NOW" | "UP NEXT"; day: string }) {
   );
 }
 
-/* A mobile phone, outline, in the brand orange: says "phone" without a word. Drawn
-   here rather than pulled from an icon set — eight lines, and nothing to install
-   in a node_modules that is shared between checkouts. */
-function PhoneIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24" width="1.3em" height="1.3em" aria-hidden
-      fill="none" stroke={SESSION_ORANGE} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
-    >
-      <rect x="6" y="2" width="12" height="20" rx="2.6" />
-      <path d="M10.4 5.2h3.2" />
-      <circle cx="12" cy="18.4" r="0.9" fill={SESSION_ORANGE} stroke="none" />
-    </svg>
-  );
-}
-
 export default function ReceptionBoard() {
   const [data, setData] = useState<NamedSlots | null>(null);
   const [stale, setStale] = useState(false);
@@ -773,7 +745,17 @@ export default function ReceptionBoard() {
           paddingBottom: "1.2vh", marginBottom: "1.6vh",
         }}
       >
-        <div className="text-cond" style={{ color: EMBER, fontSize: "2.1vw", letterSpacing: "0.10em" }}>
+        {/* The club's mark left of the name (2026-10-16). Absolute, in room made by
+            the title's own left padding, so the header row — and so the panels'
+            1fr row under it — keeps its height: in flow, a mark taller than the
+            type would push the header down and take that from the NOW areas,
+            which have ~9px to spare when every court is busy. Centred on the
+            title's line box. */}
+        <div
+          className="text-cond"
+          style={{ color: EMBER, fontSize: "2.1vw", letterSpacing: "0.10em", position: "relative", paddingLeft: "3.6vw" }}
+        >
+          <ClubMark size="2.8vw" style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)" }} />
           EXTON SPORTS CENTER
           {stale && (
             <span
@@ -1032,13 +1014,12 @@ export default function ReceptionBoard() {
       <div
         style={{
           position: "absolute", right: "3.42vw", bottom: 0, height: CREDIT_STRIP,
-          display: "flex", alignItems: "center", gap: "0.4vw",
+          display: "flex", alignItems: "center",
           fontSize: "1vw", letterSpacing: "0.06em", color: INK, fontWeight: 500,
           fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", pointerEvents: "none",
         }}
       >
-        <PhoneIcon />
-        <span>{CONTACT_PHONE}</span>
+        <PhoneNumber number={CONTACT_PHONE} color={SESSION_ORANGE} />
       </div>
     </div>
   );

@@ -178,3 +178,45 @@ test("splitUpNext: someone on court, or nothing ahead — no UP NEXT, list untou
   const empty = L.splitUpNext([], [], 2);
   assert.deepEqual(empty, { upNext: [], rest: [] });
 });
+
+/* /board's rows (2026-10-16): the middle column is ON NOW or UP NEXT, the last is
+   the booking after it. Wrong here is a vestibule screen that says a court is in
+   use when it is not, or skips a booking between two columns. */
+test("courtRow: someone on court — ON NOW, then the next booking", () => {
+  const court = { id: "c1", sport: "Badminton", sportId: "s", name: "BADMINTON 1", label: "1" };
+  const b = (date, from, to, who) => ({ date, courtId: "c1", from, to, kind: "booking", who });
+  const blocks = [b("2026-10-16", 600, 720, "A"), b("2026-10-16", 1020, 1080, "B"), b("2026-10-17", 540, 600, "C")];
+  const r = L.courtRow(court, blocks, "2026-10-16", "2026-10-17", 660);
+  assert.equal(r.first.who, "A");
+  assert.equal(r.firstIsNow, true);
+  assert.equal(r.then.who, "B");
+  assert.equal(r.thenIsTomorrow, false);
+});
+
+test("courtRow: court free — UP NEXT is the first booking ahead, AFTER THAT the one after", () => {
+  const court = { id: "c1", sport: "Squash", sportId: "s", name: "SQUASH 1", label: "1" };
+  const b = (date, from, to, who) => ({ date, courtId: "c1", from, to, kind: "booking", who });
+  // Unsorted on purpose, with one already over and one beyond tomorrow.
+  const blocks = [b("2026-10-17", 600, 660, "T2"), b("2026-10-16", 480, 540, "OVER"), b("2026-10-18", 540, 600, "LATER"), b("2026-10-17", 540, 600, "T1")];
+  const r = L.courtRow(court, blocks, "2026-10-16", "2026-10-17", 690);
+  assert.equal(r.first.who, "T1");
+  assert.equal(r.firstIsNow, false);
+  assert.equal(r.firstIsTomorrow, true);
+  assert.equal(r.then.who, "T2");
+  assert.equal(r.thenIsTomorrow, true);
+});
+
+test("courtRow: a booking starting this minute is ON NOW; nothing in the window is OPEN", () => {
+  const court = { id: "c1", sport: "Cricket", sportId: "s", name: "CRICKET 1", label: "1" };
+  const starts = { date: "2026-10-16", courtId: "c1", from: 1020, to: 1080, kind: "booking", who: "S" };
+  const r = L.courtRow(court, [starts], "2026-10-16", "2026-10-17", 1020);
+  assert.equal(r.firstIsNow, true);
+  assert.equal(r.first.who, "S");
+  assert.equal(r.then, null);
+  const empty = L.courtRow(court, [], "2026-10-16", "2026-10-17", 1020);
+  assert.equal(empty.first, null);
+  assert.equal(empty.then, null);
+  // No tomorrow in the payload's day list: only today counts.
+  const t = { date: "2026-10-17", courtId: "c1", from: 540, to: 600, kind: "booking", who: "T" };
+  assert.equal(L.courtRow(court, [t], "2026-10-16", undefined, 1200).first, null);
+});
