@@ -472,6 +472,15 @@ html { scroll-behavior: smooth; }
      where #F89B72 on pale grey falls under 2:1 and is unreadable. */
   --ember-ink: var(--color-ember);
 
+  /* The orangish.io pill (2026-10-15) — the opposite of the ground it sits on,
+     so on dark it is WHITE, with "orang" in the light theme's ember-ink.
+     Literals, not var(--ember-ink): that one is the bright salmon here, which
+     vanishes on white. Read only by OrangishPill.tsx, whose `tv` pill copies
+     these three (the wall screens never follow a theme). */
+  --pill-bg: #FFFFFF;
+  --pill-orang: #CE5718;
+  --pill-ish: #0A0A0A;
+
   /* Footer and legal pages ran their own near-black, separate from the
      navy palette, so they stayed black in light mode while their text
      flipped dark — invisible. Now tokens like everything else. */
@@ -511,6 +520,11 @@ html { scroll-behavior: smooth; }
      not a maroon. 4.2:1 on white: comfortably AA for the display sizes it
      is mostly used at, marginally under the 4.5 bar for body copy. */
   --ember-ink: #CE5718;
+
+  /* On a light ground, the pill as first approved: black, salmon, white. */
+  --pill-bg: #0A0A0A;
+  --pill-orang: #F89B72;
+  --pill-ish: #FFFFFF;
 
   --hero-rec-bg:
     radial-gradient(60% 80% at 80% 60%, rgba(66,181,77,0.13) 0%, transparent 65%),
