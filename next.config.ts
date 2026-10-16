@@ -20,6 +20,21 @@ const nextConfig: NextConfig = {
       { source: '/careers', destination: '/', permanent: true },
       { source: '/careers/:path*', destination: '/', permanent: true },
 
+      // ── /pay → the pay page in the Orangish app (2026-10-15) ───────────────
+      // The address Aniket's Gmail footer prints ("Pay online: extonsports.com/pay ·
+      // Zelle or card"). The page itself lives in orangish-app (/pay/exton-sports), in
+      // this site's look, because money, Stripe, receipts and the record of each payment
+      // stay in the one system that already handles them; this site stays a brochure.
+      //
+      // ABOVE the apex -> www rule on purpose: the first match wins, so both hosts go
+      // straight to the app in ONE hop instead of apex -> www -> app.
+      //
+      // permanent: false (307), NOT 308: browsers cache a 308 indefinitely, and the club
+      // front-doors plan may move the app's URL. No ?theme= is carried — the Gmail link
+      // has none — so the page falls back to its own cookie, then to light, as the
+      // booking page does. Not in app/sitemap.ts: it is a redirect, not a page.
+      { source: '/pay', destination: 'https://app.orangish.io/pay/exton-sports', permanent: false },
+
       // ── ONE CANONICAL HOST: www ────────────────────────────────────────────
       // Until 2026-09-30 the apex and www BOTH served 200 with no redirect
       // between them, while the site declared the APEX canonical (metadataBase,
