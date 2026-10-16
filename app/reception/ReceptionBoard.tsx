@@ -600,12 +600,14 @@ function Lockup({ brand, who }: { brand: BrandKey | null; who: string }) {
 /* One booking, big — what the NOW area draws for a live entry and, since
    2026-10-16, for an UP NEXT one. Same drawing for both on purpose: the line above
    it (UP NEXT, or nothing) is what says which, and the green "N OF 3 FREE NOW"
-   under the area still says whether the courts are free right now. */
+   at the top of the area still says whether the courts are free right now. */
 function BigEntry({
-  e, sport, labels, big,
-}: { e: Entry; sport: string; labels: string[]; big: boolean }) {
+  e, sport, labels, big, last,
+}: { e: Entry; sport: string; labels: string[]; big: boolean; last: boolean }) {
+  /* No margin under the last one: in a centred column it only added height,
+     and the FREE NOW line above now spends it (2026-10-16). */
   return (
-    <div style={{ marginBottom: "1.2vh" }}>
+    <div style={{ marginBottom: last ? 0 : "1.2vh" }}>
       <div style={{ minHeight: "3.2vw", display: "flex", alignItems: "center", gap: "0.8vw", marginBottom: "0.4vh" }}>
         <Lockup brand={e.brand} who={e.who} />
         {e.session && <SessionTag session={e.session} />}
@@ -836,24 +838,45 @@ export default function ReceptionBoard() {
                 display: "flex", flexDirection: "column", justifyContent: "center",
               }}
             >
+              {/* N OF 3 FREE NOW FIRST, then what is on or up next (2026-10-16,
+                  Aniket, of the line under UP NEXT: "this should be before UP
+                  NEXT"). Status, then detail — in every state, so the line does
+                  not jump between the top and the bottom of the panel as courts
+                  fill. It moved from under this area into it, so the panel's
+                  height budget is unchanged; the 1.6vh under it (was 0.7vh, to
+                  the list's rule) is paid for by dropping the last entry's own
+                  1.2vh bottom margin — measured with three groups on court, which
+                  has ~6px of NOW height to spare. */}
+              <div
+                className="text-cond"
+                style={{
+                  fontSize: "1.45vw", letterSpacing: "0.06em", marginBottom: "1.6vh",
+                  color: p.freeNow ? GREEN : MUTED,
+                }}
+              >
+                {p.freeNow} OF {p.total} FREE NOW
+              </div>
+
               {/* Compact boxes once three are on court — measured (review,
                   2026-10-14): three entries with the big boxes ran past the NOW
                   area; compact, they fit with room. UP NEXT shows at most two
                   (UP_NEXT_MAX), so it always gets the big ones. */}
               {p.now.length > 0 ? (
-                p.now.map((e) => (
+                p.now.map((e, n) => (
                   <BigEntry
                     key={`${e.who}-${e.session ?? ""}-${e.from}-${e.to}`}
                     e={e} sport={p.sport} labels={p.labels} big={p.now.length < 3}
+                    last={n === p.now.length - 1}
                   />
                 ))
               ) : p.upNext.length > 0 ? (
                 <>
                   <UpNextLine day={dayLabel(p.upNext[0].date, today)} />
-                  {p.upNext.map((e) => (
+                  {p.upNext.map((e, n) => (
                     <BigEntry
                       key={`${e.date}-${e.who}-${e.session ?? ""}-${e.from}-${e.to}`}
                       e={e} sport={p.sport} labels={p.labels} big
+                      last={n === p.upNext.length - 1}
                     />
                   ))}
                 </>
@@ -864,16 +887,6 @@ export default function ReceptionBoard() {
                   ALL OPEN
                 </div>
               )}
-            </div>
-
-            <div
-              className="text-cond"
-              style={{
-                fontSize: "1.45vw", letterSpacing: "0.06em", marginBottom: "0.7vh",
-                color: p.freeNow ? GREEN : MUTED,
-              }}
-            >
-              {p.freeNow} OF {p.total} FREE NOW
             </div>
 
             {/* COMING UP — the next UPCOMING_COUNT, each with its court.
