@@ -6,7 +6,7 @@ import Image from "next/image";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
 import OrangishPill from "../components/OrangishPill";
 import { PhoneNumber } from "../components/PhoneIcon";
-import ClubMark from "../components/ClubMark";
+import LogoGlobe from "../components/LogoGlobe";
 import { CONTACT_PHONE } from "../../lib/legal";
 import {
   PLATFORM, readKey, clubNow, span, holderLabel, brandFor, sessionOf, splitUpNext, SESSION_TEXT, SPORT_OBJECT,
@@ -755,7 +755,7 @@ export default function ReceptionBoard() {
           className="text-cond"
           style={{ color: EMBER, fontSize: "2.1vw", letterSpacing: "0.10em", position: "relative", paddingLeft: "3.6vw" }}
         >
-          <ClubMark size="2.8vw" style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)" }} />
+          <LogoGlobe size="2.8vw" ring style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)" }} />
           EXTON SPORTS CENTER
           {stale && (
             <span
