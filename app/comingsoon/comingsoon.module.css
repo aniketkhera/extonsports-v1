@@ -149,9 +149,12 @@
   height: calc(var(--u) * 6);
   border-radius: 50%;
   flex-shrink: 0;
+  /* The same halo as LogoGlobe's, in multiples of this 6u ball (2026-10-16, "add
+     more glow to the globe"): ring, a tight bright glow, a wide soft one. */
   box-shadow:
-    0 0 0 calc(var(--u) * 0.18) rgba(248, 155, 114, 0.55),
-    0 0 calc(var(--u) * 2.4) rgba(248, 155, 114, 0.35);
+    0 0 0 calc(var(--u) * 0.21) rgba(248, 155, 114, 0.75),
+    0 0 calc(var(--u) * 1.2) calc(var(--u) * 0.12) rgba(248, 155, 114, 0.55),
+    0 0 calc(var(--u) * 3.6) calc(var(--u) * 0.36) rgba(248, 155, 114, 0.32);
 }
 .wordmark {
   font-family: var(--font-cond), sans-serif;

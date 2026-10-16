@@ -55,9 +55,10 @@ export default function Nav() {
           style={{ fontSize: "min(1.45rem, calc((100vw - 135px) / 12.4))" }}
         >
           {/* The mark as the turning globe (2026-10-16, "put the same globe on
-              extonsports.com"). No ring or glow here — that is the TVs' dressing on
-              navy, and the site has a light theme. */}
-          <LogoGlobe size="38px" label="Exton Sports Center" />
+              extonsports.com"), with the glow ("add more glow to the globe", the same
+              day) but not the TVs' hard ring — that is dressing for navy, and the site
+              has a light theme. */}
+          <LogoGlobe size="38px" glow label="Exton Sports Center" />
           {/* Below sm the name gets a second line carrying OPEN 24×7, because
               a chip BESIDE it does not fit on a phone: the size formula above
               already spends every spare pixel, and reserving ~120px more would
