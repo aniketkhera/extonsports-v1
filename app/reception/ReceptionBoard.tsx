@@ -10,7 +10,7 @@ import LogoGlobe from "../components/LogoGlobe";
 import { CONTACT_PHONE } from "../../lib/legal";
 import {
   PLATFORM, readKey, clubNow, span, holderLabel, brandFor, sessionOf, splitUpNext, lightChip, SESSION_TEXT, SPORT_OBJECT,
-  type BrandKey, type LightChip, type NamedBlock, type NamedSlots, type SessionKey,
+  type BrandKey, type LightChip, type Lights, type NamedBlock, type NamedSlots, type SessionKey,
 } from "../board/board-lib";
 
 /* The clock is an external store, shared with /comingsoon — see
@@ -748,10 +748,15 @@ function LightStatus({ chip }: { chip: LightChip }) {
   );
 }
 
+/** How long the last `lights` outlives responses that come without it — see load(). */
+const LIGHTS_CARRY_MS = 3 * 60_000;
+
 export default function ReceptionBoard() {
   const [data, setData] = useState<NamedSlots | null>(null);
   const [stale, setStale] = useState(false);
   const mounted = useRef(true);
+  /** The last `lights` a response carried, and when (this TV's clock). */
+  const lastLights = useRef<{ at: number; lights: Lights } | null>(null);
 
   useReloadOnDeploy();
 
@@ -781,7 +786,23 @@ export default function ReceptionBoard() {
            free" — the second reading would have a lobby screen inviting
            people onto a court somebody has booked. */
         if (!body.courts?.length) { setStale(true); return; }
-        setData(body);
+        /* Carry `lights` across a response that lacks it, for up to
+           LIGHTS_CARRY_MS since the last one that had it (2026-10-18 review).
+           The platform leaves `lights` out on ANY failure reading it, its 3 s
+           budget included, while the rest of the payload is fine — so one slow
+           read made the chip, which is meant to be always there for an
+           automated sport, vanish for a whole 60 s poll. Not forever: past three
+           minutes it is a real outage, or auto_lights was switched off for the
+           club, and a chip for lights nobody switches is the worse lie. Carried
+           windows are still judged against the live tick, and the carried
+           report ages out on its own inside lightChip, leaving the calendar. */
+        const at = Date.now();
+        let next = body;
+        if (body.lights) lastLights.current = { at, lights: body.lights };
+        else if (lastLights.current && at - lastLights.current.at <= LIGHTS_CARRY_MS) {
+          next = { ...body, lights: lastLights.current.lights };
+        } else lastLights.current = null;
+        setData(next);
         setStale(false);
       } catch {
         if (mounted.current) setStale(true);

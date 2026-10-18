@@ -302,14 +302,47 @@ test("lightChip: for 2 minutes after a window opens or closes, the calendar beat
   assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", -2.5, 60)], report([zoneOn(false)])), T0), { kind: "off" });
 });
 
+/* 2026-10-18 review: the 2-minute rule counts on the TV's clock, so a poll that
+   failed or ran slow near a transition left the TV holding a report from BEFORE it,
+   still fresh after the 2 minutes ran out — and the chip flashed the old state. */
+test("lightChip: a report stamped too soon after a transition to have seen it is ignored", () => {
+  // Opened 2.5 min ago; the newest report was made 10 s BEFORE it opened.
+  const early = 2.5 + 10 / 60;
+  assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", -2.5, 60)], report([zoneOn(false)], early)), T0), { kind: "on" });
+  // Closed 2.5 min ago; the newest report was made 10 s before it closed.
+  assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", -60, -2.5)], report([zoneOn(true)], early)), T0), { kind: "off" });
+  // Made 30 s after the opening: still inside the bridge's 45 s to act, still ignored.
+  assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", -2.5, 60)], report([zoneOn(false)], 2)), T0), { kind: "on" });
+  // Made exactly 45 s after it: the bridge has had its pass, so the report decides.
+  assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", -2.5, 60)], report([zoneOn(false)], 1.75)), T0), { kind: "off" });
+  // A transition still ahead is not one a report could have missed.
+  assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", -30, 20)], report([zoneOn(false)], 2.9)), T0), { kind: "off" });
+});
+
 test("lightChip: a live override on a fresh report decides, on or off, with no countdown", () => {
   const until = iso(T0 + 120 * MIN);
   // Forced off inside a window that is about to end: LIGHTS OFF, not a countdown.
   const ending = [win("badminton", -30, 5)];
-  assert.deepEqual(L.lightChip("Badminton", lights(ending, report([zoneOn(true, { on: false, until })])), T0), { kind: "off" });
+  assert.deepEqual(L.lightChip("Badminton", lights(ending, report([zoneOn(null, { on: false, until })])), T0), { kind: "off" });
+  assert.deepEqual(L.lightChip("Badminton", lights(ending, report([zoneOn(false, { on: false, until })])), T0), { kind: "off" });
+  // Forced on inside the same window: LIGHTS ON, not LIGHTS OFF IN 5 MIN.
+  assert.deepEqual(L.lightChip("Badminton", lights(ending, report([zoneOn(true, { on: true, until })])), T0), { kind: "on" });
   // Forced on with nothing booked, and with a window about to open.
-  assert.deepEqual(L.lightChip("Badminton", lights([], report([zoneOn(false, { on: true, until })])), T0), { kind: "on" });
+  assert.deepEqual(L.lightChip("Badminton", lights([], report([zoneOn(null, { on: true, until })])), T0), { kind: "on" });
   assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", 5, 60)], report([zoneOn(true, { on: true, until })])), T0), { kind: "on" });
+});
+
+/* 2026-10-18 review: an override the bridge has not managed to send is a staff
+   wish, not the state of the room. The report's own belief wins when they differ. */
+test("lightChip: an override the report's belief contradicts gives way to the belief, still with no countdown", () => {
+  const until = iso(T0 + 120 * MIN);
+  const ending = [win("badminton", -30, 5)];
+  // Forced off, but the bridge last sent ON: LIGHTS ON (not a countdown either).
+  assert.deepEqual(L.lightChip("Badminton", lights(ending, report([zoneOn(true, { on: false, until })])), T0), { kind: "on" });
+  // Forced on with nothing booked, but the bridge last sent OFF: LIGHTS OFF.
+  assert.deepEqual(L.lightChip("Badminton", lights([], report([zoneOn(false, { on: true, until })])), T0), { kind: "off" });
+  // Forced on, last sent OFF, a window opening soon: still the belief, not ON IN n MIN.
+  assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", 5, 60)], report([zoneOn(false, { on: true, until })])), T0), { kind: "off" });
 });
 
 test("lightChip: an override is ignored when it has run out, or when the report is stale", () => {

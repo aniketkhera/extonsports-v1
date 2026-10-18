@@ -405,16 +405,31 @@ export const SPORT_OBJECT: Record<string, string> = {
    report back; do not word the chip as if it could.
 
    THE ORDER OF AUTHORITY:
-     1. A staff override on a FRESH report decides outright. The bridge obeys an
+     1. A staff override on a FRESH report decides outright — provided the
+        report's own belief agrees with it, or has none. The bridge obeys an
         override over the calendar, so the calendar would be the wrong answer.
         On or off, never a countdown: an override is a staff decision, not a
         booking, and its end is not something to count down to on a lobby wall.
-     2. Otherwise a fresh report's own belief — except within SETTLE_MS of a
-        calendar transition (a window opening or closing, or an override running
-        out), where the calendar decides. The bridge acts on a change within its
-        30 s pass, but the TV polls every 60 s, so for up to ~90 s after one the
+        When the belief CONTRADICTS a live override (2026-10-18 review), the
+        belief is shown instead, still on or off: the bridge has the override
+        but its last successful send was the other state — a transmit that
+        failed — and an override nobody sent is a wish, not the room.
+     2. Otherwise a fresh report's own belief — except around a calendar
+        transition (a window opening or closing, or an override running out),
+        where the calendar decides. The bridge acts on a change within its 30 s
+        pass, but the TV polls every 60 s, so for up to ~90 s after one the
         newest report the TV holds still carries the OLD state; without this the
-        chip would say LIGHTS OFF at the moment the lights came on.
+        chip would say LIGHTS OFF at the moment the lights came on. "Around" is
+        two tests, either enough:
+          · within SETTLE_MS of the transition by the TV's clock, and
+          · the report was made before the transition + BRIDGE_ACT_MS, by its own
+            reported_at. Added 2026-10-18 after review: the first test alone
+            counts from the TV's clock, so a poll that failed or ran slow near a
+            transition left the TV holding a report from BEFORE it that was
+            still fresh once the 2 minutes ran out, and the chip flashed the old
+            state. This one compares two server instants (reported_at and the
+            window's own on_at/off_at), so neither a late poll nor a skewed TV
+            clock can fool it.
      3. No report, or a stale one, and the calendar decides. A stale report
         describes a box that has stopped telling us anything; what the platform
         has asked for is the better guess, and the bridge re-asserts it every five
@@ -457,6 +472,9 @@ const MINUTE = 60_000;
 const BRIDGE_FRESH_MS = 3 * MINUTE;
 /** After a calendar transition, the calendar decides for this long — see 2. above. */
 const SETTLE_MS = 2 * MINUTE;
+/** How long after a transition the bridge may take to act on it and report: its
+ *  30 s pass plus margin. A report made sooner cannot have seen it — see 2. above. */
+const BRIDGE_ACT_MS = 45_000;
 /** LIGHTS OFF IN n MIN for the last quarter hour of a window (its court grace). */
 const OFF_SOON_MS = 15 * MINUTE;
 /** LIGHTS ON IN n MIN when the next window opens within half an hour. */
@@ -492,19 +510,30 @@ export function lightChip(sport: string, lights: Lights | undefined, nowMs: numb
     ? bridge.zones.find((x) => x && typeof x.zone === "string" && x.zone.toLowerCase() === zone)
     : undefined;
 
+  /** The report's belief for this zone; null for none, or anything not a boolean. */
+  const said = typeof z?.on === "boolean" ? z.on : null;
+
   const override = z?.override;
   const until = override ? instant(override.until) : NaN;
   if (override && typeof override.on === "boolean" && until > nowMs) {
-    return { kind: override.on ? "on" : "off" };
+    /* Agreeing or silent, the override decides; contradicted, the belief does
+       (2026-10-18 review — see 1. above). Neither counts down: while an override
+       is in force the bridge is not following the calendar. */
+    const on = said === null || said === override.on ? override.on : said;
+    return { kind: on ? "on" : "off" };
   }
 
   /* An override running out counts as a transition too (2026-10-18, beyond the
      brief): the bridge drops an expired override on its next pass and goes back to
      the calendar (lighting-only.js), so for the same ~90 s its last report still
-     carries the override's state. */
-  const settling = (t: number) => t <= nowMs && nowMs - t <= SETTLE_MS;
+     carries the override's state. Both tests (see 2. above) apply only to a
+     transition already past: one still ahead is not one a report could have
+     missed. `reported` is NaN without a report, so the second test is false
+     then — and `said` is null anyway. */
+  const settling = (t: number) =>
+    t <= nowMs && (nowMs - t <= SETTLE_MS || reported < t + BRIDGE_ACT_MS);
   const justChanged = settling(until) || spans.some((w) => settling(w.on) || settling(w.off));
-  const lit = z && typeof z.on === "boolean" && !justChanged ? z.on : Boolean(cur);
+  const lit = said !== null && !justChanged ? said : Boolean(cur);
 
   if (lit && cur && cur.off - nowMs <= OFF_SOON_MS) {
     return { kind: "offIn", min: Math.ceil((cur.off - nowMs) / MINUTE) };
