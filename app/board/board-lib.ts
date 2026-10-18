@@ -16,7 +16,7 @@ import { CLUB_TZ } from "../../lib/opening";
 export type NamedBlock = SlotBlock & { who?: string; org?: BrandKey; session?: SessionKey };
 /** `lights` is keyed-feed only, and only for a club whose lights are automated
  *  (2026-10-18) — see lightChip below. The public proxy never forwards it. */
-export type NamedSlots = Omit<CourtSlots, "blocks"> & { blocks: NamedBlock[]; lights?: Lights };
+export type NamedSlots = Omit<CourtSlots, "blocks" | "lights"> & { blocks: NamedBlock[]; lights?: Lights };
 
 /** One court's row on /board — see courtRow. */
 export type Row = {

@@ -138,6 +138,47 @@ test("/api/court-slots passes only the fixed words and never forwards `who`", as
   assert.ok(body.blocks.every((b) => !("who" in b)), "who is never forwarded");
 });
 
+/* The public relay and the lights (2026-10-18, "Add there too"): the schedule only,
+   and only when asked. The bridge's report and any override never pass. */
+test("/api/court-slots forwards the lights SCHEDULE only when asked, and never the bridge", async (t) => {
+  const grid = { timeZone: "America/New_York", days: ["2026-10-18"], courts: [], blocks: [] };
+  const lightsUp = {
+    sports: ["badminton"],
+    now: "2026-10-18T14:00:00.000Z",
+    windows: [{ zone: "badminton", on_at: "2026-10-18T19:45:00.000Z", off_at: "2026-10-18T22:15:00.000Z", extra: 1 }],
+    bridge: { reported_at: "2026-10-18T13:59:50.000Z", zones: [{ zone: "badminton", on: true, override: { on: true, until: "2026-10-18T20:00:00Z" } }] },
+  };
+  let upstream = { ...grid, lights: lightsUp };
+  const asked = [];
+  t.mock.method(globalThis, "fetch", async (url) => {
+    asked.push(String(url));
+    return { ok: true, json: async () => upstream };
+  });
+  const R = await import("../api/court-slots/route.ts");
+
+  // Unasked (/calendar, /board): not requested upstream, not forwarded even if sent.
+  const plain = await (await R.GET(new Request("https://extonsports.com/api/court-slots?days=7"))).json();
+  assert.doesNotMatch(asked.at(-1), /lights=1/);
+  assert.equal("lights" in plain, false);
+
+  // Asked: requested upstream; windows only, bridge null, no override anywhere.
+  const withL = await (await R.GET(new Request("https://extonsports.com/api/court-slots?lights=1"))).json();
+  assert.match(asked.at(-1), /[?&]lights=1(&|$)/);
+  assert.deepEqual(withL.lights, {
+    sports: ["badminton"],
+    now: "2026-10-18T14:00:00.000Z",
+    windows: [{ zone: "badminton", on_at: "2026-10-18T19:45:00.000Z", off_at: "2026-10-18T22:15:00.000Z" }],
+    bridge: null,
+  });
+  assert.equal(JSON.stringify(withL).includes("override"), false);
+
+  // ⛔ One unreadable window withholds them all; no lights upstream means none here.
+  upstream = { ...grid, lights: { ...lightsUp, windows: [...lightsUp.windows, { zone: "badminton", on_at: "soon", off_at: "later" }] } };
+  assert.equal("lights" in (await (await R.GET(new Request("https://extonsports.com/api/court-slots?lights=1"))).json()), false);
+  upstream = grid;
+  assert.equal("lights" in (await (await R.GET(new Request("https://extonsports.com/api/court-slots?lights=1"))).json()), false);
+});
+
 /* UP NEXT on the reception screen (2026-10-16): what moves up out of the list when
    no court in a sport is in use. Wrong in either direction is visible from the desk:
    a booking shown twice (big AND first in AFTER THAT), or a simultaneous one left
