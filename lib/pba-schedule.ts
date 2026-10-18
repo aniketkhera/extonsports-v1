@@ -55,11 +55,19 @@ export type PbaSlot = {
    prerendered, so app/page.tsx revalidates it hourly — without that the HTML
    would only change phase on the next deploy.
 
+   ⚠️ WEEKENDS: THE MORNING IS OPEN PLAY, THE 4–6pm BLOCK IS COACHING. 2026-10-18,
+   Aniket, during the Sunday 7am session: "This is Open Play. The junior coaching
+   for today (and weekends in general) is the evening booking - 4pm-6pm." This file
+   had them the other way round, following the licence, whose §1.7 still names the
+   weekend mornings as the First (coaching) Block. The weekly totals do not move —
+   both weekend blocks are 2 hours on 3 courts on 2 days — so neither does the
+   invoice; only the labels do.
+
    The TVs label the same hours from the platform's lib/court-partners.ts
    (partnerSessionAt) — the same split. Keep the two in step. */
 const weekdayEvening = (day: string): PbaSlot => ({ day, coaching: '5:30–7:30pm', openPlay: '7:30–9:30pm' })
-const SAT: PbaSlot = { day: 'Sat', coaching: '9–11am', openPlay: '4–6pm' }
-const SUN: PbaSlot = { day: 'Sun', coaching: '7–9am', openPlay: '4–6pm' }
+const SAT: PbaSlot = { day: 'Sat', coaching: '4–6pm', openPlay: '9–11am' }
+const SUN: PbaSlot = { day: 'Sun', coaching: '4–6pm', openPlay: '7–9am' }
 const DECEMBER = 'From 30 November it runs Monday to Friday: coaching 5:30–7:30pm, open play 7:30–9:30pm.'
 
 const PBA_PHASES: ReadonlyArray<{ from: string; slots: PbaSlot[]; note: string | null }> = [
