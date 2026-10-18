@@ -220,3 +220,140 @@ test("courtRow: a booking starting this minute is ON NOW; nothing in the window 
   const t = { date: "2026-10-17", courtId: "c1", from: 540, to: 600, kind: "booking", who: "T" };
   assert.equal(L.courtRow(court, [t], "2026-10-16", undefined, 1200).first, null);
 });
+
+/* The lights chip on the reception screen (2026-10-18): which of the four states a
+   sport's title shows. Wrong here is a lobby screen saying LIGHTS ON over a dark
+   court, or a countdown to the end of a window that does not end. */
+const T0 = Date.parse("2026-10-18T22:00:00.000Z");
+const MIN = 60_000;
+const iso = (ms) => new Date(ms).toISOString();
+const win = (zone, on, off) => ({ zone, on_at: iso(T0 + on * MIN), off_at: iso(T0 + off * MIN) });
+const lights = (windows, bridge = null, sports = ["badminton"]) => ({ sports, now: iso(T0), windows, bridge });
+const report = (zones, ageMin = 0.5) => ({ reported_at: iso(T0 - ageMin * MIN), zones });
+const zoneOn = (on, override = null) => ({ zone: "badminton", on, override });
+
+test("lightChip: nothing without `lights`, or for a sport whose lights are not automated", () => {
+  assert.equal(L.lightChip("Badminton", undefined, T0), null);
+  assert.equal(L.lightChip("Squash", lights([win("squash", -10, 60)]), T0), null);
+  assert.equal(L.lightChip("Cricket", lights([]), T0), null);
+});
+
+test("lightChip: always shown for an automated sport, LIGHTS OFF when nothing is near", () => {
+  assert.deepEqual(L.lightChip("Badminton", lights([]), T0), { kind: "off" });
+  assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", 31, 90)]), T0), { kind: "off" });
+});
+
+test("lightChip: the calendar alone — on, then the last 15 minutes count down, rounded up", () => {
+  assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", -30, 16)]), T0), { kind: "on" });
+  assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", -30, 15)]), T0), { kind: "offIn", min: 15 });
+  assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", -30, 7.5)]), T0), { kind: "offIn", min: 8 });
+  assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", -30, 0.1)]), T0), { kind: "offIn", min: 1 });
+  // off_at is exclusive: at the instant it ends the window is over.
+  assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", -30, 0)]), T0), { kind: "off" });
+});
+
+test("lightChip: the calendar alone — LIGHTS ON IN n MIN inside half an hour, rounded up", () => {
+  assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", 30, 90)]), T0), { kind: "onIn", min: 30 });
+  assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", 11 + 10 / 60, 90)]), T0), { kind: "onIn", min: 12 });
+  // The earliest window ahead, whatever order the feed sends them in.
+  const two = lights([win("badminton", 200, 260), win("badminton", 20, 80)]);
+  assert.deepEqual(L.lightChip("Badminton", two, T0), { kind: "onIn", min: 20 });
+});
+
+test("lightChip: another zone's windows never light this one; the sport name is matched in any case", () => {
+  assert.deepEqual(L.lightChip("Badminton", lights([win("squash", -10, 60)], null, ["badminton", "squash"]), T0), { kind: "off" });
+  assert.deepEqual(L.lightChip("BADMINTON", lights([win("badminton", -10, 60)]), T0), { kind: "on" });
+});
+
+test("lightChip: overlapping windows that arrive unmerged do not count down to the first one's end", () => {
+  const l = lights([win("badminton", -60, 10), win("badminton", 5, 120)]);
+  assert.deepEqual(L.lightChip("Badminton", l, T0), { kind: "on" });
+  const touching = lights([win("badminton", -60, 10), win("badminton", 10, 120)]);
+  assert.deepEqual(L.lightChip("Badminton", touching, T0), { kind: "on" });
+});
+
+test("lightChip: a fresh report's belief beats the calendar, both ways", () => {
+  assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", -30, 60)], report([zoneOn(false)])), T0), { kind: "off" });
+  assert.deepEqual(L.lightChip("Badminton", lights([], report([zoneOn(true)])), T0), { kind: "on" });
+  // Believed off, with a window opening soon: still says when they come on.
+  assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", 20, 90)], report([zoneOn(false)])), T0), { kind: "onIn", min: 20 });
+  // Believed on inside a window that is ending: the countdown still shows.
+  assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", -30, 9)], report([zoneOn(true)])), T0), { kind: "offIn", min: 9 });
+});
+
+test("lightChip: a report with no belief (null), or no entry for the zone, leaves it to the calendar", () => {
+  const sched = [win("badminton", -30, 60)];
+  assert.deepEqual(L.lightChip("Badminton", lights(sched, report([zoneOn(null)])), T0), { kind: "on" });
+  assert.deepEqual(L.lightChip("Badminton", lights(sched, report([])), T0), { kind: "on" });
+});
+
+test("lightChip: a stale report (over 3 min) is ignored; exactly 3 min is still fresh", () => {
+  const sched = [win("badminton", -30, 60)];
+  assert.deepEqual(L.lightChip("Badminton", lights(sched, report([zoneOn(false)], 3.01)), T0), { kind: "on" });
+  assert.deepEqual(L.lightChip("Badminton", lights(sched, report([zoneOn(false)], 3)), T0), { kind: "off" });
+});
+
+test("lightChip: for 2 minutes after a window opens or closes, the calendar beats the report", () => {
+  // Opened 1 min ago; the newest report still says off.
+  assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", -1, 60)], report([zoneOn(false)])), T0), { kind: "on" });
+  // Closed 1 min ago; the newest report still says on.
+  assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", -60, -1)], report([zoneOn(true)])), T0), { kind: "off" });
+  // Past the 2 minutes, the report decides again.
+  assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", -2.5, 60)], report([zoneOn(false)])), T0), { kind: "off" });
+});
+
+test("lightChip: a live override on a fresh report decides, on or off, with no countdown", () => {
+  const until = iso(T0 + 120 * MIN);
+  // Forced off inside a window that is about to end: LIGHTS OFF, not a countdown.
+  const ending = [win("badminton", -30, 5)];
+  assert.deepEqual(L.lightChip("Badminton", lights(ending, report([zoneOn(true, { on: false, until })])), T0), { kind: "off" });
+  // Forced on with nothing booked, and with a window about to open.
+  assert.deepEqual(L.lightChip("Badminton", lights([], report([zoneOn(false, { on: true, until })])), T0), { kind: "on" });
+  assert.deepEqual(L.lightChip("Badminton", lights([win("badminton", 5, 60)], report([zoneOn(true, { on: true, until })])), T0), { kind: "on" });
+});
+
+test("lightChip: an override is ignored when it has run out, or when the report is stale", () => {
+  const sched = [win("badminton", -30, 60)];
+  const past = { on: false, until: iso(T0 - 10 * MIN) };
+  assert.deepEqual(L.lightChip("Badminton", lights(sched, report([zoneOn(true, past)])), T0), { kind: "on" });
+  const live = { on: false, until: iso(T0 + 60 * MIN) };
+  assert.deepEqual(L.lightChip("Badminton", lights(sched, report([zoneOn(false, live)], 5)), T0), { kind: "on" });
+});
+
+test("lightChip: for 2 minutes after an override runs out, the calendar beats the report", () => {
+  // Forced on until a minute ago, nothing booked; the newest report still believes on.
+  const justEnded = { on: true, until: iso(T0 - 1 * MIN) };
+  assert.deepEqual(L.lightChip("Badminton", lights([], report([zoneOn(true, justEnded)])), T0), { kind: "off" });
+});
+
+test("lightChip: malformed `lights` never throws", () => {
+  const bad = [
+    { sports: "badminton" },
+    { sports: ["badminton"], windows: "x", bridge: { reported_at: "nope", zones: "x" } },
+    { sports: ["badminton", 7], windows: [null, { zone: "badminton", on_at: "x", off_at: "y" }], bridge: { reported_at: iso(T0), zones: [null, { zone: 3 }] } },
+    { sports: ["badminton"], windows: [win("badminton", 10, -10)], bridge: { reported_at: iso(T0), zones: [zoneOn(true, { on: "yes", until: iso(T0 + MIN) })] } },
+  ];
+  assert.equal(L.lightChip("Badminton", bad[0], T0), null);
+  assert.deepEqual(L.lightChip("Badminton", bad[1], T0), { kind: "off" });
+  assert.deepEqual(L.lightChip("Badminton", bad[2], T0), { kind: "off" });
+  // A non-boolean override is no override; the belief stands.
+  assert.deepEqual(L.lightChip("Badminton", bad[3], T0), { kind: "on" });
+});
+
+/* The public page draws no chip because its feed never carries `lights` (2026-10-18):
+   the windows and the bridge's report are TV-only, behind the board token. If the
+   relay ever forwards the upstream wholesale, that stops being true silently. */
+test("/api/court-slots never forwards `lights`", async (t) => {
+  const upstream = {
+    timeZone: "America/New_York",
+    days: ["2026-10-18"],
+    courts: [{ id: "c1", sport: "Badminton", sportId: "s", name: "BADMINTON 1", label: "1" }],
+    blocks: [],
+    lights: lights([win("badminton", -10, 60)], report([zoneOn(true)])),
+  };
+  t.mock.method(globalThis, "fetch", async () => ({ ok: true, json: async () => upstream }));
+  const R = await import("../api/court-slots/route.ts");
+  const body = await (await R.GET(new Request("https://extonsports.com/api/court-slots"))).json();
+  assert.equal(body.courts.length, 1);
+  assert.ok(!("lights" in body), "lights is never forwarded");
+});

@@ -14,7 +14,9 @@ import { CLUB_TZ } from "../../lib/opening";
 /** The keyed feed returns the same shape plus a holder per block, and — for a
  *  partner's hours — which kind of session it is (2026-10-14). */
 export type NamedBlock = SlotBlock & { who?: string; org?: BrandKey; session?: SessionKey };
-export type NamedSlots = Omit<CourtSlots, "blocks"> & { blocks: NamedBlock[] };
+/** `lights` is keyed-feed only, and only for a club whose lights are automated
+ *  (2026-10-18) — see lightChip below. The public proxy never forwards it. */
+export type NamedSlots = Omit<CourtSlots, "blocks"> & { blocks: NamedBlock[]; lights?: Lights };
 
 /** One court's row on /board — see courtRow. */
 export type Row = {
@@ -378,3 +380,138 @@ export const SPORT_OBJECT: Record<string, string> = {
   Cricket: "/reception/cricket-ball.svg",
   Squash: "/reception/squash-ball.svg",
 };
+
+/* ── THE LIGHTS CHIP (2026-10-18) ─────────────────────────────────────────────
+   Aniket, approving the mock-up on the reception screen: "yes on the light chip".
+   One chip at the right of a sport's title, ALWAYS shown for a sport whose court
+   lights the platform switches (locations.features.auto_lights — badminton only at
+   Exton today), in one of four states: LIGHTS ON, LIGHTS OFF IN n MIN, LIGHTS ON IN
+   n MIN, LIGHTS OFF. This decides which; ReceptionBoard only draws it.
+
+   WHAT THE FEED CARRIES. The keyed court-board feed gains `lights`, present only
+   when the club has automated lights: the on-windows the platform's
+   lighting_windows() computes (the same bookings, lead-in and grace as the
+   lighting_desired_state the box actually follows — 15 min before a booking to 15
+   min after it, gaps of up to 30 min kept lit), and the bridge's own last report —
+   what it last transmitted successfully, and any staff override — stamped with the
+   SERVER's clock when it arrived, never the box's. The public proxy re-shapes its
+   payload and never forwards `lights`, so the unkeyed page, and a sport whose
+   lights are not wired yet, draws no chip at all.
+
+   ⚠️ IT SAYS WHAT WE BELIEVE, NOT WHAT IS LIT. The last hop (the RM4 to the
+   receiver) is radio with no feedback: on 2026-10-10 a paid booking played 43
+   minutes in the dark while every log said "transmitted". `on` from the bridge
+   means "last sent successfully". Nothing here can do better until the lights can
+   report back; do not word the chip as if it could.
+
+   THE ORDER OF AUTHORITY:
+     1. A staff override on a FRESH report decides outright. The bridge obeys an
+        override over the calendar, so the calendar would be the wrong answer.
+        On or off, never a countdown: an override is a staff decision, not a
+        booking, and its end is not something to count down to on a lobby wall.
+     2. Otherwise a fresh report's own belief — except within SETTLE_MS of a
+        calendar transition (a window opening or closing, or an override running
+        out), where the calendar decides. The bridge acts on a change within its
+        30 s pass, but the TV polls every 60 s, so for up to ~90 s after one the
+        newest report the TV holds still carries the OLD state; without this the
+        chip would say LIGHTS OFF at the moment the lights came on.
+     3. No report, or a stale one, and the calendar decides. A stale report
+        describes a box that has stopped telling us anything; what the platform
+        has asked for is the better guess, and the bridge re-asserts it every five
+        minutes when it is alive.
+
+   ⛔ NEVER GREEN, on the chip or in its bulb — green on this board means a court is
+   free — and never SESSION_GOLD, the girls' tag. The colours live with the drawing
+   in ReceptionBoard.
+
+   Written to fail SOFT: anything malformed in `lights` is skipped, never thrown.
+   This runs inside the render of a screen nobody is watching. */
+export type LightWindow = { zone: string; on_at: string; off_at: string };
+export type LightBridgeZone = {
+  zone: string;
+  /** What the bridge last transmitted successfully; null when it does not know. */
+  on: boolean | null;
+  override: null | { on: boolean; until: string };
+};
+export type Lights = {
+  /** Lower-case sport names, from locations.features.auto_lights. */
+  sports: string[];
+  /** Server time when the feed was computed. */
+  now: string;
+  /** Merged on-windows per sport zone, covering [now − 1 h, now + 24 h]. */
+  windows: LightWindow[];
+  bridge: null | {
+    /** SERVER-stamped time of the bridge's last report. */
+    reported_at: string;
+    zones: LightBridgeZone[];
+  };
+};
+export type LightChip =
+  | { kind: "on" }
+  | { kind: "offIn"; min: number }
+  | { kind: "onIn"; min: number }
+  | { kind: "off" };
+
+const MINUTE = 60_000;
+/** A report older than this is a box that has stopped reporting (it reports every 30 s pass). */
+const BRIDGE_FRESH_MS = 3 * MINUTE;
+/** After a calendar transition, the calendar decides for this long — see 2. above. */
+const SETTLE_MS = 2 * MINUTE;
+/** LIGHTS OFF IN n MIN for the last quarter hour of a window (its court grace). */
+const OFF_SOON_MS = 15 * MINUTE;
+/** LIGHTS ON IN n MIN when the next window opens within half an hour. */
+const ON_SOON_MS = 30 * MINUTE;
+
+const instant = (s: unknown): number => (typeof s === "string" ? Date.parse(s) : NaN);
+
+export function lightChip(sport: string, lights: Lights | undefined, nowMs: number): LightChip | null {
+  if (!lights || !Array.isArray(lights.sports)) return null;
+  const zone = sport.toLowerCase();
+  if (!lights.sports.some((s) => typeof s === "string" && s.toLowerCase() === zone)) return null;
+
+  /* This zone's windows, re-merged here although the platform already merges
+     them: two overlapping windows arriving unmerged would otherwise count down to
+     the end of the first one — LIGHTS OFF IN 5 MIN over a court that stays lit. */
+  const spans: { on: number; off: number }[] = [];
+  for (const w of (Array.isArray(lights.windows) ? lights.windows : [])
+    .filter((x) => x && typeof x.zone === "string" && x.zone.toLowerCase() === zone)
+    .map((x) => ({ on: instant(x.on_at), off: instant(x.off_at) }))
+    .filter((x) => Number.isFinite(x.on) && Number.isFinite(x.off) && x.on < x.off)
+    .sort((a, b) => a.on - b.on)) {
+    const last = spans[spans.length - 1];
+    if (last && w.on <= last.off) last.off = Math.max(last.off, w.off);
+    else spans.push({ ...w });
+  }
+  const cur = spans.find((w) => w.on <= nowMs && nowMs < w.off);
+  const next = spans.find((w) => w.on > nowMs); // sorted, so the first is the earliest
+
+  const bridge = lights.bridge;
+  const reported = bridge ? instant(bridge.reported_at) : NaN;
+  const fresh = Number.isFinite(reported) && nowMs - reported <= BRIDGE_FRESH_MS;
+  const z = fresh && Array.isArray(bridge?.zones)
+    ? bridge.zones.find((x) => x && typeof x.zone === "string" && x.zone.toLowerCase() === zone)
+    : undefined;
+
+  const override = z?.override;
+  const until = override ? instant(override.until) : NaN;
+  if (override && typeof override.on === "boolean" && until > nowMs) {
+    return { kind: override.on ? "on" : "off" };
+  }
+
+  /* An override running out counts as a transition too (2026-10-18, beyond the
+     brief): the bridge drops an expired override on its next pass and goes back to
+     the calendar (lighting-only.js), so for the same ~90 s its last report still
+     carries the override's state. */
+  const settling = (t: number) => t <= nowMs && nowMs - t <= SETTLE_MS;
+  const justChanged = settling(until) || spans.some((w) => settling(w.on) || settling(w.off));
+  const lit = z && typeof z.on === "boolean" && !justChanged ? z.on : Boolean(cur);
+
+  if (lit && cur && cur.off - nowMs <= OFF_SOON_MS) {
+    return { kind: "offIn", min: Math.ceil((cur.off - nowMs) / MINUTE) };
+  }
+  if (lit) return { kind: "on" };
+  if (next && next.on - nowMs <= ON_SOON_MS) {
+    return { kind: "onIn", min: Math.ceil((next.on - nowMs) / MINUTE) };
+  }
+  return { kind: "off" };
+}

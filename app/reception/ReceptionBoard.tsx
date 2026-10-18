@@ -9,8 +9,8 @@ import { PhoneNumber } from "../components/PhoneIcon";
 import LogoGlobe from "../components/LogoGlobe";
 import { CONTACT_PHONE } from "../../lib/legal";
 import {
-  PLATFORM, readKey, clubNow, span, holderLabel, brandFor, sessionOf, splitUpNext, SESSION_TEXT, SPORT_OBJECT,
-  type BrandKey, type NamedBlock, type NamedSlots, type SessionKey,
+  PLATFORM, readKey, clubNow, span, holderLabel, brandFor, sessionOf, splitUpNext, lightChip, SESSION_TEXT, SPORT_OBJECT,
+  type BrandKey, type LightChip, type NamedBlock, type NamedSlots, type SessionKey,
 } from "../board/board-lib";
 
 /* The clock is an external store, shared with /comingsoon — see
@@ -168,6 +168,9 @@ type Panel = {
   /** Nobody on court: the next booking(s), shown big in place of ALL OPEN. */
   upNext: Entry[];
   upcoming: Entry[];
+  /** The lights chip, or null for a sport whose lights are not automated — and
+   *  for every sport on the unkeyed page, whose feed has no `lights`. */
+  light: LightChip | null;
 };
 
 /* How many bookings to list under the live one. Five on 8 Oct 2026, then ten
@@ -656,6 +659,95 @@ function SlotLine({ text, day }: { text: "ON NOW" | "UP NEXT"; day: string }) {
   );
 }
 
+/* THE LIGHTS CHIP (2026-10-18) — the drawing only; WHICH state is lightChip's
+   decision, in board-lib, with the reasoning. This is the look Aniket approved in
+   the mock-up ("yes on the light chip"), four states:
+
+     on      lit bulb, warm glow          LIGHTS ON
+     offIn   lit bulb, the brand orange   LIGHTS OFF IN 8 MIN
+     onIn    outline bulb, LABEL white    LIGHTS ON IN 12 MIN
+     off     dim outline bulb             LIGHTS OFF
+
+   ⛔ NEVER GREEN — on this board green means a court is free, and a green LIGHTS
+   ON would read as "court open" from the desk — and never SESSION_GOLD, the girls'
+   tag. ON is a lamp's warm yellow, not a status colour. The countdown takes
+   SESSION_ORANGE, the board's own warning-strength colour, because it is the state
+   that matters to a group still on court. LIGHTS OFF is deliberately dimmer than
+   the 0.75 alpha this file otherwise keeps text above: it is the resting state and
+   should read as one, not compete with the bookings.
+
+   In em of the title it sits in (1.5vw), like the sport's object, so it stays
+   locked to the title at any screen shape. */
+const LIGHT_ON = "#FFE6A6";
+const LIGHT_DIM = "rgba(255,255,255,0.42)";
+const LIGHT_DIM_INK = "rgba(255,255,255,0.55)";
+
+function lightText(c: LightChip): string {
+  switch (c.kind) {
+    case "on": return "LIGHTS ON";
+    case "offIn": return `LIGHTS OFF IN ${c.min} MIN`;
+    case "onIn": return `LIGHTS ON IN ${c.min} MIN`;
+    case "off": return "LIGHTS OFF";
+  }
+}
+
+/* A bulb in a 24-unit box: rays and a glow when lit, an outline when not. The rays
+   are drawn past the viewBox (overflow visible) so the bulb itself keeps the full
+   height of the chip's line. */
+function Bulb({ lit, color }: { lit: boolean; color: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden
+      style={{
+        height: "1.35em", width: "1.35em", display: "block", overflow: "visible",
+        filter: lit ? `drop-shadow(0 0 0.28em ${color}) drop-shadow(0 0 0.7em ${color}88)` : "none",
+      }}
+    >
+      {lit && (
+        <g stroke={color} strokeWidth="1.4" strokeLinecap="round" opacity="0.9">
+          <line x1="12" y1="-1.6" x2="12" y2="0.4" />
+          <line x1="3.2" y1="2.4" x2="4.6" y2="3.8" />
+          <line x1="20.8" y1="2.4" x2="19.4" y2="3.8" />
+          <line x1="-0.6" y1="9.5" x2="1.4" y2="9.5" />
+          <line x1="24.6" y1="9.5" x2="22.6" y2="9.5" />
+        </g>
+      )}
+      <path
+        d="M12 2.6a6.7 6.7 0 0 0-4 12.1c.6.45.95 1.1.95 1.85V17.6h6.1v-1.05c0-.75.35-1.4.95-1.85A6.7 6.7 0 0 0 12 2.6z"
+        fill={lit ? color : "none"} stroke={color} strokeWidth="1.5" strokeLinejoin="round"
+      />
+      {lit && (
+        <path d="M10 13.2l1-2.4 1 1.6 1-1.6 1 2.4" fill="none" stroke="#7A4B12" strokeWidth="0.9" strokeLinejoin="round" opacity="0.55" />
+      )}
+      <line x1="9.2" y1="19.6" x2="14.8" y2="19.6" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="10.2" y1="21.9" x2="13.8" y2="21.9" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function LightStatus({ chip }: { chip: LightChip }) {
+  const look =
+    chip.kind === "on" ? { lit: true, color: LIGHT_ON, ink: LIGHT_ON }
+    : chip.kind === "offIn" ? { lit: true, color: SESSION_ORANGE, ink: SESSION_ORANGE }
+    : chip.kind === "onIn" ? { lit: false, color: LABEL, ink: LABEL }
+    : { lit: false, color: LIGHT_DIM, ink: LIGHT_DIM_INK };
+  return (
+    <span
+      style={{
+        display: "inline-flex", alignItems: "center", gap: "0.45em", whiteSpace: "nowrap",
+        fontSize: "0.6em", letterSpacing: "0.1em", lineHeight: 1, color: look.ink,
+        padding: "0.38em 0.75em 0.38em 0.55em", borderRadius: "999px",
+        background: look.lit ? "rgba(255,230,166,0.10)" : "rgba(255,255,255,0.05)",
+        border: `0.08em solid ${look.lit ? `${look.color}66` : "rgba(255,255,255,0.16)"}`,
+      }}
+    >
+      <Bulb lit={look.lit} color={look.color} />
+      {lightText(chip)}
+    </span>
+  );
+}
+
 export default function ReceptionBoard() {
   const [data, setData] = useState<NamedSlots | null>(null);
   const [stale, setStale] = useState(false);
@@ -741,6 +833,11 @@ export default function ReceptionBoard() {
         now: nowEntries,
         upNext,
         upcoming: rest.slice(0, UPCOMING_COUNT),
+        /* On the same 15 s tick as everything else here (2026-10-18): the minutes
+           in LIGHTS OFF IN n MIN are rounded up, so at worst one reads a quarter
+           minute high — and the windows run 24 h ahead, so a failed poll keeps
+           the count honest from the last good payload. */
+        light: lightChip(sport, data.lights, tick),
       };
     });
 
@@ -828,7 +925,7 @@ export default function ReceptionBoard() {
               borderRadius: "0.6vw", padding: "1.4vh 1vw",
             }}
           >
-            <div className="text-cond" style={{ fontSize: "1.5vw", letterSpacing: "0.15em", color: LABEL, marginBottom: "0.9vh" }}>
+            <div className="text-cond" style={{ position: "relative", fontSize: "1.5vw", letterSpacing: "0.15em", color: LABEL, marginBottom: "0.9vh" }}>
               <span style={{ position: "relative" }}>
                 {p.sport.toUpperCase()}
                 {SPORT_OBJECT[p.sport] && (
@@ -848,6 +945,22 @@ export default function ReceptionBoard() {
                   />
                 )}
               </span>
+              {/* The lights chip (2026-10-18), RIGHT-JUSTIFIED flush with the box's
+                  inner right edge — where the court-number column ends below — as
+                  approved in the second mock-up. Absolute and centred on the title's
+                  line for the same reason the sport's object is: the chip is taller
+                  than the type, and in flow it would take its height from the NOW
+                  area, which has single pixels to spare when every court is busy. */}
+              {p.light && (
+                <span
+                  style={{
+                    position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)",
+                    lineHeight: 1, pointerEvents: "none",
+                  }}
+                >
+                  <LightStatus chip={p.light} />
+                </span>
+              )}
             </div>
 
             {/* Centred, not top-aligned. A panel holding one booking against a
