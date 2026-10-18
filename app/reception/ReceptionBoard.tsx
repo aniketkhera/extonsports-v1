@@ -188,18 +188,42 @@ const UPCOMING_COUNT = 10;
    bottom. */
 const UP_NEXT_MAX = 2;
 
-/* The strip under the three boxes that holds the orangish.io pill and "view this
-   screen at" — the root's bottom padding, so the boxes end where it begins.
-   2026-10-15, Aniket, at the desk: "very less space". It was the top padding's
-   2.7vh, and the pill overlapped the middle box's border while the address hugged
-   the boxes. 4.8vh gives both clear room above and below (~15px each at 1080p).
-   It costs the boxes 2.1vh, all of it from the NOW area, which centres and has
-   slack: measured 2026-10-15, three live bookings per sport plus ten COMING UP rows
-   still show every row at 1080p, 768p and 2160p, exactly as at 2.7vh. That case
-   now has ~6px of NOW height to spare at 1080p, so this is close to the most the
-   strip can take without the first live booking losing its top. (~9px since
-   2026-10-16: the FREE NOW line came out and an ON NOW line went in.) */
-const CREDIT_STRIP = "4.8vh";
+/* The booking band — one line under the boxes, the bottom of the screen
+   (2026-10-18, Aniket: "a lot of people look at the reception screen — instead of
+   'view this screen at extonsports.com/reception', create a band at the bottom:
+   For bookings, go to extonsports.com or scan this"; then the phone number
+   "larger font", and "orangish.io in the same line as the QR code line and phone
+   number"). orangish.io left, the booking line and its QR in the middle, the
+   club's number right.
+
+   It replaces CREDIT_STRIP (2026-10-15..18), a 4.8vh strip under the boxes that
+   held the pill (centred), "view this screen at extonsports.com/reception" (left)
+   and, from 2026-10-16, the number (right). The address line went with it.
+
+   Its height is the QR's: BOOK_QR plus a little air. The QR is the one thing on
+   this screen meant to be read by a PHONE, not an eye, and a phone needs modules
+   it can resolve. At 10.4vh a module is ~3.4px at 1080p (~2.3mm on the 55") —
+   comfortable from the desk, not from across the lobby. Smaller saves the boxes
+   height and costs scanning distance; measure before changing either.
+
+   BAND_GAP + BOOK_BAND cost the boxes ~10vh more than the strip did, all of it
+   from the NOW / COMING UP area. Measured 2026-10-18 at 1080p and 1366x768 on a
+   quiet Sunday morning and a Tuesday 7:15 pm: every COMING UP row still shows.
+   NOT measured: three live groups on every sport at once — with the 4.8vh strip
+   that case had ~9px of NOW height to spare at 1080p, so it will now lose rows. */
+const BOOK_BAND = "13vh";
+const BOOK_QR = "10.4vh";
+/** Air between the boxes and the band's top rule. */
+const BAND_GAP = "1.6vh";
+/** The booking line and the number — large, because both are meant to be acted on. */
+const BAND_TEXT = "2vw";
+/** The pill's text. A step under BAND_TEXT: its white ground makes it read larger
+ *  than bare type of the same size, and this keeps the three items looking even. */
+const BAND_PILL_TEXT = "1.6vw";
+/** Where the QR goes — the same no-login page the site's "Book a court or lane"
+ *  button opens. The QR image (public/reception/book-qr.svg) is GENERATED from
+ *  this string; change one and regenerate the other. */
+const BOOK_URL = "https://app.orangish.io/book-court/exton-sports?theme=light";
 
 /* Blocks -> entries, by cutting the day into TIME BANDS.
    ──────────────────────────────────────────────────────────────────────────
@@ -729,7 +753,7 @@ export default function ReceptionBoard() {
     <div
       style={{
         position: "absolute", inset: 0, background: BG, color: INK,
-        display: "flex", flexDirection: "column", padding: `2.7vh 2.2vw ${CREDIT_STRIP}`,
+        display: "flex", flexDirection: "column", padding: `2.7vh 2.2vw calc(${BAND_GAP} + ${BOOK_BAND})`,
         overflow: "hidden",
       }}
     >
@@ -956,70 +980,58 @@ export default function ReceptionBoard() {
         ))}
       </div>
 
-      {/* 2026-10-15: Aniket asked for a small orangish.io credit on every Exton
-          surface, and later that day for it as a pill. The `tv` pill is not a link —
-          nobody can tap a television.
+      {/* The booking band — see BOOK_BAND. Full width under the boxes, so it reads
+          as its own line on the wall rather than as part of them.
 
-          Absolute, in the root's bottom padding strip (CREDIT_STRIP), so it takes no
-          height from the panels' 1fr row: in flow it would shrink all three boxes.
-          Small (the pill is 1.05em of this 0.68vw) — a credit, not information anyone
-          at the desk needs to read from across the lobby.
+          1fr auto 1fr: the booking line is the reason for the band, so it takes the
+          middle track and stays on the screen's centre line whatever the two ends
+          measure; the ends sit on the same two edges as every line above them — the
+          text INSIDE the badminton and squash boxes, 2.2vw root padding + 0.22vw
+          border + 1vw panel padding = 3.42vw each side.
 
-          Centred in the strip by flex, not placed by a `bottom` offset (2026-10-15,
-          "very less space"): the pill's height is in vw and the strip's in vh, and
-          the offset that was here left its top edge over the middle box's border. */}
+          - orangish.io (2026-10-15, Aniket: a credit on every Exton surface, as a
+            pill): the `tv` pill is a <span>, not a link — nobody can tap a
+            television. It is 1.05em of BAND_PILL_TEXT.
+          - The booking line: the address in the board's orange. The QR sits on
+            white with its own quiet zone (in the SVG), because a code on #0B1623
+            with no margin is one many phone cameras will not lock on to.
+          - The club's number (2026-10-16, Aniket: "write our phone number with a
+            cellphone icon to signify thats a phone"). CONTACT_PHONE is the main
+            line (the IVR), the same one the site prints everywhere — never a second
+            copy typed in here. Full white with the icon carrying the orange, because
+            a number is only any use if it can be read off the wall and dialled. */}
       <div
         style={{
-          position: "absolute", left: "50%", bottom: 0, height: CREDIT_STRIP, transform: "translateX(-50%)",
-          display: "flex", alignItems: "center",
-          fontSize: "0.68vw", whiteSpace: "nowrap", pointerEvents: "none",
+          position: "absolute", left: 0, right: 0, bottom: 0, height: BOOK_BAND,
+          display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center",
+          columnGap: "1.6vw", padding: "0 3.42vw",
+          borderTop: `0.09vw solid ${RULE_SOFT}`,
+          background: "linear-gradient(180deg, rgba(248,155,114,0.10) 0%, rgba(248,155,114,0.03) 100%)",
+          color: INK, fontSize: BAND_TEXT, whiteSpace: "nowrap", pointerEvents: "none",
         }}
       >
-        <OrangishPill tv />
-      </div>
-
-      {/* 2026-10-15, Aniket: "on the reception page also show — view this screen at
-          extonsports.com/reception" — approved from a mock-up of the live board. The
-          public page reads the same feed without a TV key, so a member can keep the
-          desk's view on a phone.
-
-          Same strip as the pill, flush left with the text INSIDE the badminton box:
-          the root's 2.2vw padding + the panel's 0.22vw border + its 1vw padding. The
-          address is in the board's own orange so it is the part the eye lands on;
-          the lead-in is soft white, a step brighter than a credit because this one
-          is meant to be read. Absolute for the same reason as the pill: in flow it
-          would take height from the panels' 1fr row. Centred in the strip the same
-          way as the pill (2026-10-15), on one line with it; the inner span keeps the
-          words one flex item, so the space before the address is not dropped. */}
-      <div
-        style={{
-          position: "absolute", left: "3.42vw", bottom: 0, height: CREDIT_STRIP,
-          display: "flex", alignItems: "center",
-          fontSize: "0.8vw", letterSpacing: "0.12em", color: "rgba(255,255,255,0.62)",
-          whiteSpace: "nowrap", pointerEvents: "none",
-        }}
-      >
-        <span>view this screen at <span style={{ color: SESSION_ORANGE, fontWeight: 500 }}>extonsports.com/reception</span></span>
-      </div>
-
-      {/* The club's number, bottom right (2026-10-16, Aniket: "the right bottom,
-          write our phone number with a cellphone icon to signify thats a phone").
-          The mirror of the address on the left: same strip, same absolute
-          placement (in flow it would take height from the panels' 1fr row), and
-          flush right with the text INSIDE the squash box — 2.2vw + 0.22vw + 1vw,
-          as on the left. A little larger and in full white, because a number is
-          only any use if it can be read off the wall and dialled; the icon carries
-          the orange. CONTACT_PHONE is the main line (the IVR), the same one the
-          site prints everywhere — never a second copy typed in here. */}
-      <div
-        style={{
-          position: "absolute", right: "3.42vw", bottom: 0, height: CREDIT_STRIP,
-          display: "flex", alignItems: "center",
-          fontSize: "1vw", letterSpacing: "0.06em", color: INK, fontWeight: 500,
-          fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", pointerEvents: "none",
-        }}
-      >
-        <PhoneNumber number={CONTACT_PHONE} color={SESSION_ORANGE} />
+        <div style={{ justifySelf: "start", fontSize: BAND_PILL_TEXT }}>
+          <OrangishPill tv />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "1.4vw" }}>
+          <span style={{ fontWeight: 500, letterSpacing: "0.02em" }}>
+            For bookings, go to{" "}
+            <span style={{ color: SESSION_ORANGE, fontWeight: 600 }}>extonsports.com</span>
+            <span style={{ color: LABEL }}> or scan</span>
+          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element -- a static SVG; next/image adds nothing here */}
+          <img
+            src="/reception/book-qr.svg"
+            alt={`QR code: ${BOOK_URL}`}
+            style={{
+              height: BOOK_QR, width: BOOK_QR, display: "block", borderRadius: "0.5vh",
+              boxShadow: "0 0.4vh 1.4vh rgba(0,0,0,0.45)",
+            }}
+          />
+        </div>
+        <div style={{ justifySelf: "end", fontWeight: 500, letterSpacing: "0.06em", fontVariantNumeric: "tabular-nums" }}>
+          <PhoneNumber number={CONTACT_PHONE} color={SESSION_ORANGE} />
+        </div>
       </div>
     </div>
   );
