@@ -214,10 +214,16 @@ const UP_NEXT_MAX = 2;
    quiet Sunday morning and a Tuesday 7:15 pm: every COMING UP row still shows.
    NOT measured: three live groups on every sport at once — with the 4.8vh strip
    that case had ~9px of NOW height to spare at 1080p, so it will now lose rows. */
-const BOOK_BAND = "13vh";
-const BOOK_QR = "10.4vh";
+/* min(vh, vw) on all three (2026-10-18, Aniket's phone screenshot of the public page:
+   "Not aligned"). Everything else in the band is in vw, and on a phone held upright vh
+   is two to three times vw: a 10.4vh QR came out ~95px beside 8px text, overflowed its
+   centre track and landed on the phone number. The vw term only bites on a screen
+   narrower than about 4:3 — on both 16:9 televisions (and 1366x768) the vh term is the
+   smaller, so the TVs render exactly as before. */
+const BOOK_BAND = "min(13vh, 9.4vw)";
+const BOOK_QR = "min(10.4vh, 7.5vw)";
 /** Air between the boxes and the band's top rule. */
-const BAND_GAP = "1.6vh";
+const BAND_GAP = "min(1.6vh, 1.15vw)";
 /** The booking line and the number — large, because both are meant to be acted on. */
 const BAND_TEXT = "2vw";
 /** The pill's text. A step under BAND_TEXT: its white ground makes it read larger
@@ -770,7 +776,10 @@ export default function ReceptionBoard() {
   useEffect(() => {
     mounted.current = true;
     const key = readKey();
-    const url = key ? `${PLATFORM}/api/public/court-board?days=21` : "/api/court-slots";
+    /* Unkeyed, the page asks the relay for the lights SCHEDULE too (?lights=1, 2026-10-18,
+       Aniket: "Add there too"): the chip then follows the windows alone, with no
+       bridge report and no override — those stay behind a TV's key. */
+    const url = key ? `${PLATFORM}/api/public/court-board?days=21` : "/api/court-slots?lights=1";
     const init: RequestInit = key
       ? { cache: "no-store", headers: { Authorization: `Bearer ${key}` } }
       : { cache: "no-store" };
