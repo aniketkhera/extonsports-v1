@@ -995,6 +995,12 @@ export default function ReceptionBoard() {
           - The booking line: the address in the board's orange. The QR sits on
             white with its own quiet zone (in the SVG), because a code on #0B1623
             with no margin is one many phone cameras will not lock on to.
+            The line and the QR are ONE link to BOOK_URL (2026-10-18, Aniket: "QR
+            code clickable/tappable"): the page is also public at
+            extonsports.com/reception, and nobody can scan a code on their own
+            phone's screen. The band ignores the pointer; the link opts back in.
+            Same tab, like the site's other booking links. On a television it is
+            inert — nothing there clicks.
           - The club's number (2026-10-16, Aniket: "write our phone number with a
             cellphone icon to signify thats a phone"). CONTACT_PHONE is the main
             line (the IVR), the same one the site prints everywhere — never a second
@@ -1013,7 +1019,14 @@ export default function ReceptionBoard() {
         <div style={{ justifySelf: "start", fontSize: BAND_PILL_TEXT }}>
           <OrangishPill tv />
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "1.4vw" }}>
+        <a
+          href={BOOK_URL}
+          aria-label="Book a court or lane at Exton Sports"
+          style={{
+            display: "flex", alignItems: "center", gap: "1.4vw",
+            color: "inherit", textDecoration: "none", pointerEvents: "auto", cursor: "pointer",
+          }}
+        >
           <span style={{ fontWeight: 500, letterSpacing: "0.02em" }}>
             For bookings, go to{" "}
             <span style={{ color: SESSION_ORANGE, fontWeight: 600 }}>extonsports.com</span>
@@ -1028,7 +1041,7 @@ export default function ReceptionBoard() {
               boxShadow: "0 0.4vh 1.4vh rgba(0,0,0,0.45)",
             }}
           />
-        </div>
+        </a>
         <div style={{ justifySelf: "end", fontWeight: 500, letterSpacing: "0.06em", fontVariantNumeric: "tabular-nums" }}>
           <PhoneNumber number={CONTACT_PHONE} color={SESSION_ORANGE} />
         </div>
