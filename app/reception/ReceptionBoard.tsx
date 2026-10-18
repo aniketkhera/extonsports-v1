@@ -116,11 +116,11 @@ const SESSION_ORANGE = "#F89B72";
    COACHING from across the room. */
 const SESSION_GOLD = "#FFC43D";
 const PANEL_SHADOW = [
-  "0 1.7vh 3.8vh rgba(0,0,0,0.66)",            // the box sits off the wall
-  "0 0.5vh 1.1vh rgba(0,0,0,0.45)",            // the contact shadow under it
-  "0 0 1.4vh rgba(248,155,114,0.22)",          // the edge picks up its own light
-  "inset 0 0.18vh 0 rgba(255,255,255,0.34)",   // lit top edge
-  "inset 0 -0.45vh 1vh rgba(0,0,0,0.38)",      // shaded foot
+  "0 calc(1.7 * var(--vh)) calc(3.8 * var(--vh)) rgba(0,0,0,0.66)",            // the box sits off the wall
+  "0 calc(0.5 * var(--vh)) calc(1.1 * var(--vh)) rgba(0,0,0,0.45)",            // the contact shadow under it
+  "0 0 calc(1.4 * var(--vh)) rgba(248,155,114,0.22)",          // the edge picks up its own light
+  "inset 0 calc(0.18 * var(--vh)) 0 rgba(255,255,255,0.34)",   // lit top edge
+  "inset 0 calc(-0.45 * var(--vh)) calc(1 * var(--vh)) rgba(0,0,0,0.38)",      // shaded foot
 ].join(", ");
 
 const SPORT_ORDER = ["Badminton", "Cricket", "Squash"];
@@ -214,21 +214,15 @@ const UP_NEXT_MAX = 2;
    quiet Sunday morning and a Tuesday 7:15 pm: every COMING UP row still shows.
    NOT measured: three live groups on every sport at once — with the 4.8vh strip
    that case had ~9px of NOW height to spare at 1080p, so it will now lose rows. */
-/* min(vh, vw) on all three (2026-10-18, Aniket's phone screenshot of the public page:
-   "Not aligned"). Everything else in the band is in vw, and on a phone held upright vh
-   is two to three times vw: a 10.4vh QR came out ~95px beside 8px text, overflowed its
-   centre track and landed on the phone number. The vw term only bites on a screen
-   narrower than about 4:3 — on both 16:9 televisions (and 1366x768) the vh term is the
-   smaller, so the TVs render exactly as before. */
-const BOOK_BAND = "min(13vh, 9.4vw)";
-const BOOK_QR = "min(10.4vh, 7.5vw)";
+const BOOK_BAND = "calc(13 * var(--vh))";
+const BOOK_QR = "calc(10.4 * var(--vh))";
 /** Air between the boxes and the band's top rule. */
-const BAND_GAP = "min(1.6vh, 1.15vw)";
+const BAND_GAP = "calc(1.6 * var(--vh))";
 /** The booking line and the number — large, because both are meant to be acted on. */
-const BAND_TEXT = "2vw";
+const BAND_TEXT = "calc(2 * var(--vw))";
 /** The pill's text. A step under BAND_TEXT: its white ground makes it read larger
  *  than bare type of the same size, and this keeps the three items looking even. */
-const BAND_PILL_TEXT = "1.6vw";
+const BAND_PILL_TEXT = "calc(1.6 * var(--vw))";
 /** Where the QR goes — the same no-login page the site's "Book a court or lane"
  *  button opens. The QR image (public/reception/book-qr.svg) is GENERATED from
  *  this string; change one and regenerate the other. */
@@ -366,12 +360,12 @@ function CourtBoxes({
   sport, labels, taken, big,
 }: { sport: string; labels: string[]; taken: string[]; big?: boolean }) {
   const on = new Set(taken);
-  const size = big ? "2.1vw" : "1.02vw";
+  const size = big ? "calc(2.1 * var(--vw))" : "calc(1.02 * var(--vw))";
   return (
     <span
       role="img"
       aria-label={courtsLabel(sport, taken)}
-      style={{ display: "inline-flex", alignItems: "center", gap: big ? "0.5vw" : "0.26vw" }}
+      style={{ display: "inline-flex", alignItems: "center", gap: big ? "calc(0.5 * var(--vw))" : "calc(0.26 * var(--vw))" }}
     >
       {labels.map((l) => {
         const isOn = on.has(l);
@@ -380,8 +374,8 @@ function CourtBoxes({
             key={l}
             style={{
               width: size, height: size, flex: "none", boxSizing: "border-box",
-              borderRadius: big ? "0.22vw" : "0.14vw",
-              border: `${big ? "0.18vw" : "0.12vw"} solid ${isOn ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.55)"}`,
+              borderRadius: big ? "calc(0.22 * var(--vw))" : "calc(0.14 * var(--vw))",
+              border: `${big ? "calc(0.18 * var(--vw))" : "calc(0.12 * var(--vw))"} solid ${isOn ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.55)"}`,
               background: isOn ? "rgba(255,255,255,0.10)" : "transparent",
               display: "inline-flex",
             }}
@@ -401,9 +395,9 @@ function CourtBoxes({
 /* The court numbers over the COMING UP boxes, at the boxes' own pitch. */
 function CourtNumbers({ labels }: { labels: string[] }) {
   return (
-    <span style={{ display: "inline-flex", gap: "0.26vw" }}>
+    <span style={{ display: "inline-flex", gap: "calc(0.26 * var(--vw))" }}>
       {labels.map((l) => (
-        <span key={l} style={{ width: "1.02vw", textAlign: "center", fontSize: "0.82vw", letterSpacing: 0 }}>{l}</span>
+        <span key={l} style={{ width: "calc(1.02 * var(--vw))", textAlign: "center", fontSize: "calc(0.82 * var(--vw))", letterSpacing: 0 }}>{l}</span>
       ))}
     </span>
   );
@@ -432,11 +426,11 @@ function SessionTag({ session }: { session: SessionKey }) {
     <span
       className="text-cond"
       style={{
-        fontSize: free ? "1.1vw" : "1.25vw", letterSpacing: free ? "0.03em" : "0.08em", lineHeight: 1, whiteSpace: "nowrap",
-        padding: "0.32vw 0.62vw", borderRadius: "0.3vw",
+        fontSize: free ? "calc(1.1 * var(--vw))" : "calc(1.25 * var(--vw))", letterSpacing: free ? "0.03em" : "0.08em", lineHeight: 1, whiteSpace: "nowrap",
+        padding: "calc(0.32 * var(--vw)) calc(0.62 * var(--vw))", borderRadius: "calc(0.3 * var(--vw))",
         background: junior ? SESSION_ORANGE : free ? SESSION_GOLD : "transparent",
         color: filled ? BG : INK,
-        border: filled ? "none" : `0.15vw solid ${INK}`,
+        border: filled ? "none" : `calc(0.15 * var(--vw)) solid ${INK}`,
         ...(free ? { textTransform: "none" as const } : {}),
       }}
     >
@@ -535,7 +529,7 @@ function Lockup({ brand, who }: { brand: BrandKey | null; who: string }) {
         style={{
           fontFamily: "var(--font-space-grotesk), sans-serif",
           fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.02,
-          fontSize: "1.55vw",
+          fontSize: "calc(1.55 * var(--vw))",
         }}
       >
         <span style={{ display: "block", color: EMBER }}>Philadelphia</span>
@@ -545,15 +539,15 @@ function Lockup({ brand, who }: { brand: BrandKey | null; who: string }) {
   }
   if (brand === "ccca") {
     return (
-      <div style={{ display: "flex", alignItems: "center", gap: "0.6vw" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "calc(0.6 * var(--vw))" }}>
         <Image
           src="/academies/ccca-shield.png"
           alt=""
           width={360}
           height={239}
-          style={{ height: "3.1vw", width: "auto" }}
+          style={{ height: "calc(3.1 * var(--vw))", width: "auto" }}
         />
-        <div className="text-cond" style={{ fontSize: "1.15vw", lineHeight: 1.08, letterSpacing: "0.04em" }}>
+        <div className="text-cond" style={{ fontSize: "calc(1.15 * var(--vw))", lineHeight: 1.08, letterSpacing: "0.04em" }}>
           <span style={{ display: "block", color: EMBER }}>Chester County</span>
           <span style={{ display: "block", color: INK }}>Cricket Academy</span>
         </div>
@@ -568,7 +562,7 @@ function Lockup({ brand, who }: { brand: BrandKey | null; who: string }) {
     return (
       <div
         className="text-cond"
-        style={{ fontSize: "1.6vw", letterSpacing: "0.08em", color: INK, lineHeight: 1.05 }}
+        style={{ fontSize: "calc(1.6 * var(--vw))", letterSpacing: "0.08em", color: INK, lineHeight: 1.05 }}
       >
         SQUASH<span style={{ color: EMBER }}>TIGERS</span>
       </div>
@@ -580,18 +574,18 @@ function Lockup({ brand, who }: { brand: BrandKey | null; who: string }) {
        artwork is a portrait raster with a photograph in it and would not
        survive being dropped into a dark panel. */
     return (
-      <div style={{ display: "flex", alignItems: "baseline", gap: "0.5vw" }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: "calc(0.5 * var(--vw))" }}>
         <span
           style={{
             fontFamily: "var(--font-caveat), cursive",
-            fontWeight: 700, fontSize: "2vw", lineHeight: 1, color: EMBER,
+            fontWeight: 700, fontSize: "calc(2 * var(--vw))", lineHeight: 1, color: EMBER,
           }}
         >
           SeRa
         </span>
         <span
           className="text-cond"
-          style={{ fontSize: "1.05vw", letterSpacing: "0.18em", color: INK, whiteSpace: "nowrap" }}
+          style={{ fontSize: "calc(1.05 * var(--vw))", letterSpacing: "0.18em", color: INK, whiteSpace: "nowrap" }}
         >
           DANCE &amp; FITNESS
         </span>
@@ -608,7 +602,7 @@ function Lockup({ brand, who }: { brand: BrandKey | null; who: string }) {
     <div
       className="text-cond"
       style={{
-        fontSize: "1.5vw",
+        fontSize: "calc(1.5 * var(--vw))",
         color: isPrivate ? MUTED : INK,
         letterSpacing: isPrivate ? "0.06em" : "0.03em",
         lineHeight: 1.1,
@@ -628,16 +622,16 @@ function BigEntry({
   /* No margin under the last one: in a centred column it only added height,
      and the ON NOW / UP NEXT line above now spends it (2026-10-16). */
   return (
-    <div style={{ marginBottom: last ? 0 : "1.2vh" }}>
-      <div style={{ minHeight: "3.2vw", display: "flex", alignItems: "center", gap: "0.8vw", marginBottom: "0.4vh" }}>
+    <div style={{ marginBottom: last ? 0 : "calc(1.2 * var(--vh))" }}>
+      <div style={{ minHeight: "calc(3.2 * var(--vw))", display: "flex", alignItems: "center", gap: "calc(0.8 * var(--vw))", marginBottom: "calc(0.4 * var(--vh))" }}>
         <Lockup brand={e.brand} who={e.who} />
         {e.session && <SessionTag session={e.session} />}
       </div>
-      <div className="text-cond" style={{ fontSize: "3.1vw", color: INK, lineHeight: 1.03 }}>
+      <div className="text-cond" style={{ fontSize: "calc(3.1 * var(--vw))", color: INK, lineHeight: 1.03 }}>
         {span(e.from, e.to)}
       </div>
       {/* display:flex so the row has no inherited 16px/1.5 line box under it. */}
-      <div style={{ display: "flex", marginTop: "0.5vh" }}>
+      <div style={{ display: "flex", marginTop: "calc(0.5 * var(--vh))" }}>
         <CourtBoxes sport={sport} labels={labels} taken={e.courts} big={big} />
       </div>
     </div>
@@ -657,7 +651,7 @@ function SlotLine({ text, day }: { text: "ON NOW" | "UP NEXT"; day: string }) {
   return (
     <div
       className="text-cond"
-      style={{ fontSize: "1.45vw", letterSpacing: "0.12em", color: EMBER, lineHeight: 1, marginBottom: "1.4vh" }}
+      style={{ fontSize: "calc(1.45 * var(--vw))", letterSpacing: "0.12em", color: EMBER, lineHeight: 1, marginBottom: "calc(1.4 * var(--vh))" }}
     >
       {text}
       {day && <span style={{ color: INK }}> · {day}</span>}
@@ -876,11 +870,32 @@ export default function ReceptionBoard() {
 
   const { panels, today } = view;
 
+  /* ── 16:9, ALWAYS (2026-10-18) ──────────────────────────────────────────────
+     This screen is drawn for the two 16:9 televisions, and every size on it was
+     viewport-relative — vw for most things, vh for the band and the paddings. On any
+     other shape the two drift apart: on a phone held upright vh is 2-3x vw (the QR
+     outgrew the band and landed on the phone number), and on a phone held sideways vw
+     is large against a short height (the COMING UP list rose over ON NOW). Aniket,
+     from his phone: "Not aligned", then "Landscape a bit off too".
+     So the board is ONE 16:9 picture scaled to fit, letterboxed on the ground colour:
+     --vw and --vh are a hundredth of the 16:9 box, not of the window, and every size
+     below is written in them (the conversion was mechanical: Nvw -> N * var(--vw)).
+     On a 16:9 screen min() picks 1vw and 1vh exactly, the box IS the window, and the
+     televisions render as before — measured pixel for pixel at 1920x1080. */
+  const BOX = {
+    "--vw": "min(1vw, calc(1vh * 16 / 9))",
+    "--vh": "min(1vh, calc(1vw * 9 / 16))",
+  } as React.CSSProperties;
+
   return (
+    <div style={{ position: "absolute", inset: 0, background: BG }}>
     <div
       style={{
-        position: "absolute", inset: 0, background: BG, color: INK,
-        display: "flex", flexDirection: "column", padding: `2.7vh 2.2vw calc(${BAND_GAP} + ${BOOK_BAND})`,
+        ...BOX,
+        position: "absolute", background: BG, color: INK,
+        width: "calc(100 * var(--vw))", height: "calc(100 * var(--vh))",
+        left: "calc(50% - 50 * var(--vw))", top: "calc(50% - 50 * var(--vh))",
+        display: "flex", flexDirection: "column", padding: `calc(2.7 * var(--vh)) calc(2.2 * var(--vw)) calc(${BAND_GAP} + ${BOOK_BAND})`,
         overflow: "hidden",
       }}
     >
@@ -891,9 +906,9 @@ export default function ReceptionBoard() {
       <div
         style={{
           display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "baseline",
-          columnGap: "2vw",
+          columnGap: "calc(2 * var(--vw))",
           borderBottom: `1px solid ${RULE}`,
-          paddingBottom: "1.2vh", marginBottom: "1.6vh",
+          paddingBottom: "calc(1.2 * var(--vh))", marginBottom: "calc(1.6 * var(--vh))",
         }}
       >
         {/* The club's mark left of the name (2026-10-16). Absolute, in room made by
@@ -904,16 +919,16 @@ export default function ReceptionBoard() {
             title's line box. */}
         <div
           className="text-cond"
-          style={{ color: EMBER, fontSize: "2.1vw", letterSpacing: "0.10em", position: "relative", paddingLeft: "3.6vw" }}
+          style={{ color: EMBER, fontSize: "calc(2.1 * var(--vw))", letterSpacing: "0.10em", position: "relative", paddingLeft: "calc(3.6 * var(--vw))" }}
         >
-          <LogoGlobe size="2.8vw" ring style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)" }} />
+          <LogoGlobe size="calc(2.8 * var(--vw))" ring style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)" }} />
           EXTON SPORTS CENTER
           {stale && (
             <span
               aria-hidden
               style={{
-                display: "inline-block", width: "0.5vw", height: "0.5vw", borderRadius: "50%",
-                background: RULE, marginLeft: "0.6vw", verticalAlign: "middle",
+                display: "inline-block", width: "calc(0.5 * var(--vw))", height: "calc(0.5 * var(--vw))", borderRadius: "50%",
+                background: RULE, marginLeft: "calc(0.6 * var(--vw))", verticalAlign: "middle",
               }}
             />
           )}
@@ -922,11 +937,11 @@ export default function ReceptionBoard() {
             reads as part of the header row rather than a caption under it. */}
         <div
           className="text-cond"
-          style={{ color: EMBER, fontSize: "2.1vw", letterSpacing: "0.10em", whiteSpace: "nowrap", justifySelf: "center" }}
+          style={{ color: EMBER, fontSize: "calc(2.1 * var(--vw))", letterSpacing: "0.10em", whiteSpace: "nowrap", justifySelf: "center" }}
         >
           <DateLine />
         </div>
-        <div className="text-cond" style={{ color: EMBER, fontSize: "2.4vw", lineHeight: 1, justifySelf: "end" }}>
+        <div className="text-cond" style={{ color: EMBER, fontSize: "calc(2.4 * var(--vw))", lineHeight: 1, justifySelf: "end" }}>
           <Clock />
         </div>
       </div>
@@ -936,7 +951,7 @@ export default function ReceptionBoard() {
           court boxes pushed all three panels — and their last COMING UP rows —
           off the bottom of the screen. Now the row is the screen's, and the NOW
           area's own overflow:hidden is what gives. */}
-      <div style={{ flex: 1, display: "grid", gridTemplateColumns: `repeat(${Math.max(panels.length, 1)}, 1fr)`, gridTemplateRows: "minmax(0, 1fr)", gap: "1.4vw", minHeight: 0 }}>
+      <div style={{ flex: 1, display: "grid", gridTemplateColumns: `repeat(${Math.max(panels.length, 1)}, 1fr)`, gridTemplateRows: "minmax(0, 1fr)", gap: "calc(1.4 * var(--vw))", minHeight: 0 }}>
         {panels.map((p) => (
           <div
             key={p.sport}
@@ -950,12 +965,12 @@ export default function ReceptionBoard() {
               /* 0.09vw read as a hairline from the desk — roughly 1.7px on the
                  55". 0.22vw is ~4px there and ~8px on the 75", which is the
                  same line to the eye at both distances. */
-              border: `0.22vw solid ${PANEL_BORDER}`,
+              border: `calc(0.22 * var(--vw)) solid ${PANEL_BORDER}`,
               boxShadow: PANEL_SHADOW,
-              borderRadius: "0.6vw", padding: "1.4vh 1vw",
+              borderRadius: "calc(0.6 * var(--vw))", padding: "calc(1.4 * var(--vh)) calc(1 * var(--vw))",
             }}
           >
-            <div className="text-cond" style={{ position: "relative", fontSize: "1.5vw", letterSpacing: "0.15em", color: LABEL, marginBottom: "0.9vh" }}>
+            <div className="text-cond" style={{ position: "relative", fontSize: "calc(1.5 * var(--vw))", letterSpacing: "0.15em", color: LABEL, marginBottom: "calc(0.9 * var(--vh))" }}>
               <span style={{ position: "relative" }}>
                 {p.sport.toUpperCase()}
                 {SPORT_OBJECT[p.sport] && (
@@ -1039,7 +1054,7 @@ export default function ReceptionBoard() {
               ) : (
                 /* Only when nothing at all is booked ahead in the feed's window —
                    since 2026-10-16 an idle sport shows its UP NEXT instead. */
-                <div className="text-cond" style={{ fontSize: "3.1vw", color: GREEN, lineHeight: 1.03 }}>
+                <div className="text-cond" style={{ fontSize: "calc(3.1 * var(--vw))", color: GREEN, lineHeight: 1.03 }}>
                   ALL OPEN
                 </div>
               )}
@@ -1061,12 +1076,12 @@ export default function ReceptionBoard() {
                 Headed AFTER THAT, not COMING UP, while the big area is showing
                 an UP NEXT (2026-10-16, Aniket's words for it) — the list then
                 starts from the booking after that one, so neither is shown twice. */}
-            <div style={{ borderTop: `1px solid ${RULE_SOFT}`, paddingTop: "0.6vh" }}>
+            <div style={{ borderTop: `1px solid ${RULE_SOFT}`, paddingTop: "calc(0.6 * var(--vh))" }}>
               <div
                 className="text-cond"
                 style={{
-                  display: "grid", gridTemplateColumns: "auto minmax(0,1fr) auto", gap: "0 0.5vw",
-                  alignItems: "baseline", fontSize: "1vw", letterSpacing: "0.16em", color: NEXT_LBL,
+                  display: "grid", gridTemplateColumns: "auto minmax(0,1fr) auto", gap: "0 calc(0.5 * var(--vw))",
+                  alignItems: "baseline", fontSize: "calc(1 * var(--vw))", letterSpacing: "0.16em", color: NEXT_LBL,
                 }}
               >
                 <span>{p.upNext.length ? "AFTER THAT" : "COMING UP"}</span>
@@ -1074,7 +1089,7 @@ export default function ReceptionBoard() {
                 <CourtNumbers labels={p.labels} />
               </div>
               {p.upcoming.length === 0 ? (
-                <div className="text-cond" style={{ fontSize: "1.2vw", color: NEXT_VAL, lineHeight: 1.35 }}>
+                <div className="text-cond" style={{ fontSize: "calc(1.2 * var(--vw))", color: NEXT_VAL, lineHeight: 1.35 }}>
                   {p.upNext.length ? "Nothing else booked" : "Nothing booked"}
                 </div>
               ) : (
@@ -1087,8 +1102,8 @@ export default function ReceptionBoard() {
                       style={{
                         display: "grid",
                         gridTemplateColumns: "auto minmax(0,1fr) auto",
-                        gap: "0 0.5vw", alignItems: "center",
-                        fontSize: "1.12vw", lineHeight: 1.34, color: NEXT_VAL,
+                        gap: "0 calc(0.5 * var(--vw))", alignItems: "center",
+                        fontSize: "calc(1.12 * var(--vw))", lineHeight: 1.34, color: NEXT_VAL,
                         whiteSpace: "nowrap",
                       }}
                     >
@@ -1100,7 +1115,7 @@ export default function ReceptionBoard() {
                           PBA, CCCA and SquashTigers, one per column — so a cut-off
                           "CHESTER COUNTY CRICKET…" still says who it is. The free
                           girls' words keep their own case, as on the tag above. */}
-                      <span style={{ display: "flex", gap: "0.45vw", minWidth: 0, overflow: "hidden" }}>
+                      <span style={{ display: "flex", gap: "calc(0.45 * var(--vw))", minWidth: 0, overflow: "hidden" }}>
                         {e.session && (
                           <span
                             style={{
@@ -1153,8 +1168,8 @@ export default function ReceptionBoard() {
         style={{
           position: "absolute", left: 0, right: 0, bottom: 0, height: BOOK_BAND,
           display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center",
-          columnGap: "1.6vw", padding: "0 3.42vw",
-          borderTop: `0.09vw solid ${RULE_SOFT}`,
+          columnGap: "calc(1.6 * var(--vw))", padding: "0 calc(3.42 * var(--vw))",
+          borderTop: `calc(0.09 * var(--vw)) solid ${RULE_SOFT}`,
           background: "linear-gradient(180deg, rgba(248,155,114,0.10) 0%, rgba(248,155,114,0.03) 100%)",
           color: INK, fontSize: BAND_TEXT, whiteSpace: "nowrap", pointerEvents: "none",
         }}
@@ -1166,7 +1181,7 @@ export default function ReceptionBoard() {
           href={BOOK_URL}
           aria-label="Book a court or lane at Exton Sports"
           style={{
-            display: "flex", alignItems: "center", gap: "1.4vw",
+            display: "flex", alignItems: "center", gap: "calc(1.4 * var(--vw))",
             color: "inherit", textDecoration: "none", pointerEvents: "auto", cursor: "pointer",
           }}
         >
@@ -1180,8 +1195,8 @@ export default function ReceptionBoard() {
             src="/reception/book-qr.svg"
             alt={`QR code: ${BOOK_URL}`}
             style={{
-              height: BOOK_QR, width: BOOK_QR, display: "block", borderRadius: "0.5vh",
-              boxShadow: "0 0.4vh 1.4vh rgba(0,0,0,0.45)",
+              height: BOOK_QR, width: BOOK_QR, display: "block", borderRadius: "calc(0.5 * var(--vh))",
+              boxShadow: "0 calc(0.4 * var(--vh)) calc(1.4 * var(--vh)) rgba(0,0,0,0.45)",
             }}
           />
         </a>
@@ -1189,6 +1204,7 @@ export default function ReceptionBoard() {
           <PhoneNumber number={CONTACT_PHONE} color={SESSION_ORANGE} />
         </div>
       </div>
+    </div>
     </div>
   );
 }
