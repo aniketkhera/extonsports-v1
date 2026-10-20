@@ -12,9 +12,11 @@ import { EMBER, INK, LABEL, ORANGE, RULE, RULE_SOFT } from "./tv-palette";
    Lifted out of app/reception/ReceptionBoard.tsx on 2026-10-20, unchanged, when
    the exit-door TV's promotion screen (/exit) was asked to keep "the top and
    bottom strips as we have for the reception and vestibule TVs" (Aniket). One
-   copy, so the two screens cannot drift: the clock, the date and the booking QR
+   copy, so the two screens cannot drift: the clock, the date and the booking line
    look the same wherever someone meets them in the building. /reception was
    pixel-diffed against production at 1920x1080 after the move — identical.
+   (The band's small booking QR is /reception's only — see BookingBand's
+   showBookQr, 2026-10-20.)
 
    Both pieces are sized in --vw / --vh, so they only render correctly inside a
    box that sets those (BOX in tv-palette.ts). The caller lays them out: the header
@@ -172,8 +174,20 @@ export function ScreenHeader({ stale = false }: { stale?: boolean }) {
   );
 }
 
-/** The booking band — see BOOK_BAND. Absolute at the foot of the 16:9 box. */
-export function BookingBand() {
+/** The booking band — see BOOK_BAND. Absolute at the foot of the 16:9 box.
+ *  `showBookQr` (default true — /reception) draws the small booking QR and "or scan".
+ *
+ *  /exit passes false (2026-10-20, Aniket on the first draft: "hide the small QR on
+ *  this screen"). That screen's whole point is ONE big code, the Starter Pack's, and
+ *  a second code beside it is a coin toss for whoever lifts a phone — scan the wrong
+ *  one and you are booking a court instead of buying lessons. The line then reads
+ *  "For bookings, go to extonsports.com", with nothing to scan, and still sits on the
+ *  screen's centre line: the middle track is `auto`, so it shrinks to the words alone
+ *  and the 1fr tracks either side keep it centred. The band keeps its full height
+ *  (BOOK_BAND), so the strip is the same size and in the same place on both screens.
+ *  With the default, the markup is exactly what it was — /reception pixel-diffed
+ *  against unmodified origin/master at 1920x1080 after this change: identical. */
+export function BookingBand({ showBookQr = true }: { showBookQr?: boolean } = {}) {
   return (
     /* Full width under the boxes, so it reads as its own line on the wall rather
        than as part of them.
@@ -225,17 +239,19 @@ export function BookingBand() {
         <span style={{ fontWeight: 500, letterSpacing: "0.02em" }}>
           For bookings, go to{" "}
           <span style={{ color: ORANGE, fontWeight: 600 }}>extonsports.com</span>
-          <span style={{ color: LABEL }}> or scan</span>
+          {showBookQr && <span style={{ color: LABEL }}> or scan</span>}
         </span>
-        {/* eslint-disable-next-line @next/next/no-img-element -- a static SVG; next/image adds nothing here */}
-        <img
-          src="/reception/book-qr.svg"
-          alt={`QR code: ${BOOK_URL}`}
-          style={{
-            height: BOOK_QR, width: BOOK_QR, display: "block", borderRadius: "calc(0.5 * var(--vh))",
-            boxShadow: "0 calc(0.4 * var(--vh)) calc(1.4 * var(--vh)) rgba(0,0,0,0.45)",
-          }}
-        />
+        {showBookQr && (
+          /* eslint-disable-next-line @next/next/no-img-element -- a static SVG; next/image adds nothing here */
+          <img
+            src="/reception/book-qr.svg"
+            alt={`QR code: ${BOOK_URL}`}
+            style={{
+              height: BOOK_QR, width: BOOK_QR, display: "block", borderRadius: "calc(0.5 * var(--vh))",
+              boxShadow: "0 calc(0.4 * var(--vh)) calc(1.4 * var(--vh)) rgba(0,0,0,0.45)",
+            }}
+          />
+        )}
       </a>
       <div style={{ justifySelf: "end", fontWeight: 500, letterSpacing: "0.06em", fontVariantNumeric: "tabular-nums" }}>
         <PhoneNumber number={CONTACT_PHONE} color={ORANGE} />

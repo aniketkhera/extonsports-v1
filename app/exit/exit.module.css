@@ -242,8 +242,17 @@
 
 /* ── THE CALL TO ACTION ──────────────────────────────────────────────────────── */
 
+/* The column: the code (.buy), what happens after you buy (.after), the address
+   (.url) — one centred stack, as wide as the card, so the sentence's edges line up
+   with the code's. */
 .cta {
   justify-self: end;
+  width: calc(44 * var(--vh));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.buy {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -288,13 +297,79 @@
   pointer-events: none;
   opacity: 0;
 }
+
+/* After you buy (2026-10-20, Aniket: "mention what happens after they buy - "A
+   SQUASHTIGERS coach will get in touch with you to schedule the 5 lessons"").
+   The lead-in is the code's label set small — the same condensed caps, tracking and
+   orange as SCAN TO BUY — between two hairlines, so the pair reads as steps one and
+   two. The sentence is 1.7vw, a step over the fact lines (1.6vw) and under the
+   band's line (2vw), and full white: it has to be read from the door, a few metres
+   off, not just from arm's length at the code. Measured at 1080p: three even lines,
+   and the column (tab to address) clears the header's rule and the band by ~31px
+   each — with the address kept, and the code still 44vh. */
+.after {
+  margin: calc(2.2 * var(--vh)) 0 0;
+  width: 100%;
+  text-align: center;
+}
+.afterLead {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: calc(1.4 * var(--vw));
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: #f89b72;
+}
+.afterLead::before,
+.afterLead::after {
+  content: "";
+  flex: 1;
+  height: calc(0.1 * var(--vw));
+  background: rgba(248, 155, 114, 0.55);
+}
+.afterText {
+  display: block;
+  margin-top: calc(1 * var(--vh));
+  font-size: calc(1.7 * var(--vw));
+  font-weight: 500;
+  line-height: 1.22;
+  color: #ffffff;
+  /* Even lines rather than a short last one. Where a browser does not know it,
+     the non-breaking spaces in "the 5 lessons" (ExitScreen.tsx) still keep the
+     last line from being a lone "5 lessons." */
+  text-wrap: balance;
+}
+/* SQUASHTIGERS in the homepage's lockup — Exo 2 800 italic, SQUASH white and
+   TIGERS orange (Hero.tsx ACADEMY_PARTNERS, /comingsoon's .stLogo) — so the name
+   is recognisably the academy's, not just a word in caps. A touch under the
+   sentence's size: Exo 2's caps are wide and heavy and would otherwise shout. The
+   right margin gives back the space the italic's lean takes from "coach". */
+.st {
+  font-family: var(--font-exo2), sans-serif;
+  font-weight: 800;
+  font-style: italic;
+  font-size: 0.92em;
+  letter-spacing: 0.04em;
+  margin-right: 0.14em;
+  color: #ffffff;
+  white-space: nowrap;
+}
+.st > span {
+  color: #f89b72;
+}
+
 .url {
-  margin-top: calc(1.5 * var(--vh));
+  margin-top: calc(1.4 * var(--vh));
   font-size: calc(1.15 * var(--vw));
   font-weight: 500;
   letter-spacing: 0.02em;
   color: rgba(255, 255, 255, 0.78);
   white-space: nowrap;
+  text-decoration: none;
 }
 
 /* ── MOTION ──────────────────────────────────────────────────────────────────── */
@@ -316,7 +391,9 @@
 }
 
 /* The code comes in ONCE and then never leaves: hiding it every 40 s would cut off
-   whoever was halfway through scanning it. */
+   whoever was halfway through scanning it. The line under it (after you buy) and
+   the address follow it in, at 1.9 s and 2.15 s (ExitScreen.tsx), and stay for the
+   same reason: they are read by the person holding the phone up. */
 .riseOnce {
   animation: riseOnce 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) 1.2s both;
 }
@@ -446,8 +523,8 @@
   100% { opacity: 0; transform: scale(1.3); }
 }
 
-/* Reduced motion: everything is simply there — the copy, the code, and the ball
-   resting where it lands, with its shadow; no rings. */
+/* Reduced motion: everything is simply there — the copy, the code, the line under
+   it, and the ball resting where it lands, with its shadow; no rings. */
 @media (prefers-reduced-motion: reduce) {
   .rise,
   .riseOnce,

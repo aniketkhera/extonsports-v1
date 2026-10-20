@@ -19,6 +19,13 @@ import s from "./exit.module.css";
    one copy for both screens), and between them the offer, a squash court with one
    rally playing on it, and a large SCAN TO BUY code.
 
+   Then, on the first draft (2026-10-20), Aniket: "hide the small QR on this screen.
+   also, mention what happens after they buy - "A SQUASHTIGERS coach will get in
+   touch with you to schedule the 5 lessons"". So the band here has no booking QR
+   (BookingBand showBookQr={false} — one code on this wall, the one that sells the
+   pack), and his sentence sits under the code, where someone who has just scanned
+   looks next.
+
    THE WORDS ARE THE OFFER PAGE'S (app.orangish.io/starter/exton-sports, read
    2026-10-20), not ours: five 30-minute private lessons with a squash coach, $195
    for all five, juniors under 19, once per player, no expiry. That page is where
@@ -38,7 +45,9 @@ import s from "./exit.module.css";
  *  scan it off the screen with a phone. */
 const BUY_URL = STARTER_PACK_URL;
 
-/* The copy's entrance order, in seconds after load — and again every 40 s. */
+/* The copy's entrance order, in seconds after load — and again every 40 s. (The
+   CTA column's three pieces use it too, but they come in once and stay: see
+   .riseOnce.) */
 const at = (seconds: number): CSSProperties => ({ animationDelay: `${seconds}s` });
 
 /* The court, drawn as the rally's camera sees it: on the centre line 11 m from the
@@ -171,22 +180,45 @@ export default function ExitScreen() {
             </span>
           </div>
 
-          {/* The code and its label are ONE link to the offer, like /reception's
-              booking QR (2026-10-18): the page is public at extonsports.com/exit,
-              and nobody can scan a code on their own phone's screen. On the
-              television it is inert. */}
-          <a className={`${s.cta} ${s.riseOnce}`} href={BUY_URL} aria-label="Buy the Squash Starter Pack at Exton Sports">
-            <span className={s.scan}>SCAN TO BUY</span>
-            <span className={s.card}>
-              <span className={s.ring} aria-hidden />
-              {/* eslint-disable-next-line @next/next/no-img-element -- a static SVG; next/image adds nothing here */}
-              <img className={s.code} src="/exit/starter-qr.svg" alt={`QR code: ${BUY_URL}`} />
-            </span>
-            <span className={s.url}>{BUY_URL.replace(/^https?:\/\//, "")}</span>
-          </a>
+          <div className={s.cta}>
+            {/* The code and its label are ONE link to the offer, like /reception's
+                booking QR (2026-10-18): the page is public at extonsports.com/exit,
+                and nobody can scan a code on their own phone's screen. On the
+                television it is inert. */}
+            <a className={`${s.buy} ${s.riseOnce}`} href={BUY_URL} aria-label="Buy the Squash Starter Pack at Exton Sports">
+              <span className={s.scan}>SCAN TO BUY</span>
+              <span className={s.card}>
+                <span className={s.ring} aria-hidden />
+                {/* eslint-disable-next-line @next/next/no-img-element -- a static SVG; next/image adds nothing here */}
+                <img className={s.code} src="/exit/starter-qr.svg" alt={`QR code: ${BUY_URL}`} />
+              </span>
+            </a>
+
+            {/* What happens next — Aniket's sentence, word for word (2026-10-20), set
+                straight under the code: the question a parent has with the phone
+                still up is "and then what?", and the answer should be the next thing
+                their eye lands on. Outside the link, so it is read as itself rather
+                than swallowed by the link's label. Comes in once, after the code, and
+                stays (.riseOnce) — it is read by someone standing there scanning, and
+                must not vanish under them on the copy's 40 s re-play. */}
+            <p className={`${s.after} ${s.riseOnce}`} style={at(1.9)}>
+              <span className={s.afterLead}>After you buy</span>
+              <span className={s.afterText}>
+                A <span className={s.st}>SQUASH<span>TIGERS</span></span> coach will get in
+                touch with you to schedule the&nbsp;5&nbsp;lessons.
+              </span>
+            </p>
+
+            {/* The address the code holds, for whoever cannot scan. Last, and small:
+                the sentence above was asked for and outranks it; the address was the
+                first draft's own idea, kept because the column still has room. */}
+            <a className={`${s.url} ${s.riseOnce}`} style={at(2.15)} href={BUY_URL}>
+              {BUY_URL.replace(/^https?:\/\//, "")}
+            </a>
+          </div>
         </main>
 
-        <BookingBand />
+        <BookingBand showBookQr={false} />
       </div>
     </div>
   );
