@@ -259,15 +259,20 @@
   color: inherit;
   text-decoration: none;
 }
+/* ENROLL FOR A STARTER PACK (2026-10-20, Aniket's words, replacing SCAN TO BUY) is 25
+   letters to SCAN TO BUY's 11, and the tab must not be wider than the card under it, so
+   the size and tracking are cut to fit it on one line, centred over the code. */
 .scan {
   font-family: var(--font-cond), "Arial Narrow", sans-serif;
   font-weight: 600;
-  font-size: calc(2.7 * var(--vw));
-  letter-spacing: 0.14em;
+  font-size: calc(1.62 * var(--vw));
+  letter-spacing: 0.08em;
   line-height: 1;
+  white-space: nowrap;
+  text-align: center;
   color: #0b1623;
   background: #f89b72;
-  padding: 0.3em 0.7em 0.32em 0.84em;
+  padding: 0.42em 0.6em 0.44em 0.68em;
   border-radius: calc(0.7 * var(--vw)) calc(0.7 * var(--vw)) 0 0;
 }
 /* White, with the code's own 4-module quiet zone inside the SVG: a code on #0B1623

@@ -26,6 +26,11 @@ import s from "./exit.module.css";
    pack), and his sentence sits under the code, where someone who has just scanned
    looks next.
 
+   And the word (2026-10-20, Aniket): "instead of buy a starter pack, write "Enroll
+   for a Starter Pack"". So the label over the code is ENROLL FOR A STARTER PACK, and
+   the step under it AFTER YOU ENROLL: a family enrolls a child in lessons. The page the
+   code opens still says Buy; that wording is the platform's.
+
    THE OFFER'S TERMS ARE THE OFFER PAGE'S (app.orangish.io/starter/exton-sports,
    read 2026-10-20), not ours: five 30-minute private lessons with a squash coach,
    $195 for all five, juniors under 19, once per player, no expiry. That page is
@@ -203,8 +208,8 @@ export default function ExitScreen() {
                 booking QR (2026-10-18): the page is public at extonsports.com/exit,
                 and nobody can scan a code on their own phone's screen. On the
                 television it is inert. */}
-            <a className={`${s.buy} ${s.riseOnce}`} href={BUY_URL} aria-label="Buy the Squash Starter Pack at Exton Sports">
-              <span className={s.scan}>SCAN TO BUY</span>
+            <a className={`${s.buy} ${s.riseOnce}`} href={BUY_URL} aria-label="Enroll for the Squash Starter Pack at Exton Sports">
+              <span className={s.scan}>ENROLL FOR A STARTER PACK</span>
               <span className={s.card}>
                 <span className={s.ring} aria-hidden />
                 {/* eslint-disable-next-line @next/next/no-img-element -- a static SVG; next/image adds nothing here */}
@@ -220,7 +225,7 @@ export default function ExitScreen() {
                 stays (.riseOnce) — it is read by someone standing there scanning, and
                 must not vanish under them on the copy's 40 s re-play. */}
             <p className={`${s.after} ${s.riseOnce}`} style={at(1.9)}>
-              <span className={s.afterLead}>After you buy</span>
+              <span className={s.afterLead}>After you enroll</span>
               <span className={s.afterText}>
                 A <span className={s.st}>SQUASH<span>TIGERS</span></span> coach will get in
                 touch with you to schedule the&nbsp;5&nbsp;lessons.
