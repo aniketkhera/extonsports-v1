@@ -1,0 +1,540 @@
+/* /exit — the Squash Starter Pack promotion (2026-10-20).
+   ──────────────────────────────────────────────────────────────────────────
+   Every size is calc(N * var(--vw|--vh)) of the 16:9 box ExitScreen sets up (BOX in
+   components/tv-palette.ts) — never raw vw/vh, which drift apart on any screen that
+   is not 16:9. Colours are LITERAL hexes, never --color-* tokens: the site defaults
+   to the light theme and this screen is dark (see tv-palette.ts).
+
+   ⚠️ ANIMATION IS TRANSFORM AND OPACITY ONLY. The VIZIO browsers are weak — the
+   reception TV's wedged on 2026-10-17 — and those two properties are the ones a
+   browser can run on the compositor without repainting. So: no animated filter,
+   blur, box-shadow, colour or size; no canvas; no JavaScript animation loop. Inside
+   keyframes, lengths are % / em / unitless scale only, never var(), so nothing has
+   to be resolved again while it runs. Static gradients and shadows are fine — they
+   are painted once.
+
+   Nothing moves all the time, on purpose — the lesson of the phone icon's buzz
+   (PhoneIcon.module.css): something that never stops stops being noticed. The ball
+   plays one rally every 7 s and rests ~4.5 s; the QR's ring pings once every 4 s;
+   the copy re-reveals once every 40 s. */
+
+/* ── LAYOUT ──────────────────────────────────────────────────────────────────── */
+
+/* Copy | court | QR. The court sits between the offer and the code, so the eye
+   that follows the ball is carried towards the thing to scan. */
+.hero {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) calc(21 * var(--vw)) calc(26 * var(--vw));
+  column-gap: calc(1.6 * var(--vw));
+  align-items: center;
+  /* 1.22 + the box's 2.2 = 3.42vw: the copy starts, and the code ends, on the same
+     two edges as the band's pill and phone number below. */
+  padding: 0 calc(1.22 * var(--vw));
+  position: relative;
+  /* A warm light from behind the court, painted once. Sized to die out inside the
+     hero on every side — the first draw ran past the top and showed a hard edge
+     under the header's rule. */
+  background: radial-gradient(24% 45% at 59% 50%, rgba(248, 155, 114, 0.15) 0%, rgba(248, 155, 114, 0) 100%);
+}
+
+/* ── THE OFFER ───────────────────────────────────────────────────────────────── */
+
+.copy {
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  line-height: 0.98;
+  letter-spacing: 0.02em;
+}
+.title > span {
+  display: block;
+}
+.kicker {
+  font-size: calc(6.2 * var(--vw));
+  color: #f89b72;
+}
+.name {
+  font-size: calc(6.2 * var(--vw));
+  color: #ffffff;
+}
+
+/* "$195 for all five lessons" — the live page's own words, the number made big. */
+.price {
+  margin: calc(2.6 * var(--vh)) 0 0;
+  display: flex;
+  align-items: baseline;
+  gap: calc(1.2 * var(--vw));
+  white-space: nowrap;
+}
+.amount {
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: calc(8.6 * var(--vw));
+  line-height: 0.92;
+  color: #ffbe97;
+  letter-spacing: 0.01em;
+}
+.dollar {
+  font-size: 0.56em;
+  vertical-align: 0.62em;
+  margin-right: 0.04em;
+}
+.per {
+  font-size: calc(2.5 * var(--vw));
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.lead {
+  margin: calc(2.4 * var(--vh)) 0 0;
+  max-width: calc(42 * var(--vw));
+  font-size: calc(1.95 * var(--vw));
+  font-weight: 500;
+  line-height: 1.24;
+  color: #ffffff;
+}
+
+.facts {
+  margin: calc(3 * var(--vh)) 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  row-gap: calc(1.3 * var(--vh));
+  font-size: calc(1.6 * var(--vw));
+  font-weight: 500;
+  line-height: 1.25;
+  color: rgba(255, 255, 255, 0.92);
+}
+.facts li {
+  position: relative;
+  padding-left: 1.6em;
+}
+.facts strong {
+  font-weight: 700;
+  color: #ffbe97;
+}
+/* A tick in the brand orange, drawn in CSS so it costs no request. */
+.facts li::before {
+  content: "";
+  position: absolute;
+  left: 0.1em;
+  top: 0.2em;
+  width: 0.42em;
+  height: 0.7em;
+  border: solid #f89b72;
+  border-width: 0 0.16em 0.16em 0;
+  transform: rotate(45deg);
+}
+
+/* ── THE COURT ───────────────────────────────────────────────────────────────── */
+
+/* A fixed shape — 21 x 70 of the 16:9 box, so always the same proportions — so the
+   drawing (an SVG stretched to it) and the ball (positioned in % of it) agree. */
+.stage {
+  position: relative;
+  width: calc(21 * var(--vw));
+  height: calc(70 * var(--vh));
+  overflow: hidden;
+  justify-self: center;
+}
+.court {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* The ball rides two layers the size of the stage: translate(x%, y%) on one of those
+   moves its corner — where the ball is centred — to (x, y) of the stage, in the
+   stage's own proportions. The ball itself only scales (nearer = bigger) and fades.
+   Keyframes from a perspective projection of one rally (see ExitScreen.tsx),
+   sampled finely enough that linear steps between them read as one smooth flight. */
+.mover,
+.shadowMover {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* At rest (reduced motion): the ball sits where it bounces. */
+  transform: translate(39.71%, 48.65%);
+}
+.shadowMover {
+  transform: translate(39.71%, 49.2%);
+}
+
+.ball,
+.shadow {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.ball {
+  width: calc(4.6 * var(--vw));
+  height: calc(4.6 * var(--vw));
+  transform: translate(-50%, -50%) scale(0.52);
+}
+/* A soft light behind the ball: it is black rubber on a navy screen, and without
+   this it disappears whenever it is not in front of the wall. Painted once. */
+.halo {
+  position: absolute;
+  inset: -42%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.34) 0%, rgba(255, 236, 222, 0.16) 38%, rgba(255, 236, 222, 0) 70%);
+}
+/* The ball out of public/reception/squash-ball.svg, cropped to its own circle so the
+   contact shadow drawn under it in that file does not fly with it. The SVG's ball is
+   centred at (32.7, 46.3) with r 29.7 in a 90 x 100 box, hence the numbers. */
+.clip {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+}
+.clip img {
+  position: absolute;
+  width: 151.52%;
+  height: 168.35%;
+  max-width: none;
+  left: -5.05%;
+  top: -27.95%;
+}
+
+.shadow {
+  width: calc(4.6 * var(--vw));
+  height: calc(1.25 * var(--vw));
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.35) 55%, rgba(0, 0, 0, 0) 100%);
+  transform: translate(-50%, -50%) scale(0.52);
+  opacity: 0.9;
+}
+
+/* Where it strikes the front wall, and where it lands — a ring that opens and goes. */
+.hit,
+.land {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+}
+.hit {
+  left: 53.8%;
+  top: 19.5%;
+  width: calc(3.2 * var(--vw));
+  height: calc(3.2 * var(--vw));
+  margin: calc(-1.6 * var(--vw)) 0 0 calc(-1.6 * var(--vw));
+  border: calc(0.16 * var(--vw)) solid #ffbe97;
+}
+.land {
+  left: 39.71%;
+  top: 49.2%;
+  width: calc(4.4 * var(--vw));
+  height: calc(1.2 * var(--vw));
+  margin: calc(-0.6 * var(--vw)) 0 0 calc(-2.2 * var(--vw));
+  border: calc(0.14 * var(--vw)) solid rgba(255, 190, 151, 0.9);
+}
+
+/* ── THE CALL TO ACTION ──────────────────────────────────────────────────────── */
+
+/* The column: the code (.buy), what happens after you buy (.after), the address
+   (.url) — one centred stack, as wide as the card, so the sentence's edges line up
+   with the code's. */
+.cta {
+  justify-self: end;
+  width: calc(44 * var(--vh));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.buy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+}
+.scan {
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: calc(2.7 * var(--vw));
+  letter-spacing: 0.14em;
+  line-height: 1;
+  color: #0b1623;
+  background: #f89b72;
+  padding: 0.3em 0.7em 0.32em 0.84em;
+  border-radius: calc(0.7 * var(--vw)) calc(0.7 * var(--vw)) 0 0;
+}
+/* White, with the code's own 4-module quiet zone inside the SVG: a code on #0B1623
+   with no margin is one many phone cameras will not lock on to. */
+.card {
+  position: relative;
+  display: block;
+  width: calc(44 * var(--vh));
+  height: calc(44 * var(--vh));
+  background: #ffffff;
+  border: calc(0.3 * var(--vw)) solid #f89b72;
+  border-radius: calc(1 * var(--vw));
+  box-shadow: 0 calc(1.2 * var(--vh)) calc(3.4 * var(--vh)) rgba(0, 0, 0, 0.55);
+}
+.code {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: calc(0.7 * var(--vw));
+}
+/* The ping: a ring the card's shape that grows off its edge and fades. */
+.ring {
+  position: absolute;
+  inset: calc(-0.3 * var(--vw));
+  border: calc(0.3 * var(--vw)) solid #f89b72;
+  border-radius: calc(1 * var(--vw));
+  pointer-events: none;
+  opacity: 0;
+}
+
+/* After you buy (2026-10-20, Aniket: "mention what happens after they buy - "A
+   SQUASHTIGERS coach will get in touch with you to schedule the 5 lessons"").
+   The lead-in is the code's label set small — the same condensed caps, tracking and
+   orange as SCAN TO BUY — between two hairlines, so the pair reads as steps one and
+   two. The sentence is 1.7vw, a step over the fact lines (1.6vw) and under the
+   band's line (2vw), and full white: it has to be read from the door, a few metres
+   off, not just from arm's length at the code. Measured at 1080p: three even lines,
+   and the column (tab to address) clears the header's rule and the band by ~31px
+   each — with the address kept, and the code still 44vh. */
+.after {
+  margin: calc(2.2 * var(--vh)) 0 0;
+  width: 100%;
+  text-align: center;
+}
+.afterLead {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: calc(1.4 * var(--vw));
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: #f89b72;
+}
+.afterLead::before,
+.afterLead::after {
+  content: "";
+  flex: 1;
+  height: calc(0.1 * var(--vw));
+  background: rgba(248, 155, 114, 0.55);
+}
+.afterText {
+  display: block;
+  margin-top: calc(1 * var(--vh));
+  font-size: calc(1.7 * var(--vw));
+  font-weight: 500;
+  line-height: 1.22;
+  color: #ffffff;
+  /* Even lines rather than a short last one. Where a browser does not know it,
+     the non-breaking spaces in "the 5 lessons" (ExitScreen.tsx) still keep the
+     last line from being a lone "5 lessons." */
+  text-wrap: balance;
+}
+/* SQUASHTIGERS in the homepage's lockup — Exo 2 800 italic, SQUASH white and
+   TIGERS orange (Hero.tsx ACADEMY_PARTNERS, /comingsoon's .stLogo) — so the name
+   is recognisably the academy's, not just a word in caps. A touch under the
+   sentence's size: Exo 2's caps are wide and heavy and would otherwise shout. The
+   right margin gives back the space the italic's lean takes from "coach". */
+.st {
+  font-family: var(--font-exo2), sans-serif;
+  font-weight: 800;
+  font-style: italic;
+  font-size: 0.92em;
+  letter-spacing: 0.04em;
+  margin-right: 0.14em;
+  color: #ffffff;
+  white-space: nowrap;
+}
+.st > span {
+  color: #f89b72;
+}
+
+.url {
+  margin-top: calc(1.4 * var(--vh));
+  font-size: calc(1.15 * var(--vw));
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.78);
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+/* ── MOTION ──────────────────────────────────────────────────────────────────── */
+
+/* The copy rises in on load, holds, and does it again every 40 s — something
+   new for anyone who has been standing by the door for a while. The delays are set
+   per line in ExitScreen.tsx; with one 40 s period they stay in step for ever.
+   fill-mode both: before its delay a line waits hidden, and if the TV stops
+   producing frames it is left where the clock says, which is visible for 98% of
+   the cycle — not, as a JS entrance would leave it, blank. */
+.rise {
+  animation: rise 40s cubic-bezier(0.2, 0.7, 0.2, 1) both infinite;
+}
+@keyframes rise {
+  0% { opacity: 0; transform: translateY(0.45em); }
+  1.75% { opacity: 1; transform: none; }
+  98.5% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: none; }
+}
+
+/* The code comes in ONCE and then never leaves: hiding it every 40 s would cut off
+   whoever was halfway through scanning it. The line under it (after you buy) and
+   the address follow it in, at 1.9 s and 2.15 s (ExitScreen.tsx), and stay for the
+   same reason: they are read by the person holding the phone up. */
+.riseOnce {
+  animation: riseOnce 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) 1.2s both;
+}
+@keyframes riseOnce {
+  0% { opacity: 0; transform: translateY(4%) scale(0.97); }
+  100% { opacity: 1; transform: none; }
+}
+
+.ring {
+  animation: ping 4s cubic-bezier(0.15, 0.6, 0.35, 1) 2.4s infinite;
+}
+@keyframes ping {
+  0% { opacity: 0.9; transform: scale(1); }
+  45% { opacity: 0; transform: scale(1.09); }
+  100% { opacity: 0; transform: scale(1.09); }
+}
+
+/* ── One rally, every 7 s ──────────────────────────────────────────────────────
+   Driven from the back of the court at the front wall (hits at 0.75 s, 10.71%),
+   off the wall onto the floor behind the short line (1.6 s, 22.86%), up off the
+   floor and out past the viewer on the left (2.5 s, 35.71%); then the court rests.
+   All five animations share the 7 s period and start together, so they stay in
+   step. Linear between samples — the samples carry the easing. */
+.mover { animation: mover 7s linear infinite; }
+.ball { animation: ball 7s linear infinite; }
+.shadowMover { animation: shadowMover 7s linear infinite; }
+.shadow { animation: shadow 7s linear infinite; }
+.hit { animation: hit 7s ease-out infinite; }
+.land { animation: land 7s ease-out infinite; }
+
+@keyframes mover {
+  0% { transform: translate(79.84%, 60.98%); }
+  1.79% { transform: translate(68.82%, 40.98%); }
+  3.57% { transform: translate(62.99%, 31.14%); }
+  5.36% { transform: translate(59.38%, 25.66%); }
+  7.14% { transform: translate(56.92%, 22.44%); }
+  8.93% { transform: translate(55.14%, 20.55%); }
+  10.71% { transform: translate(53.8%, 19.5%); }
+  12.74% { transform: translate(52.45%, 19.36%); }
+  14.76% { transform: translate(50.86%, 20.47%); }
+  16.79% { transform: translate(48.93%, 23.22%); }
+  18.81% { transform: translate(46.57%, 28.17%); }
+  20.83% { transform: translate(43.58%, 36.19%); }
+  22.86% { transform: translate(39.71%, 48.65%); }
+  25% { transform: translate(36.7%, 46.02%); }
+  27.14% { transform: translate(32.95%, 44.61%); }
+  29.29% { transform: translate(28.17%, 44.92%); }
+  31.43% { transform: translate(21.85%, 47.78%); }
+  33.57% { transform: translate(13.12%, 54.66%); }
+  35.71%, 100% { transform: translate(0.27%, 68.4%); }
+}
+@keyframes ball {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+  1.79% { opacity: 1; transform: translate(-50%, -50%) scale(0.69); }
+  3.57% { transform: translate(-50%, -50%) scale(0.53); }
+  5.36% { transform: translate(-50%, -50%) scale(0.43); }
+  7.14% { transform: translate(-50%, -50%) scale(0.36); }
+  8.93% { transform: translate(-50%, -50%) scale(0.31); }
+  10.71% { transform: translate(-50%, -50%) scale(0.27); }
+  12.74% { transform: translate(-50%, -50%) scale(0.3); }
+  14.76% { transform: translate(-50%, -50%) scale(0.32); }
+  16.79% { transform: translate(-50%, -50%) scale(0.36); }
+  18.81% { transform: translate(-50%, -50%) scale(0.4); }
+  20.83% { transform: translate(-50%, -50%) scale(0.45); }
+  22.86% { transform: translate(-50%, -50%) scale(0.52); }
+  25% { transform: translate(-50%, -50%) scale(0.57); }
+  27.14% { transform: translate(-50%, -50%) scale(0.64); }
+  29.29% { transform: translate(-50%, -50%) scale(0.73); }
+  31.43% { opacity: 1; transform: translate(-50%, -50%) scale(0.85); }
+  33.57% { opacity: 0.5; transform: translate(-50%, -50%) scale(1.01); }
+  35.71%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.25); }
+}
+@keyframes shadowMover {
+  0% { transform: translate(79.84%, 75.83%); }
+  1.79% { transform: translate(68.82%, 58.85%); }
+  3.57% { transform: translate(62.99%, 49.87%); }
+  5.36% { transform: translate(59.38%, 44.3%); }
+  7.14% { transform: translate(56.92%, 40.52%); }
+  8.93% { transform: translate(55.14%, 37.78%); }
+  10.71% { transform: translate(53.8%, 35.71%); }
+  12.74% { transform: translate(52.45%, 36.99%); }
+  14.76% { transform: translate(50.86%, 38.52%); }
+  16.79% { transform: translate(48.93%, 40.36%); }
+  18.81% { transform: translate(46.57%, 42.63%); }
+  20.83% { transform: translate(43.58%, 45.49%); }
+  22.86% { transform: translate(39.71%, 49.2%); }
+  25% { transform: translate(36.7%, 52.29%); }
+  27.14% { transform: translate(32.95%, 56.13%); }
+  29.29% { transform: translate(28.17%, 61.03%); }
+  31.43% { transform: translate(21.85%, 67.5%); }
+  33.57% { transform: translate(13.12%, 76.45%); }
+  35.71%, 100% { transform: translate(0.27%, 89.62%); }
+}
+/* The shadow is on the floor under the ball: sharp when the ball is low, gone
+   when it is high, so it says how far up the wall the ball struck. */
+@keyframes shadow {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+  1.79% { opacity: 0.62; transform: translate(-50%, -50%) scale(0.69); }
+  3.57% { opacity: 0.48; transform: translate(-50%, -50%) scale(0.53); }
+  5.36% { opacity: 0.36; transform: translate(-50%, -50%) scale(0.43); }
+  7.14% { opacity: 0.26; transform: translate(-50%, -50%) scale(0.36); }
+  8.93% { opacity: 0.18; transform: translate(-50%, -50%) scale(0.31); }
+  10.71% { opacity: 0.13; transform: translate(-50%, -50%) scale(0.27); }
+  12.74% { opacity: 0.12; transform: translate(-50%, -50%) scale(0.3); }
+  14.76% { opacity: 0.18; transform: translate(-50%, -50%) scale(0.32); }
+  16.79% { opacity: 0.29; transform: translate(-50%, -50%) scale(0.36); }
+  18.81% { opacity: 0.47; transform: translate(-50%, -50%) scale(0.4); }
+  20.83% { opacity: 0.7; transform: translate(-50%, -50%) scale(0.45); }
+  22.86% { opacity: 0.98; transform: translate(-50%, -50%) scale(0.52); }
+  25% { opacity: 0.84; transform: translate(-50%, -50%) scale(0.57); }
+  27.14% { opacity: 0.74; transform: translate(-50%, -50%) scale(0.64); }
+  29.29% { opacity: 0.68; transform: translate(-50%, -50%) scale(0.73); }
+  31.43% { opacity: 0.66; transform: translate(-50%, -50%) scale(0.85); }
+  33.57% { opacity: 0.34; transform: translate(-50%, -50%) scale(1.01); }
+  35.71%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.25); }
+}
+@keyframes hit {
+  0%, 10.6% { opacity: 0; transform: scale(0.3); }
+  10.71% { opacity: 0.95; transform: scale(0.3); }
+  19% { opacity: 0; transform: scale(1.35); }
+  100% { opacity: 0; transform: scale(1.35); }
+}
+@keyframes land {
+  0%, 22.75% { opacity: 0; transform: scale(0.3); }
+  22.86% { opacity: 0.8; transform: scale(0.3); }
+  31% { opacity: 0; transform: scale(1.3); }
+  100% { opacity: 0; transform: scale(1.3); }
+}
+
+/* Reduced motion: everything is simply there — the copy, the code, the line under
+   it, and the ball resting where it lands, with its shadow; no rings. */
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .riseOnce,
+  .ring,
+  .mover,
+  .ball,
+  .shadowMover,
+  .shadow,
+  .hit,
+  .land {
+    animation: none;
+  }
+}
