@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import spin from "./OrangishPill.module.css";
 
 /* The orangish.io credit, as a pill — one piece for all six Exton surfaces.
    ────────────────────────────────────────────────────────────────────────
@@ -72,9 +73,14 @@ function Word({ ink }: { ink: Ink }) {
 
 export default function OrangishPill({ tv = false }: { tv?: boolean }) {
   if (tv) {
+    /* On the wall screens the pill turns about its horizontal axis, fast then slowing,
+       then rests (2026-10-20 — see OrangishPill.module.css). The website's pill stays still:
+       it sits in a footer people read, not on a wall people glance at. */
     return (
-      <span style={{ ...PILL, background: ON_DARK.bg }}>
-        <Word ink={ON_DARK} />
+      <span className={spin.stage}>
+        <span className={spin.spin} style={{ ...PILL, background: ON_DARK.bg }}>
+          <Word ink={ON_DARK} />
+        </span>
       </span>
     );
   }

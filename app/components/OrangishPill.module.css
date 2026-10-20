@@ -1,0 +1,45 @@
+/* The orangish.io pill on the wall screens, spinning (2026-10-20, Aniket: "the orangish.io
+   logo at the bottom left from the TV - for all TVs - rotate it on the X axis around its
+   center... fast rotate then slow down, stop for 2-3 seconds, then rotate again").
+
+   Two full turns about the horizontal axis that start fast and ease to a stop, then a
+   still pause, on a 5 s loop: 2.5 s turning, 2.5 s still. It always comes to rest at a
+   whole number of turns, so the resting pill reads exactly as the static one did.
+
+   Transform only, on purpose. These are VIZIO browsers, and the reception set's browser
+   wedged on 2026-10-17: nothing here animates a filter, a shadow or layout, so it costs
+   the compositor one layer and nothing on the main thread. The perspective is on the
+   wrapper, so the turn reads as a coin flipping towards the viewer rather than the pill
+   just squashing flat. */
+.stage {
+  display: inline-block;
+  perspective: 22em;
+}
+
+.spin {
+  display: inline-block;
+  transform-origin: 50% 50%;
+  animation: pillSpin 5s infinite;
+  will-change: transform;
+}
+
+@keyframes pillSpin {
+  0% {
+    transform: rotateX(0deg);
+    /* Fast out of the blocks, long slow landing — the "fast then slow down" he asked for. */
+    animation-timing-function: cubic-bezier(0.12, 0.9, 0.3, 1);
+  }
+  50% {
+    transform: rotateX(720deg);
+  }
+  100% {
+    transform: rotateX(720deg);
+  }
+}
+
+/* A screen with reduced motion asked for keeps the plain pill. */
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}
