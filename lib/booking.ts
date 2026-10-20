@@ -203,6 +203,32 @@ export const BOOKING_LIST_EMAIL_LIVE = true
  */
 export const CLASS_ONLINE_BOOKING_LIVE = true
 
+/**
+ * "My bookings" — a guest's own upcoming court bookings, and Cancel, 2026-10-20. Owner,
+ * 2026-10-18: "let's build the cancel path", "im ok with refund for now", "i want to stay
+ * away from the orangish-app". So the PAGES are this site's (app/my-bookings), on
+ * www.extonsports.com, with a first-party cookie; the bookings, the refund and the emails
+ * stay in the platform, reached server-to-server (lib/my-bookings/platform.ts). Spec:
+ * orangish-app docs/guest-my-bookings.md.
+ *
+ * Relative, so it opens in the same tab — it is this site, not the app.
+ */
+export const MY_BOOKINGS_PATH = '/my-bookings'
+
+/**
+ * ⛔ THE ENTRY POINTS, NOT THE PAGE. Governs only the footer link and the hero button.
+ * /my-bookings itself is live as soon as this site deploys, because the platform's emails
+ * link to it — but until the platform's features.guest_self_manage is switched on at
+ * Exton, every call behind it answers 404 not_available, and a visible link would lead
+ * to "we couldn't send that just now". Same shape as CLASS_ONLINE_BOOKING_LIVE above.
+ *
+ * BEFORE FLIPPING IT: the migration applied and verified, the platform deployed, the
+ * flag on, and one live end-to-end cancel of a TWO-court booking checked (Stripe refund,
+ * calendar, TVs, lights schedule, both emails, the audit row) — a multi-court series has
+ * never run in production. Owner steps 1–6 in the spec.
+ */
+export const MY_BOOKINGS_LIVE = false
+
 /** The booking CTA target, and whether it leaves the site. */
 export function bookingTarget(url: string): { href: string; external: boolean } {
   return isOpen() ? { href: url, external: true } : { href: '#waitlist', external: false }

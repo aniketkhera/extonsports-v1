@@ -8,7 +8,7 @@ import type { CourtAvailability } from "../api/court-availability/route";
 import type { SchedulePayload } from "../api/schedule/route";
 import type { ProgramSchedule } from "@/lib/club-schedule";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, CLASS_FEES_NOTE } from "../../lib/rates";
-import { BOLLYWOOD_CLASS_URL, SQUAD_CLASS_URL, STARTER_PACK_URL, BOOK_COURT_URL, PAY_URL, CLASS_ONLINE_BOOKING_LIVE, BOOKING_LIST_EMAIL_LIVE } from "../../lib/booking";
+import { BOLLYWOOD_CLASS_URL, SQUAD_CLASS_URL, STARTER_PACK_URL, BOOK_COURT_URL, PAY_URL, CLASS_ONLINE_BOOKING_LIVE, BOOKING_LIST_EMAIL_LIVE, MY_BOOKINGS_LIVE, MY_BOOKINGS_PATH } from "../../lib/booking";
 import { SPORT_BOOKING_OPENS_LABEL, sportBookingOpen, sportShutOnDate, sportsNotYetOpen } from "../../lib/opening";
 import { pbaScheduleOn, PBA_COURTS } from "../../lib/pba-schedule";
 import { SQUAD_SCHEDULE, SQUAD_NOTE, SQUAD_TERM } from "../../lib/squad-schedule";
@@ -2029,6 +2029,23 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
           >
             Make an adhoc payment
           </a>
+
+          {/* MY BOOKINGS, 2026-10-20 — see or cancel a court booked online. Here as well as
+              the footer because this row is the only entry point a phone sees above the
+              fold (the nav has no phone menu, and is left alone so its lg+ fit need not be
+              re-measured). Outlined like its neighbours; SAME TAB, no target, because it is
+              this site's own page. Hidden until the platform side is on (lib/booking.ts). */}
+          {MY_BOOKINGS_LIVE && (
+            <a
+              href={MY_BOOKINGS_PATH}
+              className={`text-mono text-[var(--color-ember)] border border-[var(--color-ember)]/50 hover:border-[var(--color-ember)] hover:text-white transition-colors ${
+                stacked ? "block w-full text-center py-[13px] px-5" : "inline-block py-[11px] px-[22px]"
+              }`}
+              style={{ fontSize: RATE_LABEL }}
+            >
+              My bookings
+            </a>
+          )}
 
           {/* ⚠️ THE THREE SPORTS DO NOT OPEN TOGETHER, so this cannot be one
               date. The doors are Mon 5 Oct but the courts come online across

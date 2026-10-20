@@ -2,7 +2,7 @@ import WhatsAppButton from "./WhatsAppButton";
 import OrangishPill from "./OrangishPill";
 import CalendarFooterLink from "./CalendarFooterLink";
 import { CONTACT_EMAIL } from "../../lib/legal";
-import { BOOK_COURT_URL, PAY_URL } from "../../lib/booking";
+import { BOOK_COURT_URL, PAY_URL, MY_BOOKINGS_LIVE, MY_BOOKINGS_PATH } from "../../lib/booking";
 import { RATE_BANDS, BAND_BLURB } from "../../lib/rates";
 
 export default function Footer() {
@@ -113,6 +113,9 @@ export default function Footer() {
           links={[
             { label: "Court rates", href: "/#top" },
             { label: "Book a court or lane", href: BOOK_COURT_URL },
+            // 2026-10-20: see or cancel a guest booking. Right after "Book", where somebody
+            // who booked looks first; gated until the platform side is switched on (lib/booking.ts).
+            ...(MY_BOOKINGS_LIVE ? [{ label: "My bookings", href: MY_BOOKINGS_PATH }] : []),
             /* 2026-10-21, Aniket: the hero's "Show calendar of bookings" button moved here,
                "make it like all the other links in the footer". Same look as its neighbours;
                a plain click opens the calendar overlay, anything else goes to /calendar
