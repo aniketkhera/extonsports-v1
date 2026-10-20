@@ -15,10 +15,15 @@
    The key arrives in the URL FRAGMENT, which browsers never send to a server and
    which therefore never lands in a Vercel access log or a Referer header. It is
    stashed in localStorage and wiped from the address bar immediately, so it
-   survives the self-reload on deploy; tv-keeper relaunches the full URL HOURLY
-   (2026-10-20, down from every ten minutes, because a relaunch is what wedged the
-   reception TV), so the worst case after a cleared profile is an hour of a screen
-   with no names and no heartbeat.
+   survives the self-reload on deploy. A screen that loses it (a cleared profile)
+   gets it back from the next launch of the full URL, whose #k= carries it
+   (2026-10-20). On a keyed TV that tv-keeper's watchdog has armed, that launch
+   comes within about 5 min: the watchdog sees the heartbeat stop (SILENT_MS) and
+   relaunches the page. Without the watchdog it is the hourly relaunch (down from
+   every ten minutes, because a relaunch is what wedged the reception TV), and the
+   worst case is an hour of a screen with no names and no heartbeat. Where
+   localStorage throws, the key lives only in readKey's memo and every deploy
+   reload drops it, so each deploy costs that TV one such relaunch.
 
    ⚠️ ?k= AND #k= SHARE A LETTER ON PURPOSE AND CANNOT BE CONFUSED (2026-10-20).
    `?k=<13 digits>` in the SEARCH part is tv-keeper's launch tag — not a secret, read

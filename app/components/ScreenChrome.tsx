@@ -92,9 +92,10 @@ function Clock() {
      the cell holds a NO-BREAK space, 2026-10-20. A plain space collapses, the
      cell loses its line box and the header draws 9px short; then the clock
      starts and everything under it drops 9px, on every load (tv-keeper relaunches
-     /reception every ten minutes). Written as an escape, not the character, so
-     no editor can quietly turn it back into a space, which is how it was lost
-     when this moved out of ReceptionBoard.tsx. DateLine's placeholder likewise. */
+     the TVs' pages hourly since 2026-10-20, every ten minutes before). Written as
+     an escape, not the character, so no editor can quietly turn it back into a
+     space, which is how it was lost when this moved out of ReceptionBoard.tsx.
+     DateLine's placeholder likewise. */
   const text = ms
     ? new Intl.DateTimeFormat("en-US", {
         timeZone: "America/New_York",
