@@ -154,7 +154,11 @@ export function toCancelView(httpStatus: number, json: unknown): CancelView {
   if (httpStatus === 401) return { status: 'signed_out' }
   // 429 is refused before anything happens; 503 is the platform's explicit "not cancelled,
   // no refund issued by this call". 400 is a malformed call that never reached the money.
-  if (httpStatus === 429 || httpStatus === 503 || httpStatus === 400) return { status: 'try_again' }
+  // 403 comes ONLY from the platform's relay-secret check, the first thing every endpoint
+  // does (second review, 2026-10-20) — nothing was claimed or refunded.
+  if (httpStatus === 429 || httpStatus === 503 || httpStatus === 400 || httpStatus === 403) {
+    return { status: 'try_again' }
+  }
   return { status: 'unknown' }
 }
 

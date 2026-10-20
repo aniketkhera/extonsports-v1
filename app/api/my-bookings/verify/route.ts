@@ -1,7 +1,8 @@
 import { CODE_RE, clientIp, hit, isEmailShape, readJsonBody } from '@/lib/my-bookings/guard'
 import { json, refuseCrossSite, setCookie } from '@/lib/my-bookings/http'
-import { redeem } from '@/lib/my-bookings/platform'
-import { deviceCookie } from '@/lib/my-bookings/session'
+import { redeem, signOut } from '@/lib/my-bookings/platform'
+import { deviceCookie, replacedToken } from '@/lib/my-bookings/session'
+import { readDeviceToken } from '@/lib/my-bookings/session-server'
 import { redeemRefusal } from '@/lib/my-bookings/view'
 
 // POST /api/my-bookings/verify — the 6-digit code, for a guest who asked on one device
@@ -9,8 +10,11 @@ import { redeemRefusal } from '@/lib/my-bookings/view'
 //
 // Every refusal is the same 400 'invalid' (wrong, expired, exhausted, or an address that
 // was never sent anything), mirroring the platform. The platform holds the real limit —
-// 5 attempts per challenge, 10 per 30 min per address; this per-IP one only slows a
-// single client down.
+// 5 guesses per emailed code and 30 per address per day, and any live email's code works;
+// this per-IP one only slows a single client down.
+//
+// A successful sign-in revokes the device token it replaces, as open does (second review,
+// 2026-10-20; lib/my-bookings/session.ts replacedToken).
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -31,6 +35,7 @@ export async function POST(req: Request) {
 
   // The platform's 429 is "too many tries" here too, not "that code didn't work"
   // (security review, 2026-10-20): CodeForm shows COPY.tooMany for it.
+  const previous = await readDeviceToken()
   const r = await redeem({ email, code }, ip)
   if (!r.ok) {
     const no = redeemRefusal(r.error)
@@ -43,5 +48,7 @@ export async function POST(req: Request) {
   } catch {
     return json({ error: 'try_again' }, 503)
   }
+  const stale = replacedToken(previous, r.deviceToken)
+  if (stale) await signOut(stale, ip)
   return setCookie(json({ ok: true }), cookie)
 }

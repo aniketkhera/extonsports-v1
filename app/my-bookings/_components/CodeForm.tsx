@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { COPY, FALLBACK_PHONE, platformDown } from "@/lib/my-bookings/copy";
 import { BTN_PRIMARY, ERROR, INPUT, LABEL, postJson } from "./ui";
+import PhoneText from "./PhoneText";
 
 /* The 6-digit code, for a guest who asked on one device and opened the email on another,
    2026-10-20. With `email` (just sent from RequestPanel) only the code is asked for;
@@ -75,7 +76,7 @@ export default function CodeForm({ email }: { email?: string }) {
       />
       {error && (
         <p className={ERROR} role="alert">
-          {error}
+          <PhoneText text={error} phone={FALLBACK_PHONE} />
         </p>
       )}
       <div className="mt-5">

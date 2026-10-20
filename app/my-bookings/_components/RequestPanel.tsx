@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { COPY, FALLBACK_PHONE, platformDown } from "@/lib/my-bookings/copy";
 import CodeForm from "./CodeForm";
+import PhoneText from "./PhoneText";
 import { BTN_PRIMARY, BTN_TEXT, ERROR, INPUT, LABEL, postJson } from "./ui";
 
 /* "Email me a link", 2026-10-20.
@@ -111,7 +112,7 @@ export default function RequestPanel({ note }: { note?: string }) {
 
         {error && (
           <p className={ERROR} role="alert">
-            {error}
+            <PhoneText text={error} phone={FALLBACK_PHONE} />
           </p>
         )}
 

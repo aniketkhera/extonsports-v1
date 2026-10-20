@@ -25,7 +25,9 @@
 export const DEVICE_COOKIE = '__Host-exton_mb' // raw device token; the platform stores only sha256
 export const LINK_COOKIE = '__Host-exton_mb_link' // raw link token, parked between /link and /open
 export const DEVICE_MAX_AGE_S = 90 * 24 * 3600
-export const LINK_MAX_AGE_S = 1800 // the platform's link TTL (GA_LINK_MINUTES = 30)
+// 30 minutes from the CLICK. The platform's link lives 30 minutes from the email (2 hours
+// once an address is past its day's budget), and still refuses an expired one itself.
+export const LINK_MAX_AGE_S = 1800
 
 /** 32 random bytes, base64url, no padding — the platform's mintPayToken shape. */
 export const TOKEN_RE = /^[A-Za-z0-9_-]{43}$/
@@ -63,6 +65,18 @@ export function deviceCookie(token: string, expiresAtIso: string, now = Date.now
 export function linkCookie(token: string): CookieSpec {
   if (!TOKEN_RE.test(token)) throw new Error('linkCookie: token shape')
   return { name: LINK_COOKIE, value: token, options: opts(LINK_MAX_AGE_S) }
+}
+
+/**
+ * After a new sign-in on this browser, the device token it replaces — to revoke upstream —
+ * or null. Second review, 2026-10-20: the new cookie overwrites the old one, so without the
+ * revoke the old session stays live for up to 90 days with nobody holding it, and the
+ * platform keeps only five live sessions per guest — repeat sign-ins on one phone would
+ * sign the guest's OTHER devices out instead. On a shared device it also ends the previous
+ * person's session upstream.
+ */
+export function replacedToken(previous: string | null, next: string): string | null {
+  return previous && previous !== next ? previous : null
 }
 
 /**

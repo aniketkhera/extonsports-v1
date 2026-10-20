@@ -217,17 +217,23 @@ export const MY_BOOKINGS_PATH = '/my-bookings'
 
 /**
  * ⛔ THE ENTRY POINTS, NOT THE PAGE. Governs only the footer link and the hero button.
- * /my-bookings itself is live as soon as this site deploys, because the platform's emails
- * link to it — but until the platform's features.guest_self_manage is switched on at
- * Exton, every call behind it answers 404 not_available, and a visible link would lead
- * to "we couldn't send that just now". Same shape as CLASS_ONLINE_BOOKING_LIVE above.
+ * /my-bookings itself is live as soon as this site deploys — on purpose, BEFORE anything
+ * links to it (switch-on step 4): the platform's emails link to it from step 7 on, and a
+ * link to a page that is not there yet would be a 404 in a guest's inbox. Until the
+ * platform's features.guest_self_manage is switched on at Exton, every call behind it
+ * answers 404 not_available and the page says so; a visible link would lead only to that.
+ * Same shape as CLASS_ONLINE_BOOKING_LIVE above.
  *
- * BEFORE FLIPPING IT: the migration applied and verified, the platform deployed, the
- * flag on, EXTON_RELAY_SECRET set to the SAME value in both Vercel projects (this site
- * and orangish-app; `openssl rand -base64 32`, then redeploy both), and one live
- * end-to-end cancel of a TWO-court booking checked (Stripe refund, calendar, TVs, lights
- * schedule, both emails, the audit row) — a multi-court series has never run in
- * production. Owner steps 1–6 in the spec.
+ * BEFORE FLIPPING IT (switch-on step 9 of orangish-app docs/guest-my-bookings.md §7,
+ * rewritten 2026-10-20 after the second review): steps 1–8 done — the migration applied
+ * and verified; EXTON_RELAY_SECRET set to the SAME value in both Vercel projects (this
+ * site and orangish-app; `openssl rand -base64 32`); the platform deployed, then THIS site
+ * with this still false; the production Resend account's extonsports.com domain checked;
+ * charge.refund.updated enabled on the platform webhook; the flag on; and the owner's
+ * live end-to-end cancel of a TWO-court booking checked (Stripe refund, calendar, TVs,
+ * lights schedule, both emails, the audit row) — a multi-court series has never run in
+ * production. The confirmation email's own "Manage or cancel" button is step 10, after
+ * this (features.guest_self_manage_email).
  *
  * The relay secret is a switch in its own right (security review, 2026-10-20): while it
  * is unset on either side, every /my-bookings call fails closed and the page says "we

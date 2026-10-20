@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { COPY, FALLBACK_PHONE, listUnavailable } from "@/lib/my-bookings/copy";
 import { BTN_PRIMARY, ERROR, postJson } from "./ui";
+import PhoneText from "./PhoneText";
 
 /* "Show my bookings" — the one press that spends the emailed link, 2026-10-20. A press
    because a mail scanner's GET must not spend it (app/my-bookings/link/route.ts). It
@@ -56,7 +57,7 @@ export default function OpenButton() {
       )}
       {state === "down" && (
         <p className={ERROR} role="alert">
-          {listUnavailable(FALLBACK_PHONE)}
+          <PhoneText text={listUnavailable(FALLBACK_PHONE)} phone={FALLBACK_PHONE} />
         </p>
       )}
     </div>

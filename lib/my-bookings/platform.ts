@@ -92,11 +92,13 @@ function errorOf(j: unknown): unknown {
 }
 
 /**
- * Ask the platform to email a link + code. 'ok' covers 202 AND a per-address 429: the
- * platform answers a rate-limited address the same way the page answers everyone ("if
- * this email has bookings…"), so a limit is not a signal either. 10 s: the platform
- * answers before it sends, so the wait is short, and the page can then say honestly when
- * it is down.
+ * Ask the platform to email a link + code. 'ok' covers 202, which the platform answers
+ * alike whether it sent an email, found no bookings, or held a new email back because that
+ * inbox already has a live link (second review, 2026-10-20: it no longer counts requests per
+ * address, so a stranger cannot spend a guest's allowance — COPY.sent says the earlier
+ * link still works). Any other 429 than 'busy' is read as 'ok' too, so no limit can become
+ * a signal about one address. 10 s: the platform answers before it sends, so the wait is
+ * short, and the page can then say honestly when it is down.
  *
  * 429 {"error":"busy"} is the exception (security review, 2026-10-20): the CLUB-WIDE
  * send cap is full. That state is the same for every address, so saying so reveals

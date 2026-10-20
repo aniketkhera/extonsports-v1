@@ -43,8 +43,9 @@ import { SCREEN_PATHS } from "./tv-screens";
 //   • the green WhatsApp bubble sits bottom-right — exactly over a row's Cancel button on
 //     a phone — and links to app.orangish.io, an Orangish address the owner wants kept
 //     off this path (2026-10-18: guests see extonsports.com only).
-// BookingThemeCarry STAYS: the empty state's "Book a court or lane" is a booking link, and
-// it should open in the theme the guest is looking at, as everywhere else.
+// BookingThemeCarry goes too (second review, 2026-10-20): it only rewrites links to the
+// platform's booking page, and nothing on this path links there any more — the empty
+// state's "Book a court or lane" goes to this site's own home page instead.
 const PRIVATE_PATHS = ["/my-bookings"];
 
 export default function SiteChrome() {
@@ -53,7 +54,7 @@ export default function SiteChrome() {
     return null;
   }
   if (pathname && PRIVATE_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
-    return <BookingThemeCarry />;
+    return null;
   }
   return (
     <>

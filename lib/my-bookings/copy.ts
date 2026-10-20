@@ -31,8 +31,11 @@ export const COPY = {
   emailLabel: 'Email',
   sendButton: 'Send me a link',
   sending: 'Sending…',
-  // ⛔ ALWAYS this, whatever the platform found. See the header.
-  sent: "If this email has bookings with us, we've sent a link. It works for 30 minutes. On another device? Enter the 6‑digit code from the email.",
+  // ⛔ ALWAYS this, whatever the platform found. See the header. Second review, 2026-10-20:
+  // the platform holds a new email back while the inbox already has a live link (so nobody
+  // can lock a guest out by asking for their address), and a link may live 30 minutes or 2
+  // hours — so this promises neither a fresh email nor a time, and says the earlier ones work.
+  sent: "If this email has bookings with us, we've sent a link. Any link or code from us that hasn't expired still works. On another device? Enter the 6‑digit code from the email.",
   haveCode: 'I have a code',
   codeLead: 'Enter the email you booked with and the 6‑digit code from our email.',
   codeLabel: '6‑digit code', // U+2011, a hyphen that never breaks the line after "6"
@@ -86,6 +89,35 @@ export const callClub = (phone: string) =>
   `We couldn't cancel this online. Please call ${phone} and we'll sort it out.`
 export const cancelTryAgain = (phone: string) =>
   `That didn't go through, and nothing has changed. Try again in a minute, or call ${phone}.`
+
+/**
+ * The club's number as a link a phone dials (second review, 2026-10-20): every sentence
+ * here that says "call …" is read on a phone, mostly. A 10-digit number is a US one; a
+ * number written with + keeps its own country code; anything else is not linked.
+ */
+export function telHref(phone: string): string | null {
+  const t = phone.trim()
+  const digits = t.replace(/\D/g, '')
+  if (t.startsWith('+')) return digits.length >= 8 && digits.length <= 15 ? `tel:+${digits}` : null
+  if (digits.length === 10) return `tel:+1${digits}`
+  if (digits.length === 11 && digits.startsWith('1')) return `tel:+${digits}`
+  return null
+}
+
+export type PhonePart = { text: string; href?: string }
+
+/** A sentence split around the club's number, the number carrying its tel: link. Rendered by
+ *  app/my-bookings/_components/PhoneText.tsx. A number that cannot be dialled stays text. */
+export function phoneParts(text: string, phone: string): PhonePart[] {
+  const href = phone ? telHref(phone) : null
+  if (!href || !text.includes(phone)) return [{ text }]
+  const out: PhonePart[] = []
+  text.split(phone).forEach((chunk, i) => {
+    if (i > 0) out.push({ text: phone, href })
+    if (chunk) out.push({ text: chunk })
+  })
+  return out
+}
 
 /** What a row says after its Cancel was pressed. */
 export function cancelMessage(view: CancelView, fallbackPhone: string = FALLBACK_PHONE, hours = DEFAULT_CUTOFF_HOURS): string {
