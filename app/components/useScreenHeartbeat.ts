@@ -27,7 +27,13 @@ import { buildBeat, type ScreenPage } from "./screen-pure";
    throw into the page. A heartbeat must never be the thing that breaks a screen.
 
    No keepalive and no sendBeacon: sendBeacon cannot carry an Authorization header,
-   and a beat lost at unload is worth nothing anyway — the next document beats. */
+   and a beat lost at unload is worth nothing anyway — the next document beats.
+
+   ONCE PER PAGE, named by the ADDRESS (2026-10-20, when each TV got its own): the TV
+   routes and /exit beat through <ScreenHeartbeat page=…/> beside their content
+   (TvScreen.tsx, app/exit/page.tsx), /board and /comingsoon from their one content
+   component. Never from a component that a TV route renders as content: that page
+   would beat twice a minute, under two names. screen-pure.test.mjs checks the set. */
 
 /** The rAF probe's period. One outstanding request at a time — 1 Hz, not a 60 Hz loop. */
 const PROBE_EVERY_MS = 1_000;

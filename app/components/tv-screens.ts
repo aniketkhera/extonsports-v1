@@ -85,10 +85,12 @@ import type { Metadata, Viewport } from "next";
            docker exec tv-keeper grep -c "rawTarget.startsWith('@')" index.js
          prints more than 0. An older build reads "@<file>" as a /tv pairing code:
          it deletes the set's url and points it at app.orangish.io/tv?code=….
-   8. A keyed set, once the heartbeat ships: <id> must also be in the platform's
-      page list (orangish-app SCREEN_PAGES in lib/screen-watch.ts, and the
-      board_screen_beats.page CHECK), deployed BEFORE the site. Otherwise every
-      beat from the new set is refused (400 "bad page") and it looks silent.
+   8. Its heartbeat page name (2026-10-20): <id> goes in SCREEN_PAGES in
+      app/components/screen-pure.ts (tsc fails in TvScreen.tsx, and npm test
+      fails, until it does), AND in the platform's page list (orangish-app
+      SCREEN_PAGES in lib/screen-watch.ts, and the board_screen_beats.page
+      CHECK), the platform deployed BEFORE the site. Otherwise every beat from
+      the new set, once keyed, is refused (400 "bad page") and it looks silent.
 
    ── SWAPPING A PROMO ────────────────────────────────────────────────────────
    Change that TV's `shows:` to another key of TV_CONTENT and deploy. A NEW promo
@@ -96,12 +98,13 @@ import type { Metadata, Viewport } from "next";
    TV_CONTENT, and its line in TvScreen.tsx (tsc fails until every key has one).
    A preview address of its own, like /exit for the Starter Pack, is optional and
    is not a TV.
-   ⚠️ Once the heartbeat ships, a KEYED TV must show content that beats. tv-keeper's
-   watchdog relaunches a keyed set that has beaten and then goes quiet ("silent"),
-   and may then power-cycle it. That is why the heartbeat belongs once in
-   TvScreen.tsx, named by the TV, and not inside each content component: see
-   there. Until it is, check that the new content beats before giving it to a
-   keyed TV. */
+   ⚠️ A KEYED TV must keep beating. tv-keeper's watchdog relaunches a keyed set
+   that has beaten and then goes quiet ("silent"), and may then power-cycle it.
+   That is why the heartbeat is rendered once in TvScreen.tsx, named by the TV,
+   and not inside any content component (2026-10-20): a new promo beats under its
+   TV's name with nothing added. Do not call useScreenHeartbeat in a content
+   component: the page would beat twice a minute, under two names
+   (screen-pure.test.mjs fails if one does). */
 
 /** What a TV can show. TvScreen.tsx renders each key. `viewport` is the one the
  *  content's own page uses, so that a TV route's <head> matches it exactly: the

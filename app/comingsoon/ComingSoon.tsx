@@ -40,9 +40,11 @@ export default function ComingSoon() {
   useReloadOnDeploy();
   /* Alive-and-drawing proof to the platform (2026-10-20, after the reception TV
      froze for three days unnoticed). This page has no court feed, so the hook's
-     readKey() is its ONLY use of a board key: the outside TV gets one (names off —
-     it faces the street) purely so it can beat. With no #k= it does nothing, which
-     is every visitor's phone. */
+     readKey() is its ONLY use of a board key: a TV put on this page would get one
+     (names off) purely so it can beat. With no #k= it does nothing, which is every
+     visitor's phone. No TV shows /comingsoon since the outside set became the
+     Starter Pack screen (2026-10-20, tv-screens.ts); kept, so the day one does, it
+     is watched. One hook, here: this component is the page's only content. */
   useScreenHeartbeat("comingsoon");
 
   return (

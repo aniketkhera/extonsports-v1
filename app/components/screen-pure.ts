@@ -61,7 +61,19 @@ export function versionFromScripts(srcs: string[], base: string): string | null 
   return null;
 }
 
-export type ScreenPage = "reception" | "board" | "comingsoon";
+/* Which page a beat says it came from: the name of the ADDRESS the screen loaded
+   (2026-10-20, when each TV got an address of its own — tv-screens.ts). The three TV
+   routes are named for their TV whatever they show (/outside beats as "outside" while
+   it shows the Starter Pack), /exit is the Starter Pack's preview address, and /board
+   and /comingsoon are kept as pages. Exactly the platform's SCREEN_PAGES (orangish-app
+   lib/screen-watch.ts) and its board_screen_beats.page CHECK, same order: any other
+   name is a 400 "bad page", which the platform cannot tell from a silent TV. A new TV
+   goes in all three, the platform deployed FIRST. screen-pure.test.mjs pins this list
+   and checks every TV in tv-screens.ts is on it; TvScreen.tsx passing tv.id where a
+   ScreenPage is due is the same check for tsc. */
+export const SCREEN_PAGES = ["reception", "vestibule", "outside", "exit", "board", "comingsoon"] as const;
+
+export type ScreenPage = (typeof SCREEN_PAGES)[number];
 
 export type BeatInput = {
   instance: string;

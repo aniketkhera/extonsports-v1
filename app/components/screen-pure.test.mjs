@@ -13,6 +13,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 /* Same resolver as board-lib.test.mjs: the sources import extensionless, the way the
    Next bundler resolves. Registered before the sources load. */
@@ -185,6 +188,85 @@ test("shouldSeedFromLoaded: only when both are Vercel deployment ids", () => {
   assert.equal(P.shouldSeedFromLoaded(null, DPL), false);
   assert.equal(P.shouldSeedFromLoaded("local", "local"), false);
   assert.equal(P.shouldSeedFromLoaded(sha, DPL), false);
+});
+
+/* ── Which page a beat names, and that each page beats once (2026-10-20) ───────
+   Each TV got an address of its own that day (tv-screens.ts), and a beat carries the
+   ADDRESS's name: /reception "reception", /vestibule "vestibule", /outside "outside"
+   (whatever it shows), /exit "exit", /board "board", /comingsoon "comingsoon". The
+   platform refuses any other name with a 400, which it cannot tell from a silent TV;
+   and a page that beat from two places would send two rows a minute under two names. */
+
+test("SCREEN_PAGES is exactly the platform's list, in its order", () => {
+  // orangish-app lib/screen-watch.ts SCREEN_PAGES (feat/screen-watchdog 490cdcdd, PR #660)
+  // and the board_screen_beats.page CHECK in supabase/migrate_board_screen_watch.sql.
+  // Change one, change all three — the platform deployed first.
+  assert.deepEqual([...P.SCREEN_PAGES], ["reception", "vestibule", "outside", "exit", "board", "comingsoon"]);
+});
+
+test("every screen address has a page name: SCREEN_PAGES is SCREEN_PATHS without the slash", async () => {
+  const T = await import("./tv-screens.ts");
+  for (const tv of T.TV_SCREENS) {
+    assert.ok(P.SCREEN_PAGES.includes(tv.id), `TV "${tv.id}" is not in SCREEN_PAGES: its beats would be a 400`);
+  }
+  assert.deepEqual(
+    [...T.SCREEN_PATHS].map((p) => p.replace(/^\//, "")).sort(),
+    [...P.SCREEN_PAGES].sort(),
+    "a screen address with no page name (or a name with no address)",
+  );
+});
+
+const APP = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+/** Every .ts/.tsx source under app/, tests excluded, with its comments stripped (a
+ *  comment may quote a call; only code counts). `//` counts as a comment only at the
+ *  start of a line or after a space, so "https://…" in a string survives. */
+function appSources() {
+  const out = [];
+  const walk = (dir) => {
+    for (const n of readdirSync(dir)) {
+      const f = path.join(dir, n);
+      if (statSync(f).isDirectory()) walk(f);
+      else if (/\.tsx?$/.test(n) && !/\.test\./.test(n)) {
+        const code = readFileSync(f, "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|\s)\/\/.*$/gm, "$1");
+        out.push([path.relative(APP, f).split(path.sep).join("/"), code]);
+      }
+    }
+  };
+  walk(APP);
+  return out;
+}
+
+test("the heartbeat is sent from exactly these places, once each, under these names", () => {
+  const found = {};
+  for (const [rel, code] of appSources()) {
+    const calls = [
+      ...[...code.matchAll(/(?<!function )\buseScreenHeartbeat\(([^)]*)\)/g)].map((m) => `useScreenHeartbeat(${m[1].trim()})`),
+      ...[...code.matchAll(/<ScreenHeartbeat\b([^>]*?)\/>/g)].map((m) => `<ScreenHeartbeat ${m[1].trim()} />`),
+    ];
+    if (calls.length) found[rel] = calls;
+  }
+  assert.deepEqual(found, {
+    // The TV routes (/reception, /vestibule, /outside): ONE beat, beside the content,
+    // named by the TV whatever it shows.
+    "components/TvScreen.tsx": ["<ScreenHeartbeat page={tv.id} />"],
+    // The Starter Pack's preview address, and the exit-door set's URL until re-pointed.
+    "exit/page.tsx": ['<ScreenHeartbeat page="exit" />'],
+    // Each its own page's only content.
+    "board/CourtBoard.tsx": ['useScreenHeartbeat("board")'],
+    "comingsoon/ComingSoon.tsx": ['useScreenHeartbeat("comingsoon")'],
+    // The component itself.
+    "components/ScreenHeartbeat.tsx": ["useScreenHeartbeat(page)"],
+  }, "a content component that beats too would make its page beat twice, under two names");
+});
+
+test("TvScreen renders the heartbeat beside whatever the TV shows, not inside it", () => {
+  const src = readFileSync(path.join(APP, "components", "TvScreen.tsx"), "utf8");
+  assert.match(src, /<ScreenHeartbeat page=\{tv\.id\} \/>\s*\{RENDER\[tv\.shows\]\(tv\)\}/);
+  // The content components a TV can show carry no heartbeat of their own.
+  for (const rel of ["reception/ReceptionBoard.tsx", "exit/ExitScreen.tsx"]) {
+    const code = appSources().find(([r]) => r === rel)[1];
+    assert.doesNotMatch(code, /useScreenHeartbeat|ScreenHeartbeat/, `${rel} must not beat: TvScreen does`);
+  }
 });
 
 /* ── screen-runtime ────────────────────────────────────────────────────────────

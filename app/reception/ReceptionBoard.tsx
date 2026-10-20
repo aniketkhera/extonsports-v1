@@ -4,10 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { makeTicker, useTick } from "../components/ticker";
 import Image from "next/image";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
-import { ScreenHeader, BookingBand, BAND_GAP, BOOK_BAND } from "../components/ScreenChrome";
-import { BG, INK, EMBER, GREEN, LABEL, NEXT_VAL, NEXT_LBL, MUTED, RULE_SOFT, PANEL, BOX } from "../components/tv-palette";
-import useScreenHeartbeat from "../components/useScreenHeartbeat";
+import { ScreenHeader, BookingBand, BAND_GAP, BOOK_BAND, BAND_STAMP } from "../components/ScreenChrome";
 import ScreenStamp from "../components/ScreenStamp";
+import { BG, INK, EMBER, GREEN, LABEL, NEXT_VAL, NEXT_LBL, MUTED, RULE_SOFT, PANEL, BOX } from "../components/tv-palette";
 import {
   PLATFORM, readKey, clubNow, span, holderLabel, brandFor, sessionOf, splitUpNext, lightChip, SESSION_TEXT, SPORT_OBJECT,
   type BrandKey, type LightChip, type Lights, type NamedBlock, type NamedSlots, type SessionKey,
@@ -707,9 +706,12 @@ export default function ReceptionBoard() {
   const lastLights = useRef<{ at: number; lights: Lights } | null>(null);
 
   useReloadOnDeploy();
-  /* Alive-and-drawing proof to the platform, keyed screens only (2026-10-20,
-     after the 2026-10-17 freeze) — see the hook. Both TVs on this page beat. */
-  useScreenHeartbeat("reception");
+  /* NO HEARTBEAT HERE, on purpose (2026-10-20). The alive-and-drawing beat goes in
+     ONCE per page, outside the content: TvScreen.tsx for the TV routes, named by
+     the TV's id (so /vestibule beats as "vestibule", not "reception"), whatever
+     the TV shows. A hook in here as well would beat twice a minute under two
+     names. The stamp in the band still shows on a keyed screen: it reads the
+     same per-load runtime the heartbeat marks keyed (screen-runtime.ts). */
 
   /* Fifteen seconds, NOT one: this decides which hour counts as "now" and so
      re-runs the grouping below. A row flipping up to a quarter minute late is
@@ -1035,24 +1037,11 @@ export default function ReceptionBoard() {
       </div>
 
       {/* The booking band — the same one /exit shows (components/ScreenChrome,
-          2026-10-20), where it and its reasoning now live.
-
-          The version stamp (2026-10-20) — ScreenStamp, through the band's `stamp`
-          slot now that the band lives in ScreenChrome. Inside the band so it scales
-          with the 16:9 box; absolute, so it takes no grid track and moves nothing.
-          Bottom right on the band's 3.42vw edge, under the phone number, at 40%
-          white: there for someone looking for it, not for anyone reading the board. */}
-      <BookingBand
-        stamp={
-          <ScreenStamp
-            style={{
-              position: "absolute", right: "calc(3.42 * var(--vw))", bottom: "calc(0.9 * var(--vh))",
-              fontSize: "calc(0.62 * var(--vw))", color: "rgba(255,255,255,0.40)", letterSpacing: "0.08em",
-              fontVariantNumeric: "tabular-nums", lineHeight: 1, whiteSpace: "nowrap", pointerEvents: "none",
-            }}
-          />
-        }
-      />
+          2026-10-20), where it and its reasoning now live. The version stamp
+          rides in its `stamp` slot, bottom right under the number, where it has
+          been since the heartbeat went in (2026-10-20); its place is BAND_STAMP,
+          shared with /exit. Keyed screens or ?diag only; nothing otherwise. */}
+      <BookingBand stamp={<ScreenStamp style={BAND_STAMP} />} />
     </div>
     </div>
   );

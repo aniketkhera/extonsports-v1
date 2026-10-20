@@ -32,6 +32,11 @@ import { tvMetadata, tvViewport } from '../components/tv-screens'
    2026-10-18 the screen itself said "view this screen at extonsports.com/reception",
    so giving the reception TV a promo changes what that address shows phones as well.
 
+   HEARTBEAT (2026-10-20): a keyed load of this address beats as page "reception"
+   (TvScreen, named by the address's TV), whichever set loaded it, so the
+   vestibule's beats say "reception" until it is re-pointed at /vestibule. The
+   platform files a beat under the screen's KEY; the page name is only a label.
+
    Not indexed and not in sitemap.ts: it is furniture, not a page. */
 
 export const metadata = tvMetadata('reception')

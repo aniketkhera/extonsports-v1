@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { makeTicker, useTick } from "./ticker";
 import OrangishPill from "./OrangishPill";
 import { PhoneNumber } from "./PhoneIcon";
@@ -67,6 +67,19 @@ const BAND_PILL_TEXT = "calc(1.6 * var(--vw))";
  *  button opens. The QR image (public/reception/book-qr.svg) is GENERATED from
  *  this string; change one and regenerate the other. */
 const BOOK_URL = "https://app.orangish.io/book-court/exton-sports?theme=light";
+
+/** Where the version stamp sits in the band (ScreenStamp through BookingBand's `stamp`;
+ *  2026-10-20, with the freeze watchdog's heartbeat): bottom right on the band's 3.42vw
+ *  edge, under the phone number, at 40% white — there for someone looking for it, not
+ *  for anyone reading the screen. Inside the band so it scales with the 16:9 box;
+ *  absolute, so it takes no grid track and moves nothing. One copy, so /reception's
+ *  (and /vestibule's) court board and the Starter Pack on /exit and /outside put it on
+ *  the same pixels. It only draws on a keyed screen or with ?diag. */
+export const BAND_STAMP: CSSProperties = {
+  position: "absolute", right: "calc(3.42 * var(--vw))", bottom: "calc(0.9 * var(--vh))",
+  fontSize: "calc(0.62 * var(--vw))", color: "rgba(255,255,255,0.40)", letterSpacing: "0.08em",
+  fontVariantNumeric: "tabular-nums", lineHeight: 1, whiteSpace: "nowrap", pointerEvents: "none",
+};
 
 /* The clock, isolated so the seconds do not re-render the board.
    Aniket asked for seconds (2026-10-07). At one tick per second the whole
@@ -198,12 +211,12 @@ export function ScreenHeader({ stale = false }: { stale?: boolean }) {
  *  With the default, the markup is exactly what it was — /reception pixel-diffed
  *  against unmodified origin/master at 1920x1080 after this change: identical.
  *
- *  `stamp` (2026-10-20) is a slot for the screen-version stamp that the freeze
- *  watchdog's branch (feat/screen-heartbeat, not on master yet) draws inside this
- *  band, after the number, on /reception. With the band living here, that stamp
- *  has to arrive through a prop, whichever of the two branches lands second. The
- *  caller positions it absolutely, so it takes no grid track. Nothing passes it
- *  yet; unset, it renders nothing and the band is unchanged. */
+ *  `stamp` (2026-10-20) is a slot for the screen-version stamp (ScreenStamp) that
+ *  the freeze watchdog's heartbeat brought, drawn inside this band after the number.
+ *  With the band living here, the stamp arrives through a prop. Both screens pass
+ *  <ScreenStamp style={BAND_STAMP} />, which is positioned absolutely, so it takes
+ *  no grid track; unset, or on an unkeyed screen without ?diag, it renders nothing
+ *  and the band is unchanged. */
 export function BookingBand({ showBookQr = true, stamp }: { showBookQr?: boolean; stamp?: ReactNode } = {}) {
   return (
     /* Full width under the boxes, so it reads as its own line on the wall rather

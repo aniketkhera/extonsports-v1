@@ -784,7 +784,7 @@
 
 /* ── The version stamp, top left (2026-10-20) ─────────────────────────
    ScreenStamp: the deployment's last six characters and the page's load time,
-   so a person at the outside TV can tell an old picture from a live one. Shown
+   so a person at the TV can tell an old picture from a live one. Shown
    only on a keyed screen or with ?diag. TV layout only, like .today and .credit.
 
    Mirrors .credit across the screen: the same top band, centred on the date's
