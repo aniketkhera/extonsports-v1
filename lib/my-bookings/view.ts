@@ -189,3 +189,27 @@ export function fromSiteCancel(httpStatus: number, json: unknown): CancelView {
 export function isCancelSuccess(v: CancelView): boolean {
   return v.status === 'cancelled' || v.status === 'already_cancelled'
 }
+
+/** Why a sign-in (email link or code) was refused. See ./platform.ts redeem(). */
+export type RedeemRefusal = 'invalid' | 'slow_down' | 'try_again'
+
+/**
+ * What /api/my-bookings/open and /verify answer for a refused sign-in, and whether the
+ * parked email link is thrown away.
+ *
+ * ⛔ ONLY 'invalid' SPENDS THE PARKED LINK (security review, 2026-10-20). The first pass
+ * read the platform's 429 as 'invalid', so anyone who could make the platform rate-limit
+ * (a script posting fake link cookies) deleted every real guest's parked link and told
+ * them "this link has expired" when it never was. A limit or an outage now keeps the
+ * link, and the guest can press again once it clears; the link still dies on its own
+ * after 30 minutes (LINK_MAX_AGE_S, and the platform's own expiry).
+ */
+export function redeemRefusal(e: RedeemRefusal): {
+  status: 400 | 429 | 503
+  body: { error: RedeemRefusal }
+  clearLink: boolean
+} {
+  if (e === 'invalid') return { status: 400, body: { error: 'invalid' }, clearLink: true }
+  if (e === 'slow_down') return { status: 429, body: { error: 'slow_down' }, clearLink: false }
+  return { status: 503, body: { error: 'try_again' }, clearLink: false }
+}

@@ -223,9 +223,15 @@ export const MY_BOOKINGS_PATH = '/my-bookings'
  * to "we couldn't send that just now". Same shape as CLASS_ONLINE_BOOKING_LIVE above.
  *
  * BEFORE FLIPPING IT: the migration applied and verified, the platform deployed, the
- * flag on, and one live end-to-end cancel of a TWO-court booking checked (Stripe refund,
- * calendar, TVs, lights schedule, both emails, the audit row) — a multi-court series has
- * never run in production. Owner steps 1–6 in the spec.
+ * flag on, EXTON_RELAY_SECRET set to the SAME value in both Vercel projects (this site
+ * and orangish-app; `openssl rand -base64 32`, then redeploy both), and one live
+ * end-to-end cancel of a TWO-court booking checked (Stripe refund, calendar, TVs, lights
+ * schedule, both emails, the audit row) — a multi-court series has never run in
+ * production. Owner steps 1–6 in the spec.
+ *
+ * The relay secret is a switch in its own right (security review, 2026-10-20): while it
+ * is unset on either side, every /my-bookings call fails closed and the page says "we
+ * can't show your bookings right now" (lib/my-bookings/platform.ts).
  */
 export const MY_BOOKINGS_LIVE = false
 
