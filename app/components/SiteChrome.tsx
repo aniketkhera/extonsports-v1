@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/react";
 import TrackBeacon from "mailer-admin/TrackBeacon";
 import WhatsAppFab from "./WhatsAppFab";
 import BookingThemeCarry from "./BookingThemeCarry";
+import { SCREEN_PATHS } from "./tv-screens";
 
 // The site-wide extras the root layout used to mount directly, now skipped on pages that
 // are screens rather than places a person visits.
@@ -26,7 +27,12 @@ import BookingThemeCarry from "./BookingThemeCarry";
 //
 // /exit is the promotion screen facing the exit door, added 2026-10-20 — listed on
 // day one so it never repeats /reception's first week.
-const SCREEN_PATHS = ["/comingsoon", "/board", "/reception", "/exit"];
+//
+// /vestibule and /outside came later on 2026-10-20, when every TV got an address of its
+// own. From then on the list is SCREEN_PATHS in tv-screens.ts, which is built from the
+// TV registry: each TV's route is in it automatically, so the next TV to be installed
+// cannot repeat /reception's first week either. /exit, /board and /comingsoon are
+// listed there by hand, because none of them is a TV's own address.
 
 export default function SiteChrome() {
   const pathname = usePathname();

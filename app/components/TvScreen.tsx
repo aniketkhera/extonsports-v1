@@ -1,0 +1,37 @@
+import type { ReactNode } from "react";
+import ReceptionBoard from "../reception/ReceptionBoard";
+import ExitScreen from "../exit/ExitScreen";
+import { tvScreen, type Tv, type TvContent, type TvId } from "./tv-screens";
+
+/* One TV's page: whatever its entry in tv-screens.ts says it shows (2026-10-20).
+   ──────────────────────────────────────────────────────────────────────────
+   A server component that adds nothing to the DOM. It returns the content's own
+   component exactly as that content's page renders it, so /vestibule draws the
+   same pixels as /reception, and /outside the same as /exit. This was measured
+   when these routes went in, at 1920x1080 (with JS on, and the first paint with
+   JS off), 1366x768 and 390x844. The pages matched, apart from one or two
+   antialiased edge pixels that also differ between two runs of unchanged code.
+   The production HTML matched too, apart from the <title>.
+
+   Every TV route imports every content component. That is the price of switching a
+   TV with one line in tv-screens.ts. The content that is not shown changes nothing
+   on screen: its CSS module is scoped, and a production build already ships the
+   same two stylesheets to every page. It does cost JS. Measured in production
+   builds on 2026-10-20, each TV page loads 608 KB of JS (193 KB gzipped). That is
+   8 KB more than /reception loaded before (2.5 KB gzipped), and 35 KB more than
+   /exit (12 KB gzipped), because /outside carries the court board as well. A TV
+   loads it once per launch.
+
+   Each renderer gets the TV's entry. Nothing reads it yet. It is there so that a
+   prop which must differ per TV, such as the heartbeat's page name
+   (feat/screen-heartbeat), has exactly one place to come from. */
+
+const RENDER: Record<TvContent, (tv: Tv) => ReactNode> = {
+  "court-board": () => <ReceptionBoard />,
+  "starter-pack": () => <ExitScreen />,
+};
+
+export default function TvScreen({ id }: { id: TvId }) {
+  const tv = tvScreen(id);
+  return RENDER[tv.shows](tv);
+}
