@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { makeTicker, useTick } from "../components/ticker";
 import { CLUB_TZ } from "../../lib/opening";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
+import useScreenHeartbeat from "../components/useScreenHeartbeat";
+import ScreenStamp from "../components/ScreenStamp";
 import OrangishPill from "../components/OrangishPill";
 import { PhoneNumber } from "../components/PhoneIcon";
 import LogoGlobe from "../components/LogoGlobe";
@@ -39,8 +42,10 @@ import {
    specific trap: titles read like "Jeyaram court hire — Badminton 1", which
    names a customer on a 75-inch screen.
 
-   ⚠️ IT RUNS UNATTENDED FOR WEEKS. tv-keeper on the N95 opens this URL in a
-   fullscreen browser and leaves it. So: a failed poll keeps the last good
+   ⚠️ IT RUNS UNATTENDED FOR WEEKS, in the TV's OWN browser: tv-keeper on the
+   N95 launches this URL on the VIZIO over the SmartCast API, relaunches it
+   hourly, and otherwise leaves it. (Corrected 2026-10-20; this said the N95
+   opened it in a fullscreen browser.) So: a failed poll keeps the last good
    board rather than blanking it, "today" is recomputed from the clock on every
    tick rather than taken from days[0] (otherwise the board freezes on the day
    it was opened), and nothing accumulates in state.
@@ -50,9 +55,11 @@ import {
    something we control from here. vh/vw make that irrelevant — the board fills
    whatever it is given and the ten rows always fit. Do not reintroduce px. */
 
+/** The board's clock — see "The clock" in CourtBoard. */
+const clockTicker = makeTicker(15_000);
+
 export default function CourtBoard() {
   const [data, setData] = useState<NamedSlots | null>(null);
-  const [now, setNow] = useState<Date | null>(null);
   /* Only ever used to decide whether to draw the "no connection" dot. The
      board itself keeps rendering the last good payload, which is why `data`
      is never cleared on failure. */
@@ -62,15 +69,20 @@ export default function CourtBoard() {
   /* A deploy must reach the wall without somebody driving to Exton to power-cycle
      a television. Shared with /comingsoon — see the hook. */
   useReloadOnDeploy();
+  /* Alive-and-drawing proof to the platform, keyed screens only (2026-10-20).
+     No TV shows /board today; covered anyway, so the day one does it is watched. */
+  useScreenHeartbeat("board");
 
   /* The clock. Fifteen seconds, not sixty: a row flipping from "on now" to the
      next booking up to a minute late is the one error a person standing in
      front of the board would actually notice. */
-  useEffect(() => {
-    setNow(new Date());
-    const t = setInterval(() => setNow(new Date()), 15_000);
-    return () => clearInterval(t);
-  }, []);
+  /* On the shared external-store clock since 2026-10-20 (app/components/ticker.ts,
+     whose note asked for exactly this "when its clock is next touched"): the old
+     useState + setInterval effect set state from an effect, which the linter
+     rejects in a file this change had to touch. Same 15 s, same empty first
+     render — `ms` is 0 until the ticker subscribes on mount. */
+  const ms = useTick(clockTicker);
+  const now = useMemo(() => (ms ? new Date(ms) : null), [ms]);
 
   /* The data. Two feeds, picked by whether this screen holds a key — see
      readKey above. The proxy caches for 60s so polling faster buys nothing, and
@@ -235,6 +247,8 @@ export default function CourtBoard() {
           extonsports.com
         </div>
       </footer>
+      {/* The version stamp (2026-10-20) — ScreenStamp, placed by .bstamp. */}
+      <ScreenStamp className="bstamp" />
     </div>
   );
 }

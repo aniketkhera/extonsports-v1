@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import ReceptionBoard from "../reception/ReceptionBoard";
 import ExitScreen from "../exit/ExitScreen";
+import ScreenHeartbeat from "./ScreenHeartbeat";
 import { tvScreen, type TvContent, type TvEntry, type TvId } from "./tv-screens";
 
 /* One TV's page: whatever its entry in tv-screens.ts says it shows (2026-10-20).
@@ -26,14 +27,17 @@ import { tvScreen, type TvContent, type TvEntry, type TvId } from "./tv-screens"
    and not a string. Nothing reads it yet. It is there for a prop that must differ
    per TV.
 
-   THE HEARTBEAT GOES HERE, ONCE (feat/screen-heartbeat, when it is rebased onto
-   this): one small client component next to the content, named by the TV,
-       <><TvHeartbeat page={tv.id} />{RENDER[tv.shows](tv)}</>
-   with the hook taken out of ReceptionBoard. Then every TV route beats under its
-   own name whatever it shows, and a promo swapped in by one `shows:` line cannot
-   leave a keyed TV silent. A silent keyed TV is relaunched by tv-keeper's watchdog
-   and may then be power-cycled. A hook inside each content component instead
-   would make /vestibule beat as "reception" and /outside as "exit". */
+   THE HEARTBEAT IS HERE, ONCE (2026-10-20): <ScreenHeartbeat page={tv.id} /> next
+   to the content, a client component that draws nothing, and no content component
+   calls the hook itself. So every TV route beats under its own name whatever it
+   shows (/vestibule as "vestibule", /outside as "outside" while it shows the
+   Starter Pack), and a promo swapped in by one `shows:` line cannot leave a keyed
+   TV silent. A silent keyed TV is relaunched by tv-keeper's watchdog and may then
+   be power-cycled. A hook inside each content component instead would make
+   /vestibule beat as "reception" and /outside as "exit". tv.id is typed TvId and
+   the prop ScreenPage, so a TV missing from the platform's page list
+   (screen-pure.ts SCREEN_PAGES) fails tsc here. Keyed screens only; without a key
+   it sends nothing and the page is exactly what it was. */
 
 const RENDER: Record<TvContent, (tv: TvEntry) => ReactNode> = {
   "court-board": () => <ReceptionBoard />,
@@ -42,5 +46,10 @@ const RENDER: Record<TvContent, (tv: TvEntry) => ReactNode> = {
 
 export default function TvScreen({ id }: { id: TvId }) {
   const tv = tvScreen(id);
-  return RENDER[tv.shows](tv);
+  return (
+    <>
+      <ScreenHeartbeat page={tv.id} />
+      {RENDER[tv.shows](tv)}
+    </>
+  );
 }

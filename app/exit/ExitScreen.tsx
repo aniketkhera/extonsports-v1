@@ -2,7 +2,8 @@
 
 import type { CSSProperties } from "react";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
-import { ScreenHeader, BookingBand, BAND_GAP, BOOK_BAND } from "../components/ScreenChrome";
+import { ScreenHeader, BookingBand, BAND_GAP, BOOK_BAND, BAND_STAMP } from "../components/ScreenChrome";
+import ScreenStamp from "../components/ScreenStamp";
 import { BG, INK, BOX, ORANGE } from "../components/tv-palette";
 import { STARTER_PACK_URL } from "../../lib/booking";
 import s from "./exit.module.css";
@@ -138,18 +139,18 @@ function Court() {
 
 export default function ExitScreen() {
   useReloadOnDeploy();
-  /* NO HEARTBEAT YET (2026-10-20). The freeze watchdog built after the 2026-10-17
-     VIZIO wedge (feat/screen-heartbeat here, feat/screen-watchdog in orangish-app;
-     neither on master today) has a ScreenPage of reception, board and comingsoon.
-     When it lands, do NOT hard-code a page name in here. This screen is the
-     outside TV's (/outside, through app/components/TvScreen.tsx) and only
-     previewed at /exit, so a fixed "exit" would report the outside TV as "exit".
-     The heartbeat goes ONCE in TvScreen.tsx, named by the TV (see there), with the
-     TV ids in screen-pure's ScreenPage and in the platform's SCREEN_PAGES
-     (platform deployed first), and /reception's stamp through BookingBand's
-     `stamp`. Until a TV showing this beats, do NOT give that TV a keyed (#k=) url
-     in tvs.json: tv-keeper would take the silence for a frozen screen, relaunch
-     it after five minutes and then ask for a power cycle. (2026-10-20) */
+  /* NO HEARTBEAT IN HERE, on purpose (2026-10-20). The freeze watchdog's beat is
+     sent ONCE per page by whoever renders this, named by the ADDRESS: TvScreen.tsx
+     as "outside" on /outside (the TV's own address), and app/exit/page.tsx as
+     "exit" on the preview address, which is also the set's URL until tv-keeper is
+     re-pointed. A fixed name in here would report the outside TV as "exit" on
+     /outside, and a hook here as well as there would beat twice a minute. So a
+     keyed TV on either address beats; the platform's SCREEN_PAGES has both names.
+     Until this is DEPLOYED, the platform first (it refuses a page name it does not
+     list), the earlier warning stands: give no TV showing this a keyed (#k=) url in
+     tvs.json, or tv-keeper takes the silence for a frozen screen, relaunches it and
+     then asks for a power cycle. The version stamp is in the band (BookingBand's
+     `stamp`, BAND_STAMP), on the same pixels as the court board's. */
 
   return (
     <div style={{ position: "absolute", inset: 0, background: BG }}>
@@ -241,7 +242,9 @@ export default function ExitScreen() {
           </div>
         </main>
 
-        <BookingBand showBookQr={false} />
+        {/* The version stamp (2026-10-20): keyed screens or ?diag only, in the
+            band's corner under the number, as on /reception — see BAND_STAMP. */}
+        <BookingBand showBookQr={false} stamp={<ScreenStamp style={BAND_STAMP} />} />
       </div>
     </div>
   );

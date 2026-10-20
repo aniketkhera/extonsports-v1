@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import ExitScreen from './ExitScreen'
+import ScreenHeartbeat from '../components/ScreenHeartbeat'
 import { contentViewport } from '../components/tv-screens'
 
 /* The Squash Starter Pack screen, at its own address: the PREVIEW / LEGACY URL.
@@ -17,7 +18,14 @@ import { contentViewport } from '../components/tv-screens'
    this file.
 
    Not indexed and not in sitemap.ts: it is furniture, not a page, the same as the
-   TV routes and /comingsoon. */
+   TV routes and /comingsoon.
+
+   HEARTBEAT (2026-10-20): a keyed load of this address beats as page "exit" — the
+   name of the ADDRESS, not of a TV — once a minute, from ScreenHeartbeat below and
+   nowhere else (ExitScreen has no hook of its own, so /outside, which renders the
+   same screen through TvScreen, beats as "outside" and only that). That keeps the
+   exit-door set watched while tv-keeper still points it here; without a key it
+   sends nothing, which is every phone and laptop that opens this preview. */
 
 export const metadata: Metadata = {
   title: 'Exit screen',
@@ -29,5 +37,10 @@ export const metadata: Metadata = {
 export const viewport = contentViewport('starter-pack')
 
 export default function ExitPage() {
-  return <ExitScreen />
+  return (
+    <>
+      <ScreenHeartbeat page="exit" />
+      <ExitScreen />
+    </>
+  )
 }

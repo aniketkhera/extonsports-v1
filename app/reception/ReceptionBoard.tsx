@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { makeTicker, useTick } from "../components/ticker";
 import Image from "next/image";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
-import { ScreenHeader, BookingBand, BAND_GAP, BOOK_BAND } from "../components/ScreenChrome";
+import { ScreenHeader, BookingBand, BAND_GAP, BOOK_BAND, BAND_STAMP } from "../components/ScreenChrome";
+import ScreenStamp from "../components/ScreenStamp";
 import { BG, INK, EMBER, GREEN, LABEL, NEXT_VAL, NEXT_LBL, MUTED, RULE_SOFT, PANEL, BOX } from "../components/tv-palette";
 import {
   PLATFORM, readKey, clubNow, span, holderLabel, brandFor, sessionOf, splitUpNext, lightChip, SESSION_TEXT, SPORT_OBJECT,
@@ -20,8 +21,12 @@ const quarterMinuteTicker = makeTicker(15_000);
 /* The reception desk screen — the 55" M55Q6-L4 at 10.1.10.72.
    ──────────────────────────────────────────────────────────────────────────
    Built 2026-10-07 at Aniket's request, as a second layout over the same feed
-   /board uses. The vestibule 75" keeps /board (one row per court, ten rows);
-   this one groups by SPORT and carries the partner logos.
+   /board uses. /board is one row per court, ten rows; this one groups by SPORT
+   and carries the partner logos. The vestibule 75" shows this board too, not
+   /board (tv-keeper's logs, 2026-10-20): at /reception until tv-keeper is
+   re-pointed at its own /vestibule, which renders this same component
+   (app/components/tv-screens.ts). Its key has names_visible off, so it names
+   exactly who the public page names.
 
    WHY GROUPED, AND WHY MERGED. Philadelphia Badminton holds all three
    badminton courts for the same four hours, which /board draws as three
@@ -701,6 +706,12 @@ export default function ReceptionBoard() {
   const lastLights = useRef<{ at: number; lights: Lights } | null>(null);
 
   useReloadOnDeploy();
+  /* NO HEARTBEAT HERE, on purpose (2026-10-20). The alive-and-drawing beat goes in
+     ONCE per page, outside the content: TvScreen.tsx for the TV routes, named by
+     the TV's id (so /vestibule beats as "vestibule", not "reception"), whatever
+     the TV shows. A hook in here as well would beat twice a minute under two
+     names. The stamp in the band still shows on a keyed screen: it reads the
+     same per-load runtime the heartbeat marks keyed (screen-runtime.ts). */
 
   /* Fifteen seconds, NOT one: this decides which hour counts as "now" and so
      re-runs the grouping below. A row flipping up to a quarter minute late is
@@ -1026,8 +1037,11 @@ export default function ReceptionBoard() {
       </div>
 
       {/* The booking band — the same one /exit shows (components/ScreenChrome,
-          2026-10-20), where it and its reasoning now live. */}
-      <BookingBand />
+          2026-10-20), where it and its reasoning now live. The version stamp
+          rides in its `stamp` slot, bottom right under the number, where it has
+          been since the heartbeat went in (2026-10-20); its place is BAND_STAMP,
+          shared with /exit. Keyed screens or ?diag only; nothing otherwise. */}
+      <BookingBand stamp={<ScreenStamp style={BAND_STAMP} />} />
     </div>
     </div>
   );
