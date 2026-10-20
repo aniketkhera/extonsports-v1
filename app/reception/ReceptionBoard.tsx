@@ -543,28 +543,91 @@ function SlotLine({ text, day }: { text: "ON NOW" | "UP NEXT"; day: string }) {
   );
 }
 
-/* THE LIGHTS CHIP (2026-10-18) — the drawing only; WHICH state is lightChip's
-   decision, in board-lib, with the reasoning. This is the look Aniket approved in
-   the mock-up ("yes on the light chip"), four states:
+/* THE LIGHTS CHIP — the drawing only; WHICH state is lightChip's decision, in
+   board-lib, with the reasoning.
 
-     on      lit bulb, warm glow          LIGHTS ON
-     offIn   lit bulb, the brand orange   LIGHTS OFF IN 8 MIN
-     onIn    outline bulb, LABEL white    LIGHTS ON IN 12 MIN
-     off     dim outline bulb             LIGHTS OFF
+   2026-10-18, the look Aniket approved in the mock-up ("yes on the light chip"): a
+   pale lamp yellow #FFE6A6 for LIGHTS ON, the brand orange for the countdown, LABEL
+   white for LIGHTS ON IN, and LIGHTS OFF at 0.55 white — at 0.6em of the title, in
+   Oswald 400, on a faint tinted pill.
 
-   ⛔ NEVER GREEN — on this board green means a court is free, and a green LIGHTS
-   ON would read as "court open" from the desk — and never SESSION_GOLD, the girls'
-   tag. ON is a lamp's warm yellow, not a status colour. The countdown takes
-   SESSION_ORANGE, the board's own warning-strength colour, because it is the state
-   that matters to a group still on court. LIGHTS OFF is deliberately dimmer than
-   the 0.75 alpha this file otherwise keeps text above: it is the resting state and
-   should read as one, not compete with the bookings.
+   2026-10-20, BRIGHTER, AND YELLOW WHILE THE LIGHTS ARE ON. Aniket, watching the TVs
+   with the lights forced on: "chips are showing but maybe make those brighter, make
+   the font bright yellow when lights are on"; and again: "make the light chips
+   brighter with yellow font". Now:
 
-   In em of the title it sits in (1.5vw), like the sport's object, so it stays
-   locked to the title at any screen shape. */
-const LIGHT_ON = "#FFE6A6";
-const LIGHT_DIM = "rgba(255,255,255,0.42)";
-const LIGHT_DIM_INK = "rgba(255,255,255,0.55)";
+     on      lit yellow bulb, yellow ring and halo   LIGHTS ON             yellow
+     offIn   lit ORANGE bulb, double orange ring     LIGHTS OFF IN 8 MIN   yellow
+             and halo
+     onIn    white outline bulb, white ring          LIGHTS ON IN 12 MIN   white
+     off     dim outline bulb, faint ring            LIGHTS OFF            0.78 white
+
+   · THE YELLOW is LIGHT_YELLOW, a lemon, picked by measurement against SESSION_GOLD
+     on the same board: 53.6° against 41.8° in hue (11.9° apart), ΔE2000 13.0, and
+     lighter — far enough that the chip never reads as the girls' tag.
+   · LIGHTS OFF IN n MIN is the lights still ON, so its words are yellow too, as he
+     asked. The warning stays in SESSION_ORANGE — the bulb, its glow, the ring and the
+     halo — because that state matters to a group still on court, and from across the
+     room the orange lamp is what says "about to go off" before the words are read.
+     The orange outline is DOUBLED, 0.2em: the 0.1em border plus a 0.1em spread in the
+     halo. The 2px border alone is ~0.7 arcminute on the 55" from 6 m, under what the
+     eye resolves, so with yellow words the countdown read nearly as LIGHTS ON from
+     across the room (review, 2026-10-20). A box-shadow, so the layout does not move.
+   · THE PILL IS DARK, NOT A LIGHTER TINT. The panel is at its lightest behind the
+     title, and measured there this yellow gets only ~6:1 and even pure white ~7.4:1.
+     So the fill is the board's own ground at 0.8 (CHIP_FILL; 0.4 for LIGHTS OFF), and
+     the brightness went into the text, the ring, the bulb and a halo. Measured at
+     1080p on the lightest ground under any chip, text on the fill (WCAG): ON 13.0:1,
+     OFF IN 13.0:1, ON IN 15.9:1, OFF 7.6:1 — against 5.1, 2.8, 5.4 and 3.3 before.
+   · 0.7em of the title (from 0.6), Oswald 600 (from 400), tracking 0.08em (from 0.1),
+     ring 0.1em (from 0.08). The widest label, "LIGHTS OFF IN 10 MIN", still clears
+     the shuttle beside BADMINTON by 42px at 1080p and 7px on a 390px phone — every
+     label from 1 to 30 MIN was measured, one line each. The bulb comes down to 1.2em
+     and the vertical padding to 0.24em so the pill is no taller than the approved
+     one (37.8px against 38.4 at 1080p), and the NOW list below keeps its clearance.
+   · LIGHTS OFF stays the resting state — dimmer than the other three in text, ring
+     and bulb — but at 0.78 white, over the 0.75 this file keeps text above, so it
+     reads from the desk rather than as grey.
+
+   ⛔ NEVER GREEN — on this board green means a court is free, and a green LIGHTS ON
+   would read as "court open" from the desk — and never SESSION_GOLD, the girls' tag.
+   The halo is a box-shadow and the bulb's glow a drop-shadow, both STATIC: nothing on
+   the chip animates.
+
+   In em of the title it sits in (calc(1.5 * var(--vw)), 1.5% of the 16:9 box, not of
+   the window), like the sport's object, so it stays locked
+   to the title at any screen shape. Literal colours, as everywhere on this board. */
+const LIGHT_YELLOW = "#FFEA3A";
+/** BG #0B1623 at 0.8 — the pill's fill while the lights are on or about to be; see
+ *  THE PILL IS DARK above. LIGHTS OFF takes it at 0.4 (CHIP_FILL_REST), so the resting
+ *  chip sits back into the panel instead of standing out as a dark slot. */
+const CHIP_FILL = "#0B1623CC";
+const CHIP_FILL_REST = "#0B162366";
+
+type ChipLook = {
+  /** A lit bulb (filled, rays, glow) or an outline. */
+  lit: boolean;
+  /** The bulb, its glow when lit, and nothing else. A 6-digit hex when lit — the
+   *  glow appends its own alpha. */
+  bulb: string;
+  /** The words. */
+  ink: string;
+  /** The pill's fill. */
+  fill: string;
+  /** The pill's border. */
+  ring: string;
+  /** The pill's box-shadow. */
+  halo: string;
+};
+const CHIP_LOOK: Record<LightChip["kind"], ChipLook> = {
+  on: { lit: true, bulb: LIGHT_YELLOW, ink: LIGHT_YELLOW, fill: CHIP_FILL, ring: LIGHT_YELLOW, halo: `0 0 0.5em ${LIGHT_YELLOW}73` },
+  offIn: {
+    lit: true, bulb: SESSION_ORANGE, ink: LIGHT_YELLOW, fill: CHIP_FILL, ring: SESSION_ORANGE,
+    halo: `0 0 0 0.1em ${SESSION_ORANGE}, 0 0 0.6em ${SESSION_ORANGE}99`,
+  },
+  onIn: { lit: false, bulb: "#FFFFFF", ink: "#FFFFFF", fill: CHIP_FILL, ring: "#FFFFFFD9", halo: "none" },
+  off: { lit: false, bulb: "#FFFFFFB3", ink: "#FFFFFFC7", fill: CHIP_FILL_REST, ring: "#FFFFFF66", halo: "none" },
+};
 
 function lightText(c: LightChip): string {
   switch (c.kind) {
@@ -584,7 +647,7 @@ function Bulb({ lit, color }: { lit: boolean; color: string }) {
       viewBox="0 0 24 24"
       aria-hidden
       style={{
-        height: "1.35em", width: "1.35em", display: "block", overflow: "visible",
+        height: "1.2em", width: "1.2em", display: "block", overflow: "visible",
         filter: lit ? `drop-shadow(0 0 0.28em ${color}) drop-shadow(0 0 0.7em ${color}88)` : "none",
       }}
     >
@@ -611,22 +674,17 @@ function Bulb({ lit, color }: { lit: boolean; color: string }) {
 }
 
 function LightStatus({ chip }: { chip: LightChip }) {
-  const look =
-    chip.kind === "on" ? { lit: true, color: LIGHT_ON, ink: LIGHT_ON }
-    : chip.kind === "offIn" ? { lit: true, color: SESSION_ORANGE, ink: SESSION_ORANGE }
-    : chip.kind === "onIn" ? { lit: false, color: LABEL, ink: LABEL }
-    : { lit: false, color: LIGHT_DIM, ink: LIGHT_DIM_INK };
+  const look = CHIP_LOOK[chip.kind];
   return (
     <span
       style={{
         display: "inline-flex", alignItems: "center", gap: "0.45em", whiteSpace: "nowrap",
-        fontSize: "0.6em", letterSpacing: "0.1em", lineHeight: 1, color: look.ink,
-        padding: "0.38em 0.75em 0.38em 0.55em", borderRadius: "999px",
-        background: look.lit ? "rgba(255,230,166,0.10)" : "rgba(255,255,255,0.05)",
-        border: `0.08em solid ${look.lit ? `${look.color}66` : "rgba(255,255,255,0.16)"}`,
+        fontSize: "0.7em", fontWeight: 600, letterSpacing: "0.08em", lineHeight: 1, color: look.ink,
+        padding: "0.24em 0.75em 0.24em 0.55em", borderRadius: "999px",
+        background: look.fill, border: `0.1em solid ${look.ring}`, boxShadow: look.halo,
       }}
     >
-      <Bulb lit={look.lit} color={look.color} />
+      <Bulb lit={look.lit} color={look.bulb} />
       {lightText(chip)}
     </span>
   );
