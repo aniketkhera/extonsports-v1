@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { makeTicker, useTick } from "./ticker";
 import OrangishPill from "./OrangishPill";
 import { PhoneNumber } from "./PhoneIcon";
@@ -14,7 +15,9 @@ import { EMBER, INK, LABEL, ORANGE, RULE, RULE_SOFT } from "./tv-palette";
    bottom strips as we have for the reception and vestibule TVs" (Aniket). One
    copy, so the two screens cannot drift: the clock, the date and the booking line
    look the same wherever someone meets them in the building. /reception was
-   pixel-diffed against production at 1920x1080 after the move — identical.
+   pixel-diffed at 1920x1080 after the move: the running page against production
+   and origin/master, and (2026-10-20) the first paint before hydration, JS off,
+   against origin/master, which is where Clock's placeholder shows. Identical.
    (The band's small booking QR is /reception's only — see BookingBand's
    showBookQr, 2026-10-20.)
 
@@ -41,7 +44,7 @@ const secondTicker = makeTicker(1_000);
    and, from 2026-10-16, the number (right). The address line went with it.
 
    Its height is the QR's: BOOK_QR plus a little air. The QR is the one thing on
-   this screen meant to be read by a PHONE, not an eye, and a phone needs modules
+   /reception meant to be read by a PHONE, not an eye, and a phone needs modules
    it can resolve. At 10.4vh a module is ~3.4px at 1080p (~2.3mm on the 55") —
    comfortable from the desk, not from across the lobby. Smaller saves the boxes
    height and costs scanning distance; measure before changing either.
@@ -72,12 +75,19 @@ const BOOK_URL = "https://app.orangish.io/book-court/exton-sports?theme=light";
    board's own clock stays on the slower tick that decides which hour is "now". */
 function Clock() {
   const ms = useTick(secondTicker);
+  /* Before the first tick (the server render, and the frame before hydration)
+     the cell holds a NO-BREAK space, 2026-10-20. A plain space collapses, the
+     cell loses its line box and the header draws 9px short; then the clock
+     starts and everything under it drops 9px, on every load (tv-keeper relaunches
+     /reception every ten minutes). Written as an escape, not the character, so
+     no editor can quietly turn it back into a space, which is how it was lost
+     when this moved out of ReceptionBoard.tsx. DateLine's placeholder likewise. */
   const text = ms
     ? new Intl.DateTimeFormat("en-US", {
         timeZone: "America/New_York",
         hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true,
       }).format(new Date(ms))
-    : " ";
+    : "\u00a0";
   /* Tabular figures: without them the colon jitters left and right every
      second as the digit widths change, which is very visible on a wall. */
   return (
@@ -115,7 +125,7 @@ function DateLine() {
             timeZone: "America/New_York",
             weekday: "long", month: "long", day: "numeric", year: "numeric",
           }).format(new Date(ms)).toUpperCase()
-        : " "}
+        : "\u00a0" /* a no-break space, not a space: see Clock (2026-10-20) */}
     </>
   );
 }
@@ -186,8 +196,15 @@ export function ScreenHeader({ stale = false }: { stale?: boolean }) {
  *  and the 1fr tracks either side keep it centred. The band keeps its full height
  *  (BOOK_BAND), so the strip is the same size and in the same place on both screens.
  *  With the default, the markup is exactly what it was — /reception pixel-diffed
- *  against unmodified origin/master at 1920x1080 after this change: identical. */
-export function BookingBand({ showBookQr = true }: { showBookQr?: boolean } = {}) {
+ *  against unmodified origin/master at 1920x1080 after this change: identical.
+ *
+ *  `stamp` (2026-10-20) is a slot for the screen-version stamp that the freeze
+ *  watchdog's branch (feat/screen-heartbeat, not on master yet) draws inside this
+ *  band, after the number, on /reception. With the band living here, that stamp
+ *  has to arrive through a prop, whichever of the two branches lands second. The
+ *  caller positions it absolutely, so it takes no grid track. Nothing passes it
+ *  yet; unset, it renders nothing and the band is unchanged. */
+export function BookingBand({ showBookQr = true, stamp }: { showBookQr?: boolean; stamp?: ReactNode } = {}) {
   return (
     /* Full width under the boxes, so it reads as its own line on the wall rather
        than as part of them.
@@ -256,6 +273,7 @@ export function BookingBand({ showBookQr = true }: { showBookQr?: boolean } = {}
       <div style={{ justifySelf: "end", fontWeight: 500, letterSpacing: "0.06em", fontVariantNumeric: "tabular-nums" }}>
         <PhoneNumber number={CONTACT_PHONE} color={ORANGE} />
       </div>
+      {stamp}
     </div>
   );
 }

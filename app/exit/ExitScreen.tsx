@@ -26,12 +26,16 @@ import s from "./exit.module.css";
    pack), and his sentence sits under the code, where someone who has just scanned
    looks next.
 
-   THE WORDS ARE THE OFFER PAGE'S (app.orangish.io/starter/exton-sports, read
-   2026-10-20), not ours: five 30-minute private lessons with a squash coach, $195
-   for all five, juniors under 19, once per player, no expiry. That page is where
-   the rules are enforced (age, once-ever) and where the price comes from (Exton's
-   rates row); this screen only repeats it. If the offer changes there, change the
-   copy here the same day — a wall that quotes the wrong price is worse than none.
+   THE OFFER'S TERMS ARE THE OFFER PAGE'S (app.orangish.io/starter/exton-sports,
+   read 2026-10-20), not ours: five 30-minute private lessons with a squash coach,
+   $195 for all five, juniors under 19, once per player, no expiry. That page is
+   where the rules are enforced (age, once-ever) and where the price comes from
+   (Exton's rates row); this screen only repeats it. If the offer changes there,
+   change the copy here the same day — a wall that quotes the wrong price is worse
+   than none. The one line that is NOT the page's is the after-you-buy sentence,
+   Aniket's (above). The page's own step 2, read the same day, says "Exton Sports
+   will contact you to book your five sessions": two names for one step. Which is
+   right is his call; until he makes it, the wall keeps his words.
 
    No data feed: nothing on it changes but the clock. It reloads itself on a deploy
    like every other screen (useReloadOnDeploy).
@@ -46,8 +50,8 @@ import s from "./exit.module.css";
 const BUY_URL = STARTER_PACK_URL;
 
 /* The copy's entrance order, in seconds after load — and again every 40 s. (The
-   CTA column's three pieces use it too, but they come in once and stay: see
-   .riseOnce.) */
+   CTA column comes in once and stays, see .riseOnce: the code at .riseOnce's own
+   1.2 s, the line under it and the address at at(1.9) and at(2.15).) */
 const at = (seconds: number): CSSProperties => ({ animationDelay: `${seconds}s` });
 
 /* The court, drawn as the rally's camera sees it: on the centre line 11 m from the
@@ -127,6 +131,15 @@ function Court() {
 
 export default function ExitScreen() {
   useReloadOnDeploy();
+  /* NO HEARTBEAT YET (2026-10-20). The freeze watchdog built after the 2026-10-17
+     VIZIO wedge (feat/screen-heartbeat here, feat/screen-watchdog in orangish-app;
+     neither on master today) knows only reception, board and comingsoon. When it
+     lands, this page needs useScreenHeartbeat("exit") here, "exit" in screen-pure's
+     ScreenPage and in the platform's SCREEN_PAGES (platform deployed first), and
+     /reception's stamp through BookingBand's `stamp`. Until /exit beats, do NOT
+     point the exit TV's keyed (#k=) url in tvs.json at it: tv-keeper would take
+     the silence for a frozen screen, relaunch it after five minutes and then ask
+     for a power cycle. */
 
   return (
     <div style={{ position: "absolute", inset: 0, background: BG }}>
