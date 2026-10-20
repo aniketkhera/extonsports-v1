@@ -2,7 +2,7 @@ import WhatsAppButton from "./WhatsAppButton";
 import OrangishPill from "./OrangishPill";
 import CalendarFooterLink from "./CalendarFooterLink";
 import { CONTACT_EMAIL } from "../../lib/legal";
-import { BOOK_COURT_URL, PAY_URL } from "../../lib/booking";
+import { BOOK_COURT_URL, PAY_URL, MY_BOOKINGS_LIVE, MY_BOOKINGS_PATH } from "../../lib/booking";
 import { RATE_BANDS, BAND_BLURB } from "../../lib/rates";
 
 export default function Footer() {
@@ -118,6 +118,11 @@ export default function Footer() {
                a plain click opens the calendar overlay, anything else goes to /calendar
                (CalendarFooterLink.tsx). The hero row now has "My bookings" in its place. */
             { label: "Calendar of bookings", href: "/calendar", calendar: true },
+            // 2026-10-20: see or cancel a guest booking, gated until the platform side is
+            // switched on (lib/booking.ts). After the calendar, not before it (rebase,
+            // 2026-10-22): the calendar's place right under "Book" is pinned by
+            // app/components/my-bookings-pure.test.mjs.
+            ...(MY_BOOKINGS_LIVE ? [{ label: "My bookings", href: MY_BOOKINGS_PATH }] : []),
             { label: "Make an adhoc payment", href: PAY_URL },
             { label: "Bulk & block bookings", href: `mailto:${CONTACT_EMAIL}` },
             { label: "Academies & juniors", href: "/#top" },
