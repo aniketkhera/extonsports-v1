@@ -23,7 +23,10 @@ import BookingThemeCarry from "./BookingThemeCarry";
 // missed on its first build and the WhatsApp bubble duly appeared in the corner of a
 // television, which is the visible half of the problem; the invisible half was a TV
 // counting itself as a daily visitor.
-const SCREEN_PATHS = ["/comingsoon", "/board", "/reception"];
+//
+// /exit is the promotion screen facing the exit door, added 2026-10-20 — listed on
+// day one so it never repeats /reception's first week.
+const SCREEN_PATHS = ["/comingsoon", "/board", "/reception", "/exit"];
 
 export default function SiteChrome() {
   const pathname = usePathname();

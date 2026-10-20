@@ -4,19 +4,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { makeTicker, useTick } from "../components/ticker";
 import Image from "next/image";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
-import OrangishPill from "../components/OrangishPill";
-import { PhoneNumber } from "../components/PhoneIcon";
-import LogoGlobe from "../components/LogoGlobe";
-import { CONTACT_PHONE } from "../../lib/legal";
+import { ScreenHeader, BookingBand, BAND_GAP, BOOK_BAND } from "../components/ScreenChrome";
+import { BG, INK, EMBER, GREEN, LABEL, NEXT_VAL, NEXT_LBL, MUTED, RULE_SOFT, PANEL, BOX } from "../components/tv-palette";
 import {
   PLATFORM, readKey, clubNow, span, holderLabel, brandFor, sessionOf, splitUpNext, lightChip, SESSION_TEXT, SPORT_OBJECT,
   type BrandKey, type LightChip, type Lights, type NamedBlock, type NamedSlots, type SessionKey,
 } from "../board/board-lib";
 
 /* The clock is an external store, shared with /comingsoon — see
-   app/components/ticker.ts for why it is not useState + useEffect. */
-/** Visible seconds for the clock. */
-const secondTicker = makeTicker(1_000);
+   app/components/ticker.ts for why it is not useState + useEffect. The visible
+   seconds tick in components/ScreenChrome (the header, since 2026-10-20). */
 /** Decides which hour counts as "now". Slower on purpose — see the board below. */
 const quarterMinuteTicker = makeTicker(15_000);
 
@@ -47,39 +44,11 @@ const quarterMinuteTicker = makeTicker(15_000);
    rather than blanking, "today" is recomputed from the clock on every tick
    rather than taken from days[0], and nothing accumulates in state. */
 
-/* ── THE TV PALETTE ───────────────────────────────────────────────────────────
-   Brighter than the web palette, deliberately, and kept here as one block so
-   it can be tuned in one place.
-
-   Aniket read the first build from across the lobby on 2026-10-07 and called
-   it dull. Two causes, both fixed here:
-
-   1. MOST OF THE TEXT WAS TRANSLUCENT. Nine different alpha whites between
-      0.045 and 0.78. On a 55" panel a few metres away anything under about
-      0.75 stops reading as white and starts reading as grey — the labels and
-      the NEXT lines were the worst of it. They are near-opaque now, and the
-      hierarchy is carried by SIZE instead, which survives distance.
-   2. THE ORANGE WAS NOT THE BRAND ORANGE. It was #f26b3a, a darker and more
-      saturated colour than globals.css's --color-ember (#F89B72). EMBER below
-      is brighter again than even --color-ember-hi (#FBB28C).
-
-   ⚠️ LITERALS, NOT TOKENS — same rule as board.css and comingsoon.module.css.
-   The site's light theme redefines --color-* under :root[data-theme="light"],
-   and from 2026-10-07 light is the DEFAULT. A screen built on tokens would
-   have turned into dark text on a dark ground with nobody in the room. */
-const BG = "#0B1623";
-const INK = "#FFFFFF";
-/** Brighter than --color-ember-hi; the header, the clock and brand accents. */
-const EMBER = "#FFBE97";
-/** Brighter than --color-green-hi (#5CC766) — "open" has to carry the room. */
-const GREEN = "#79EA92";
-const LABEL = "rgba(255,255,255,0.86)";
-const NEXT_VAL = "rgba(255,255,255,0.88)";
-const NEXT_LBL = "rgba(255,255,255,0.62)";
-const MUTED = "rgba(255,255,255,0.70)";
-const RULE = "rgba(255,255,255,0.34)";
-const RULE_SOFT = "rgba(255,255,255,0.22)";
-const PANEL = "rgba(255,255,255,0.075)";
+/* ── THE TV PALETTE ──────────────────────────────────────────────────────────
+   BG, INK, EMBER, GREEN, the alpha whites and PANEL live in
+   components/tv-palette.ts since 2026-10-20 — moved unchanged, with the
+   reasoning (why so bright, why literals and never --color-* tokens), when /exit
+   took the same header and band. Only the board's own colours stay below. */
 /* ── The three sport boxes, lit ───────────────────────────────────────────
    Asked for 2026-10-08: an ember border on each box, and shading so a box
    reads as a raised object rather than a flat patch of lighter navy.
@@ -191,42 +160,10 @@ const UPCOMING_COUNT = 10;
    bottom. */
 const UP_NEXT_MAX = 2;
 
-/* The booking band — one line under the boxes, the bottom of the screen
-   (2026-10-18, Aniket: "a lot of people look at the reception screen — instead of
-   'view this screen at extonsports.com/reception', create a band at the bottom:
-   For bookings, go to extonsports.com or scan this"; then the phone number
-   "larger font", and "orangish.io in the same line as the QR code line and phone
-   number"). orangish.io left, the booking line and its QR in the middle, the
-   club's number right.
-
-   It replaces CREDIT_STRIP (2026-10-15..18), a 4.8vh strip under the boxes that
-   held the pill (centred), "view this screen at extonsports.com/reception" (left)
-   and, from 2026-10-16, the number (right). The address line went with it.
-
-   Its height is the QR's: BOOK_QR plus a little air. The QR is the one thing on
-   this screen meant to be read by a PHONE, not an eye, and a phone needs modules
-   it can resolve. At 10.4vh a module is ~3.4px at 1080p (~2.3mm on the 55") —
-   comfortable from the desk, not from across the lobby. Smaller saves the boxes
-   height and costs scanning distance; measure before changing either.
-
-   BAND_GAP + BOOK_BAND cost the boxes ~10vh more than the strip did, all of it
-   from the NOW / COMING UP area. Measured 2026-10-18 at 1080p and 1366x768 on a
-   quiet Sunday morning and a Tuesday 7:15 pm: every COMING UP row still shows.
-   NOT measured: three live groups on every sport at once — with the 4.8vh strip
-   that case had ~9px of NOW height to spare at 1080p, so it will now lose rows. */
-const BOOK_BAND = "calc(13 * var(--vh))";
-const BOOK_QR = "calc(10.4 * var(--vh))";
-/** Air between the boxes and the band's top rule. */
-const BAND_GAP = "calc(1.6 * var(--vh))";
-/** The booking line and the number — large, because both are meant to be acted on. */
-const BAND_TEXT = "calc(2 * var(--vw))";
-/** The pill's text. A step under BAND_TEXT: its white ground makes it read larger
- *  than bare type of the same size, and this keeps the three items looking even. */
-const BAND_PILL_TEXT = "calc(1.6 * var(--vw))";
-/** Where the QR goes — the same no-login page the site's "Book a court or lane"
- *  button opens. The QR image (public/reception/book-qr.svg) is GENERATED from
- *  this string; change one and regenerate the other. */
-const BOOK_URL = "https://app.orangish.io/book-court/exton-sports?theme=light";
+/* The booking band at the foot of the screen (2026-10-18) is drawn by BookingBand in
+   components/ScreenChrome, shared with /exit since 2026-10-20 — its sizes, its QR
+   and the reasoning behind both are there. BAND_GAP + BOOK_BAND is what the box
+   keeps clear for it at the bottom. */
 
 /* Blocks -> entries, by cutting the day into TIME BANDS.
    ──────────────────────────────────────────────────────────────────────────
@@ -466,61 +403,8 @@ function courtsLabel(sport: string, labels: string[]): string {
   return `${noun}s ${labels.join(", ")}`;
 }
 
-/* The clock, isolated so the seconds do not re-render the board.
-   Aniket asked for seconds (2026-10-07). At one tick per second the whole
-   board would otherwise re-run its grouping sixty times a minute for weeks;
-   keeping it in its own component means only this <span> updates, and the
-   board's own clock stays on the slower tick that decides which hour is "now". */
-function Clock() {
-  const ms = useTick(secondTicker);
-  const text = ms
-    ? new Intl.DateTimeFormat("en-US", {
-        timeZone: "America/New_York",
-        hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true,
-      }).format(new Date(ms))
-    : " ";
-  /* Tabular figures: without them the colon jitters left and right every
-     second as the digit widths change, which is very visible on a wall. */
-  return (
-    <span style={{ fontVariantNumeric: "tabular-nums", letterSpacing: "0.01em" }}>
-      {text}
-    </span>
-  );
-}
-
-/* The day and date, on the header's centre line (2026-10-10).
-
-   Asked for in three steps: "show the date and day too", then "on the same line
-   as the time", then "a bit larger, same font as the header row, top center".
-   So it left the clock and became the header's middle column, set in the
-   title's own face, size and colour by the caller.
-
-   The year stays in. This board runs for months unattended; a frozen clock still
-   reads like a plausible time of day and a weekday repeats every seven days, so a
-   wrong YEAR is the only unmistakable sign the picture is stale. (The faint dot
-   by the title only appears when a fetch fails — a tv-keeper relaunch onto a
-   cached page would show neither.)
-
-   America/New_York, not the browser's zone: the VIZIOs carry whatever timezone
-   they shipped with and tv-keeper does not set it.
-
-   Same one-second ticker as the clock, so the date turns over exactly at
-   midnight rather than up to a tick late. It is its own component for the same
-   reason the clock is: only this text re-renders, never the board. */
-function DateLine() {
-  const ms = useTick(secondTicker);
-  return (
-    <>
-      {ms
-        ? new Intl.DateTimeFormat("en-US", {
-            timeZone: "America/New_York",
-            weekday: "long", month: "long", day: "numeric", year: "numeric",
-          }).format(new Date(ms)).toUpperCase()
-        : " "}
-    </>
-  );
-}
-
+/* The clock and the date line moved to components/ScreenChrome with the header
+   (2026-10-20), shared with /exit. */
 
 function Lockup({ brand, who }: { brand: BrandKey | null; who: string }) {
   if (brand === "philadelphia-badminton") {
@@ -764,7 +648,7 @@ export default function ReceptionBoard() {
      re-runs the grouping below. A row flipping up to a quarter minute late is
      the one error somebody standing at the desk would notice; re-grouping
      sixty times a minute for weeks is not worth removing it. The visible
-     seconds come from <Clock/>, which re-renders a single span. */
+     seconds come from <Clock/> (components/ScreenChrome), which re-renders a single span. */
   const tick = useTick(quarterMinuteTicker);
 
   useEffect(() => {
@@ -870,22 +754,9 @@ export default function ReceptionBoard() {
 
   const { panels, today } = view;
 
-  /* ── 16:9, ALWAYS (2026-10-18) ──────────────────────────────────────────────
-     This screen is drawn for the two 16:9 televisions, and every size on it was
-     viewport-relative — vw for most things, vh for the band and the paddings. On any
-     other shape the two drift apart: on a phone held upright vh is 2-3x vw (the QR
-     outgrew the band and landed on the phone number), and on a phone held sideways vw
-     is large against a short height (the COMING UP list rose over ON NOW). Aniket,
-     from his phone: "Not aligned", then "Landscape a bit off too".
-     So the board is ONE 16:9 picture scaled to fit, letterboxed on the ground colour:
-     --vw and --vh are a hundredth of the 16:9 box, not of the window, and every size
-     below is written in them (the conversion was mechanical: Nvw -> N * var(--vw)).
-     On a 16:9 screen min() picks 1vw and 1vh exactly, the box IS the window, and the
-     televisions render as before — measured pixel for pixel at 1920x1080. */
-  const BOX = {
-    "--vw": "min(1vw, calc(1vh * 16 / 9))",
-    "--vh": "min(1vh, calc(1vw * 9 / 16))",
-  } as React.CSSProperties;
+  /* 16:9, ALWAYS (2026-10-18): one 16:9 picture scaled to fit, letterboxed on the
+     ground colour, with every size in --vw / --vh. BOX and why it exists are in
+     components/tv-palette.ts since 2026-10-20, shared with /exit. */
 
   return (
     <div style={{ position: "absolute", inset: 0, background: BG }}>
@@ -899,52 +770,10 @@ export default function ReceptionBoard() {
         overflow: "hidden",
       }}
     >
-      {/* 1fr auto 1fr, not flex space-between (2026-10-10, "top center"). The
-          equal outer tracks put the date on the SCREEN's centre line; with three
-          flex children it would sit midway between the title's edge and the
-          clock's instead, and the clock changes width every second. */}
-      <div
-        style={{
-          display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "baseline",
-          columnGap: "calc(2 * var(--vw))",
-          borderBottom: `1px solid ${RULE}`,
-          paddingBottom: "calc(1.2 * var(--vh))", marginBottom: "calc(1.6 * var(--vh))",
-        }}
-      >
-        {/* The club's mark left of the name (2026-10-16). Absolute, in room made by
-            the title's own left padding, so the header row — and so the panels'
-            1fr row under it — keeps its height: in flow, a mark taller than the
-            type would push the header down and take that from the NOW areas,
-            which have ~9px to spare when every court is busy. Centred on the
-            title's line box. */}
-        <div
-          className="text-cond"
-          style={{ color: EMBER, fontSize: "calc(2.1 * var(--vw))", letterSpacing: "0.10em", position: "relative", paddingLeft: "calc(3.6 * var(--vw))" }}
-        >
-          <LogoGlobe size="calc(2.8 * var(--vw))" ring style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)" }} />
-          EXTON SPORTS CENTER
-          {stale && (
-            <span
-              aria-hidden
-              style={{
-                display: "inline-block", width: "calc(0.5 * var(--vw))", height: "calc(0.5 * var(--vw))", borderRadius: "50%",
-                background: RULE, marginLeft: "calc(0.6 * var(--vw))", verticalAlign: "middle",
-              }}
-            />
-          )}
-        </div>
-        {/* The title's exact style — face, size, tracking, colour — so the date
-            reads as part of the header row rather than a caption under it. */}
-        <div
-          className="text-cond"
-          style={{ color: EMBER, fontSize: "calc(2.1 * var(--vw))", letterSpacing: "0.10em", whiteSpace: "nowrap", justifySelf: "center" }}
-        >
-          <DateLine />
-        </div>
-        <div className="text-cond" style={{ color: EMBER, fontSize: "calc(2.4 * var(--vw))", lineHeight: 1, justifySelf: "end" }}>
-          <Clock />
-        </div>
-      </div>
+      {/* The top strip — the club's mark and name, the date, the clock — shared
+          with /exit since 2026-10-20: components/ScreenChrome. `stale` is the faint
+          dot by the title that says the feed has failed. */}
+      <ScreenHeader stale={stale} />
 
       {/* gridTemplateRows minmax(0, 1fr) (review, 2026-10-14): with the default
           `auto` row a panel grew to its content, so three live entries with the
@@ -1138,72 +967,9 @@ export default function ReceptionBoard() {
         ))}
       </div>
 
-      {/* The booking band — see BOOK_BAND. Full width under the boxes, so it reads
-          as its own line on the wall rather than as part of them.
-
-          1fr auto 1fr: the booking line is the reason for the band, so it takes the
-          middle track and stays on the screen's centre line whatever the two ends
-          measure; the ends sit on the same two edges as every line above them — the
-          text INSIDE the badminton and squash boxes, 2.2vw root padding + 0.22vw
-          border + 1vw panel padding = 3.42vw each side.
-
-          - orangish.io (2026-10-15, Aniket: a credit on every Exton surface, as a
-            pill): the `tv` pill is a <span>, not a link — nobody can tap a
-            television. It is 1.05em of BAND_PILL_TEXT.
-          - The booking line: the address in the board's orange. The QR sits on
-            white with its own quiet zone (in the SVG), because a code on #0B1623
-            with no margin is one many phone cameras will not lock on to.
-            The line and the QR are ONE link to BOOK_URL (2026-10-18, Aniket: "QR
-            code clickable/tappable"): the page is also public at
-            extonsports.com/reception, and nobody can scan a code on their own
-            phone's screen. The band ignores the pointer; the link opts back in.
-            Same tab, like the site's other booking links. On a television it is
-            inert — nothing there clicks.
-          - The club's number (2026-10-16, Aniket: "write our phone number with a
-            cellphone icon to signify thats a phone"). CONTACT_PHONE is the main
-            line (the IVR), the same one the site prints everywhere — never a second
-            copy typed in here. Full white with the icon carrying the orange, because
-            a number is only any use if it can be read off the wall and dialled. */}
-      <div
-        style={{
-          position: "absolute", left: 0, right: 0, bottom: 0, height: BOOK_BAND,
-          display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center",
-          columnGap: "calc(1.6 * var(--vw))", padding: "0 calc(3.42 * var(--vw))",
-          borderTop: `calc(0.09 * var(--vw)) solid ${RULE_SOFT}`,
-          background: "linear-gradient(180deg, rgba(248,155,114,0.10) 0%, rgba(248,155,114,0.03) 100%)",
-          color: INK, fontSize: BAND_TEXT, whiteSpace: "nowrap", pointerEvents: "none",
-        }}
-      >
-        <div style={{ justifySelf: "start", fontSize: BAND_PILL_TEXT }}>
-          <OrangishPill tv />
-        </div>
-        <a
-          href={BOOK_URL}
-          aria-label="Book a court or lane at Exton Sports"
-          style={{
-            display: "flex", alignItems: "center", gap: "calc(1.4 * var(--vw))",
-            color: "inherit", textDecoration: "none", pointerEvents: "auto", cursor: "pointer",
-          }}
-        >
-          <span style={{ fontWeight: 500, letterSpacing: "0.02em" }}>
-            For bookings, go to{" "}
-            <span style={{ color: SESSION_ORANGE, fontWeight: 600 }}>extonsports.com</span>
-            <span style={{ color: LABEL }}> or scan</span>
-          </span>
-          {/* eslint-disable-next-line @next/next/no-img-element -- a static SVG; next/image adds nothing here */}
-          <img
-            src="/reception/book-qr.svg"
-            alt={`QR code: ${BOOK_URL}`}
-            style={{
-              height: BOOK_QR, width: BOOK_QR, display: "block", borderRadius: "calc(0.5 * var(--vh))",
-              boxShadow: "0 calc(0.4 * var(--vh)) calc(1.4 * var(--vh)) rgba(0,0,0,0.45)",
-            }}
-          />
-        </a>
-        <div style={{ justifySelf: "end", fontWeight: 500, letterSpacing: "0.06em", fontVariantNumeric: "tabular-nums" }}>
-          <PhoneNumber number={CONTACT_PHONE} color={SESSION_ORANGE} />
-        </div>
-      </div>
+      {/* The booking band — the same one /exit shows (components/ScreenChrome,
+          2026-10-20), where it and its reasoning now live. */}
+      <BookingBand />
     </div>
     </div>
   );
