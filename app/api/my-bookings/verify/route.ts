@@ -2,6 +2,7 @@ import { CODE_RE, clientIp, hit, isEmailShape, readJsonBody } from '@/lib/my-boo
 import { json, refuseCrossSite, setCookie } from '@/lib/my-bookings/http'
 import { redeem } from '@/lib/my-bookings/platform'
 import { deviceCookie } from '@/lib/my-bookings/session'
+import { redeemRefusal } from '@/lib/my-bookings/view'
 
 // POST /api/my-bookings/verify — the 6-digit code, for a guest who asked on one device
 // and reads the email on another, 2026-10-20.
@@ -25,10 +26,16 @@ export async function POST(req: Request) {
   const code = typeof body.code === 'string' ? body.code.trim() : ''
   if (!CODE_RE.test(code) || !isEmailShape(email)) return json({ error: 'invalid' }, 400)
 
-  if (hit(`verify:${clientIp(req)}`, 10, 10 * 60_000)) return json({ error: 'slow_down' }, 429)
+  const ip = clientIp(req)
+  if (hit(`verify:${ip}`, 10, 10 * 60_000)) return json({ error: 'slow_down' }, 429)
 
-  const r = await redeem({ email, code })
-  if (!r.ok) return r.error === 'invalid' ? json({ error: 'invalid' }, 400) : json({ error: 'try_again' }, 503)
+  // The platform's 429 is "too many tries" here too, not "that code didn't work"
+  // (security review, 2026-10-20): CodeForm shows COPY.tooMany for it.
+  const r = await redeem({ email, code }, ip)
+  if (!r.ok) {
+    const no = redeemRefusal(r.error)
+    return json(no.body, no.status)
+  }
 
   let cookie
   try {

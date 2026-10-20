@@ -27,10 +27,13 @@ export async function POST(req: Request) {
   const email = typeof body.email === 'string' ? body.email.trim() : ''
   if (!isEmailShape(email)) return json({ error: 'bad_email' }, 400)
 
-  // Best effort, per instance; the durable limits are the platform's (per email, per club).
-  if (hit(`req:${clientIp(req)}`, 5, 10 * 60_000)) return json({ error: 'slow_down' }, 429)
+  // Best effort, per instance; the durable limits are the platform's — per forwarded IP,
+  // per email, and a club-wide cap that since 2026-10-20 counts only emails actually sent
+  // (security review: counting decoys let one script stop every real guest's email).
+  const ip = clientIp(req)
+  if (hit(`req:${ip}`, 5, 10 * 60_000)) return json({ error: 'slow_down' }, 429)
 
-  const r = await requestLink(email)
+  const r = await requestLink(email, ip)
   if (r === 'ok') return json({ ok: true })
   if (r === 'bad_email') return json({ error: 'bad_email' }, 400)
   return json({ error: 'try_again' }, 503)

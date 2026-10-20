@@ -8,9 +8,14 @@ import { BTN_PRIMARY, ERROR, postJson } from "./ui";
 /* "Show my bookings" — the one press that spends the emailed link, 2026-10-20. A press
    because a mail scanner's GET must not spend it (app/my-bookings/link/route.ts). It
    owns its lead line too, so a refused link replaces "Tap to see…" instead of sitting
-   under it. */
+   under it.
+
+   Only a 400 means the link is dead. A 429 (this site's per-IP limit, or the
+   platform's) leaves the button in place with "too many tries": the parked link was kept
+   (security review, 2026-10-20 — the first pass showed "expired" for a limit someone
+   else could run up). */
 export default function OpenButton() {
-  const [state, setState] = useState<"idle" | "busy" | "expired" | "down">("idle");
+  const [state, setState] = useState<"idle" | "busy" | "expired" | "slow" | "down">("idle");
 
   if (state === "expired") {
     return (
@@ -39,11 +44,16 @@ export default function OpenButton() {
             window.location.assign("/my-bookings");
             return;
           }
-          setState(r.status === 400 ? "expired" : "down");
+          setState(r.status === 400 ? "expired" : r.status === 429 ? "slow" : "down");
         }}
       >
         {state === "busy" ? COPY.opening : COPY.openButton}
       </button>
+      {state === "slow" && (
+        <p className={ERROR} role="alert">
+          {COPY.tooMany}
+        </p>
+      )}
       {state === "down" && (
         <p className={ERROR} role="alert">
           {listUnavailable(FALLBACK_PHONE)}

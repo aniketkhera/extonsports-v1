@@ -34,13 +34,21 @@ export function sameOriginProblem(req: Request): OriginProblem | null {
 }
 
 /**
- * The visitor's IP, for THIS site's own best-effort limiter only — it is never sent to the
- * platform (the platform limits on email hash and session instead). Mirrors orangish-app
- * getClientIp: Vercel's own header first (the client cannot forge it there), then
- * x-real-ip, then the RIGHTMOST X-Forwarded-For hop, which is the one the edge appended.
+ * The visitor's IP: for THIS site's own best-effort limiter, and forwarded to the platform
+ * as x-exton-client-ip (./platform.ts). Forwarded since the security review of
+ * 2026-10-20: every platform call arrives from this site's egress IP, so without it the
+ * platform had nothing per-visitor to limit on and fell back to club-wide caps that one
+ * script could exhaust for everybody. The platform trusts the header only alongside the
+ * relay secret. Mirrors orangish-app getClientIp: Vercel's own header first (the client
+ * cannot forge it there), then x-real-ip, then the RIGHTMOST X-Forwarded-For hop, which
+ * is the one the edge appended.
  */
 export function clientIp(req: Request): string {
-  const h = req.headers
+  return clientIpOf(req.headers)
+}
+
+/** clientIp for a page, which has headers() but no Request. */
+export function clientIpOf(h: Headers): string {
   const vercel = h.get('x-vercel-forwarded-for')?.split(',')[0]?.trim()
   if (vercel) return vercel
   const real = h.get('x-real-ip')?.trim()
@@ -55,9 +63,12 @@ export function clientIp(req: Request): string {
 
 /* An in-memory fixed-window limiter. BEST EFFORT, and knowingly so: serverless instances
    do not share memory, so a determined caller spread across instances gets more. The
-   durable limits are the platform's (per email hash, per club, per session, 5 attempts
-   per code); this one only keeps a single noisy client from spending them. Bounded so a
-   flood of distinct keys cannot grow it without limit. */
+   durable limits are the platform's (per forwarded IP, per email hash, per session, 5
+   attempts per code challenge); this one only keeps a single noisy client from spending
+   them. EVERY route that calls the platform runs one first — request, verify, open,
+   cancel and forget (open and forget were missing it until the security review of
+   2026-10-20; the test suite now checks all five). Bounded so a flood of distinct keys
+   cannot grow it without limit. */
 const MAX_KEYS = 5000
 const windows = new Map<string, { start: number; count: number }>()
 

@@ -37,9 +37,10 @@ export async function POST(req: Request) {
   const seriesId = typeof body.seriesId === 'string' ? body.seriesId : ''
   if (!UUID_RE.test(seriesId)) return json({ error: 'bad_request' }, 400)
 
-  if (hit(`cancel:${clientIp(req)}`, 10, 10 * 60_000)) return json({ error: 'slow_down' }, 429)
+  const ip = clientIp(req)
+  if (hit(`cancel:${ip}`, 10, 10 * 60_000)) return json({ error: 'slow_down' }, 429)
 
-  const view = await cancelBooking(token, seriesId)
+  const view = await cancelBooking(token, seriesId, ip)
   const res = json(view)
   // The platform no longer knows this device; stop presenting the cookie.
   return view.status === 'signed_out' ? clearCookie(res, DEVICE_COOKIE) : res

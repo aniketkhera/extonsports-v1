@@ -1,5 +1,7 @@
+import { headers } from "next/headers";
 import { readDeviceToken } from "@/lib/my-bookings/session-server";
 import { listBookings } from "@/lib/my-bookings/platform";
+import { clientIpOf } from "@/lib/my-bookings/guard";
 import { COPY, FALLBACK_PHONE, listUnavailable } from "@/lib/my-bookings/copy";
 import RequestPanel from "./_components/RequestPanel";
 import BookingList from "./_components/BookingList";
@@ -19,7 +21,11 @@ import NotYou from "./_components/NotYou";
 //   ok                     -> the list, and "Not you?".
 //
 // The device token is read here, on the server, and goes no further than the platform
-// call; the client components below receive only the allow-listed view.
+// call; the client components below receive only the allow-listed view. The visitor's IP
+// goes with it (security review, 2026-10-20: the platform's per-IP limits, trusted only
+// alongside the relay secret — lib/my-bookings/platform.ts). With no relay secret set,
+// listBookings answers 'unavailable' without calling anyone: the same friendly state as
+// the platform being down.
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +51,7 @@ export default async function MyBookingsPage() {
     );
   }
 
-  const r = await listBookings(token);
+  const r = await listBookings(token, clientIpOf(await headers()));
   if (r.kind === "signed_out") {
     return (
       <>
