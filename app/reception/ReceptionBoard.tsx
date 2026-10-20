@@ -557,7 +557,8 @@ function SlotLine({ text, day }: { text: "ON NOW" | "UP NEXT"; day: string }) {
    brighter with yellow font". Now:
 
      on      lit yellow bulb, yellow ring and halo   LIGHTS ON             yellow
-     offIn   lit ORANGE bulb, orange ring and halo   LIGHTS OFF IN 8 MIN   yellow
+     offIn   lit ORANGE bulb, double orange ring     LIGHTS OFF IN 8 MIN   yellow
+             and halo
      onIn    white outline bulb, white ring          LIGHTS ON IN 12 MIN   white
      off     dim outline bulb, faint ring            LIGHTS OFF            0.78 white
 
@@ -568,6 +569,10 @@ function SlotLine({ text, day }: { text: "ON NOW" | "UP NEXT"; day: string }) {
      asked. The warning stays in SESSION_ORANGE — the bulb, its glow, the ring and the
      halo — because that state matters to a group still on court, and from across the
      room the orange lamp is what says "about to go off" before the words are read.
+     The orange outline is DOUBLED, 0.2em: the 0.1em border plus a 0.1em spread in the
+     halo. The 2px border alone is ~0.7 arcminute on the 55" from 6 m, under what the
+     eye resolves, so with yellow words the countdown read nearly as LIGHTS ON from
+     across the room (review, 2026-10-20). A box-shadow, so the layout does not move.
    · THE PILL IS DARK, NOT A LIGHTER TINT. The panel is at its lightest behind the
      title, and measured there this yellow gets only ~6:1 and even pure white ~7.4:1.
      So the fill is the board's own ground at 0.8 (CHIP_FILL; 0.4 for LIGHTS OFF), and
@@ -589,7 +594,8 @@ function SlotLine({ text, day }: { text: "ON NOW" | "UP NEXT"; day: string }) {
    The halo is a box-shadow and the bulb's glow a drop-shadow, both STATIC: nothing on
    the chip animates.
 
-   In em of the title it sits in (1.5vw), like the sport's object, so it stays locked
+   In em of the title it sits in (calc(1.5 * var(--vw)), 1.5% of the 16:9 box, not of
+   the window), like the sport's object, so it stays locked
    to the title at any screen shape. Literal colours, as everywhere on this board. */
 const LIGHT_YELLOW = "#FFEA3A";
 /** BG #0B1623 at 0.8 — the pill's fill while the lights are on or about to be; see
@@ -614,8 +620,11 @@ type ChipLook = {
   halo: string;
 };
 const CHIP_LOOK: Record<LightChip["kind"], ChipLook> = {
-  on: { lit: true, bulb: LIGHT_YELLOW, ink: LIGHT_YELLOW, fill: CHIP_FILL, ring: LIGHT_YELLOW, halo: "0 0 0.5em #FFEA3A73" },
-  offIn: { lit: true, bulb: SESSION_ORANGE, ink: LIGHT_YELLOW, fill: CHIP_FILL, ring: SESSION_ORANGE, halo: "0 0 0.5em #F89B7280" },
+  on: { lit: true, bulb: LIGHT_YELLOW, ink: LIGHT_YELLOW, fill: CHIP_FILL, ring: LIGHT_YELLOW, halo: `0 0 0.5em ${LIGHT_YELLOW}73` },
+  offIn: {
+    lit: true, bulb: SESSION_ORANGE, ink: LIGHT_YELLOW, fill: CHIP_FILL, ring: SESSION_ORANGE,
+    halo: `0 0 0 0.1em ${SESSION_ORANGE}, 0 0 0.6em ${SESSION_ORANGE}99`,
+  },
   onIn: { lit: false, bulb: "#FFFFFF", ink: "#FFFFFF", fill: CHIP_FILL, ring: "#FFFFFFD9", halo: "none" },
   off: { lit: false, bulb: "#FFFFFFB3", ink: "#FFFFFFC7", fill: CHIP_FILL_REST, ring: "#FFFFFF66", halo: "none" },
 };
