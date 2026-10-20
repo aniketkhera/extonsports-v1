@@ -6,6 +6,7 @@ import { COPY, FALLBACK_PHONE, listUnavailable } from "@/lib/my-bookings/copy";
 import RequestPanel from "./_components/RequestPanel";
 import BookingList from "./_components/BookingList";
 import NotYou from "./_components/NotYou";
+import PhoneText from "./_components/PhoneText";
 
 // extonsports.com/my-bookings — ONE URL FOR EVERY STATE, 2026-10-20, so every email can
 // link here with no token in it (the booking confirmation is CC'd to the club, and a
@@ -65,7 +66,7 @@ export default async function MyBookingsPage() {
       <>
         <Heading>{COPY.title}</Heading>
         <p className="text-white/70 text-[0.98rem] leading-relaxed" role="alert">
-          {listUnavailable(FALLBACK_PHONE)}
+          <PhoneText text={listUnavailable(FALLBACK_PHONE)} phone={FALLBACK_PHONE} />
         </p>
         <div className="mt-8">
           <NotYou />

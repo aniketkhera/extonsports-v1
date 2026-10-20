@@ -7,6 +7,7 @@ import {
   COPY, callClub, cancelMessage, confirmText, rowCancelBy, rowCancelled, rowCourts, rowPaid, rowTitle, tooLate,
 } from "@/lib/my-bookings/copy";
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_TEXT, postJson } from "./ui";
+import PhoneText from "./PhoneText";
 
 /* One booking, and its Cancel, 2026-10-20.
 
@@ -69,7 +70,9 @@ export default function BookingRow({
         <p className="text-white/70 text-[0.92rem]">{rowPaid(b.amountPaidCents)}</p>
 
         {phase !== "result" && standing && (
-          <p className="text-white/70 text-[0.9rem] leading-relaxed mt-3">{standing}</p>
+          <p className="text-white/70 text-[0.9rem] leading-relaxed mt-3">
+            <PhoneText text={standing} phone={phone} />
+          </p>
         )}
 
         {phase !== "result" && !standing && (
@@ -83,7 +86,8 @@ export default function BookingRow({
           role="status"
           aria-live="polite"
         >
-          {cancelMessage(result, phone, cutoffHours)}
+          {/* cancelMessage prints the answer's own phone when it carries one. */}
+          <PhoneText text={cancelMessage(result, phone, cutoffHours)} phone={result.phone ?? phone} />
         </p>
       )}
 
