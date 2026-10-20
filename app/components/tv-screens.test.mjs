@@ -23,7 +23,10 @@ const R = await import("./tv-screens.ts");
 const TVS = R.TV_SCREENS;
 
 test("there is a TV for each set on the wall today: reception, vestibule, outside", () => {
-  assert.deepEqual(TVS.map((t) => t.id), ["reception", "vestibule", "outside"]);
+  // A NEW TV fails here until its id is added: step 3 of "ADDING THE NEXT TV" in
+  // tv-screens.ts, whose steps 6 to 8 (pairing, the key, the platform) no test sees.
+  assert.deepEqual(TVS.map((t) => t.id), ["reception", "vestibule", "outside"],
+    "the sets on the wall changed: follow ADDING THE NEXT TV in tv-screens.ts, then add the id here");
 });
 
 test("every TV has a unique id, and its route is /<id>", () => {

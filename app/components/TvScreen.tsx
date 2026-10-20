@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import ReceptionBoard from "../reception/ReceptionBoard";
 import ExitScreen from "../exit/ExitScreen";
-import { tvScreen, type Tv, type TvContent, type TvId } from "./tv-screens";
+import { tvScreen, type TvContent, type TvEntry, type TvId } from "./tv-screens";
 
 /* One TV's page: whatever its entry in tv-screens.ts says it shows (2026-10-20).
    ──────────────────────────────────────────────────────────────────────────
@@ -22,11 +22,20 @@ import { tvScreen, type Tv, type TvContent, type TvId } from "./tv-screens";
    /exit (12 KB gzipped), because /outside carries the court board as well. A TV
    loads it once per launch.
 
-   Each renderer gets the TV's entry. Nothing reads it yet. It is there so that a
-   prop which must differ per TV, such as the heartbeat's page name
-   (feat/screen-heartbeat), has exactly one place to come from. */
+   Each renderer gets the TV's entry, typed TvEntry so that tv.id is the TvId union
+   and not a string. Nothing reads it yet. It is there for a prop that must differ
+   per TV.
 
-const RENDER: Record<TvContent, (tv: Tv) => ReactNode> = {
+   THE HEARTBEAT GOES HERE, ONCE (feat/screen-heartbeat, when it is rebased onto
+   this): one small client component next to the content, named by the TV,
+       <><TvHeartbeat page={tv.id} />{RENDER[tv.shows](tv)}</>
+   with the hook taken out of ReceptionBoard. Then every TV route beats under its
+   own name whatever it shows, and a promo swapped in by one `shows:` line cannot
+   leave a keyed TV silent. A silent keyed TV is relaunched by tv-keeper's watchdog
+   and may then be power-cycled. A hook inside each content component instead
+   would make /vestibule beat as "reception" and /outside as "exit". */
+
+const RENDER: Record<TvContent, (tv: TvEntry) => ReactNode> = {
   "court-board": () => <ReceptionBoard />,
   "starter-pack": () => <ExitScreen />,
 };

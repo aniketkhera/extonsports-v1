@@ -40,8 +40,10 @@ import s from "./exit.module.css";
    No data feed: nothing on it changes but the clock. It reloads itself on a deploy
    like every other screen (useReloadOnDeploy).
 
-   ⚠️ WHICH TV SHOWS THIS IS NOT DECIDED HERE — tv-keeper's tvs.json on the N95
-   (orangish-cameras) holds the url per screen. Building this page changed no TV. */
+   ⚠️ WHICH TV SHOWS THIS IS NOT DECIDED HERE. From 2026-10-20 a TV shows it when
+   its entry in app/components/tv-screens.ts says `shows: "starter-pack"` (today
+   the outside set, at /outside). Which ADDRESS each set loads is tv-keeper's
+   tvs.json on the N95 (orangish-cameras). Building this page changed no TV. */
 
 /** The code's target. public/exit/starter-qr.svg is GENERATED from this string's
  *  production value (python segno, error level M, 4-module quiet zone, version 4 —
@@ -133,13 +135,16 @@ export default function ExitScreen() {
   useReloadOnDeploy();
   /* NO HEARTBEAT YET (2026-10-20). The freeze watchdog built after the 2026-10-17
      VIZIO wedge (feat/screen-heartbeat here, feat/screen-watchdog in orangish-app;
-     neither on master today) knows only reception, board and comingsoon. When it
-     lands, this page needs useScreenHeartbeat("exit") here, "exit" in screen-pure's
-     ScreenPage and in the platform's SCREEN_PAGES (platform deployed first), and
-     /reception's stamp through BookingBand's `stamp`. Until /exit beats, do NOT
-     point the exit TV's keyed (#k=) url in tvs.json at it: tv-keeper would take
-     the silence for a frozen screen, relaunch it after five minutes and then ask
-     for a power cycle. */
+     neither on master today) has a ScreenPage of reception, board and comingsoon.
+     When it lands, do NOT hard-code a page name in here. This screen is the
+     outside TV's (/outside, through app/components/TvScreen.tsx) and only
+     previewed at /exit, so a fixed "exit" would report the outside TV as "exit".
+     The heartbeat goes ONCE in TvScreen.tsx, named by the TV (see there), with the
+     TV ids in screen-pure's ScreenPage and in the platform's SCREEN_PAGES
+     (platform deployed first), and /reception's stamp through BookingBand's
+     `stamp`. Until a TV showing this beats, do NOT give that TV a keyed (#k=) url
+     in tvs.json: tv-keeper would take the silence for a frozen screen, relaunch
+     it after five minutes and then ask for a power cycle. (2026-10-20) */
 
   return (
     <div style={{ position: "absolute", inset: 0, background: BG }}>

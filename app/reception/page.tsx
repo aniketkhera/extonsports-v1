@@ -5,12 +5,13 @@ import { tvMetadata, tvViewport } from '../components/tv-screens'
    ──────────────────────────────────────────────────────────────────────────
    Added 2026-10-07. A second layout over the same feed /board uses: grouped by
    sport, multi-court bookings merged to one line, partner logos against the
-   hours they hold. The vestibule 75" keeps /board.
+   hours they hold.
 
-   ⚠️ WHICH TV SHOWS THIS IS NOT DECIDED HERE. tv-keeper on the N95 holds the
-   url per screen in tv-keeper/state/tvs.json (orangish-cameras repo) and
-   relaunches it every ten minutes. Changing a screen means editing that file,
-   not this one. That file is gitignored and root-owned on the box.
+   ⚠️ WHICH TV LOADS THIS ADDRESS is not decided here: tv-keeper on the N95 holds
+   one url per set in tv-keeper/state/tvs.json (orangish-cameras repo; gitignored
+   and root-owned on the box), set once per TV, and relaunches it hourly. WHAT
+   THIS ADDRESS SHOWS is not decided here either, but in
+   app/components/tv-screens.ts (below).
 
    ⛔ NAMES: keyed yes, unkeyed initials only — exactly as /board. With the
    board_screens token this names organisations and members in full, which is
@@ -21,7 +22,8 @@ import { tvMetadata, tvViewport } from '../components/tv-screens'
 
    WHAT THIS ADDRESS SHOWS is decided in app/components/tv-screens.ts, from
    2026-10-20, when each TV got an address of its own. /reception is the reception
-   TV's, and the vestibule set moves to /vestibule. This page renders the
+   TV's. The vestibule set moves to /vestibule once tv-keeper is re-pointed (until
+   then it loads this address, with its own key). This page renders the
    reception TV's entry there, which today is the court board (ReceptionBoard.tsx,
    which /vestibule draws too). It is also the board's PUBLIC address. Until
    2026-10-18 the screen itself said "view this screen at extonsports.com/reception",

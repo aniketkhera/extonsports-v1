@@ -31,32 +31,77 @@ import type { Metadata, Viewport } from "next";
    www 308 and never send it to a server.
 
    ── ADDING THE NEXT TV ──────────────────────────────────────────────────────
+   In this repo:
    1. An entry in TV_SCREENS: `id` is the name it is paired under in tv-keeper
       (lower case, one word), `route` is "/" + id, and `shows` is what it shows.
    2. A route folder, app/<id>/page.tsx: copy app/vestibule/page.tsx and change the
       id in its three places. Use a real folder, not a catch-all at the root, so a
       mistyped address is a 404 instead of a blank screen, and no TV name can ever
       shadow one of the site's own pages. npm test fails until the folder exists.
-   3. SiteChrome needs nothing: SCREEN_PATHS below is built from this list, so the
+   3. The id in the first test of tv-screens.test.mjs. That test names the sets on
+      the wall on purpose, so npm test fails until the new one is added.
+   4. SiteChrome needs nothing: SCREEN_PATHS below is built from this list, so the
       new route never shows the WhatsApp bubble, analytics or the visit beacon.
       (/reception had all three in its first week, because it was missed.)
-   4. sitemap.ts needs nothing either. The page is noindex (tvMetadata) and stays out
-      of the sitemap.
-   5. Deploy, and check that https://www.extonsports.com/<id> answers 200. (The
-      keeper's loop will not launch a page that does not load from the box.) Then
-      on the N95:
-        docker exec tv-keeper node index.js point <id> https://extonsports.com/<id>
-      A screen that needs a key gets "#k=<key>" on the end. Mint the key with
-      orangish-app scripts/provision-board-screen.mjs --out <file>, and point the
-      TV from that file with tv-keeper's `point <id> @<file>`, so no person types
-      or reads the key.
+      sitemap.ts needs nothing either. The page is noindex (tvMetadata) and stays
+      out of the sitemap.
+   5. Deploy, and check from the N95 that https://www.extonsports.com/<id> answers
+      200. (The keeper's loop will not launch a page that does not load from there.)
+
+   On the set, and on the N95 (tv-keeper, orangish-cameras repo):
+   6. A new set has never been paired, and `point` refuses a name it has not paired
+      ("No paired TV named …"), so it is PAIRED, not pointed. On the set: TV Name
+      (Settings → System) = <id>, because tv-keeper finds a set by that name, and
+      Auto Power Off = Off. Then:
+        docker exec -it tv-keeper node index.js pair <id> https://extonsports.com/<id>
+      and type the PIN the set shows. If the set cannot report what it is showing
+      (the vestibule's firmware cannot), give it "trustAppReport": false: on
+      tv-keeper's watchdog build that is `set <id> trustAppReport false`, on an
+      older one an edit to tvs.json.
+   7. A KEY ONLY IF IT NEEDS ONE: to name bookers on the court board, or, once the
+      heartbeat ships, to be watched (only a keyed page beats). Without a key the
+      board is the public view. If it needs one, then in this order (2026-10-20,
+      after review):
+      a. NAMES FIRST. A new key NAMES MEMBERS: board_screens.names_visible defaults
+         to true. Any set the public can see must have names off. Mint it with
+         `--no-names`, which exists only once orangish-app feat/screen-watchdog is
+         merged; until then, set names_visible = false on the new board_screens row
+         before the set is pointed at the key.
+      b. Mint it for THIS address. Without BOARD_URL the script writes /board, and
+         the set would show /board instead of /<id>. In orangish-app:
+           BOARD_URL=https://extonsports.com/<id> node --env-file=.env.local
+             scripts/provision-board-screen.mjs --location <uuid> --label "<id> TV"
+             --out <file>
+         (PowerShell: $env:BOARD_URL='https://extonsports.com/<id>' first.)
+      c. Point the set from that file, so nobody types or reads the key, then
+         relaunch it (tv-keeper ignores the fragment when it compares, so a set
+         that only gained a key counts as "already showing its page" until the
+         hourly reload):
+           docker exec tv-keeper node index.js point <id> @/app/state/<id>.url
+           docker exec tv-keeper node index.js reload <id>
+         The file is a path INSIDE the container, mode 600, shredded afterwards.
+         orangish-app docs/screen-watch.md ("Re-mint") has every step of that.
+         ONLY tv-keeper's watchdog build understands "@<file>". Check first that
+           docker exec tv-keeper grep -c "rawTarget.startsWith('@')" index.js
+         prints more than 0. An older build reads "@<file>" as a /tv pairing code:
+         it deletes the set's url and points it at app.orangish.io/tv?code=….
+   8. A keyed set, once the heartbeat ships: <id> must also be in the platform's
+      page list (orangish-app SCREEN_PAGES in lib/screen-watch.ts, and the
+      board_screen_beats.page CHECK), deployed BEFORE the site. Otherwise every
+      beat from the new set is refused (400 "bad page") and it looks silent.
 
    ── SWAPPING A PROMO ────────────────────────────────────────────────────────
    Change that TV's `shows:` to another key of TV_CONTENT and deploy. A NEW promo
    needs three things: its component (like app/exit/ExitScreen.tsx), a key in
    TV_CONTENT, and its line in TvScreen.tsx (tsc fails until every key has one).
    A preview address of its own, like /exit for the Starter Pack, is optional and
-   is not a TV. */
+   is not a TV.
+   ⚠️ Once the heartbeat ships, a KEYED TV must show content that beats. tv-keeper's
+   watchdog relaunches a keyed set that has beaten and then goes quiet ("silent"),
+   and may then power-cycle it. That is why the heartbeat belongs once in
+   TvScreen.tsx, named by the TV, and not inside each content component: see
+   there. Until it is, check that the new content beats before giving it to a
+   keyed TV. */
 
 /** What a TV can show. TvScreen.tsx renders each key. `viewport` is the one the
  *  content's own page uses, so that a TV route's <head> matches it exactly: the
@@ -119,7 +164,12 @@ export const TV_SCREENS = [
 
 export type TvId = (typeof TV_SCREENS)[number]["id"];
 
-export function tvScreen(id: TvId): Tv {
+/** One TV's entry exactly as written in TV_SCREENS. Its `id` is the TvId union
+ *  ("reception" | "vestibule" | "outside"), not a string, so a prop typed by TvId,
+ *  such as the heartbeat's page name, takes tv.id with no cast (2026-10-20). */
+export type TvEntry = (typeof TV_SCREENS)[number];
+
+export function tvScreen(id: TvId): TvEntry {
   const tv = TV_SCREENS.find((t) => t.id === id);
   if (!tv) throw new Error(`No TV ${id} in TV_SCREENS`);
   return tv;
