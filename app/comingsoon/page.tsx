@@ -2,7 +2,9 @@ import type { Metadata, Viewport } from "next";
 import ComingSoon from "./ComingSoon";
 
 // The "coming soon" wall screen (2026-09-19), shown on every Exton TV — reception and
-// outside so far. A 16:9 TV first, a phone second (the QR
+// outside so far. (2026-10-20: the OUTSIDE TV only; reception and the vestibule are on
+// /reception. It is a keyed screen from that day, for the heartbeat alone — see
+// ComingSoon.tsx.) A 16:9 TV first, a phone second (the QR
 // on it lands people on the homepage, not here). No nav, no footer, no WhatsApp bubble or
 // visit beacon (see components/SiteChrome.tsx), and it fits one screen with no scroll.
 //

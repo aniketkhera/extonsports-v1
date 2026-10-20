@@ -5,12 +5,15 @@ import { tvMetadata, tvViewport } from '../components/tv-screens'
    ──────────────────────────────────────────────────────────────────────────
    Added 2026-10-07. A second layout over the same feed /board uses: grouped by
    sport, multi-court bookings merged to one line, partner logos against the
-   hours they hold.
+   hours they hold. Written as the desk's screen; the vestibule 75" has shown it
+   too, with its own key, names off (not /board, as this said until tv-keeper's
+   logs were read on 2026-10-20) — until it moves to /vestibule, below.
 
    ⚠️ WHICH TV LOADS THIS ADDRESS is not decided here: tv-keeper on the N95 holds
    one url per set in tv-keeper/state/tvs.json (orangish-cameras repo; gitignored
-   and root-owned on the box), set once per TV, and relaunches it hourly. WHAT
-   THIS ADDRESS SHOWS is not decided here either, but in
+   and root-owned on the box), set once per TV, and relaunches it hourly (every
+   ten minutes until 2026-10-20; a relaunch is what froze the reception TV from
+   2026-10-17). WHAT THIS ADDRESS SHOWS is not decided here either, but in
    app/components/tv-screens.ts (below).
 
    ⛔ NAMES: keyed yes, unkeyed initials only — exactly as /board. With the

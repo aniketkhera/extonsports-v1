@@ -6,6 +6,8 @@ import { CONTACT_PHONE, CONTACT_PHONE_E164 } from "@/lib/legal";
 import QrCode from "./QrCode";
 import s from "./comingsoon.module.css";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
+import useScreenHeartbeat from "../components/useScreenHeartbeat";
+import ScreenStamp from "../components/ScreenStamp";
 import OrangishPill from "../components/OrangishPill";
 import LogoGlobe from "../components/LogoGlobe";
 import { makeTicker, useTick } from "../components/ticker";
@@ -36,12 +38,19 @@ const stageFov = () => (typeof window !== "undefined" && window.matchMedia(TV_LA
 
 export default function ComingSoon() {
   useReloadOnDeploy();
+  /* Alive-and-drawing proof to the platform (2026-10-20, after the reception TV
+     froze for three days unnoticed). This page has no court feed, so the hook's
+     readKey() is its ONLY use of a board key: the outside TV gets one (names off —
+     it faces the street) purely so it can beat. With no #k= it does nothing, which
+     is every visitor's phone. */
+  useScreenHeartbeat("comingsoon");
 
   return (
     <main className={s.root}>
       <Backdrop />
       <Diag />
       <TodayLine />
+      <ScreenStamp className={s.stamp} />
       {/* 2026-10-15: Aniket asked for a small orangish.io credit on every Exton
           surface, and later that day for it as a pill. The `tv` pill is not a link —
           nobody can tap a television. See .credit. */}

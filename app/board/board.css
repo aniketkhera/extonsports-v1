@@ -313,3 +313,19 @@
   justify-self: center;
   margin-bottom: -0.5vh;
 }
+
+/* The version stamp (2026-10-20) — ScreenStamp: the deployment's last six
+   characters and when the page loaded, so a person can tell an old picture from
+   a live one. Fixed, so it takes no grid row and moves nothing. It sits in the
+   2.5vh overscan padding under the footer, so a TV that crops its edges may hide
+   it — and nothing else is affected if it does. #4A5765: quieter than .bcta2. */
+.bstamp {
+  position: fixed;
+  right: 2vw;
+  bottom: 0.6vh;
+  font-size: 1.1vh;
+  line-height: 1;
+  color: #4A5765;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}

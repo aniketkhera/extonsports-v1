@@ -6,6 +6,8 @@ import Image from "next/image";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
 import { ScreenHeader, BookingBand, BAND_GAP, BOOK_BAND } from "../components/ScreenChrome";
 import { BG, INK, EMBER, GREEN, LABEL, NEXT_VAL, NEXT_LBL, MUTED, RULE_SOFT, PANEL, BOX } from "../components/tv-palette";
+import useScreenHeartbeat from "../components/useScreenHeartbeat";
+import ScreenStamp from "../components/ScreenStamp";
 import {
   PLATFORM, readKey, clubNow, span, holderLabel, brandFor, sessionOf, splitUpNext, lightChip, SESSION_TEXT, SPORT_OBJECT,
   type BrandKey, type LightChip, type Lights, type NamedBlock, type NamedSlots, type SessionKey,
@@ -20,8 +22,12 @@ const quarterMinuteTicker = makeTicker(15_000);
 /* The reception desk screen — the 55" M55Q6-L4 at 10.1.10.72.
    ──────────────────────────────────────────────────────────────────────────
    Built 2026-10-07 at Aniket's request, as a second layout over the same feed
-   /board uses. The vestibule 75" keeps /board (one row per court, ten rows);
-   this one groups by SPORT and carries the partner logos.
+   /board uses. /board is one row per court, ten rows; this one groups by SPORT
+   and carries the partner logos. The vestibule 75" shows this board too, not
+   /board (tv-keeper's logs, 2026-10-20): at /reception until tv-keeper is
+   re-pointed at its own /vestibule, which renders this same component
+   (app/components/tv-screens.ts). Its key has names_visible off, so it names
+   exactly who the public page names.
 
    WHY GROUPED, AND WHY MERGED. Philadelphia Badminton holds all three
    badminton courts for the same four hours, which /board draws as three
@@ -701,6 +707,9 @@ export default function ReceptionBoard() {
   const lastLights = useRef<{ at: number; lights: Lights } | null>(null);
 
   useReloadOnDeploy();
+  /* Alive-and-drawing proof to the platform, keyed screens only (2026-10-20,
+     after the 2026-10-17 freeze) — see the hook. Both TVs on this page beat. */
+  useScreenHeartbeat("reception");
 
   /* Fifteen seconds, NOT one: this decides which hour counts as "now" and so
      re-runs the grouping below. A row flipping up to a quarter minute late is
@@ -1026,8 +1035,24 @@ export default function ReceptionBoard() {
       </div>
 
       {/* The booking band — the same one /exit shows (components/ScreenChrome,
-          2026-10-20), where it and its reasoning now live. */}
-      <BookingBand />
+          2026-10-20), where it and its reasoning now live.
+
+          The version stamp (2026-10-20) — ScreenStamp, through the band's `stamp`
+          slot now that the band lives in ScreenChrome. Inside the band so it scales
+          with the 16:9 box; absolute, so it takes no grid track and moves nothing.
+          Bottom right on the band's 3.42vw edge, under the phone number, at 40%
+          white: there for someone looking for it, not for anyone reading the board. */}
+      <BookingBand
+        stamp={
+          <ScreenStamp
+            style={{
+              position: "absolute", right: "calc(3.42 * var(--vw))", bottom: "calc(0.9 * var(--vh))",
+              fontSize: "calc(0.62 * var(--vw))", color: "rgba(255,255,255,0.40)", letterSpacing: "0.08em",
+              fontVariantNumeric: "tabular-nums", lineHeight: 1, whiteSpace: "nowrap", pointerEvents: "none",
+            }}
+          />
+        }
+      />
     </div>
     </div>
   );

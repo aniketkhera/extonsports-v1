@@ -781,3 +781,30 @@
     pointer-events: none;
   }
 }
+
+/* ── The version stamp, top left (2026-10-20) ─────────────────────────
+   ScreenStamp: the deployment's last six characters and the page's load time,
+   so a person at the outside TV can tell an old picture from a live one. Shown
+   only on a keyed screen or with ?diag. TV layout only, like .today and .credit.
+
+   Mirrors .credit across the screen: the same top band, centred on the date's
+   line (1.3u), left edge 3.1u in where the credit's right edge is. Top left is
+   the free corner — .today holds the centre, .credit and .diag the right.
+   Absolute, so it takes no grid row and moves nothing. A literal grey, quieter
+   than the credit: it is for whoever goes looking for it. */
+.stamp { display: none; }
+@media (min-aspect-ratio: 4/3) and (min-width: 900px) {
+  .stamp {
+    display: block;
+    position: absolute;
+    top: calc(var(--u) * 1.3);
+    left: calc(var(--u) * 3.1);
+    transform: translateY(-50%);
+    z-index: 2;
+    font-size: calc(var(--u) * 0.55);
+    line-height: 1;
+    white-space: nowrap;
+    color: #6E7A88;
+    pointer-events: none;
+  }
+}

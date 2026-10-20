@@ -1,8 +1,10 @@
 /* Shared guts of the two in-club screens.
    ──────────────────────────────────────────────────────────────────────────
-   There are two now: /board (the 75" vestibule screen, one row per court) and
-   /reception (the 55" at the desk, grouped by sport with partner logos, added
-   2026-10-07). They draw completely different layouts from exactly the same
+   There are two now: /board (one row per court) and /reception (grouped by sport
+   with partner logos, added 2026-10-07). /board was written for the 75" in the
+   vestibule, but that TV shows /reception now, like the 55" at the desk — both
+   are on /reception per tv-keeper's own logs (checked 2026-10-20), and /board is
+   on no TV today. They draw completely different layouts from exactly the same
    feed, so the LAYOUT stays in each component and everything below — the key
    handoff, club-local time, and the naming rules — lives here once.
 
@@ -32,39 +34,12 @@ export type Row = {
   thenIsTomorrow: boolean;
 };
 
-export const PLATFORM = "https://app.orangish.io";
-
 /* ── THE SCREEN KEY ───────────────────────────────────────────────────────────
-   Without a key a screen shows a court, a time and one of two words off the
-   public /api/court-slots proxy. WITH one it reads
-   app.orangish.io/api/public/court-board, which also says WHO holds each court
-   and answers 401 to anybody who does not have the key.
-
-   The key arrives in the URL FRAGMENT, which browsers never send to a server
-   and which therefore never lands in a Vercel access log or a Referer header.
-   It is stashed in localStorage and wiped from the address bar immediately, so
-   it survives the self-reload on deploy; tv-keeper relaunches the full URL
-   every ten minutes regardless, so the worst case after a cleared profile is
-   ten minutes of a screen with no names. */
-const KEY_RE = /^[A-Za-z0-9_-]{43}$/;
-const KEY_STORE = "exton-board-key";
-
-export function readKey(): string | null {
-  try {
-    const m = /(?:^#|&)k=([A-Za-z0-9_-]{43})(?:&|$)/.exec(window.location.hash);
-    if (m) {
-      try { window.localStorage.setItem(KEY_STORE, m[1]); } catch { /* private mode: memory only */ }
-      window.history.replaceState(null, "", window.location.pathname + window.location.search);
-      return m[1];
-    }
-  } catch { /* fall through to storage */ }
-  try {
-    const k = window.localStorage.getItem(KEY_STORE);
-    return k && KEY_RE.test(k) ? k : null;
-  } catch {
-    return null;
-  }
-}
+   Moved to app/components/screen-key.ts on 2026-10-20 — the heartbeat reads it
+   too, and so does /comingsoon, which has no court feed — and memoised there.
+   Re-exported so /board and /reception keep importing it from here. The
+   reasoning (fragment, localStorage, the hourly relaunch) is with the code. */
+export { PLATFORM, readKey } from "../components/screen-key";
 
 /** Minutes from club-local midnight, and the club-local date, for an instant. */
 export function clubNow(at: Date): { date: string; minutes: number } {
