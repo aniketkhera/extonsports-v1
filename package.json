@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test app/board/board-lib.test.mjs app/components/tv-screens.test.mjs app/components/screen-pure.test.mjs app/components/my-bookings-pure.test.mjs app/api/mailing-list-optin/optin-core.test.mjs app/api/waitlist/footer-notice.test.mjs lib/signup-notice.test.mjs lib/public-lights.test.mjs lib/my-bookings/my-bookings.test.mjs"
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test app/board/board-lib.test.mjs app/components/tv-screens.test.mjs app/components/screen-pure.test.mjs app/components/my-bookings-pure.test.mjs app/api/mailing-list-optin/optin-core.test.mjs app/api/waitlist/footer-notice.test.mjs lib/signup-notice.test.mjs lib/public-lights.test.mjs lib/my-bookings/my-bookings.test.mjs lib/my-bookings/court-pack.test.mjs lib/my-bookings/pack-book.test.mjs lib/my-bookings/pack-list.test.mjs lib/my-bookings/pack-buy.test.mjs"
   },
   "dependencies": {
     "@types/three": "^0.184.1",

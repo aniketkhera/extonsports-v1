@@ -241,6 +241,105 @@ export const MY_BOOKINGS_PATH = '/my-bookings'
  */
 export const MY_BOOKINGS_LIVE = false
 
+/**
+ * THE COURT 5-PACK, 2026-10-21. Owner, 2026-10-20: "let's go with the implentation.." —
+ * five one-hour credits for one sport, $200 squash and badminton, $275 cricket, used within
+ * 60 days of the first game played (orangish-app docs/court-packs.md). Bought on
+ * PACK_PATH (this site, then Stripe); spent from the app's booking form, which hands the
+ * slot to PACK_BOOK_PATH here, where the remembered device lives (§0).
+ */
+export const PACK_PATH = '/5-pack'
+export const PACK_TERMS_PATH = '/5-pack/terms'
+/** Where the app form's "Continue with my 5-pack" lands, via /my-bookings/pack/start. */
+export const PACK_BOOK_PATH = '/my-bookings/pack'
+
+/**
+ * ⛔ THE ENTRY POINTS, NOT THE PAGES — the MY_BOOKINGS_LIVE pattern. Governs only the
+ * "5-pack" links in the Hero, the RateCard and the Footer, and the sitemap entry. The pages
+ * deploy unlinked and fail closed: until the platform's features.court_packs_public is on,
+ * /5-pack's offers answer 404 and the page says packs are not on sale.
+ *
+ * BEFORE FLIPPING IT (design §12, step 8): steps 0–7 done — My bookings fully live; the
+ * pack migrations applied and verified with Aniket's yes; the platform deployed with both
+ * flags absent, then this site with this still false; court_packs on; the owner's live
+ * test (a desk sale, a 2-court × 1 h pack booking, a self-cancel, a desk return inside 24
+ * hours, the two-phone race for the last credit, cp_audit_invariants empty, a refund that
+ * closes the pack); court_packs_public on and one pack bought online from the unlinked
+ * /5-pack, then refunded. AND the key-box revoke live (Aniket, 2026-10-20: a cancelled
+ * booking's code is deleted from the box; "Do not ship the pack before the revoke is live").
+ */
+export const PACKS_LIVE = false
+
+/** A slot on the app's form, in its deep-link vocabulary. lib/my-bookings/session.ts
+ *  PackSelection is one. */
+export type BookingSlot = {
+  sportId: string
+  date: string
+  startTime: string
+  hours: number
+  courts: number
+  preferCourtId?: string | null
+}
+
+const SLOT_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** The form's existing deep-link parameters (orangish-app app/book-court/[slug]/page.tsx):
+ *  sport_id, date, start_time, hours, courts, court_id. Unchanged by the pack. */
+function slotParams(p: URLSearchParams, slot: BookingSlot): void {
+  p.set('sport_id', slot.sportId)
+  p.set('date', slot.date)
+  p.set('start_time', slot.startTime)
+  p.set('hours', String(slot.hours))
+  p.set('courts', String(slot.courts))
+  if (slot.preferCourtId) p.set('court_id', slot.preferCourtId)
+}
+
+/**
+ * The app's booking form in pack mode (?pay=pack shows "My 5-pack" even before
+ * court_packs_public). With a sport, that sport is picked; with a slot, that slot too, so
+ * "Pick another time" keeps the guest's day. Built HERE from values this site checked, so a
+ * pack card's "Book a court with my pack" never follows a link the platform sent.
+ *
+ * ⚠️ THIS LEAVES extonsports.com, on purpose (design §0): the booking form — prices, live
+ * availability, the pack switch — is the app's, and the pack path returns to it to pick a
+ * time. The guest's own pages still never carry a sign-in token there.
+ */
+export function bookWithPackUrl(sportId?: string | null, slot?: BookingSlot | null): string {
+  const p = new URLSearchParams({ pay: 'pack' })
+  if (slot && SLOT_UUID_RE.test(slot.sportId)) slotParams(p, slot)
+  else if (sportId && SLOT_UUID_RE.test(sportId)) p.set('sport_id', sportId)
+  return `${BOOK_COURT_URL}?${p}`
+}
+
+/** The same slot on the app's form, paying by card — "Pay by card instead". */
+export function bookByCardUrl(slot: BookingSlot): string {
+  const p = new URLSearchParams()
+  slotParams(p, slot)
+  return `${BOOK_COURT_URL}?${p}`
+}
+
+/**
+ * A link the PLATFORM sent (the booking terms' url on a pack quote), kept only when it
+ * resolves to the platform's own https origin; anything else is null and the caller treats
+ * the answer as unusable. Never a javascript:, data: or third-party URL on a page, however
+ * the answer was made.
+ */
+export function appHref(v: unknown): string | null {
+  if (typeof v !== 'string' || v.length === 0 || v.length > 500) return null
+  let base: URL
+  let u: URL
+  try {
+    base = new URL(APP_URL)
+    u = new URL(v, base)
+  } catch {
+    return null
+  }
+  // Origin includes the scheme: http://app.orangish.io is not the platform. (In `next dev`
+  // NEXT_PUBLIC_ORANGISH_APP_URL may be an http localhost, and then that is the origin.)
+  if (u.origin !== base.origin || u.username || u.password) return null
+  return u.href
+}
+
 /** The booking CTA target, and whether it leaves the site. */
 export function bookingTarget(url: string): { href: string; external: boolean } {
   return isOpen() ? { href: url, external: true } : { href: '#waitlist', external: false }
