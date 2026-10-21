@@ -4,7 +4,8 @@ import { publicLights, type PublicLights } from '../../../lib/public-lights'
 // GET /api/court-slots
 // ---------------------------------------------------------------------------
 // Which half-hours on which courts are taken, per club-local day — the grid
-// behind the hero's "Show calendar of bookings" overlay.
+// behind the footer's "Calendar of bookings" overlay (CalendarFooterLink.tsx;
+// it was the hero's button until 2026-10-21) and the /calendar page.
 //
 // A thin cached proxy, for the same two reasons as the two endpoints beside
 // it: the club uuid stays out of the browser bundle, and one cached response

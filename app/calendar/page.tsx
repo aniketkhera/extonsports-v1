@@ -4,10 +4,14 @@ import BookingsCalendar from '@/app/components/BookingsCalendar'
 
 /* The bookings calendar as a PAGE, so it has a URL that can be put in an email.
    ───────────────────────────────────────────────────────────────────────────────
-   Same component as the hero's "Show calendar of bookings" popup, rendered with
+   Same component as the footer's "Calendar of bookings" popup, rendered with
    `standalone` — no portal, no scrim, no Close button. That is deliberate and it
    is the whole point: a shared link and the popup must never drift into showing
    different availability, so there is one grid and one data path, not two.
+   (The popup opened from the hero's "Show calendar of bookings" button until
+   2026-10-21, when Aniket moved it to a plain footer link and gave the hero's
+   place to "My bookings". The footer link's href is this page, so a ctrl-click,
+   a middle click or a browser without JavaScript lands here.)
 
    It reads /api/court-slots like the popup does, which is a cached server-side
    proxy to the platform — so this page needs no auth, no club id in the bundle,

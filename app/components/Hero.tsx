@@ -1,19 +1,19 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { Fragment, useState, useEffect } from "react";
+import { Fragment, useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import type { AvailabilityPayload } from "../api/availability/route";
 import type { CourtAvailability } from "../api/court-availability/route";
 import type { SchedulePayload } from "../api/schedule/route";
 import type { ProgramSchedule } from "@/lib/club-schedule";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, CLASS_FEES_NOTE } from "../../lib/rates";
-import { BOLLYWOOD_CLASS_URL, SQUAD_CLASS_URL, STARTER_PACK_URL, BOOK_COURT_URL, PAY_URL, CLASS_ONLINE_BOOKING_LIVE } from "../../lib/booking";
+import { BOLLYWOOD_CLASS_URL, SQUAD_CLASS_URL, STARTER_PACK_URL, BOOK_COURT_URL, PAY_URL, CLASS_ONLINE_BOOKING_LIVE, BOOKING_LIST_EMAIL_LIVE } from "../../lib/booking";
 import { SPORT_BOOKING_OPENS_LABEL, sportBookingOpen, sportShutOnDate, sportsNotYetOpen } from "../../lib/opening";
 import { pbaScheduleOn, PBA_COURTS } from "../../lib/pba-schedule";
 import { SQUAD_SCHEDULE, SQUAD_NOTE, SQUAD_TERM } from "../../lib/squad-schedule";
 import BadmintonEnquiry from "./BadmintonEnquiry";
-import BookingsCalendar from "./BookingsCalendar";
+import MyBookingsEmail from "./MyBookingsEmail";
 import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_E164, LEGAL_NAME } from "../../lib/legal";
 
 type PanelKey = "academies" | "recreation";
@@ -1605,11 +1605,13 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
      would be wrong for anyone who leaves the page open. Null until it lands,
      and null on any failure — the panel then shows the standing commitments
      instead, which is a complete answer rather than a broken one. */
-  /* The full court-by-hour calendar, which is a second endpoint and a second
-     question — see BookingsCalendar.tsx. Mounted always but inert until
-     opened: it fetches nothing until then, so a visitor who never opens it
-     pays nothing for it. */
-  const [calOpen, setCalOpen] = useState(false);
+  /* The "Email my bookings" popup behind the "My bookings" button, 2026-10-21.
+     It took the place of the calendar overlay here, which now opens from the
+     footer (CalendarFooterLink.tsx). Mounted always but inert until opened:
+     it sends nothing until Send. The ref is the button, so closing the popup
+     hands focus back to it. */
+  const [mbOpen, setMbOpen] = useState(false);
+  const mbButton = useRef<HTMLButtonElement>(null);
 
   const [week, setWeek] = useState<CourtAvailability | null>(null);
   const [probe, setProbe] = useState<{ sport: string; band: string; label: string } | null>(null);
@@ -1974,36 +1976,45 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
             Book a court or lane
           </a>
 
-          {/* The whole floor, hour by hour. It sits next to the CTA rather
-              than under the heatmap on purpose: the heatmap answers "how busy
-              is the week", this answers "can I have court 3 at six", and the
-              second question is the one somebody who has just read a price is
-              actually asking.
+          {/* MY BOOKINGS, 2026-10-21 — in the place "Show calendar of bookings" held.
+              Aniket: "someone enters their email id and we email them their current
+              and forthcoming bookings", "this can be a popup or something? easy to
+              do - one email id, press send and the popup disappears", and "Remove
+              'Show calendar of bookings' button. that's not needed. Move it as a
+              small button in the footer". The calendar is now a plain link in the
+              footer's PLAY column (CalendarFooterLink.tsx), opening the same overlay.
 
-              A button, not a link: there is no /calendar page to point at —
-              it opens an overlay over this one.
+              Same look as the button it replaced: OUTLINED, NOT FILLED, the same
+              height and padding as the ember CTA beside it, so "Book a court or
+              lane" stays the one primary action. A button, not a link: it opens
+              the popup (MyBookingsEmail.tsx), which POSTs to the platform and
+              shows the same toast whatever the address turns out to have.
 
-              OUTLINED, NOT FILLED, and the same height and padding as the
-              ember CTA beside it. It reads as the pair it is — look, then
-              book — where a second solid ember block would have two primary
-              actions competing a centimetre apart. Same shape as the
-              outlined half of DetailAction above. */}
-          <button
-            type="button"
-            onClick={() => setCalOpen(true)}
-            className={`text-mono text-[var(--color-ember)] border border-[var(--color-ember)]/50 hover:border-[var(--color-ember)] hover:text-white transition-colors ${
-              stacked ? "block w-full text-center py-[13px] px-5" : "inline-block py-[11px] px-[22px]"
-            }`}
-            style={{ fontSize: RATE_LABEL }}
-          >
-            Show calendar of bookings
-          </button>
-          <BookingsCalendar open={calOpen} onClose={() => setCalOpen(false)} />
+              Behind BOOKING_LIST_EMAIL_LIVE (lib/booking.ts): false hides the
+              button and the popup, and the row is back to two buttons. */}
+          {BOOKING_LIST_EMAIL_LIVE && (
+            <>
+              <button
+                ref={mbButton}
+                type="button"
+                onClick={() => setMbOpen(true)}
+                aria-haspopup="dialog"
+                className={`text-mono text-[var(--color-ember)] border border-[var(--color-ember)]/50 hover:border-[var(--color-ember)] hover:text-white transition-colors ${
+                  stacked ? "block w-full text-center py-[13px] px-5" : "inline-block py-[11px] px-[22px]"
+                }`}
+                style={{ fontSize: RATE_LABEL }}
+              >
+                My bookings
+              </button>
+              <MyBookingsEmail open={mbOpen} onClose={() => setMbOpen(false)} returnFocusRef={mbButton} />
+            </>
+          )}
 
           {/* MAKE A PAYMENT, 2026-10-16 — Aniket, once the pay page went live: "add a MAKE
               A PAYMENT link/button alongwith a BOOK A COURT and SHOW CALENDAR OF BOOKINGS".
+              (Since 2026-10-21 its neighbour is "My bookings"; the calendar is in the footer.)
               For money that is not a court booking (a lesson, an invoice, an agreed amount),
-              by Zelle or card. Outlined like the calendar button, so "Book a court or lane"
+              by Zelle or card. Outlined like the button beside it, so "Book a court or lane"
               stays the one filled, primary action; a new tab, like the booking CTA, because
               it is the app. Renamed "Make an adhoc payment" the same day (Aniket) — it is for
               one-off amounts, not the way to pay for a booking. */}
