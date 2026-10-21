@@ -27,11 +27,6 @@ import { BTN_PRIMARY, BTN_TEXT, ERROR, INPUT, LABEL, postJson } from "./ui";
    sentence stops at "Check the address." `next` is handed on to CodeForm, which checks it
    against the allow-list where it navigates. */
 
-/* Here, not in lib/my-bookings/copy.ts, only because that file belongs to the pack
-   foundation and was frozen when this was built; it should move to PACK_SIGNIN. The pack
-   page promises a CODE, so its resend says code (the list's says link). */
-const PACK_SEND_NEW = "Send a new code";
-
 export default function RequestPanel({
   note,
   next,
@@ -47,7 +42,7 @@ export default function RequestPanel({
   const [state, setState] = useState<"idle" | "sending" | "sent" | "code">("idle");
   const [error, setError] = useState("");
   const pack = variant === "pack";
-  const sendNew = pack ? PACK_SEND_NEW : COPY.sendNew;
+  const sendNew = pack ? PACK_SIGNIN.sendNewCode : COPY.sendNew;
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -91,8 +86,7 @@ export default function RequestPanel({
                 .
               </>
             ) : (
-              // "Nothing arriving? Check the address, or" without its buy link.
-              PACK_SIGNIN.nothingArriving.replace(/, or$/, ".")
+              PACK_SIGNIN.nothingArrivingNoBuy
             )}
           </p>
         )}

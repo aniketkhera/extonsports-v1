@@ -29,11 +29,6 @@ export const metadata: Metadata = {
   robots: { index: PACKS_LIVE, follow: PACKS_LIVE },
 };
 
-// ⚠️ NOT YET IN lib/my-bookings/copy.ts (S1 owns that file; 2026-10-21). Move it there as
-// PACK_BUY_COPY.termsUnavailable(phone) and import it here.
-const termsUnavailable = (phone: string) =>
-  `We can't show the 5-pack terms right now. Try again in a minute, or call ${phone}.`;
-
 export default async function PackTermsPage() {
   const r = await packOffers(clientIpOf(await headers()), { desk: true });
   const terms = r.kind === "ok" ? r.view.terms : null;
@@ -65,7 +60,7 @@ export default async function PackTermsPage() {
             ))
           ) : (
             <p className="text-white/70 text-[1rem] leading-relaxed" role="status">
-              <PhoneText text={termsUnavailable(FALLBACK_PHONE)} phone={FALLBACK_PHONE} />
+              <PhoneText text={PACK_BUY_COPY.termsUnavailable(FALLBACK_PHONE)} phone={FALLBACK_PHONE} />
             </p>
           )}
         </main>

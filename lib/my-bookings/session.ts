@@ -249,10 +249,27 @@ export function mintRequestKey(): string {
  * Where a sign-in goes next (design §8.1): the pack page, when a slot is parked, or the
  * list. An allow-list, never a URL from a request, so no `next` can send a freshly
  * signed-in guest anywhere else. CodeForm, OpenButton and RequestPanel take one of these.
+ *
+ * Plus ONE shape (integration, 2026-10-21; S3's ask): the list with `?cancel=<seriesId>`,
+ * the pack confirmation email's tokenless Cancel link (design §8.3). Without it a guest on
+ * a phone that is not remembered signed in and lost the sheet the link was for. The id is
+ * a UUID or the whole value is refused; it only OPENS that row's sheet on this device's
+ * own list — the guest still presses Yes.
  */
 export const NEXT_PATHS = ['/my-bookings', '/my-bookings/pack'] as const
-export type NextPath = (typeof NEXT_PATHS)[number]
+export type CancelNextPath = `/my-bookings?cancel=${string}`
+export type NextPath = (typeof NEXT_PATHS)[number] | CancelNextPath
+
+const CANCEL_NEXT_RE = /^\/my-bookings\?cancel=([^&#=?/]+)$/
+
+/** `/my-bookings?cancel=<id>` for a series id, or null for anything that is not a UUID. */
+export function cancelNextPath(seriesId: unknown): CancelNextPath | null {
+  return typeof seriesId === 'string' && UUID_RE.test(seriesId) ? `/my-bookings?cancel=${seriesId}` : null
+}
 
 export function nextPathOf(v: unknown): NextPath {
-  return NEXT_PATHS.find((p) => p === v) ?? '/my-bookings'
+  const fixed = NEXT_PATHS.find((p) => p === v)
+  if (fixed) return fixed
+  const m = typeof v === 'string' ? CANCEL_NEXT_RE.exec(v) : null
+  return (m && cancelNextPath(m[1])) || '/my-bookings'
 }

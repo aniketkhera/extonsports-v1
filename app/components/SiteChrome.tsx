@@ -6,6 +6,7 @@ import TrackBeacon from "mailer-admin/TrackBeacon";
 import WhatsAppFab from "./WhatsAppFab";
 import BookingThemeCarry from "./BookingThemeCarry";
 import { SCREEN_PATHS } from "./tv-screens";
+import { PACK_PATH } from "../../lib/booking";
 
 // The site-wide extras the root layout used to mount directly, now skipped on pages that
 // are screens rather than places a person visits.
@@ -48,6 +49,15 @@ import { SCREEN_PATHS } from "./tv-screens";
 // state's "Book a court or lane" goes to this site's own home page instead.
 const PRIVATE_PATHS = ["/my-bookings"];
 
+// /5-pack, 2026-10-21 (the court 5-pack's buy page and its terms) — PUBLIC, so analytics
+// and the beacon stay, but not the bubble: on a phone the 82px "Book a court or lane"
+// circle floats over the buy form's tick box and its full-width Pay button (seen in the
+// S3 render check), and it leads away from the purchase to the card booking form. The
+// page's own "Already have a pack? Book a court" is its way to the form.
+const NO_BUBBLE_PATHS = [PACK_PATH];
+
+const under = (pathname: string, p: string) => pathname === p || pathname.startsWith(`${p}/`);
+
 export default function SiteChrome() {
   const pathname = usePathname();
   if (pathname && SCREEN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
@@ -56,9 +66,10 @@ export default function SiteChrome() {
   if (pathname && PRIVATE_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     return null;
   }
+  const bubble = !(pathname && NO_BUBBLE_PATHS.some((p) => under(pathname, p)));
   return (
     <>
-      <WhatsAppFab />
+      {bubble && <WhatsAppFab />}
       <BookingThemeCarry />
       <Analytics />
       <TrackBeacon />

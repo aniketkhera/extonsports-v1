@@ -80,20 +80,28 @@ function SlotBox({ slot }: { slot: QuoteSlot }) {
 }
 
 /**
- * The pack this booking would draw from, as it stands NOW (mock panel 3: "3 of 5 left", then
- * "Book · use 1 credit"). The quote's `choice` carries the count AFTER this booking and no
- * clock; the clock — which decides between "valid until Dec 17 (…)" and the clock sentence
- * — comes from the matching card in the same answer's `packs`. No match (the platform's
- * two lists disagree) falls back to reading a valid-until date as a started clock: still a
- * true sentence, only less exact. The clock in `choice` itself is asked of S1/A3.
+ * The pack this booking would draw from (mock panel 3: "3 of 5 left", then "Book · use 1
+ * credit"). The COUNT is as it stands now — the quote's `choice` carries it after this
+ * booking. The two sentences are the platform's, written for the pack AFTER this booking
+ * (choiceFor), and the clock that decides how they are put together — "valid until Dec 17
+ * (…)" for 'started', the clock sentence alone otherwise — is `choice.clock`.
+ *
+ * A platform that sends no clock (integration, 2026-10-21): after a booking a pack's clock
+ * is never 'not_started' (the booking itself is a live game, design §3) — it is 'started'
+ * only if a game was already played, which the current cards say. So: 'started' when every
+ * card that could be this pack says so, otherwise 'provisional'. The first cut matched one
+ * card by its valid-until date and read any date as 'started'; a fresh pack's date moves
+ * when it is first booked, so that printed "valid until Dec 24 (Your 60 days start at your
+ * first game…)".
  */
 function choiceNow(choice: PackChoice, packs: PackView[], credits: number): { left: number; clock: PackClock } {
   const left = Math.min(choice.creditsLeftAfter + credits, choice.creditsTotal);
-  const card = packs.find(
-    (p) => p.name === choice.packName && p.creditsTotal === choice.creditsTotal && p.creditsLeft === left
-      && p.validUntilText === choice.validUntilText,
+  if (choice.clock) return { left, clock: choice.clock };
+  const cards = packs.filter(
+    (p) => p.name === choice.packName && p.creditsTotal === choice.creditsTotal && p.creditsLeft === left,
   );
-  return { left, clock: card?.clock ?? (choice.validUntilText ? "started" : "not_started") };
+  const started = cards.length > 0 && cards.every((p) => p.clock === "started");
+  return { left, clock: started ? "started" : "provisional" };
 }
 
 function PackCard({ choice, packs, credits }: { choice: PackChoice; packs: PackView[]; credits: number }) {

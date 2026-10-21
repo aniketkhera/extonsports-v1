@@ -181,7 +181,15 @@ export const PACK_SIGNIN = {
   sent: "If this email has a 5-pack or bookings with us, we've sent a 6‑digit code. No password needed.",
   nothingArriving: 'Nothing arriving? Check the address, or',
   buyLink: 'buy a 5-pack',
+  // The same line while there is no buy link to offer (PACKS_LIVE off: /5-pack deploys
+  // unlinked). Its own sentence, so a change to the one above cannot silently break it.
+  nothingArrivingNoBuy: 'Nothing arriving? Check the address.',
   codeLead: 'Enter the 6‑digit code from our email.',
+  // The pack page promises a CODE, so its resend says code (the list's COPY.sendNew says link).
+  sendNewCode: 'Send a new code',
+  // /my-bookings/open while a pack slot is parked: what the press does, nothing about a
+  // pack or bookings — it is shown before the emailed link is spent.
+  openLead: 'Tap to carry on with your booking on this device.',
   payByCardInstead: 'Pay by card instead',
 } as const
 
@@ -213,8 +221,6 @@ export const PACK_COPY = {
   bookWithMyPack: 'Book a court with my pack',
   confirmYes: 'Yes, cancel — return my credit',
   confirmNo: 'Keep my booking',
-  cancelledByYou: 'Cancelled · credit returned',
-  cancelledByClub: 'Cancelled by the club — credit returned',
 } as const
 
 /** The public buy page, /5-pack, and its terms (design §8.2). */
@@ -234,6 +240,9 @@ export const PACK_BUY_COPY = {
   alreadyHave: 'Already have a pack? Book a court and choose “My 5-pack” when you pay.',
   notOnSale: "5-packs aren't on sale online right now.",
   termsTitle: '5-pack terms',
+  /** /5-pack/terms when the platform is off, down or unconfigured. */
+  termsUnavailable: (phone: string = FALLBACK_PHONE) =>
+    `We can't show the 5-pack terms right now. Try again in a minute, or call ${phone}.`,
   // /my-bookings/pack/ready (design §8.2).
   readyTitle: 'Your 5-pack is ready',
   rowPack: 'Pack',
@@ -491,10 +500,32 @@ export function rowPackTooLate(phone: string, hours = DEFAULT_CUTOFF_HOURS): str
   return `Under ${hours} hours — call ${phone}`
 }
 
-/** The cancel sheet for a pack row (cancel.html step 2, design §8.3). */
-export function packConfirmText(credits: number, validUntilText: string | null): string {
-  const keeps = validUntilText ? ` Your credit keeps your pack's date: valid until ${validUntilText}.` : ''
-  return `Cancel this booking? You get back ${creditsText(credits)}. The court goes back on sale straight away.${keeps}`
+/**
+ * A cancelled pack row (design §8.3): "Cancelled · credit returned", or "Cancelled by the
+ * club — credit returned" for a desk cancel. "credits" when the booking used several.
+ */
+export function rowPackCancelled(by: 'you' | 'club' | null, creditsReturned: number | null): string {
+  const what = creditsReturned !== null && creditsReturned > 1 ? 'credits returned' : 'credit returned'
+  return by === 'club' ? `Cancelled by the club — ${what}` : `Cancelled · ${what}`
+}
+
+/**
+ * The cancel sheet for a pack row (cancel.html step 2, design §8.3). A booking of several
+ * courts (or lanes) or hours reads in the plural — "You get back 4 credits. The courts go
+ * back on sale straight away. Your credits keep your pack's date: …" — since a series is
+ * cancelled whole (owner, 2026-10-18).
+ */
+export function packConfirmText(
+  credits: number,
+  validUntilText: string | null,
+  courts = 1,
+  unit: 'court' | 'lane' = 'court',
+): string {
+  const goes = `The ${unitText(unit, courts)} ${courts === 1 ? 'goes' : 'go'} back on sale straight away.`
+  const keeps = validUntilText
+    ? ` Your ${credits === 1 ? 'credit keeps' : 'credits keep'} your pack's date: valid until ${validUntilText}.`
+    : ''
+  return `Cancel this booking? You get back ${creditsText(credits)}. ${goes}${keeps}`
 }
 
 /** A pack cancel's outcome: "Cancelled. Credit is back. Badminton 5-pack 3 of 5 left · valid until Nov 29." */
@@ -503,9 +534,11 @@ export function packCancelledMessage(view: CancelView): string {
   const line = p
     ? ` ${p.name} ${ofLeft(p.creditsLeft, p.creditsTotal)} left${p.validUntilText ? ` · valid until ${p.validUntilText}` : ''}.`
     : ''
-  if (view.status === 'already_cancelled') return `Already cancelled. The credit is back on your pack.${line}`
-  const back = view.creditsReturned !== undefined && view.creditsReturned > 1 ? 'Credits are back.' : 'Credit is back.'
-  return `Cancelled. ${back}${line}`
+  const many = view.creditsReturned !== undefined && view.creditsReturned > 1
+  if (view.status === 'already_cancelled') {
+    return `Already cancelled. The ${many ? 'credits are' : 'credit is'} back on your pack.${line}`
+  }
+  return `Cancelled. ${many ? 'Credits are back.' : 'Credit is back.'}${line}`
 }
 
 /* ── buying (design §8.2) ─────────────────────────────────────────────────────────── */

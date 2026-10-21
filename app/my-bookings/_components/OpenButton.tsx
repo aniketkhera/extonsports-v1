@@ -2,16 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { COPY, FALLBACK_PHONE, PACK_COPY, listUnavailable } from "@/lib/my-bookings/copy";
+import { COPY, FALLBACK_PHONE, PACK_COPY, PACK_SIGNIN, listUnavailable } from "@/lib/my-bookings/copy";
 import { nextPathOf, type NextPath } from "@/lib/my-bookings/session";
 import { BTN_PRIMARY, ERROR, postJson } from "./ui";
 import PhoneText from "./PhoneText";
-
-/* The pack variant's lead (court 5-pack, 2026-10-21). Here, not in lib/my-bookings/copy.ts,
-   only because that file belongs to the pack foundation and was frozen when this was built;
-   it should move there (PACK_SIGNIN). Neutral on purpose: it is shown before the link is
-   spent, so it says nothing about a pack or bookings — just what the press does. */
-const PACK_OPEN_LEAD = "Tap to carry on with your booking on this device.";
 
 /* "Show my bookings" — the one press that spends the emailed link, 2026-10-20. A press
    because a mail scanner's GET must not spend it (app/my-bookings/link/route.ts). It
@@ -50,7 +44,7 @@ export default function OpenButton({ next, variant = "list" }: { next?: NextPath
 
   return (
     <div>
-      <p className="text-white/70 text-[1rem] leading-relaxed mb-6">{pack ? PACK_OPEN_LEAD : COPY.openLead}</p>
+      <p className="text-white/70 text-[1rem] leading-relaxed mb-6">{pack ? PACK_SIGNIN.openLead : COPY.openLead}</p>
       <button
         type="button"
         className={BTN_PRIMARY}

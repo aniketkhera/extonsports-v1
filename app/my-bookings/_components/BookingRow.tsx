@@ -5,7 +5,7 @@ import type { BookingView, CancelView } from "@/lib/my-bookings/view";
 import { fromSiteCancel, isCancelSuccess } from "@/lib/my-bookings/view";
 import {
   COPY, PACK_COPY, callClub, cancelMessage, confirmText, packConfirmText, rowCancelBy, rowCancelled, rowCourts,
-  rowPackCancelBy, rowPackTooLate, rowPaid, rowPaidWithPack, rowTitle, tooLate,
+  rowPackCancelBy, rowPackCancelled, rowPackTooLate, rowPaid, rowPaidWithPack, rowTitle, tooLate, unitForSport,
 } from "@/lib/my-bookings/copy";
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_TEXT, postJson } from "./ui";
 import PhoneText from "./PhoneText";
@@ -87,7 +87,7 @@ export default function BookingRow({
   let standing: string | null = null;
   if (b.status === "cancelled") {
     if (!isPack) standing = rowCancelled(b.refundedCents);
-    else standing = b.cancelledBy === "club" ? PACK_COPY.cancelledByClub : PACK_COPY.cancelledByYou;
+    else standing = rowPackCancelled(b.cancelledBy, b.creditsReturned);
   } else if (b.status === "cancelling") standing = COPY.processing;
   else if (b.status === "needs_staff" || b.blockedReason === "call_club") standing = callClub(phone);
   else if (b.blockedReason === "within_cutoff") {
@@ -165,7 +165,9 @@ export default function BookingRow({
       {(phase === "confirm" || phase === "pending") && (
         <div ref={sheet} tabIndex={-1} className="mt-4 border-t border-[var(--legal-line)] pt-4 outline-none">
           <p className="text-white/80 text-[0.95rem] leading-relaxed">
-            {isPack ? packConfirmText(b.credits!, keptValidUntil) : confirmText(b.amountPaidCents)}
+            {isPack
+              ? packConfirmText(b.credits!, keptValidUntil, b.courts.length, unitForSport(b.sport))
+              : confirmText(b.amountPaidCents)}
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <button type="button" className={BTN_PRIMARY} disabled={phase === "pending"} onClick={cancel}>

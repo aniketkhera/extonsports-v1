@@ -493,13 +493,20 @@ export type QuoteSlot = {
   savesCents: number // may be ≤ 0; copy.ts savesLine shows it only when positive
 }
 export type SlotProblem = { code: string; message: string }
-/** The pack this booking would draw from (design §6.2 `choice`). */
+/**
+ * The pack this booking would draw from (design §6.2 `choice`), as it will read AFTER this
+ * booking (orangish-app lib/court-pack-book.ts choiceFor: cp_window with this booking added).
+ * `clock` (2026-10-21, integration — S2 asked for it) is the clock those two sentences
+ * belong to: 'started' prints "valid until X (…)", the others print the clock sentence
+ * alone. null when the platform did not send one; the page then works it out (pack page).
+ */
 export type PackChoice = {
   packName: string
   creditsLeftAfter: number
   creditsTotal: number
   validUntilText: string | null
   clockText: string | null
+  clock: PackClock | null
 }
 
 export type QuoteView = {
@@ -550,9 +557,10 @@ function toChoice(raw: unknown): PackChoice | null {
   const creditsLeftAfter = creditsTotal === null ? null : count(c.creditsLeftAfter, 0, creditsTotal)
   const validUntilText = optional(c.validUntilText, (v) => text(v, 80))
   const clockText = optional(c.clockText, (v) => text(v, 160))
+  const clock = optional(c.clock, (v) => PACK_CLOCKS.find((k) => k === v) ?? null)
   if (!packName || creditsTotal === null || creditsLeftAfter === null
-    || validUntilText === undefined || clockText === undefined) return null
-  return { packName, creditsLeftAfter, creditsTotal, validUntilText, clockText }
+    || validUntilText === undefined || clockText === undefined || clock === undefined) return null
+  return { packName, creditsLeftAfter, creditsTotal, validUntilText, clockText, clock }
 }
 
 /**
