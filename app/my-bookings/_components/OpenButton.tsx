@@ -2,9 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { COPY, FALLBACK_PHONE, listUnavailable } from "@/lib/my-bookings/copy";
+import { COPY, FALLBACK_PHONE, PACK_COPY, listUnavailable } from "@/lib/my-bookings/copy";
+import { nextPathOf, type NextPath } from "@/lib/my-bookings/session";
 import { BTN_PRIMARY, ERROR, postJson } from "./ui";
 import PhoneText from "./PhoneText";
+
+/* The pack variant's lead (court 5-pack, 2026-10-21). Here, not in lib/my-bookings/copy.ts,
+   only because that file belongs to the pack foundation and was frozen when this was built;
+   it should move there (PACK_SIGNIN). Neutral on purpose: it is shown before the link is
+   spent, so it says nothing about a pack or bookings — just what the press does. */
+const PACK_OPEN_LEAD = "Tap to carry on with your booking on this device.";
 
 /* "Show my bookings" — the one press that spends the emailed link, 2026-10-20. A press
    because a mail scanner's GET must not spend it (app/my-bookings/link/route.ts). It
@@ -14,9 +21,19 @@ import PhoneText from "./PhoneText";
    Only a 400 means the link is dead. A 429 (this site's per-IP limit, or the
    platform's) leaves the button in place with "too many tries": the parked link was kept
    (security review, 2026-10-20 — the first pass showed "expired" for a limit someone
-   else could run up). */
-export default function OpenButton() {
+   else could run up).
+
+   `next` and `variant`, 2026-10-21 (court 5-pack, orangish-app docs/court-packs.md §8.1):
+   a guest who was booking with a pack and tapped the emailed link instead of typing the
+   code comes back to /my-bookings/pack, where the slot is parked. /my-bookings/open
+   decides that on the server (only while the slot cookie is live); `next` is re-checked
+   against the allow-list here, where it is used. The pack variant says "Continue" rather
+   than "Show my bookings", and a platform outage says the pack page's own "couldn't reach
+   the booking system", not "can't show your bookings" — the guest was not asking for a
+   list. */
+export default function OpenButton({ next, variant = "list" }: { next?: NextPath; variant?: "list" | "pack" }) {
   const [state, setState] = useState<"idle" | "busy" | "expired" | "slow" | "down">("idle");
+  const pack = variant === "pack";
 
   if (state === "expired") {
     return (
@@ -24,7 +41,7 @@ export default function OpenButton() {
         <p className="text-white/80 text-[1rem] leading-relaxed" role="alert">
           {COPY.expired}
         </p>
-        <Link href="/my-bookings" className={`${BTN_PRIMARY} inline-block mt-6`}>
+        <Link href={nextPathOf(next)} className={`${BTN_PRIMARY} inline-block mt-6`}>
           {COPY.sendNew}
         </Link>
       </div>
@@ -33,7 +50,7 @@ export default function OpenButton() {
 
   return (
     <div>
-      <p className="text-white/70 text-[1rem] leading-relaxed mb-6">{COPY.openLead}</p>
+      <p className="text-white/70 text-[1rem] leading-relaxed mb-6">{pack ? PACK_OPEN_LEAD : COPY.openLead}</p>
       <button
         type="button"
         className={BTN_PRIMARY}
@@ -42,13 +59,13 @@ export default function OpenButton() {
           setState("busy");
           const r = await postJson("/api/my-bookings/open", {});
           if (r.status === 200) {
-            window.location.assign("/my-bookings");
+            window.location.assign(nextPathOf(next));
             return;
           }
           setState(r.status === 400 ? "expired" : r.status === 429 ? "slow" : "down");
         }}
       >
-        {state === "busy" ? COPY.opening : COPY.openButton}
+        {state === "busy" ? COPY.opening : pack ? COPY.codeButton : COPY.openButton}
       </button>
       {state === "slow" && (
         <p className={ERROR} role="alert">
@@ -57,7 +74,7 @@ export default function OpenButton() {
       )}
       {state === "down" && (
         <p className={ERROR} role="alert">
-          <PhoneText text={listUnavailable(FALLBACK_PHONE)} phone={FALLBACK_PHONE} />
+          <PhoneText text={pack ? PACK_COPY.unreachable : listUnavailable(FALLBACK_PHONE)} phone={FALLBACK_PHONE} />
         </p>
       )}
     </div>
