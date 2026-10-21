@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { readDeviceToken } from "@/lib/my-bookings/session-server";
 import { listBookings } from "@/lib/my-bookings/platform";
-import { clientIpOf } from "@/lib/my-bookings/guard";
+import { UUID_RE, clientIpOf } from "@/lib/my-bookings/guard";
 import { COPY, FALLBACK_PHONE, listUnavailable } from "@/lib/my-bookings/copy";
 import RequestPanel from "./_components/RequestPanel";
 import BookingList from "./_components/BookingList";
@@ -27,6 +27,14 @@ import PhoneText from "./_components/PhoneText";
 // alongside the relay secret — lib/my-bookings/platform.ts). With no relay secret set,
 // listBookings answers 'unavailable' without calling anyone: the same friendly state as
 // the platform being down.
+//
+// ?cancel=<seriesId>, 2026-10-21 (orangish-app docs/court-packs.md §8.3): the court
+// 5-pack confirmation email's "Cancel this booking" link. It opens that row's cancel sheet
+// — nothing more; the guest still presses Yes. Tokenless, so the email may carry it: the
+// series is only ever looked up in THIS device's own list, and a stranger with the link
+// sees the email form. Taken only as one UUID; anything else opens nothing. A signed-out
+// guest loses it at sign-in (`next` is an allow-list of two bare paths, lib/my-bookings/
+// session.ts) and simply presses Cancel on the row.
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +49,16 @@ function Heading({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default async function MyBookingsPage() {
+/** ?cancel= as a series id, or null. A repeated key is not one id. */
+function cancelParam(v: string | string[] | undefined): string | null {
+  return typeof v === "string" && UUID_RE.test(v) ? v : null;
+}
+
+export default async function MyBookingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const token = await readDeviceToken();
   if (!token) {
     return (
@@ -78,7 +95,7 @@ export default async function MyBookingsPage() {
   return (
     <>
       <Heading>{COPY.title}</Heading>
-      <BookingList view={r.view} />
+      <BookingList view={r.view} openCancelFor={cancelParam((await searchParams).cancel)} />
       <div className="mt-10">
         <NotYou />
       </div>

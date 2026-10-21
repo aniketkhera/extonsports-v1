@@ -1,12 +1,17 @@
-import type { ListView } from "@/lib/my-bookings/view";
-import { COPY, bookingsFor } from "@/lib/my-bookings/copy";
+import type { BookingView, ListView, PackView } from "@/lib/my-bookings/view";
+import { COPY, PACK_COPY, bookingsFor } from "@/lib/my-bookings/copy";
 import BookingRow from "./BookingRow";
+import PackCard from "./PackCard";
 import { BTN_PRIMARY } from "./ui";
 
 /* The upcoming guest bookings for this device's email, 2026-10-20. A series is ONE
    booking (owner, 2026-10-18): several courts at one time, paid together, cancelled
    together. Past series are omitted upstream; a series this guest cancelled online stays
-   until its start, muted, so a reload confirms the cancel. */
+   until its start, muted, so a reload confirms the cancel.
+
+   Since 2026-10-21 the guest's court 5-packs sit ABOVE the bookings (orangish-app
+   docs/court-packs.md §8.3), usable packs first — view.ts orders them. A guest with a pack
+   and nothing booked yet sees the pack and the usual empty state under it. */
 
 /* Where "Book a court or lane" goes when there is nothing to list: THIS site's rates and
    booking panel at the top of the home page (the footer's "Court rates" link goes there
@@ -16,9 +21,48 @@ import { BTN_PRIMARY } from "./ui";
    button is the one hop to it, as everywhere else on the site. */
 const BOOK_HERE = "/#top";
 
-export default function BookingList({ view }: { view: ListView }) {
+/**
+ * The date a pack row's cancel sheet may promise — "Your credit keeps your pack's date:
+ * valid until Nov 29" (design §8.3) — or null, and the sheet then says less.
+ *
+ * Only when it is CERTAIN, 2026-10-21: a row names its pack ("Badminton 5-pack") but not
+ * which one, so exactly one of the guest's packs must carry that name; and that pack's 60
+ * days must have STARTED (a game played), because a provisional clock is anchored on
+ * bookings like this one and moves when it goes (design §3, "Window") — promising the old
+ * date there would be a promise the platform does not keep.
+ */
+export function keptValidUntilFor(row: BookingView, packs: PackView[]): string | null {
+  if (row.paidWith !== "pack" || !row.packName) return null;
+  const named = packs.filter((p) => p.name === row.packName);
+  if (named.length !== 1) return null;
+  const p = named[0];
+  return p.clock === "started" ? p.validUntilText : null;
+}
+
+export default function BookingList({
+  view,
+  openCancelFor = null,
+}: {
+  view: ListView;
+  /** A series id from ?cancel=, already shape-checked by the page; null for none. */
+  openCancelFor?: string | null;
+}) {
+  const open = openCancelFor?.toLowerCase() ?? null;
   return (
     <div>
+      {view.packs.length > 0 && (
+        <section className="mb-10" aria-labelledby="mb-packs">
+          <h2 id="mb-packs" className="text-mono text-[0.62rem] text-white/50 tracking-widest mb-3">
+            {PACK_COPY.packsHeading}
+          </h2>
+          <ul className="flex flex-col gap-3">
+            {view.packs.map((p) => (
+              <PackCard key={p.ref} pack={p} />
+            ))}
+          </ul>
+        </section>
+      )}
+
       {view.email && (
         <p className="text-white/50 text-[0.85rem] mb-6">{bookingsFor(view.email)}</p>
       )}
@@ -33,7 +77,14 @@ export default function BookingList({ view }: { view: ListView }) {
       ) : (
         <ul className="flex flex-col gap-4">
           {view.bookings.map((b) => (
-            <BookingRow key={b.seriesId} booking={b} phone={view.club.phone} cutoffHours={view.cutoffHours} />
+            <BookingRow
+              key={b.seriesId}
+              booking={b}
+              phone={view.club.phone}
+              cutoffHours={view.cutoffHours}
+              startOpen={open !== null && b.seriesId.toLowerCase() === open}
+              keptValidUntil={keptValidUntilFor(b, view.packs)}
+            />
           ))}
         </ul>
       )}

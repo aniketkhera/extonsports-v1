@@ -2,7 +2,7 @@ import WhatsAppButton from "./WhatsAppButton";
 import OrangishPill from "./OrangishPill";
 import CalendarFooterLink from "./CalendarFooterLink";
 import { CONTACT_EMAIL } from "../../lib/legal";
-import { BOOK_COURT_URL, PAY_URL, MY_BOOKINGS_LIVE, MY_BOOKINGS_PATH } from "../../lib/booking";
+import { BOOK_COURT_URL, PAY_URL, MY_BOOKINGS_LIVE, MY_BOOKINGS_PATH, PACKS_LIVE, PACK_PATH } from "../../lib/booking";
 import { RATE_BANDS, BAND_BLURB } from "../../lib/rates";
 
 export default function Footer() {
@@ -121,6 +121,10 @@ export default function Footer() {
                a plain click opens the calendar overlay, anything else goes to /calendar
                (CalendarFooterLink.tsx). The hero row now has "My bookings" in its place. */
             { label: "Calendar of bookings", href: "/calendar", calendar: true },
+            // 2026-10-21: the court 5-pack's buy page (orangish-app docs/court-packs.md §8.2).
+            // A relative path, so FooterCol opens it in the same tab. Gated until the owner's
+            // live test and the key-box revoke are done (lib/booking.ts PACKS_LIVE).
+            ...(PACKS_LIVE ? [{ label: "5-pack", href: PACK_PATH }] : []),
             { label: "Make an adhoc payment", href: PAY_URL },
             { label: "Bulk & block bookings", href: `mailto:${CONTACT_EMAIL}` },
             { label: "Academies & juniors", href: "/#top" },
