@@ -22,10 +22,21 @@ export const metadata: Metadata = {
   description:
     "POWER and SeRa Fitness present a Bollywood-inspired Health & Fitness Workshop at Exton Sports Center, Friday October 30, 6–8 PM. $10 per person, light refreshments included.",
   alternates: { canonical: "/fitnessworkshop" },
+  // Next replaces the layout's openGraph and twitter objects rather than merging them,
+  // so the site's image and card type are repeated here (review, 2026-10-21).
   openGraph: {
     title: "Health & Fitness Workshop · Exton Sports Center",
     description: "Friday October 30, 6–8 PM. A Bollywood-inspired workout with POWER and SeRa Fitness. Sign up online.",
     url: WORKSHOP.url,
+    siteName: "Exton Sports Center",
+    type: "website",
+    locale: "en_US",
+    images: [{ url: "/logo.png", width: 1200, height: 630, alt: "Exton Sports Center" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Health & Fitness Workshop · Exton Sports Center",
+    description: "Friday October 30, 6–8 PM. A Bollywood-inspired workout with POWER and SeRa Fitness. Sign up online.",
   },
 };
 

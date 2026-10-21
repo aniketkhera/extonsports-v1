@@ -615,6 +615,11 @@ html { scroll-behavior: smooth; }
    salmon, which still carries black text on a pale ground. */
 :root[data-theme="light"] .text-\[var\(--color-ember\)\] { color: var(--ember-ink); }
 
+/* Form errors (ApplicationForm, the workshop form) are text-red-200 on a faint red
+   tint: readable on the dark ground, pale pink on near-white in light mode. A deep
+   red there instead, about 5.4:1 on the tint (review, 2026-10-21). */
+:root[data-theme="light"] .text-red-200 { color: #B42318; }
+
 /* The nav's coming-soon chip glows; on a pale ground the bloom reads as
    a smudge, so light mode keeps the border and drops the halo. */
 :root[data-theme="light"] .opening-glow      { animation: none; border-color: var(--ember-ink); }

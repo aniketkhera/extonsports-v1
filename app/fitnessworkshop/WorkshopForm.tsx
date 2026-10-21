@@ -17,7 +17,7 @@ const INPUT_CLASS =
   "w-full bg-[var(--color-ink-2)] border border-[var(--color-line-2)] focus:border-[var(--color-ember)] text-white placeholder:text-white/30 px-3.5 py-2.5 text-[0.95rem] outline-none transition-colors";
 const LABEL_CLASS = "block text-mono text-[0.6rem] text-white/50 mb-1.5";
 
-type Done = { participants: number; amount: number; name: string };
+type Done = { participants: number; amount: number; name: string; notified: boolean };
 
 export default function WorkshopForm() {
   const [state, setState] = useState<"idle" | "sending">("idle");
@@ -55,9 +55,18 @@ export default function WorkshopForm() {
         participants: Number(data?.participants) || payload.participants,
         amount: Number(data?.amount) || payload.participants * WORKSHOP.pricePerPerson,
         name: payload.name,
+        notified: data?.notified !== false,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      // fetch itself failing (offline, blocked) throws a TypeError in the browser's own
+      // words ("Failed to fetch"); say something a person can act on instead.
+      setError(
+        err instanceof TypeError
+          ? "Could not reach us. Check your connection and try again, or call (484) 252-2523."
+          : err instanceof Error
+            ? err.message
+            : "Something went wrong.",
+      );
     } finally {
       setState("idle");
     }
@@ -72,8 +81,18 @@ export default function WorkshopForm() {
       >
         <div className="text-cond text-[1.7rem] text-white mb-2">You&rsquo;re signed up!</div>
         <p className="text-white/80 text-[0.95rem] leading-[1.6]">
-          Thank you, {done.name}. We&rsquo;ve passed your sign-up for <strong className="text-white">{people}</strong>{" "}
-          to the organiser, {WORKSHOP.organiser}.
+          {done.notified ? (
+            <>
+              Thank you, {done.name}. We&rsquo;ve passed your sign-up for{" "}
+              <strong className="text-white">{people}</strong> to the organiser, {WORKSHOP.organiser}.
+            </>
+          ) : (
+            <>
+              Thank you, {done.name}. Your sign-up for <strong className="text-white">{people}</strong> is
+              saved, but our note to the organiser didn&rsquo;t go through just now. We&rsquo;ll make sure she
+              gets it; you don&rsquo;t need to sign up again.
+            </>
+          )}
         </p>
         <p className="mt-3 text-white/80 text-[0.95rem] leading-[1.6]">
           Your place is held by your Zelle payment of{" "}
@@ -92,6 +111,8 @@ export default function WorkshopForm() {
   return (
     <form
       onSubmit={submit}
+      method="post"
+      action="/api/fitnessworkshop"
       noValidate
       className="border border-[var(--color-line)] bg-[var(--color-ink)] p-6 sm:p-8"
     >
@@ -133,7 +154,7 @@ export default function WorkshopForm() {
       </div>
 
       {error && (
-        <p className="mt-5 border border-red-500/40 bg-red-500/10 text-red-200 text-[0.85rem] px-3.5 py-2.5">{error}</p>
+        <p role="alert" className="mt-5 border border-red-500/40 bg-red-500/10 text-red-200 text-[0.85rem] px-3.5 py-2.5">{error}</p>
       )}
 
       <button
