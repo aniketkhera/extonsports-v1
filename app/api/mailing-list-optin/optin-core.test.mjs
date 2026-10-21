@@ -95,10 +95,29 @@ function fakeMail({ sendFails = () => false } = {}) {
   };
 }
 
-function deps({ db, mail, allow = () => true, site = SITE }) {
+/* The staff notice is lib/signup-notice.ts's (2026-10-21), shared with the footer. Its
+   send goes through the same fake as the welcome, so `sent` holds both, in order. */
+const AT = new Date("2026-10-21T20:18:00Z");
+const BRAND = {
+  name: "Exton Sports Center",
+  host: "extonsports.com",
+  logoUrl: "https://extonsports.com/logo.png",
+  theme: { accent: "#F37A4A", pageBg: "#FDF4EE", panelBg: "#FFFFFF", headerBg: "#FBF3EC", border: "#E8D5C8", borderSoft: "#F4E8DD", text: "#0D0D0D", mutedText: "#8C7B6E" },
+};
+
+function deps({ db, mail, allow = () => true, site = SITE, count = async () => 412 }) {
   const logs = [];
-  return { logs, deps: { site, db, mail, allow, log: (m) => logs.push(m) } };
+  const notice = { brand: BRAND, countActive: count, send: (a) => mail.send(a), log: (m) => logs.push(m) };
+  return { logs, deps: { site, db, mail, notice, now: () => AT, allow, log: (m) => logs.push(m) } };
 }
+
+/** The notice's words, tags dropped, for reading a sentence as a person would. */
+const words = (html) => html
+  .replace(/<div style="display:none[^"]*">[\s\S]*?<\/div>/, "")
+  .replace(/<wbr>/g, "")
+  .replace(/<[^>]+>/g, " ")
+  .replace(/&nbsp;/g, " ").replace(/&middot;/g, "·").replace(/&#39;/g, "'").replace(/&amp;/g, "&")
+  .replace(/\s+/g, " ").trim();
 
 /** A request the way route.ts hands it over: headers + a json() reader. */
 function req(body, { ip = "203.0.113.9", contentType = "application/json", headers = {}, raw } = {}) {
@@ -137,13 +156,23 @@ test("a NEW address: inserted with source my-bookings-popup, welcomed, owner not
   assert.equal(welcome.subject, WELCOME.subject);
   assert.match(welcome.html, /tok-123/);
 
-  // And the owner hears of it, as for a footer signup, with where it came from.
+  // And the staff hear of it in the new notice (2026-10-21): where it came from, that the
+  // welcome went out, roughly where they are, and how many are on the list now.
   const notify = sent.find((s) => Array.isArray(s.to));
   assert.deepEqual(notify.to, SITE.notifyEmail);
-  assert.equal(notify.subject, "New Exton Sports Center signup — priya.k@gmail.com");
-  assert.match(notify.html, /my-bookings-popup/);
-  assert.match(notify.html, /West Chester, PA, US/);
+  assert.equal(notify.subject, "New signup: priya.k@gmail.com");
+  const w = words(notify.html);
+  for (const s of [
+    "Joined from the My bookings popup on extonsports.com. The mailing-list box was ticked, and our welcome email has gone out.",
+    "When Wed, Oct 21, 2026 · 4:18 PM ET",
+    "Near West Chester, PA (approximate)",
+    "Signed up via My bookings popup",
+    "On the list now 412 people",
+  ]) assert.ok(w.includes(s), `missing: ${s}\n${w}`);
+  assert.doesNotMatch(notify.html, /Open subscribers|\/admin/, "information only: no button, no admin link");
+  assert.ok(notify.text.includes("New signup: priya.k@gmail.com"), "with a plain-text part");
   assert.equal(sent.length, 2);
+  assert.equal(sent.indexOf(welcome) < sent.indexOf(notify), true, "the welcome is tried first, so the notice can say how it went");
 });
 
 test("an address already ACTIVE on the list: nothing written, nothing sent", async () => {
@@ -305,6 +334,9 @@ test("welcome off (site switch, disabled row, blank subject): no welcome, owner 
     assert.equal(await reply.work(), "added", label);
     assert.equal(sent.length, 1, label);
     assert.ok(Array.isArray(sent[0].to), `${label}: the one email is the owner notify`);
+    // ...and it does not claim a welcome that was never sent (2026-10-21).
+    assert.ok(words(sent[0].html).includes("The mailing-list box was ticked. Our welcome email is switched off, so none was sent."), label);
+    assert.doesNotMatch(words(sent[0].html), /has gone out/, label);
   }
 });
 
@@ -316,6 +348,7 @@ test("a welcome that fails to send does not stop the owner notify, and vice vers
     assert.equal(await (await C.handleOptin(req({ email: "new@example.com" }), d)).work(), "added");
     assert.equal(sent.length, 1);
     assert.ok(Array.isArray(sent[0].to));
+    assert.ok(words(sent[0].html).includes("The mailing-list box was ticked, but our welcome email did not go out."), "the notice says the welcome failed");
   }
   {
     const { db } = fakeDb();
@@ -342,12 +375,46 @@ test("a new row with no unsubscribe token gets no welcome (never an email withou
   assert.equal(await (await C.handleOptin(req({ email: "new@example.com" }), d)).work(), "added");
   assert.equal(welcomeRenders.length, 0);
   assert.deepEqual(sent.map((s) => Array.isArray(s.to)), [true], "only the owner notify");
+  assert.ok(words(sent[0].html).includes("but our welcome email did not go out."));
 });
 
-test("the notify escapes what it prints", () => {
-  const html = C.notifyHtml(SITE, { email: "a<b>@x.com", source: "my-bookings-popup", country: null, region: null, city: '"><img>' }, "#F37A4A");
-  assert.doesNotMatch(html, /<b>|<img>/);
-  assert.match(html, /a&lt;b&gt;@x\.com/);
+test("a welcome lookup that fails: no welcome, and the notice does not claim one", async () => {
+  const store = fakeDb();
+  const flaky = {
+    configured: () => true,
+    selectRows: (t, o) => (t === "welcome_emails" ? Promise.reject(new Error("supabase select welcome_emails: 503")) : store.db.selectRows(t, o)),
+    insertRow: (t, r) => store.db.insertRow(t, r),
+  };
+  const { mail, sent } = fakeMail();
+  const { deps: d } = deps({ db: flaky, mail });
+  assert.equal(await (await C.handleOptin(req({ email: "new@example.com" }), d)).work(), "added");
+  assert.equal(sent.length, 1);
+  assert.ok(words(sent[0].html).includes("but our welcome email did not go out."));
+});
+
+test("a list count that fails leaves that row out; the notice still goes", async () => {
+  const { db } = fakeDb();
+  const { mail, sent } = fakeMail();
+  const { deps: d } = deps({ db, mail, count: async () => { throw new Error("count subscribers: 503"); } });
+  assert.equal(await (await C.handleOptin(req({ email: "new@example.com" }), d)).work(), "added");
+  const notify = sent.find((s) => Array.isArray(s.to));
+  assert.doesNotMatch(words(notify.html), /On the list now/);
+});
+
+test("the notice escapes what it prints (a city header is the visitor's to forge)", async () => {
+  const { db } = fakeDb();
+  const { mail, sent } = fakeMail();
+  const { deps: d } = deps({ db, mail });
+  const reply = await C.handleOptin(req({ email: "new@example.com" }, {
+    headers: { "x-vercel-ip-city": encodeURIComponent('"><img src=x onerror=alert(1)>'), "x-vercel-ip-country-region": "%3Cb%3E" },
+  }), d);
+  await reply.work();
+  const notify = sent.find((s) => Array.isArray(s.to));
+  assert.doesNotMatch(notify.html, /<img src=x|<b>/);
+  assert.match(notify.html, /&quot;&gt;&lt;img src=x/);
+  // The old hand-rolled notifyHtml is gone: one renderer for the popup and the footer.
+  assert.equal("notifyHtml" in C, false);
+  assert.match(read("optin-core.ts"), /from ['"]\.\.\/\.\.\/\.\.\/lib\/signup-notice['"]/);
 });
 
 /* ── the answer never says whether the address was there ─────────────────── */

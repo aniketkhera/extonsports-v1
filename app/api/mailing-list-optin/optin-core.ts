@@ -13,7 +13,8 @@
    (a git dependency several sites build from), so changing it means a push and a version
    bump for every site; a route of Exton's own changes nothing anywhere else. It reuses the
    package's database client and email shell (route.ts); what it repeats is the footer's
-   welcome lookup and its owner notify, which the package does not export.
+   welcome lookup, which the package does not export. The staff notice is the shared one in
+   lib/signup-notice.ts (2026-10-21), the same the footer sends.
 
    THE RULE: look for the address in ANY state (active or unsubscribed, any letter case,
    stray spaces around it), and if there is one, do nothing at all: no update, no welcome,
@@ -29,6 +30,7 @@
 
 import type { MailerConfig } from 'mailer-admin/config'
 import { isEmailShaped } from '../../components/my-bookings-pure'
+import { sendSignupNotice, type NoticeDeps, type WelcomeStatus } from '../../../lib/signup-notice'
 
 /** subscribers.source for a row made here. Set by the route, never read from the browser. */
 export const OPTIN_SOURCE = 'my-bookings-popup'
@@ -67,8 +69,10 @@ export type OptinDeps = {
   allow(ip: string): boolean
   /** Server log. Never given an address. */
   log(message: string): void
-  /** The brand accent for the notify's heading. */
-  accent?: string
+  /** The staff "new signup" notice (lib/signup-notice.ts): its brand, count and sender. */
+  notice: NoticeDeps
+  /** The clock the notice's "When" is read from. Default: now. */
+  now?: () => Date
 }
 
 export type OptinResult = 'added' | 'exists' | 'skipped' | 'error'
@@ -177,24 +181,14 @@ async function addIfNew(email: string, geo: Geo, deps: OptinDeps): Promise<Optin
     return 'skipped'
   }
 
-  // `*address*`, not `address` (review, 2026-10-21): a row typed in by hand as
-  // " priya@x.com", or with a pasted tab or newline, does not equal the address, so a
-  // whole-value match missed it and an UNSUBSCRIBED person was added and emailed again.
-  // Every writer trims today; this is for the rows that did not come through one. Wider is
-  // safe: what comes back is trimmed and compared exactly, and a full page counts as
-  // "exists", so a look-alike can only ever stop an insert, never cause one.
-  let found: { email: string | null }[]
+  let onList: boolean
   try {
-    found = await db.selectRows<{ email: string | null }>('subscribers', {
-      select: 'email',
-      filters: { property: `eq.${site.property}`, email: `ilike.*${likePattern(email)}*` },
-      limit: LOOKUP_LIMIT,
-    })
+    onList = await addressOnList(db, site.property, email)
   } catch (e) {
     log(`[mailing-list-optin] lookup failed, nothing added: ${errText(e)}`)
     return 'error'
   }
-  if (found.length >= LOOKUP_LIMIT || found.some((r) => norm(r.email) === email)) return 'exists'
+  if (onList) return 'exists'
 
   let token: string | null = null
   try {
@@ -214,76 +208,61 @@ async function addIfNew(email: string, geo: Geo, deps: OptinDeps): Promise<Optin
     return 'error'
   }
 
-  await sendWelcome(email, token, deps)
-  await notifyOwner(email, geo, deps)
+  // The welcome first, so the staff notice can say truthfully whether it went out.
+  const welcome = await sendWelcome(email, token, deps)
+  await sendSignupNotice(
+    site.notifyEmail,
+    { email, source: 'popup', welcome, at: deps.now ? deps.now() : new Date(), geo },
+    deps.notice,
+  )
   return 'added'
+}
+
+/** Is `email` on this property's list in ANY state (active or unsubscribed, any case,
+ *  spaces either side)? Throws if the lookup fails; the caller treats that as doubt.
+ *  Shared with the footer's notice (app/api/waitlist/footer-notice.ts, 2026-10-21), so the
+ *  two agree on who is "new".
+ *
+ *  `*address*`, not `address` (review, 2026-10-21): a row typed in by hand as
+ *  " priya@x.com", or with a pasted tab or newline, does not equal the address, so a
+ *  whole-value match missed it and an UNSUBSCRIBED person was added and emailed again.
+ *  Every writer trims today; this is for the rows that did not come through one. Wider is
+ *  safe: what comes back is trimmed and compared exactly, and a full page counts as
+ *  "on the list", so a look-alike can only ever stop an insert, never cause one. */
+export async function addressOnList(db: Pick<OptinDb, 'selectRows'>, property: string, email: string): Promise<boolean> {
+  const address = norm(email)
+  const found = await db.selectRows<{ email: string | null }>('subscribers', {
+    select: 'email',
+    filters: { property: `eq.${property}`, email: `ilike.*${likePattern(address)}*` },
+    limit: LOOKUP_LIMIT,
+  })
+  return found.length >= LOOKUP_LIMIT || found.some((r) => norm(r.email) === address)
 }
 
 /** mailer-admin's sendWelcomeIfEnabled, which it does not export: the property's
  *  welcome_emails row, if switched on and not blank. One difference, on purpose: no token,
- *  no welcome, rather than an email whose unsubscribe link is "#". */
-async function sendWelcome(email: string, token: string | null, deps: OptinDeps): Promise<void> {
+ *  no welcome, rather than an email whose unsubscribe link is "#". Returns what happened,
+ *  for the staff notice: 'off' only when it is switched off; anything that stopped an
+ *  email that should have gone (no token, a failed lookup, a failed send) is 'failed'. */
+async function sendWelcome(email: string, token: string | null, deps: OptinDeps): Promise<WelcomeStatus> {
   const { site, db, mail, log } = deps
-  if (site.welcomeEmails === false) return
+  if (site.welcomeEmails === false) return 'off'
   if (!token) {
     log('[mailing-list-optin] new row has no unsubscribe token; welcome not sent')
-    return
+    return 'failed'
   }
   try {
     const [w] = await db.selectRows<{ subject: string | null; body_md: string | null; enabled: boolean | null }>(
       'welcome_emails',
       { select: 'subject,body_md,enabled', filters: { property: `eq.${site.property}` }, limit: 1 },
     )
-    if (!w || !w.enabled || !w.subject?.trim() || !w.body_md?.trim()) return
+    if (!w || !w.enabled || !w.subject?.trim() || !w.body_md?.trim()) return 'off'
     await mail.send({ to: email, subject: w.subject, html: mail.welcomeHtml({ subject: w.subject, bodyMd: w.body_md, token }) })
+    return 'sent'
   } catch (e) {
     log(`[mailing-list-optin] welcome email failed: ${errText(e)}`)
+    return 'failed'
   }
-}
-
-/** The footer's owner notify (mailer-admin notifyHtml, not exported), with the source. */
-async function notifyOwner(email: string, geo: Geo, deps: OptinDeps): Promise<void> {
-  const { site, mail, log } = deps
-  if (!site.notifyEmail || (Array.isArray(site.notifyEmail) && site.notifyEmail.length === 0)) return
-  try {
-    await mail.send({
-      to: site.notifyEmail,
-      subject: `New ${site.brandName} signup — ${email}`,
-      html: notifyHtml(site, { email, source: OPTIN_SOURCE, ...geo }, deps.accent || '#F37A4A'),
-    })
-  } catch (e) {
-    log(`[mailing-list-optin] notify email failed: ${errText(e)}`)
-  }
-}
-
-export function notifyHtml(
-  site: Pick<OptinSite, 'brandName'>,
-  o: { email: string; source: string } & Geo,
-  accent: string,
-): string {
-  const loc = [o.city, o.region, o.country].filter((x): x is string => !!x).map(esc).join(', ')
-  const row = (label: string, value: string) =>
-    `<tr><td style="padding:8px 0;border-bottom:1px solid #eee;font-weight:600;width:140px;">${label}</td><td style="padding:8px 0;border-bottom:1px solid #eee;">${value}</td></tr>`
-  return `
-    <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:24px;">
-      <h2 style="color:${esc(accent)};margin:0 0 24px;font-size:18px;">New ${esc(site.brandName)} signup</h2>
-      <table cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:14px;">
-        ${row('Email', `<a href="mailto:${esc(o.email)}" style="color:${esc(accent)};">${esc(o.email)}</a>`)}
-        ${row('Source', esc(o.source))}
-        ${loc ? row('Location', loc) : ''}
-        ${row('When', new Date().toISOString())}
-      </table>
-      <p style="margin-top:24px;color:#888;font-size:12px;">They ticked &ldquo;Add me to the Exton Sports mailing list&rdquo; in the My bookings popup, and have been added automatically.</p>
-    </div>`
-}
-
-function esc(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
 }
 
 /** An error's message for the log, with any address in it masked. */
