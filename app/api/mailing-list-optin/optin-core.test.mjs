@@ -56,9 +56,11 @@ function fakeDb({ subscribers = [], welcome = WELCOME, configured = true, select
       calls.push({ op: "select", table, opts });
       if (selectFails) throw new Error("supabase select subscribers: 503 down");
       if (table === "welcome_emails") return welcome ? [welcome] : [];
-      // PostgREST ilike, as the route uses it: `_` any one character, case-insensitive.
+      // PostgREST ilike, as the route uses it: `_` any one character, `*` (PostgREST's alias
+      // for `%`) and `%` any run of characters, newlines included (flag s, as in Postgres),
+      // case-insensitive, anchored at both ends.
       const pattern = opts.filters.email.replace(/^ilike\./, "");
-      const re = new RegExp("^" + pattern.split("").map((ch) => (ch === "_" ? "." : ch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))).join("") + "$", "i");
+      const re = new RegExp("^" + pattern.split("").map((ch) => (ch === "_" ? "." : ch === "*" || ch === "%" ? ".*" : ch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))).join("") + "$", "is");
       const prop = opts.filters.property.replace(/^eq\./, "");
       return rows.filter((r) => r.property === prop && re.test(r.email)).slice(0, opts.limit ?? 1000).map((r) => ({ email: r.email }));
     },
@@ -183,6 +185,42 @@ test("an unsubscribed row stored in another CASE still counts as the same person
   assert.equal(await reply.work(), "exists");
   assert.ok(!calls.some((c) => c.op === "insert"));
   assert.equal(sent.length, 0);
+});
+
+test("an unsubscribed row stored with SPACES around the address still counts (review, 2026-10-21)", async () => {
+  // Every writer trims today, but a row typed in by hand (" priya.k@gmail.com", a pasted
+  // tab or newline) would slip past a whole-value match, and the box would then add the
+  // address again and email it. The lookup is `*address*`, and the rows that come back are
+  // trimmed and lower-cased before the exact comparison.
+  for (const stored of [" priya.k@gmail.com", "Priya.K@Gmail.com  ", "\tpriya.k@gmail.com\n"]) {
+    const gone = { property: "extonsports", email: stored, unsubscribed_at: "2026-09-30T14:00:00Z" };
+    const { db, calls, rows } = fakeDb({ subscribers: [gone] });
+    const { mail, sent } = fakeMail();
+    const { deps: d } = deps({ db, mail });
+    const reply = await C.handleOptin(req({ email: "priya.k@gmail.com" }), d);
+    assert.equal(await reply.work(), "exists", JSON.stringify(stored));
+    assert.equal(calls[0].opts.filters.email, "ilike.*priya.k@gmail.com*", "the lookup tolerates anything either side");
+    assert.deepEqual(calls.map((c) => c.op), ["select"], JSON.stringify(stored));
+    assert.deepEqual(rows, [gone]);
+    assert.equal(sent.length, 0);
+  }
+});
+
+test("a different address that merely CONTAINS this one does not block it", async () => {
+  // The wider lookup brings back look-alikes; only an exact match (after trim and case)
+  // counts, so "old.priya.k@gmail.com" or "priya.k@gmail.com.au" on the list, even
+  // unsubscribed, does not stop a genuinely new "priya.k@gmail.com" being added.
+  const others = [
+    { property: "extonsports", email: "old.priya.k@gmail.com", unsubscribed_at: "2026-09-30T14:00:00Z" },
+    { property: "extonsports", email: "priya.k@gmail.com.au", unsubscribed_at: null },
+  ];
+  const { db, calls } = fakeDb({ subscribers: others });
+  const { mail, sent } = fakeMail();
+  const { deps: d } = deps({ db, mail });
+  const reply = await C.handleOptin(req({ email: "priya.k@gmail.com" }), d);
+  assert.equal(await reply.work(), "added");
+  assert.equal(calls.filter((c) => c.op === "insert").length, 1);
+  assert.equal(sent.length, 2, "the welcome and the owner notify");
 });
 
 test("the same address on ANOTHER property's list is not this one: Exton adds it", async () => {

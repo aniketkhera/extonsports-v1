@@ -15,11 +15,12 @@
    package's database client and email shell (route.ts); what it repeats is the footer's
    welcome lookup and its owner notify, which the package does not export.
 
-   THE RULE: look for the address in ANY state (active or unsubscribed, any letter case),
-   and if there is one, do nothing at all: no update, no welcome, no notify. Only an address
-   with no row gets a row, with a plain INSERT, which can never modify an existing row; the
-   unique key (property, email) turns a concurrent duplicate into an error, and an error
-   sends nothing. Any doubt (a failed lookup, a full page of look-alikes) is "exists".
+   THE RULE: look for the address in ANY state (active or unsubscribed, any letter case,
+   stray spaces around it), and if there is one, do nothing at all: no update, no welcome,
+   no notify. Only an address with no row gets a row, with a plain INSERT, which can never
+   modify an existing row; the unique key (property, email) turns a concurrent duplicate
+   into an error, and an error sends nothing. Any doubt (a failed lookup, a full page of
+   look-alikes) is "exists".
 
    ⛔ NEVER REVEAL. The answer is decided BEFORE the database is asked anything, and the work
    runs after the response (route.ts, after()), so neither the body nor the timing says
@@ -126,7 +127,8 @@ export function geoFrom(headers: Headers): Geo {
 /** The address as an ILIKE pattern that can only match MORE, never less. `%` and `*`
  *  (PostgREST's alias for `%`) are legal in an address and would widen the match to
  *  anything; `_` matches any one character, itself included. So each becomes `_`, and the
- *  rows that come back are compared exactly. */
+ *  rows that come back are compared exactly. The lookup also wraps it in `*…*` (addIfNew),
+ *  so a stored value with anything either side of the address is found too. */
 export function likePattern(email: string): string {
   return email.replace(/[%_*\\]/g, '_')
 }
@@ -175,11 +177,17 @@ async function addIfNew(email: string, geo: Geo, deps: OptinDeps): Promise<Optin
     return 'skipped'
   }
 
+  // `*address*`, not `address` (review, 2026-10-21): a row typed in by hand as
+  // " priya@x.com", or with a pasted tab or newline, does not equal the address, so a
+  // whole-value match missed it and an UNSUBSCRIBED person was added and emailed again.
+  // Every writer trims today; this is for the rows that did not come through one. Wider is
+  // safe: what comes back is trimmed and compared exactly, and a full page counts as
+  // "exists", so a look-alike can only ever stop an insert, never cause one.
   let found: { email: string | null }[]
   try {
     found = await db.selectRows<{ email: string | null }>('subscribers', {
       select: 'email',
-      filters: { property: `eq.${site.property}`, email: `ilike.${likePattern(email)}` },
+      filters: { property: `eq.${site.property}`, email: `ilike.*${likePattern(email)}*` },
       limit: LOOKUP_LIMIT,
     })
   } catch (e) {

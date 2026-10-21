@@ -165,7 +165,171 @@ test("the toast's second line: the approved words, the number a tel: link, the s
   assert.doesNotMatch(toast, /optin/i, "the toast does not vary with the box");
 });
 
+/* ── the toast's clock: it waits while somebody is on it (review, 2026-10-21) ── */
+
+/** A hand-wound clock for createToastClock: nothing fires until advance() says so. */
+function fakeClock() {
+  let t = 0;
+  let next = 1;
+  const timers = new Map();
+  return {
+    now: () => t,
+    set: (fn, ms) => { const id = next++; timers.set(id, { at: t + ms, fn }); return id; },
+    clear: (id) => { timers.delete(id); },
+    pending: () => timers.size,
+    advance(ms) {
+      const end = t + ms;
+      for (;;) {
+        const due = [...timers.entries()].filter(([, v]) => v.at <= end).sort((a, b) => a[1].at - b[1].at)[0];
+        if (!due) break;
+        timers.delete(due[0]);
+        t = due[1].at;
+        due[1].fn();
+      }
+      t = end;
+    },
+  };
+}
+
+function toastClock() {
+  const c = fakeClock();
+  const gone = [];
+  const clock = P.createToastClock({ ms: P.TOAST_MS, onExpire: () => gone.push(c.now()), now: c.now, set: c.set, clear: c.clear });
+  return { c, gone, clock };
+}
+
+test("toast clock, untouched: it goes after TOAST_MS, once", () => {
+  const { c, gone, clock } = toastClock();
+  clock.start();
+  c.advance(P.TOAST_MS - 1);
+  assert.deepEqual(gone, []);
+  c.advance(1);
+  assert.deepEqual(gone, [P.TOAST_MS]);
+  c.advance(60_000);
+  assert.deepEqual(gone, [P.TOAST_MS], "never twice");
+});
+
+test("toast clock: a pointer on it holds it; leaving gives back only the time that was left", () => {
+  // The second line carries a tel: link. Eight seconds is enough to READ it, not always to
+  // reach it: hovering (or focusing) stops the clock, as most toasts do.
+  const { c, gone, clock } = toastClock();
+  clock.start();
+  c.advance(3000);
+  clock.hold("pointer", true);
+  c.advance(60_000);
+  assert.deepEqual(gone, [], "held: still there a minute later");
+  assert.equal(c.pending(), 0, "no timer runs while held");
+  clock.hold("pointer", false);
+  c.advance(P.TOAST_MS - 3000 - 1);
+  assert.deepEqual(gone, []);
+  c.advance(1);
+  assert.deepEqual(gone, [3000 + 60_000 + P.TOAST_MS - 3000]);
+});
+
+test("toast clock: focus and pointer hold it together; it runs again only when both let go", () => {
+  const { c, gone, clock } = toastClock();
+  clock.start();
+  clock.hold("focus", true);
+  clock.hold("pointer", true);
+  clock.hold("pointer", false);
+  c.advance(30_000);
+  assert.deepEqual(gone, [], "still focused");
+  clock.hold("pointer", true);
+  clock.hold("pointer", true); // a repeat is not a second hold
+  clock.hold("pointer", false);
+  clock.hold("focus", false);
+  c.advance(P.TOAST_MS);
+  assert.equal(gone.length, 1);
+});
+
+test("toast clock: a new toast starts a full run; let-go after it has gone does nothing; dispose stops it", () => {
+  {
+    const { c, gone, clock } = toastClock();
+    clock.start();
+    c.advance(6000);
+    clock.start(); // a second Send while the first toast is still up
+    c.advance(P.TOAST_MS - 1);
+    assert.deepEqual(gone, []);
+    c.advance(1);
+    assert.equal(gone.length, 1);
+  }
+  {
+    // pointerleave / blur can arrive after the toast has gone (the element shrinks to
+    // sr-only under the pointer); that must not schedule a stray expiry.
+    const { c, gone, clock } = toastClock();
+    clock.start();
+    c.advance(P.TOAST_MS);
+    clock.hold("pointer", true);
+    clock.hold("pointer", false);
+    clock.hold("focus", false);
+    c.advance(60_000);
+    assert.equal(gone.length, 1);
+    assert.equal(c.pending(), 0);
+  }
+  {
+    const { c, gone, clock } = toastClock();
+    clock.start();
+    clock.dispose();
+    c.advance(60_000);
+    assert.deepEqual(gone, []);
+  }
+  {
+    // A toast that was held when it went away (cannot happen today, but a stale hold must
+    // not freeze the NEXT toast forever).
+    const { c, gone, clock } = toastClock();
+    clock.start();
+    clock.hold("focus", true);
+    clock.dispose();
+    clock.start();
+    c.advance(P.TOAST_MS);
+    assert.equal(gone.length, 1, "a fresh toast is not held by an old hold");
+  }
+});
+
+test("the popup runs its toast on the clock: hover and focus hold it, and nothing else times it", () => {
+  const popup = read("app/components/MyBookingsEmail.tsx");
+  assert.match(popup, /createToastClock\(/);
+  const toast = popup.slice(popup.indexOf('role="status"') - 200);
+  assert.match(toast, /onPointerEnter=\{[^}]*hold\("pointer", true\)/);
+  assert.match(toast, /onPointerLeave=\{[^}]*hold\("pointer", false\)/);
+  assert.match(toast, /onFocus=\{[^}]*hold\("focus", true\)/);
+  assert.match(toast, /onBlur=\{[\s\S]{0,200}hold\("focus", false\)/);
+  assert.doesNotMatch(popup, /setTimeout\(\(\) => setToast\(false\)/, "the old fixed timer is gone");
+});
+
+test("desktop toast: up to 640px wide, so the second line and its number sit on one line", () => {
+  // Review, 2026-10-21: capped at 520px, "(484) 252-2523." dropped onto a third line of its
+  // own. w-max sizes it to the text (left:50% alone would cap it at half the viewport), and
+  // the cap keeps a 1rem margin either side on a narrow desktop window.
+  const popup = read("app/components/MyBookingsEmail.tsx");
+  const cls = popup.slice(popup.indexOf('role="status"')).match(/"fixed z-\[95\][^"]*"/)[0];
+  assert.match(cls, /\bsm:w-max\b/);
+  assert.match(cls, /sm:max-w-\[min\(640px,calc\(100%_-_2rem\)\)\]/);
+  assert.doesNotMatch(cls, /520px/);
+  assert.match(cls, /left-4 right-4 bottom-6/, "phones unchanged");
+});
+
 /* ── the mailing-list box ─────────────────────────────────────────────────── */
+
+test("the box's focus ring is ember INK: at least 3:1 on the light theme's white panel", () => {
+  // Review, 2026-10-21 (WCAG 1.4.11): --color-ember #F89B72 on white is 2.12:1. --ember-ink
+  // is the same hue darkened for light (globals.css) and IS --color-ember on dark.
+  const popup = read("app/components/MyBookingsEmail.tsx");
+  const at = popup.indexOf('type="checkbox"');
+  const box = popup.slice(at, popup.indexOf("/>", at));
+  assert.match(box, /focus-visible:outline-\[var\(--ember-ink\)\]/);
+  assert.doesNotMatch(box, /outline-\[var\(--color-ember\)\]/);
+  const css = read("app/globals.css");
+  const light = css.slice(css.indexOf(':root[data-theme="light"] {'));
+  const hex = (name) => light.match(new RegExp(`${name}:\\s*(#[0-9A-Fa-f]{6})`))[1];
+  const lum = (h) => {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+  const r = ratio(hex("--ember-ink"), hex("--color-void"));
+  assert.ok(r >= 3, `ember-ink on the light panel: ${r.toFixed(2)}:1`);
+});
 
 test("the box: its words, ticked by default, a real labelled checkbox before Send", () => {
   // Aniket, 2026-10-21: "also adda a checkbox, checked by default - add to our mailing list?"

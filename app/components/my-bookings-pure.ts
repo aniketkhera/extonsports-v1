@@ -47,6 +47,70 @@ export const COPY = {
  *  long enough to read both lines, and it still goes away on its own. */
 export const TOAST_MS = 8000;
 
+export type ToastHold = "pointer" | "focus";
+
+/** The toast's timer, which stops while somebody is on the toast (review, 2026-10-21).
+ *  The second line carries a tel: link; TOAST_MS is long enough to read it but not always
+ *  to reach it, so a pointer over the toast or focus inside it holds it, and letting go
+ *  gives back only the time that was left (the usual toast behaviour). Untouched, it goes
+ *  after TOAST_MS exactly as before. Pure, with the clock injected, so node:test can wind it.
+ *  start(): a toast was shown (again): a full run, and any old hold is forgotten.
+ *  hold(kind, on): pointer or focus arrived (true) or left (false); ignored once it has gone. */
+export function createToastClock(opts: {
+  ms: number;
+  onExpire: () => void;
+  now?: () => number;
+  set?: (fn: () => void, ms: number) => unknown;
+  clear?: (id: unknown) => void;
+}): { start(): void; hold(kind: ToastHold, on: boolean): void; dispose(): void } {
+  const now = opts.now ?? (() => Date.now());
+  const set = opts.set ?? ((fn: () => void, ms: number) => setTimeout(fn, ms));
+  const clear = opts.clear ?? ((id: unknown) => clearTimeout(id as ReturnType<typeof setTimeout>));
+  const held = { pointer: false, focus: false };
+  let active = false;
+  let left = 0;
+  let timer: unknown = null;
+  let since = 0;
+
+  const stop = () => {
+    if (timer === null) return;
+    clear(timer);
+    timer = null;
+    left = Math.max(0, left - (now() - since));
+  };
+  const run = () => {
+    if (!active || timer !== null || held.pointer || held.focus) return;
+    since = now();
+    timer = set(() => {
+      timer = null;
+      active = false;
+      opts.onExpire();
+    }, left);
+  };
+
+  return {
+    start() {
+      stop();
+      held.pointer = false;
+      held.focus = false;
+      active = true;
+      left = opts.ms;
+      run();
+    },
+    hold(kind, on) {
+      if (held[kind] === on) return;
+      held[kind] = on;
+      if (!active) return;
+      if (on) stop();
+      else run();
+    },
+    dispose() {
+      stop();
+      active = false;
+    },
+  };
+}
+
 /** The number in the toast's second line, as shown (its space a no-break space, as in
  *  COPY.failed, so "(484)" and "252-2523" never part) and as dialled. */
 export const TOAST_PHONE = CONTACT_PHONE.replace(/ /g, " ");

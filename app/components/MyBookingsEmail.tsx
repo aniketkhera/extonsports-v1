@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import type { RefObject } from "react";
 import { createPortal } from "react-dom";
-import { COPY, TOAST_MS, TOAST_PHONE, TOAST_TEL, isEmailShaped, nextTrapIndex, sendWithOptin, type Outcome } from "./my-bookings-pure";
+import { COPY, TOAST_MS, TOAST_PHONE, TOAST_TEL, createToastClock, isEmailShaped, nextTrapIndex, sendWithOptin, type Outcome } from "./my-bookings-pure";
 
 /* "Email my bookings": the popup behind the hero's "My bookings" button, and its toast.
    ──────────────────────────────────────────────────────────────────────────────────────
@@ -21,7 +21,8 @@ import { COPY, TOAST_MS, TOAST_PHONE, TOAST_TEL, isEmailShaped, nextTrapIndex, s
 
    One component owns BOTH the popup and the toast so the toast outlives the popup: the
    popup unmounts on Send and the toast is still there for eight seconds (four until the
-   second line, 2026-10-21).
+   second line, 2026-10-21). Review, 2026-10-21: a pointer over the toast or focus inside it
+   stops that clock, so its tel: link can be reached and used (createToastClock).
 
    The mailing-list box, Aniket 2026-10-21: "also adda a checkbox, checked by default - add
    to our mailing list?" It sits under the field and BEFORE Send, on the page and in Tab
@@ -62,7 +63,14 @@ export default function MyBookingsEmail({
   const optinRef = useRef<HTMLInputElement>(null);
   const sendRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toastClockRef = useRef<ReturnType<typeof createToastClock> | null>(null);
+  /* Made on first use, from event handlers only (never during render). */
+  function toastClock() {
+    if (!toastClockRef.current) {
+      toastClockRef.current = createToastClock({ ms: TOAST_MS, onExpire: () => setToast(false) });
+    }
+    return toastClockRef.current;
+  }
   /* Bumped on every close, so a reply that lands after the popup was dismissed cannot
      paint a stale error onto the next opening. */
   const generation = useRef(0);
@@ -78,7 +86,7 @@ export default function MyBookingsEmail({
     returnFocusRef?.current?.focus();
   }, [onClose, returnFocusRef]);
 
-  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+  useEffect(() => () => { toastClockRef.current?.dispose(); }, []);
 
   /* The latest `close`, read by the effect below. The parent passes a fresh onClose arrow
      on every render, and Hero re-renders on its own (data landing, hover); if the effect
@@ -147,9 +155,8 @@ export default function MyBookingsEmail({
   }
 
   function showToast() {
-    if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast(true);
-    toastTimer.current = setTimeout(() => setToast(false), TOAST_MS);
+    toastClock().start();
   }
 
   if (!isClient) return null;
@@ -248,7 +255,10 @@ export default function MyBookingsEmail({
                 />
                 {/* A real checkbox inside its label: the words are its accessible name, a
                     click or tap anywhere on them toggles it, Space toggles it from the
-                    keyboard. 44px tall on a phone, so it is a fair thumb target. */}
+                    keyboard. 44px tall on a phone, so it is a fair thumb target. Its focus
+                    ring is --ember-ink, not --color-ember (review, 2026-10-21): salmon on the
+                    light theme's white panel is 2.12:1, under the 3:1 a focus ring needs;
+                    ink is 4.2:1 there and is the same ember on dark. */}
                 <label
                   className="flex items-center gap-2.5 cursor-pointer select-none min-h-[44px] sm:min-h-0 sm:col-start-1 sm:col-span-2 sm:row-start-2"
                   style={{ fontSize: 15, lineHeight: "21px", color: "var(--color-fog)" }}
@@ -259,7 +269,7 @@ export default function MyBookingsEmail({
                     name="mailing_list"
                     checked={optin}
                     onChange={(e) => setOptin(e.target.checked)}
-                    className="shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-ember)]"
+                    className="shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ember-ink)]"
                     style={{ width: 18, height: 18, margin: 0, accentColor: "var(--color-ember)" }}
                   />
                   <span>{COPY.optin}</span>
@@ -310,13 +320,25 @@ export default function MyBookingsEmail({
         </div>
       )}
 
-      {/* Always present on the client, so the two lines are announced when they arrive. */}
+      {/* Always present on the client, so the two lines are announced when they arrive.
+          A pointer over it or focus inside it holds it (review, 2026-10-21); onBlur only
+          lets go when focus leaves the toast altogether.
+          Desktop width, review 2026-10-21: up to 640px (was 520px, which put "(484)
+          252-2523." on a third line of its own). w-max sizes it to the text, since left:50%
+          alone would cap it at half the viewport; the cap keeps 1rem clear either side on
+          a narrow window. Phones are unchanged: the full width less 16px each side. */}
       <div
         role="status"
         aria-live="polite"
+        onPointerEnter={() => toastClock().hold("pointer", true)}
+        onPointerLeave={() => toastClock().hold("pointer", false)}
+        onFocus={() => toastClock().hold("focus", true)}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) toastClock().hold("focus", false);
+        }}
         className={
           toast
-            ? "fixed z-[95] left-4 right-4 bottom-6 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:bottom-24 sm:max-w-[520px] flex gap-3 items-start"
+            ? "fixed z-[95] left-4 right-4 bottom-6 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:bottom-24 sm:w-max sm:max-w-[min(640px,calc(100%_-_2rem))] flex gap-3 items-start"
             : "sr-only"
         }
         style={
