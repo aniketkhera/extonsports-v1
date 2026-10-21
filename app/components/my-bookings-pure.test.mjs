@@ -138,12 +138,50 @@ test("the copy is the approved copy, and the toast is ONE sentence whatever happ
   assert.equal(P.COPY.line, "We'll email you today's and upcoming bookings.");
   assert.equal(P.COPY.toast, "Sent. If that email has bookings with us, they're on their way.");
   assert.equal(P.COPY.invalid, "Please enter a valid email address.");
-  assert.equal(P.COPY.failed, "We couldn't send that just now. Please try again, or call (484) 252-2523.");
+  // The space inside the number is U+00A0 (review UI-3, 2026-10-21): in the 440px panel
+  // "(484)" ended one line and "252-2523." began the next. Same words, never split.
+  assert.equal(P.COPY.failed, "We couldn't send that just now. Please try again, or call (484) 252-2523.");
+  assert.doesNotMatch(P.COPY.failed, /\(484\) 252/, "no breakable space inside the phone number");
   assert.equal(P.COPY.send, "Send");
   // About 4 s (spec), long enough to read eleven words, short enough not to linger.
   assert.ok(P.TOAST_MS >= 3500 && P.TOAST_MS <= 5000, String(P.TOAST_MS));
   // Nothing in the copy may depend on the address or the response.
   assert.doesNotMatch(Object.values(P.COPY).join(" "), /\$\{|no bookings|not found|unknown/i);
+});
+
+/* ── the popup's focus trap ───────────────────────────────────────────────── */
+
+test("nextTrapIndex: field → Send → × → field, and back with Shift", () => {
+  // Stops, in order: 0 the field, 1 Send, 2 ×.
+  assert.deepEqual([0, 1, 2].map((i) => P.nextTrapIndex(i, 3, false)), [1, 2, 0]);
+  assert.deepEqual([0, 1, 2].map((i) => P.nextTrapIndex(i, 3, true)), [2, 0, 1]);
+  // While sending, Send is disabled and drops out; the two stops left still cycle.
+  assert.deepEqual([0, 1].map((i) => P.nextTrapIndex(i, 2, false)), [1, 0]);
+  assert.deepEqual([0, 1].map((i) => P.nextTrapIndex(i, 2, true)), [1, 0]);
+});
+
+test("nextTrapIndex: from the panel itself (-1), Tab enters at the field and Shift+Tab at ×", () => {
+  // Review UI-1, 2026-10-21: a click on the title, the line or the padding left focus on
+  // NOTHING in the trap. The panel is now focusable by script (tabIndex -1), so that click
+  // lands on the panel and this is the case that brings the next Tab back in.
+  assert.equal(P.nextTrapIndex(-1, 3, false), 0);
+  assert.equal(P.nextTrapIndex(-1, 3, true), 2);
+  assert.equal(P.nextTrapIndex(-1, 2, true), 1);
+});
+
+test("the popup's panel takes focus on a click inside it, so focus cannot fall to the page", () => {
+  // Review UI-1, 2026-10-21: without tabIndex={-1} a click inside the panel sent focus to
+  // <body>, the panel's onKeyDown trap never ran, and Shift+Tab walked onto the page hidden
+  // behind the scrim (the WhatsApp button, then the mailing-list band).
+  const popup = read("app/components/MyBookingsEmail.tsx");
+  const start = popup.indexOf('role="dialog"');
+  const end = popup.indexOf("<h2", start);
+  assert.ok(start > 0 && end > start, "the dialog panel and its title are where they were");
+  const tag = popup.slice(start, end);
+  assert.match(tag, /tabIndex=\{-1\}/, "the panel is focusable by script and by a click, not by Tab");
+  assert.match(tag, /onKeyDown=\{onPanelKeyDown\}/, "the trap is still on the panel");
+  assert.match(tag, /\boutline-none\b/, "a click inside draws no focus ring round the whole panel");
+  assert.match(popup, /nextTrapIndex\(/, "the component uses the tested trap order");
 });
 
 /* ── the footer link: only a plain click becomes the overlay ──────────────── */

@@ -24,11 +24,13 @@ import OrangishPill from "./OrangishPill";
    runs with `hide_schedule_details` on, so its own signed-in members already
    see this grid with the whos removed. A stranger gets strictly less.
 
-   ⚠️ IT PORTALS TO document.body, AND IT HAS TO. The hero's panels are
-   framer-motion elements that animate `y`, which is a transform, and a
-   transformed ancestor makes `position: fixed` resolve against THAT box
-   instead of the viewport. Rendered in place, the overlay would sit inside
-   the left hero panel and scroll with it. */
+   ⚠️ IT PORTALS TO document.body, AND IT HAS TO. Any transformed ancestor
+   (this site's framer-motion elements animate `y`, which is a transform)
+   makes `position: fixed` resolve against THAT box instead of the viewport,
+   and the overlay would sit inside it and scroll with it. Since 2026-10-21
+   it opens from the footer's "Calendar of bookings" link
+   (CalendarFooterLink.tsx), not the hero; the portal keeps it safe wherever
+   it is mounted. */
 
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -50,8 +52,9 @@ const DAY_WINDOW = 14;
 
 /* How far ahead the shareable /calendar page looks. Four months answers the
    question it is opened for — "is that court already taken in the new year" —
-   without pulling a year of rows to draw fourteen days of them. The popup in
-   the hero is unaffected; it takes the proxy's own 14-day default. */
+   without pulling a year of rows to draw fourteen days of them. The overlay
+   opened from the footer's "Calendar of bookings" link (CalendarFooterLink.tsx,
+   2026-10-21) is unaffected; it takes the proxy's own 14-day default. */
 const STANDALONE_DAYS = 120;
 
 const CORE_FROM = 15 * 60;
@@ -846,7 +849,8 @@ export default function BookingsCalendar({
                 surface — later that day as a pill (OrangishPill), sized off this 11px.
                 A line of its own under the note, so it reads as the calendar's foot
                 rather than part of the instructions — and it rides along into the
-                hero's pop-up, which is this same panel. */}
+                overlay opened from the footer's "Calendar of bookings" link
+                (CalendarFooterLink.tsx, 2026-10-21), which is this same panel. */}
             <p className="text-center" style={{ fontSize: "11px", margin: "14px 0 24px" }}>
               <OrangishPill />
             </p>

@@ -27,8 +27,10 @@ export const COPY = {
   invalid: "Please enter a valid email address.",
   /* The platform is down, switched off, or the request never left. Nothing about the
      address is involved, so saying so gives nothing away; keeping the popup open (rather
-     than a toast that says "sent") is the honest answer. */
-  failed: `We couldn't send that just now. Please try again, or call ${CONTACT_PHONE}.`,
+     than a toast that says "sent") is the honest answer.
+     The number's space is a no-break space (U+00A0), 2026-10-21 review: in the 440px panel
+     "(484)" ended one line and "252-2523." began the next. */
+  failed: `We couldn't send that just now. Please try again, or call ${CONTACT_PHONE.replace(/ /g, " ")}.`,
 } as const;
 
 /** "About 4 s" (spec): long enough to read the sentence, short enough not to linger. */
@@ -107,6 +109,17 @@ export async function sendBookingList(
   } catch {
     return "failed";
   }
+}
+
+/** The popup's Tab trap: from stop `i` of `n` (the field, Send, ×; a disabled one drops out),
+ *  where Tab (`back` false) or Shift+Tab (`back` true) goes next. It wraps both ways.
+ *  i === -1 is focus on none of the stops: on the panel itself, after a click on its title,
+ *  its line or its padding. Review, 2026-10-21: before the panel took focus (tabIndex -1)
+ *  that click dropped focus to <body>, the panel's keydown never fired, and Shift+Tab walked
+ *  onto the page behind the scrim. Now Tab from the panel enters at the field, Shift+Tab at ×. */
+export function nextTrapIndex(i: number, n: number, back: boolean): number {
+  if (back) return i <= 0 ? n - 1 : i - 1;
+  return i === -1 || i === n - 1 ? 0 : i + 1;
 }
 
 /** Only a plain left click opens the overlay; ctrl/cmd/shift/alt and the middle button

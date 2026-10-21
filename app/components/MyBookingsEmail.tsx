@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import type { RefObject } from "react";
 import { createPortal } from "react-dom";
-import { COPY, TOAST_MS, isEmailShaped, sendBookingList, type Outcome } from "./my-bookings-pure";
+import { COPY, TOAST_MS, isEmailShaped, nextTrapIndex, sendBookingList, type Outcome } from "./my-bookings-pure";
 
 /* "Email my bookings": the popup behind the hero's "My bookings" button, and its toast.
    ──────────────────────────────────────────────────────────────────────────────────────
@@ -92,7 +92,10 @@ export default function MyBookingsEmail({
     };
   }, [open]);
 
-  /* A small trap: input → Send → × → input, and back the other way with Shift. */
+  /* A small trap: input → Send → × → input, and back the other way with Shift. It only
+     hears keys while focus is inside the panel, which is why the panel itself takes focus
+     on a click (tabIndex -1, below); from there, i is -1 and nextTrapIndex brings Tab back
+     in at the field and Shift+Tab at ×. */
   function onPanelKeyDown(e: React.KeyboardEvent) {
     if (e.key !== "Tab") return;
     const order = [inputRef.current, sendRef.current, closeRef.current].filter(
@@ -100,9 +103,8 @@ export default function MyBookingsEmail({
     );
     if (!order.length) return;
     const i = order.indexOf(document.activeElement as HTMLInputElement | HTMLButtonElement);
-    const next = e.shiftKey ? (i <= 0 ? order.length - 1 : i - 1) : (i === -1 || i === order.length - 1 ? 0 : i + 1);
     e.preventDefault();
-    order[next].focus();
+    order[nextTrapIndex(i, order.length, e.shiftKey)].focus();
   }
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -156,13 +158,18 @@ export default function MyBookingsEmail({
             aria-modal="true"
             aria-labelledby={titleId}
             aria-describedby={lineId}
+            /* Focusable by a click or by script, never by Tab (review, 2026-10-21). Without
+               it a click on the title, the line or the padding sent focus to <body>, this
+               panel's onKeyDown stopped hearing Tab, and Shift+Tab reached the page behind
+               the scrim. outline-none: that click must not ring the whole panel. */
+            tabIndex={-1}
             onKeyDown={onPanelKeyDown}
             className={
               /* Phones (< 640px): a bottom sheet, full width, top corners rounded, with a
                  grab handle. Wider: centred, 440px, the ember rule along the top. The 1px
                  hairline is for the dark theme, where the panel and the page are the same
                  navy and the shadow cannot show an edge; on light it all but disappears. */
-              "absolute left-0 right-0 bottom-0 rounded-t-2xl px-5 pt-[14px] border border-[var(--color-line)] " +
+              "outline-none absolute left-0 right-0 bottom-0 rounded-t-2xl px-5 pt-[14px] border border-[var(--color-line)] " +
               "sm:left-1/2 sm:right-auto sm:bottom-auto sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 " +
               "sm:w-[440px] sm:rounded-none sm:px-8 sm:pt-8 sm:border-t-4 sm:border-t-[var(--color-ember)]"
             }
