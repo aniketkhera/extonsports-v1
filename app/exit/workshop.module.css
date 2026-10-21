@@ -1,0 +1,122 @@
+/* The workshop slide on the exit-door screen, and the swap with the Starter Pack
+   (2026-10-21). Aniket: "push it as a second screen on the 'outside' display.
+   Rotate between the Starter Pack and this, 5 seconds at each screen."
+
+   Same rules as exit.module.css, for the same weak VIZIO browsers: only opacity
+   and transform move, everything is literal colour, sizes are in the 16:9 box's
+   units (--vw/--vh, see tv-palette BOX). */
+
+/* ── THE SWAP ──────────────────────────────────────────────────────────────────
+   Both panels sit in one grid cell, in the hero's place between the header and the
+   band, and trade places by opacity on one 10 s clock: Starter Pack 0-5 s, workshop
+   5-10 s, with a 0.4 s cross-fade (4% of 10 s) at each change. CSS, not a JS timer,
+   like /comingsoon's slides: if the TV stops producing frames, the page is left
+   on whichever panel the clock says, never blank.
+
+   ⚠️ The Starter Pack's code comments ask that its QR never vanish under someone
+   scanning it. At 5 s a panel it is on screen half the time. That is the brief as
+   given; if people miss it, lengthen the period here (both keyframes scale with it). */
+.stack {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+}
+.stack > * {
+  grid-area: 1 / 1;
+  min-height: 0;
+}
+.slideA {
+  animation: slide-a 10s linear infinite both;
+}
+.slideB {
+  opacity: 0;
+  animation: slide-b 10s linear infinite both;
+}
+@keyframes slide-a {
+  0%, 48% { opacity: 1; }
+  52%, 96% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes slide-b {
+  0%, 48% { opacity: 0; }
+  52%, 96% { opacity: 1; }
+  100% { opacity: 0; }
+}
+/* Reduced motion: no swapping. The Starter Pack stays, as it was before this. */
+@media (prefers-reduced-motion: reduce) {
+  .slideA { animation: none; opacity: 1; }
+  .slideB { display: none; }
+}
+
+/* ── THE WORKSHOP ──────────────────────────────────────────────────────────── */
+
+.present {
+  margin: 0 0 calc(1.6 * var(--vh));
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 500;
+  font-size: calc(1.45 * var(--vw));
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.86);
+}
+.present b {
+  color: #f89b72;
+  font-weight: 600;
+}
+/* Narrower than the Starter Pack's 6.2: "HEALTH & FITNESS" has to fit the copy column. */
+.big {
+  font-size: calc(4.9 * var(--vw));
+}
+.when {
+  margin: calc(2.4 * var(--vh)) 0 0;
+  display: flex;
+  align-items: baseline;
+  gap: calc(1.4 * var(--vw));
+  white-space: nowrap;
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.day {
+  font-size: calc(5.4 * var(--vw));
+  line-height: 0.92;
+  color: #ffbe97;
+  letter-spacing: 0.01em;
+}
+.time {
+  font-size: calc(2.4 * var(--vw));
+  color: #ffffff;
+}
+
+/* The organisers' marks, on white: they were drawn for a light background. */
+.logos {
+  justify-self: center;
+  width: calc(19 * var(--vw));
+  background: #ffffff;
+  border-radius: calc(0.8 * var(--vw));
+  padding: calc(2.4 * var(--vh)) calc(1.4 * var(--vw));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(1.4 * var(--vh));
+  box-shadow: 0 calc(0.6 * var(--vh)) calc(3 * var(--vh)) rgba(0, 0, 0, 0.35);
+}
+.logos img {
+  display: block;
+  width: auto;
+}
+.power {
+  width: 100% !important;
+  height: auto !important;
+}
+.sera {
+  height: calc(24 * var(--vh)) !important;
+}
+.with {
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 500;
+  font-size: calc(1.05 * var(--vw));
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #1a2a3a;
+}
