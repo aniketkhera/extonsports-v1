@@ -116,6 +116,17 @@
   font-size: calc(2.4 * var(--vw));
   color: #ffffff;
 }
+/* FREE, as a filled chip: the one word that most changes whether someone comes. */
+.free {
+  align-self: center;
+  font-size: calc(2.3 * var(--vw));
+  letter-spacing: 0.12em;
+  color: #0b1623;
+  background: #79ea92;
+  padding: calc(0.5 * var(--vh)) calc(0.9 * var(--vw));
+  border-radius: calc(0.4 * var(--vw));
+  line-height: 1;
+}
 
 /* The organisers' marks, on white: they were drawn for a light background. */
 .logos {

@@ -30,12 +30,15 @@ export default function WorkshopHero({ className }: { className?: string }) {
         <p className={w.when}>
           <span className={w.day}>{WORKSHOP.dayShort}</span>
           <span className={w.time}>6 – 8 PM</span>
+          {/* Free since 2026-10-21 (Aniket: "the dance workshop is now FREE, so
+              highlight that, remove the $10 charge"). */}
+          <span className={w.free}>Free</span>
         </p>
         <ul className={s.facts}>
           <li>A Bollywood-inspired workout</li>
           <li>With {WORKSHOP.instructors.join(" & ")}</li>
           <li>
-            <strong>${WORKSHOP.pricePerPerson}</strong> per person · refreshments included
+            <strong>Free</strong> · light refreshments included
           </li>
         </ul>
       </div>
