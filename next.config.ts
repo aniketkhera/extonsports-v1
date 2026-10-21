@@ -20,6 +20,12 @@ const nextConfig: NextConfig = {
       { source: '/my-bookings', headers: MY_BOOKINGS_HEADERS },
       { source: '/my-bookings/:path*', headers: MY_BOOKINGS_HEADERS },
       { source: '/api/my-bookings/:path*', headers: MY_BOOKINGS_HEADERS },
+      // The court 5-pack's checkout relay, 2026-10-21 (orangish-app docs/court-packs.md
+      // §8.2): its body carries the buyer's email and its answer a Stripe Checkout URL, so
+      // the same private, no-store answer. The pack's receipt page,
+      // /my-bookings/pack/ready?cs=, is already under /my-bookings/:path* above. /5-pack
+      // and /5-pack/terms are PUBLIC pages and are deliberately not listed here.
+      { source: '/api/5-pack/:path*', headers: MY_BOOKINGS_HEADERS },
     ];
   },
 
