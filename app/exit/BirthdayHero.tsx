@@ -12,7 +12,10 @@ import b from "./birthday.module.css";
 
    The Exton mark is the globe's still image, not <LogoGlobe>: that draws a canvas,
    the header already runs one, and the VIZIO's browser is weak. No heartbeat here,
-   and only transform/opacity move (exit.module.css's rules). */
+   and only transform/opacity move (exit.module.css's rules).
+
+   `panel` (2026-10-21): the vestibule's right half shows it too, in a box about
+   1.3:1 (birthday.module.css, .panel). Unset, the markup is what /exit draws. */
 
 export const BIRTHDAY = {
   name: "Ayansh Ajmera",
@@ -52,9 +55,9 @@ const CONFETTI: Array<{ left: number; delay: number; dur: number; hue: string; r
   { left: 96, delay: 2.5, dur: 6.0, hue: "#ffffff", rot: 15, w: 0.7 },
 ];
 
-export default function BirthdayHero({ className }: { className?: string }) {
+export default function BirthdayHero({ className, panel = false }: { className?: string; panel?: boolean }) {
   return (
-    <section className={`${b.hero} ${className ?? ""}`} aria-label={`Happy birthday, ${BIRTHDAY.name}`}>
+    <section className={[b.hero, panel && b.panel, className].filter(Boolean).join(" ")} aria-label={`Happy birthday, ${BIRTHDAY.name}`}>
       <div className={b.balloons} aria-hidden>
         {BALLOONS.map((bl, i) => (
           <span

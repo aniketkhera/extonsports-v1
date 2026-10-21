@@ -68,16 +68,16 @@ const quarterMinuteTicker = makeTicker(15_000);
    three boxes read as three objects on a wall instead of three gradients.
    Shadow opacity is high because it is cast on #0B1623: a 0.25 shadow that
    looks right on a laptop is invisible from fifteen feet on a dark screen. */
-const PANEL_LIT =
+export const PANEL_LIT =
   "linear-gradient(180deg, rgba(255,255,255,0.145) 0%, rgba(255,255,255,0.07) 45%, rgba(255,255,255,0.018) 100%)";
-const PANEL_GLOW =
+export const PANEL_GLOW =
   "radial-gradient(120% 75% at 50% -12%, rgba(248,155,114,0.22) 0%, rgba(248,155,114,0) 72%)";
 /* ⚠️ THE BORDER IS THE BRAND ORANGE AT FULL STRENGTH, not the pale header
    salmon at half opacity. The first attempt (2026-10-08) used EMBER #FFBE97 at
    0.52 and read as a warm grey line from the desk — "orange should be visible".
    #F89B72 is the same orange the website uses, and at full opacity it still
    belongs to the board rather than fighting the GREEN "ALL OPEN". */
-const PANEL_BORDER = "#F89B72";
+export const PANEL_BORDER = "#F89B72";
 /* The brand orange as a TEXT colour: JUNIOR COACHING. OPEN PLAY is white — never
    GREEN, which on this board means a free court ("ALL OPEN"; "N OF 3 FREE NOW" until 2026-10-16),
    and a green "OPEN PLAY" would read as "court open" from the desk. */
@@ -89,7 +89,7 @@ const SESSION_ORANGE = "#F89B72";
    CCCA's colour on both; a yellow, not an orange, so it never reads as JUNIOR
    COACHING from across the room. */
 const SESSION_GOLD = "#FFC43D";
-const PANEL_SHADOW = [
+export const PANEL_SHADOW = [
   "0 calc(1.7 * var(--vh)) calc(3.8 * var(--vh)) rgba(0,0,0,0.66)",            // the box sits off the wall
   "0 calc(0.5 * var(--vh)) calc(1.1 * var(--vh)) rgba(0,0,0,0.45)",            // the contact shadow under it
   "0 0 calc(1.4 * var(--vh)) rgba(248,155,114,0.22)",          // the edge picks up its own light
@@ -119,7 +119,7 @@ const SPORT_ORDER = ["Badminton", "Cricket", "Squash"];
    A sport not listed there simply has no object. */
 
 /** One holder's hours, after courts have been merged. */
-type Entry = {
+export type Entry = {
   /** Club-local YYYY-MM-DD. Needed now that the list runs past today. */
   date: string;
   from: number;
@@ -134,7 +134,7 @@ type Entry = {
   courts: string[];
 };
 
-type Panel = {
+export type Panel = {
   sport: string;
   /** Every court label in this sport, in court order — one box each. */
   labels: string[];
@@ -262,7 +262,7 @@ function mergeBlocks(blocks: NamedBlock[], label: Map<string, string>): Entry[] 
    own parts rather than by parsing it — new Date("2026-10-09") is UTC
    midnight, which formats as the 8th in New York and would label every future
    booking a day early. */
-function dayLabel(date: string, today: string): string {
+export function dayLabel(date: string, today: string): string {
   const diff = dayDiff(date, today);
   if (diff <= 0) return "";
   if (diff === 1) return "Tomorrow";
@@ -298,7 +298,7 @@ function dayDiff(a: string, b: string): number {
    something — and a taken one is near-opaque with a white X, because anything
    under about 0.75 alpha reads grey from the desk. The words survive as the
    aria-label (courtsLabel below). */
-function CourtBoxes({
+export function CourtBoxes({
   sport, labels, taken, big,
 }: { sport: string; labels: string[]; taken: string[]; big?: boolean }) {
   const on = new Set(taken);
@@ -360,7 +360,7 @@ function CourtNumbers({ labels }: { labels: string[] }) {
    26, and measured in Oswald at the board's width it came to 266px at 1.25vw
    against roughly 260px free beside the CCCA lockup in a panel a third of the
    screen wide. 1.1vw is 237px. If the words change again, measure before shipping. */
-function SessionTag({ session }: { session: SessionKey }) {
+export function SessionTag({ session }: { session: SessionKey }) {
   const junior = session === "junior-coaching";
   const free = session === "free-girls-class";
   const filled = junior || free;
@@ -382,7 +382,7 @@ function SessionTag({ session }: { session: SessionKey }) {
 }
 
 /* The session word's colour in a COMING UP row, where there is no room for a tag. */
-function sessionInk(session: SessionKey): string {
+export function sessionInk(session: SessionKey): string {
   if (session === "junior-coaching") return SESSION_ORANGE;
   if (session === "free-girls-class") return SESSION_GOLD;
   return INK;
@@ -411,7 +411,7 @@ function courtsLabel(sport: string, labels: string[]): string {
 /* The clock and the date line moved to components/ScreenChrome with the header
    (2026-10-20), shared with /exit. */
 
-function Lockup({ brand, who }: { brand: BrandKey | null; who: string }) {
+export function Lockup({ brand, who }: { brand: BrandKey | null; who: string }) {
   if (brand === "philadelphia-badminton") {
     return (
       <div
@@ -678,7 +678,7 @@ function Bulb({ lit, color }: { lit: boolean; color: string }) {
   );
 }
 
-function LightStatus({ chip }: { chip: LightChip }) {
+export function LightStatus({ chip }: { chip: LightChip }) {
   const look = CHIP_LOOK[chip.kind];
   return (
     <span
@@ -698,20 +698,32 @@ function LightStatus({ chip }: { chip: LightChip }) {
 /** How long the last `lights` outlives responses that come without it — see load(). */
 const LIGHTS_CARRY_MS = 3 * 60_000;
 
-export default function ReceptionBoard() {
+/* THE FEED AND THE GROUPING, as a hook (2026-10-21) — moved out of the component
+   below unchanged when the vestibule got a layout of its own (app/vestibule/
+   VestibuleScreen.tsx: the bookings fixed down the left, the promotions on the
+   right). Both screens draw from this one copy, so the merging rules above, the
+   stale handling and the lights carry cannot drift between two TVs twenty feet
+   apart. `upcoming` and `upNextMax` are the only things the two layouts choose
+   differently: how many rows each panel lists, and how many simultaneous starts
+   go up into the big area.
+
+   `currentOnly` (the vestibule, 2026-10-21): keep only the ON NOW entries whose
+   time band contains this minute. mergeBlocks slices a holder's hours wherever
+   their set of courts changes, so CCCA holding lanes 1-2 from 5pm and all three
+   from 6pm arrives as "5 – 6 PM" and "6 – 8 PM" — and at 7:19pm the first is
+   over but still listed under ON NOW. Seen on the vestibule mock-up that day.
+   Reception draws it the same way and is left as it is here, unasked.
+
+   The reload-on-deploy hook and the heartbeat are NOT in here: a screen calls
+   useReloadOnDeploy itself, and the heartbeat is TvScreen's (see below). */
+export function useCourtPanels({ upcoming, upNextMax, currentOnly = false }: { upcoming: number; upNextMax: number; currentOnly?: boolean }): {
+  panels: Panel[]; today: string; stale: boolean;
+} {
   const [data, setData] = useState<NamedSlots | null>(null);
   const [stale, setStale] = useState(false);
   const mounted = useRef(true);
   /** The last `lights` a response carried, and when (this TV's clock). */
   const lastLights = useRef<{ at: number; lights: Lights } | null>(null);
-
-  useReloadOnDeploy();
-  /* NO HEARTBEAT HERE, on purpose (2026-10-20). The alive-and-drawing beat goes in
-     ONCE per page, outside the content: TvScreen.tsx for the TV routes, named by
-     the TV's id (so /vestibule beats as "vestibule", not "reception"), whatever
-     the TV shows. A hook in here as well would beat twice a minute under two
-     names. The stamp in the band still shows on a keyed screen: it reads the
-     same per-load runtime the heartbeat marks keyed (screen-runtime.ts). */
 
   /* Fifteen seconds, NOT one: this decides which hour counts as "now" and so
      re-runs the grouping below. A row flipping up to a quarter minute late is
@@ -800,8 +812,9 @@ export default function ReceptionBoard() {
         (b) => (b.date === today && b.from > minutes) || b.date > today,
       );
 
-      const nowEntries = mergeBlocks(live, label);
-      const { upNext, rest } = splitUpNext(nowEntries, mergeBlocks(ahead, label), UP_NEXT_MAX);
+      const merged = mergeBlocks(live, label);
+      const nowEntries = currentOnly ? merged.filter((e) => e.from <= minutes && minutes < e.to) : merged;
+      const { upNext, rest } = splitUpNext(nowEntries, mergeBlocks(ahead, label), upNextMax);
 
       return {
         sport,
@@ -809,7 +822,7 @@ export default function ReceptionBoard() {
           .sort((a, b) => Number(a) - Number(b) || a.localeCompare(b)),
         now: nowEntries,
         upNext,
-        upcoming: rest.slice(0, UPCOMING_COUNT),
+        upcoming: rest.slice(0, upcoming),
         /* On the same 15 s tick as everything else here (2026-10-18): the minutes
            in LIGHTS OFF IN n MIN are rounded up, so at worst one reads a quarter
            minute high — and the windows run 24 h ahead, so a failed poll keeps
@@ -819,9 +832,20 @@ export default function ReceptionBoard() {
     });
 
     return { panels, today };
-  }, [data, tick]);
+  }, [data, tick, upcoming, upNextMax, currentOnly]);
 
-  const { panels, today } = view;
+  return { ...view, stale };
+}
+
+export default function ReceptionBoard() {
+  useReloadOnDeploy();
+  /* NO HEARTBEAT HERE, on purpose (2026-10-20). The alive-and-drawing beat goes in
+     ONCE per page, outside the content: TvScreen.tsx for the TV routes, named by
+     the TV's id (so /vestibule beats as "vestibule", not "reception"), whatever
+     the TV shows. A hook in here as well would beat twice a minute under two
+     names. The stamp in the band still shows on a keyed screen: it reads the
+     same per-load runtime the heartbeat marks keyed (screen-runtime.ts). */
+  const { panels, today, stale } = useCourtPanels({ upcoming: UPCOMING_COUNT, upNextMax: UP_NEXT_MAX });
 
   /* 16:9, ALWAYS (2026-10-18): one 16:9 picture scaled to fit, letterboxed on the
      ground colour, with every size in --vw / --vh. BOX and why it exists are in

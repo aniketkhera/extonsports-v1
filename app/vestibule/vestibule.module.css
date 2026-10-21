@@ -1,0 +1,233 @@
+/* The vestibule screen (2026-10-21): the bookings fixed down the left, the
+   promotions rotating on the right. Same rules as every wall screen: sizes are
+   calc(N * var(--vw|--vh)) of the 16:9 box (tv-palette BOX), colours are literal
+   hexes (never --color-* tokens: the site defaults to light), and only opacity and
+   transform animate (exit.module.css says why). */
+
+/* Two columns under the header. The cards take 40%: wide enough for the widest
+   big line, a "10:30 – 11:30 AM" beside four squash boxes; the promotions take the
+   rest, about 1.3:1, which is the shape their panel layouts were drawn for. */
+.body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 40fr) minmax(0, 60fr);
+  column-gap: calc(1.4 * var(--vw));
+}
+
+/* ── THE CARDS ─────────────────────────────────────────────────────────────── */
+/* Three equal rows. minmax(0, 1fr), as on reception: a busy card clips inside
+   itself rather than pushing the others off the screen. */
+.cards {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  row-gap: calc(1.6 * var(--vh));
+}
+.card {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: calc(0.6 * var(--vw));
+  padding: calc(1.2 * var(--vh)) calc(1 * var(--vw)) calc(1 * var(--vh));
+  overflow: hidden;
+}
+
+/* The sport, its object, the lights chip — reception's title row, same sizes. */
+.head {
+  position: relative;
+  font-size: calc(1.5 * var(--vw));
+  letter-spacing: 0.15em;
+  color: rgba(255, 255, 255, 0.86);
+  line-height: 1.2;
+}
+.sport {
+  position: relative;
+}
+/* As on reception: absolute, its ground line on the word's baseline, in em of the
+   title, so it costs the row no height. */
+.object {
+  position: absolute;
+  left: calc(100% + 0.6em);
+  top: 0.05em;
+  height: 1.575em;
+  width: auto;
+  max-width: none;
+  pointer-events: none;
+}
+.chip {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* What is on court, or up next: centred in what the card has left, so one
+   booking does not sit at the top of an empty card. */
+.slot {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.slotLine {
+  font-size: calc(1.15 * var(--vw));
+  letter-spacing: 0.14em;
+  line-height: 1;
+  color: #ffbe97;
+  margin-bottom: calc(1 * var(--vh));
+}
+.slotDay {
+  color: #ffffff;
+}
+.bigWho {
+  min-height: calc(3.1 * var(--vw));
+  display: flex;
+  align-items: center;
+  gap: calc(0.8 * var(--vw));
+}
+.bigWhen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(1 * var(--vw));
+  margin-top: calc(0.4 * var(--vh));
+}
+.bigTime {
+  font-size: calc(2.5 * var(--vw));
+  line-height: 1.03;
+  color: #ffffff;
+  white-space: nowrap;
+}
+/* Green, as on reception: on these boards green means a court is free. */
+.allOpen {
+  font-size: calc(2.6 * var(--vw));
+  line-height: 1.03;
+  color: #79ea92;
+}
+
+/* One booking on one line — the big area's rows when two or three share it. */
+.row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: calc(0.7 * var(--vw));
+  align-items: center;
+  font-size: calc(1.4 * var(--vw));
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.88);
+  white-space: nowrap;
+}
+.rowTime {
+  color: #ffffff;
+}
+/* The session word first and never cut; the holder after it is what gives way. */
+.rowWho {
+  display: flex;
+  gap: calc(0.45 * var(--vw));
+  min-width: 0;
+  overflow: hidden;
+}
+.rowSession {
+  flex: none;
+}
+.rowHolder {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* NEXT / AFTER THAT: one line under a soft rule, its label leading it. */
+.next {
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  padding-top: calc(0.7 * var(--vh));
+}
+.nextRow {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  column-gap: calc(0.7 * var(--vw));
+  align-items: center;
+  font-size: calc(1.2 * var(--vw));
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.88);
+  white-space: nowrap;
+}
+.nextLabel {
+  font-size: calc(1 * var(--vw));
+  letter-spacing: 0.16em;
+  color: #ffbe97;
+}
+.nothing {
+  grid-column: 2 / -1;
+  color: rgba(255, 255, 255, 0.88);
+}
+.also {
+  font-size: calc(0.95 * var(--vw));
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.3;
+}
+
+/* ── THE PROMOTIONS ────────────────────────────────────────────────────────── */
+/* A framed screen within the screen: a quieter edge than the cards' full orange,
+   so the eye reads left as information and right as a message. */
+.promoFrame {
+  position: relative;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: calc(0.6 * var(--vw));
+  border: calc(0.15 * var(--vw)) solid rgba(248, 155, 114, 0.55);
+  background:
+    radial-gradient(90% 60% at 50% 0%, rgba(248, 155, 114, 0.1) 0%, rgba(248, 155, 114, 0) 75%),
+    rgba(255, 255, 255, 0.035);
+  box-shadow: 0 calc(1.7 * var(--vh)) calc(3.8 * var(--vh)) rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+/* THE SCALE. The promotions' CSS is written in the 16:9 box's units for a panel the
+   full width of the screen. Here the units they inherit are redefined at 0.8 of
+   the box's, so each panel draws as itself at 80% — every size and the gaps
+   between them in proportion — and its .panel layout rearranges it for this
+   shape. The box's own formula, restated (a custom property cannot refer to its
+   inherited self). Inside keyframes the promotions use only %, em and unitless
+   values, so nothing that moves depends on this. */
+.promoScale {
+  --vw: calc(0.8 * min(1vw, calc(1vh * 16 / 9)));
+  --vh: calc(0.8 * min(1vh, calc(1vw * 9 / 16)));
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.promoStack {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Which panel is up. Outer units — this sits outside .promoScale. */
+.dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(1.4 * var(--vh));
+  display: flex;
+  justify-content: center;
+  gap: calc(0.7 * var(--vw));
+  pointer-events: none;
+}
+.dot {
+  position: relative;
+  width: calc(0.7 * var(--vw));
+  height: calc(0.7 * var(--vw));
+  border-radius: 50%;
+  border: calc(0.1 * var(--vw)) solid rgba(255, 255, 255, 0.55);
+}
+.dotOn {
+  position: absolute;
+  inset: calc(-0.1 * var(--vw));
+  border-radius: 50%;
+  background: #f89b72;
+}

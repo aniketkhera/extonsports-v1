@@ -212,3 +212,51 @@
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-2.5%); }
 }
+
+/* ── THE VESTIBULE'S PANEL (2026-10-21) ───────────────────────────────────────
+   The workshop in the vestibule screen's right half, a box about 1.3:1 (see
+   exit.module.css, .panel). The copy over the organisers' logos on the left, the
+   code down the right. The logos lie side by side on their white tile — the SeRa
+   mark stays, as asked — and the date line may wrap its FREE chip under it, where
+   the full-width screen keeps all three on one line. */
+.panelLayout {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-content: center;
+  column-gap: calc(2.4 * var(--vw));
+  row-gap: calc(3.4 * var(--vh));
+  padding: 0 calc(3 * var(--vw));
+}
+.panelLayout .when {
+  flex-wrap: wrap;
+  row-gap: calc(1.4 * var(--vh));
+}
+.panelLayout .logos {
+  grid-column: 1;
+  grid-row: 2;
+  justify-self: stretch;
+  width: auto;
+  min-width: 0;
+  flex-direction: row;
+  justify-content: center;
+  padding: calc(1.8 * var(--vh)) calc(1.6 * var(--vw));
+  gap: calc(1.4 * var(--vw));
+}
+/* Sized so the three fit the copy column's width with the tile's padding: measured
+   at 1080p, POWER 200px, the words, SeRa 150px tall. */
+.panelLayout .power {
+  width: calc(13 * var(--vw)) !important;
+  flex: none;
+}
+.panelLayout .with {
+  text-align: center;
+  max-width: 7em;
+}
+.panelLayout .sera {
+  height: calc(14 * var(--vh)) !important;
+  flex: none;
+}
+.panelLayout .ctaCell {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}

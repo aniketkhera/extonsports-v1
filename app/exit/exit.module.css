@@ -543,3 +543,23 @@
     animation: none;
   }
 }
+
+/* ── THE VESTIBULE'S PANEL (2026-10-21) ───────────────────────────────────────
+   The same offer in the vestibule screen's right half (app/vestibule), a box about
+   1.3:1 where this one is the full width. That screen scales the units it hands
+   down (--vw/--vh, its .promoScale), so every size above holds as written; only the
+   arrangement changes. Copy | code, side by side. The court goes: it needs a column
+   of its own and there is no room for one beside the code at a scannable size. */
+.panel {
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: calc(2.4 * var(--vw));
+  padding: 0 calc(3 * var(--vw));
+  background: radial-gradient(42% 52% at 28% 50%, rgba(248, 155, 114, 0.13) 0%, rgba(248, 155, 114, 0) 100%);
+}
+.panel .stage {
+  display: none;
+}
+/* The narrower copy column wraps the fact lines; even lines, not a lone last word. */
+.panel .facts li {
+  text-wrap: balance;
+}

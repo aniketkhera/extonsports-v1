@@ -115,6 +115,10 @@ export const TV_CONTENT = {
   "court-board": { viewport: {} },
   /** The Squash Starter Pack promotion: app/exit/ExitScreen.tsx (preview at /exit). */
   "starter-pack": { viewport: { themeColor: "#0B1623", colorScheme: "dark" } },
+  /** The bookings down the left, the promotions rotating on the right (2026-10-21):
+   *  app/vestibule/VestibuleScreen.tsx. Made for the vestibule; no preview address of
+   *  its own, because /vestibule is it. */
+  "board-and-promos": { viewport: { themeColor: "#0B1623", colorScheme: "dark" } },
 } as const satisfies Record<string, { viewport: Viewport }>;
 
 export type TvContent = keyof typeof TV_CONTENT;
@@ -150,7 +154,10 @@ export const TV_SCREENS = [
     title: "Vestibule screen",
     location: "Vestibule",
     set: 'VIZIO W4K75M, 75"',
-    shows: "court-board",
+    /* Its own layout from 2026-10-21 (Aniket: "I don't want to be a replica of
+       (almost) the reception screen"): the bookings on the left, the promotions on
+       the right. "court-board" puts it back to reception's picture. */
+    shows: "board-and-promos",
   },
   {
     /* Still named "outside" in tv-keeper. The set faced the street until
