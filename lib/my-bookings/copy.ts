@@ -594,12 +594,27 @@ export function packConfirmText(
   return `Cancel this booking? You get back ${creditsText(credits)}. ${goes}${keeps}`
 }
 
-/** A pack cancel's outcome: "Cancelled. Credit is back. Badminton 5-pack 3 of 5 left · valid until Nov 29." */
+/**
+ * A pack cancel's outcome: "Cancelled. Credit is back. Badminton 5-pack 3 of 5 left · valid until Nov 29."
+ *
+ * 2026-10-21 (orangish-app review F5 / R8, the platform's pack.closed and pack.firstGameByText):
+ *  - a CLOSED pack (refunded or disputed) gets its own sentence and never "Credit is back" —
+ *    the booking is cancelled but nothing can be booked from that pack again:
+ *    "Cancelled. Your Badminton 5-pack is closed, so there's no credit to use.";
+ *  - a pack whose 60 days have not started says when to play a first game by, never "valid
+ *    until" — its date is a year out and read as a year to use the credits:
+ *    "… Badminton 5-pack 5 of 5 left · play your first game by Oct 21, 2027."
+ */
 export function packCancelledMessage(view: CancelView): string {
   const p = view.pack
-  const line = p
-    ? ` ${p.name} ${ofLeft(p.creditsLeft, p.creditsTotal)} left${p.validUntilText ? ` · valid until ${p.validUntilText}` : ''}.`
-    : ''
+  if (p?.closed) {
+    const lead = view.status === 'already_cancelled' ? 'Already cancelled.' : 'Cancelled.'
+    return `${lead} Your ${p.name} is closed, so there's no credit to use.`
+  }
+  const when = p?.validUntilText
+    ? ` · valid until ${p.validUntilText}`
+    : p?.firstGameByText ? ` · play your first game by ${p.firstGameByText}` : ''
+  const line = p ? ` ${p.name} ${ofLeft(p.creditsLeft, p.creditsTotal)} left${when}.` : ''
   const many = view.creditsReturned !== undefined && view.creditsReturned > 1
   if (view.status === 'already_cancelled') {
     return `Already cancelled. The ${many ? 'credits are' : 'credit is'} back on your pack.${line}`

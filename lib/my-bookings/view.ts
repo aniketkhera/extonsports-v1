@@ -69,8 +69,25 @@ export type CancelStatus =
   | 'cancelled' | 'already_cancelled' | 'processing' | 'too_late' | 'in_progress'
   | 'not_cancellable' | 'needs_staff' | 'not_found' | 'signed_out' | 'try_again' | 'unknown'
 
-/** The pack a credit went back to, as a pack cancel's answer shows it (design §7.2). */
-export type CancelPackView = { name: string; creditsLeft: number; creditsTotal: number; validUntilText: string | null }
+/**
+ * The pack a credit went back to, as a pack cancel's answer shows it (design §7.2).
+ *
+ * Two keys the platform added on 2026-10-21 (orangish-app review F5 / R8,
+ * lib/court-pack-cancel.ts answer()), present here ONLY when they say something, so the view
+ * of an ordinary started pack is exactly what it was before them:
+ *  - `closed: true` — the pack was refunded or disputed: the booking is cancelled but there
+ *    is NO credit to use, and the page must never say "Credit is back" (validUntilText null);
+ *  - `firstGameByText` — the pack's 60 days have not started, so its date is the day to play
+ *    a first game by, not a "valid until" (validUntilText null).
+ */
+export type CancelPackView = {
+  name: string
+  creditsLeft: number
+  creditsTotal: number
+  validUntilText: string | null
+  closed?: true
+  firstGameByText?: string
+}
 
 /**
  * A cancel's outcome. The three pack keys are present ONLY on a pack series' answer, so a
@@ -233,8 +250,17 @@ function toCancelPack(raw: unknown): CancelPackView | null {
   const creditsTotal = count(p.creditsTotal, 1, 20)
   const creditsLeft = creditsTotal === null ? null : count(p.creditsLeft, 0, creditsTotal)
   const validUntilText = optional(p.validUntilText, (v) => text(v, 80))
-  if (!name || creditsTotal === null || creditsLeft === null || validUntilText === undefined) return null
-  return { name, creditsLeft, creditsTotal, validUntilText }
+  // 2026-10-21 (see CancelPackView): a boolean or absent, nothing else — a value we cannot
+  // read drops the block like any bad pack field; and the date in the same shape as
+  // validUntilText.
+  const closed = p.closed === undefined || p.closed === null ? false : typeof p.closed === 'boolean' ? p.closed : undefined
+  const firstGameByText = optional(p.firstGameByText, (v) => text(v, 80))
+  if (!name || creditsTotal === null || creditsLeft === null || validUntilText === undefined
+    || closed === undefined || firstGameByText === undefined) return null
+  const v: CancelPackView = { name, creditsLeft, creditsTotal, validUntilText }
+  if (closed) v.closed = true
+  if (firstGameByText !== null) v.firstGameByText = firstGameByText
+  return v
 }
 
 /** The pack keys of a cancel answer, or null for a card series. */

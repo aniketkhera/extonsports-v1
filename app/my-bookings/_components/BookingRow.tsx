@@ -147,8 +147,10 @@ export default function BookingRow({
 
       {/* A pack cancel that worked: the pack as the PLATFORM now counts it (cancel.html
           step 3), from the cancel's own answer; the sentence above says it in words. The
-          cards above catch up when router.refresh() lands (review UI-1). */}
-      {result && done && result.pack && (
+          cards above catch up when router.refresh() lands (review UI-1). Not for a CLOSED
+          pack (2026-10-21, the platform's pack.closed): a full bar would say the credits
+          can be used, and the sentence above says they cannot. */}
+      {result && done && result.pack && !result.pack.closed && (
         <PackMeter left={result.pack.creditsLeft} total={result.pack.creditsTotal} />
       )}
 
