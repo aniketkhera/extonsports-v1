@@ -16,8 +16,9 @@
 }
 
 /* ── THE CARDS ─────────────────────────────────────────────────────────────── */
-/* Three equal rows. minmax(0, 1fr), as on reception: a busy card clips inside
-   itself rather than pushing the others off the screen. */
+/* Equal rows, one per sport (the count is set inline from the feed). minmax(0,
+   1fr), as on reception: a busy card clips inside itself rather than pushing the
+   others off the screen. */
 .cards {
   min-height: 0;
   display: grid;
@@ -65,7 +66,11 @@
 }
 
 /* What is on court, or up next: centred in what the card has left, so one
-   booking does not sit at the top of an empty card. */
+   booking does not sit at the top of an empty card. SAFE centre where the browser
+   knows it: if the content is ever taller than the slot, it loses its foot rather
+   than the ON NOW line at its head. Plain centre first, for a browser that does
+   not — an unknown value would drop the declaration and leave the default,
+   top-aligned. */
 .slot {
   flex: 1;
   min-height: 0;
@@ -73,6 +78,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  justify-content: safe center;
 }
 .slotLine {
   font-size: calc(1.15 * var(--vw));
@@ -124,7 +130,14 @@
 .rowTime {
   color: #ffffff;
 }
-/* The session word first and never cut; the holder after it is what gives way. */
+/* The session word first; the holder after it is what gives way, all of it,
+   before the session word gives any. Then the session word ellipsizes rather than
+   being cut mid-letter ("JUNIOR COACHINC" at the widest AFTER THAT row: a day, a
+   two-meridiem time and four squash boxes; review, 2026-10-21).
+   The session word does NOT shrink (flex none) and is capped at the row instead:
+   given any flex-shrink at all, it took a fraction of a pixel of the holder's
+   squeeze, and that sub-pixel overflow was enough to put its ellipsis on
+   ("Only Girls – Free Coachi…" beside a holder still half shown). */
 .rowWho {
   display: flex;
   gap: calc(0.45 * var(--vw));
@@ -133,11 +146,20 @@
 }
 .rowSession {
   flex: none;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .rowHolder {
+  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* "+1": somebody else starts at the same moment. Never cut. */
+.more {
+  flex: none;
+  color: #ffbe97;
 }
 
 /* NEXT / AFTER THAT: one line under a soft rule, its label leading it. */
@@ -163,12 +185,6 @@
 .nothing {
   grid-column: 2 / -1;
   color: rgba(255, 255, 255, 0.88);
-}
-.also {
-  font-size: calc(0.95 * var(--vw));
-  letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.62);
-  line-height: 1.3;
 }
 
 /* ── THE PROMOTIONS ────────────────────────────────────────────────────────── */

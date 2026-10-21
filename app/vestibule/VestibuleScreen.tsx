@@ -56,9 +56,17 @@ import v from "./vestibule.module.css";
  *  reception's number, for the same reason (splitUpNext in board-lib). */
 const UP_NEXT_MAX = 2;
 
+/** How many rows the big area draws. Three fit a card at 1080p with the label
+ *  over them (measured, review 2026-10-21); a fourth holder on court is counted
+ *  on the ON NOW line instead of being drawn half off the card. */
+const BIG_ROWS_MAX = 3;
+
 /** One booking as a single line: time, then the partner's session word and the
- *  holder (the holder is what truncates), then the court boxes. */
-function Row({ e, sport, labels, today, lead }: { e: Entry; sport: string; labels: string[]; today: string; lead?: string }) {
+ *  holder (the holder is what truncates), then the court boxes. `more` is how many
+ *  others start at the same moment, said as "+N" in the line rather than on a line
+ *  of its own: a line of its own came out of the ON NOW area's height and sliced
+ *  the booking above it top and bottom (review, 2026-10-21). */
+function Row({ e, sport, labels, today, lead, more = 0 }: { e: Entry; sport: string; labels: string[]; today: string; lead?: string; more?: number }) {
   const day = dayLabel(e.date, today);
   return (
     <div className={`text-cond ${lead !== undefined ? v.nextRow : v.row}`}>
@@ -74,6 +82,7 @@ function Row({ e, sport, labels, today, lead }: { e: Entry; sport: string; label
           </span>
         )}
         <span className={v.rowHolder}>{e.who}</span>
+        {more > 0 && <span className={v.more}>+{more}</span>}
       </span>
       <CourtBoxes sport={sport} labels={labels} taken={e.courts} />
     </div>
@@ -101,6 +110,8 @@ function SportCard({ p, today }: { p: Panel; today: string }) {
   const live = p.now.length > 0;
   const big = live ? p.now : p.upNext;
   const day = !live && big.length ? dayLabel(big[0].date, today) : "";
+  const shown = big.slice(0, BIG_ROWS_MAX);
+  const hidden = big.length - shown.length;
   const then = p.upcoming[0];
   /* Somebody else starting at the same moment as `then` — said, not hidden. */
   const alsoThen = then
@@ -139,11 +150,12 @@ function SportCard({ p, today }: { p: Panel; today: string }) {
             <div className={`text-cond ${v.slotLine}`}>
               {live ? "ON NOW" : "UP NEXT"}
               {day && <span className={v.slotDay}> · {day}</span>}
+              {hidden > 0 && <span className={v.slotDay}> · +{hidden} more on court</span>}
             </div>
-            {big.length === 1 ? (
-              <Big e={big[0]} sport={p.sport} labels={p.labels} />
+            {shown.length === 1 ? (
+              <Big e={shown[0]} sport={p.sport} labels={p.labels} />
             ) : (
-              big.map((e) => (
+              shown.map((e) => (
                 <Row key={`${e.date}-${e.from}-${e.session ?? ""}-${e.who}`} e={e} sport={p.sport} labels={p.labels} today={today} />
               ))
             )}
@@ -153,14 +165,13 @@ function SportCard({ p, today }: { p: Panel; today: string }) {
 
       <div className={v.next}>
         {then ? (
-          <Row e={then} sport={p.sport} labels={p.labels} today={today} lead={!live && big.length ? "AFTER THAT" : "NEXT"} />
+          <Row e={then} sport={p.sport} labels={p.labels} today={today} lead={!live && big.length ? "AFTER THAT" : "NEXT"} more={alsoThen} />
         ) : (
           <div className={`text-cond ${v.nextRow}`}>
             <span className={v.nextLabel}>{!live && big.length ? "AFTER THAT" : "NEXT"}</span>
             <span className={v.nothing}>{big.length ? "Nothing else booked" : "Nothing booked"}</span>
           </div>
         )}
-        {alsoThen > 0 && <div className={`text-cond ${v.also}`}>+ {alsoThen} more at the same time</div>}
       </div>
     </section>
   );
@@ -191,7 +202,10 @@ export default function VestibuleScreen() {
         <ScreenHeader stale={stale} />
 
         <div className={v.body}>
-          <div className={v.cards}>
+          {/* One equal row per sport the feed carries — three at Exton today. Not a
+              fixed three in the CSS: a fourth sport added on the platform reaches
+              this wall with no deploy here (review, 2026-10-21). */}
+          <div className={v.cards} style={{ gridTemplateRows: `repeat(${Math.max(panels.length, 1)}, minmax(0, 1fr))` }}>
             {panels.map((p) => (
               <SportCard key={p.sport} p={p} today={today} />
             ))}

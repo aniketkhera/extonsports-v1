@@ -243,7 +243,8 @@
   gap: calc(1.4 * var(--vw));
 }
 /* Sized so the three fit the copy column's width with the tile's padding: measured
-   at 1080p, POWER 200px, the words, SeRa 150px tall. */
+   at 1080p inside the vestibule's 0.8 scale, POWER 200px wide, the words, SeRa
+   121px tall. */
 .panelLayout .power {
   width: calc(13 * var(--vw)) !important;
   flex: none;

@@ -707,12 +707,21 @@ const LIGHTS_CARRY_MS = 3 * 60_000;
    differently: how many rows each panel lists, and how many simultaneous starts
    go up into the big area.
 
-   `currentOnly` (the vestibule, 2026-10-21): keep only the ON NOW entries whose
-   time band contains this minute. mergeBlocks slices a holder's hours wherever
-   their set of courts changes, so CCCA holding lanes 1-2 from 5pm and all three
-   from 6pm arrives as "5 – 6 PM" and "6 – 8 PM" — and at 7:19pm the first is
-   over but still listed under ON NOW. Seen on the vestibule mock-up that day.
-   Reception draws it the same way and is left as it is here, unasked.
+   `currentOnly` (the vestibule, 2026-10-21): ON NOW is only the band that
+   contains this minute. mergeBlocks slices a holder's hours wherever their set of
+   courts changes, so CCCA holding lanes 1-2 from 5pm and all three from 6pm
+   arrives as "5 – 6 PM" and "6 – 8 PM" — and at 7:19pm reception still lists the
+   first under ON NOW. Seen on the vestibule mock-up that day; reception is left
+   as it is, unasked.
+
+   ⚠️ THE OTHER END OF THE SAME RUN MUST NOT VANISH (review, the same evening).
+   The first cut only dropped bands that did not contain this minute — and a band
+   that starts LATER belongs to a block that is live now, so it was not in
+   `ahead` either and showed nowhere: PBA on badminton 1 from 4 to 7pm and on 2-3
+   from 4 to 6pm read, at 4:30, "4 – 6 PM" and then tomorrow, as if court 1 were
+   free from 6. So under currentOnly the live and the coming blocks are merged
+   TOGETHER, and each band is sorted by where it sits against this minute: over
+   (dropped), on now, or to come (the NEXT line's list).
 
    The reload-on-deploy hook and the heartbeat are NOT in here: a screen calls
    useReloadOnDeploy itself, and the heartbeat is TvScreen's (see below). */
@@ -812,9 +821,17 @@ export function useCourtPanels({ upcoming, upNextMax, currentOnly = false }: { u
         (b) => (b.date === today && b.from > minutes) || b.date > today,
       );
 
-      const merged = mergeBlocks(live, label);
-      const nowEntries = currentOnly ? merged.filter((e) => e.from <= minutes && minutes < e.to) : merged;
-      const { upNext, rest } = splitUpNext(nowEntries, mergeBlocks(ahead, label), upNextMax);
+      let nowEntries: Entry[];
+      let aheadEntries: Entry[];
+      if (currentOnly) {
+        const all = mergeBlocks([...live, ...ahead], label);
+        nowEntries = all.filter((e) => e.date === today && e.from <= minutes && minutes < e.to);
+        aheadEntries = all.filter((e) => (e.date === today && e.from > minutes) || e.date > today);
+      } else {
+        nowEntries = mergeBlocks(live, label);
+        aheadEntries = mergeBlocks(ahead, label);
+      }
+      const { upNext, rest } = splitUpNext(nowEntries, aheadEntries, upNextMax);
 
       return {
         sport,

@@ -8,8 +8,10 @@ import { tvScreen, type TvContent, type TvEntry, type TvId } from "./tv-screens"
 /* One TV's page: whatever its entry in tv-screens.ts says it shows (2026-10-20).
    ──────────────────────────────────────────────────────────────────────────
    A server component that adds nothing to the DOM. It returns the content's own
-   component exactly as that content's page renders it, so /vestibule draws the
-   same pixels as /reception, and /outside the same as /exit. This was measured
+   component exactly as that content's page renders it, so /outside draws the same
+   pixels as /exit, and /reception's board would draw the same on any TV given
+   "court-board". (From 2026-10-21 /vestibule shows "board-and-promos",
+   VestibuleScreen, which has no page of its own.) This was measured
    when these routes went in, at 1920x1080 (with JS on, and the first paint with
    JS off), 1366x768 and 390x844. The pages matched, apart from one or two
    antialiased edge pixels that also differ between two runs of unchanged code.
