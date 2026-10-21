@@ -12,6 +12,7 @@ import { NextRequest, NextResponse, after } from 'next/server'
 import { createSupabase } from 'mailer-admin/lib/supabase'
 import { sendOne, renderEmailHtml, markdownToEmailHtml, unsubscribeUrl } from 'mailer-admin/lib/email'
 import { config } from '@/mailer-admin.config'
+import { noticeDepsFor } from '@/lib/signup-notice-send'
 import { createRateLimiter, handleOptin, OPTIN_LIMIT, OPTIN_WINDOW_MS, type OptinDeps } from './optin-core'
 
 const supa = createSupabase(config)
@@ -35,7 +36,8 @@ const deps: OptinDeps = {
   },
   allow: createRateLimiter(OPTIN_LIMIT, OPTIN_WINDOW_MS),
   log: (m) => console.error(m),
-  accent: config.theme.accent,
+  // The staff notice, the same one the footer sends (lib/signup-notice.ts, 2026-10-21).
+  notice: noticeDepsFor(config),
 }
 
 export async function POST(req: NextRequest) {
