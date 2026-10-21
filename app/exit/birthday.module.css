@@ -1,0 +1,135 @@
+/* The one-evening birthday greeting on the exit-door screen (2026-10-21). Same
+   rules as exit.module.css: literal colours, sizes in the 16:9 box's units
+   (--vw/--vh), and only transform and opacity animate. */
+
+.hero {
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  padding: 0 calc(1.22 * var(--vw));
+  background:
+    radial-gradient(38% 55% at 50% 42%, rgba(248, 155, 114, 0.16) 0%, rgba(248, 155, 114, 0) 100%),
+    radial-gradient(30% 40% at 50% 92%, rgba(121, 234, 146, 0.08) 0%, rgba(121, 234, 146, 0) 100%);
+}
+
+.card {
+  position: relative;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.happy {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: calc(1.4 * var(--vw));
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: calc(4.6 * var(--vw));
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f89b72;
+  line-height: 1;
+}
+.ball {
+  width: calc(3.2 * var(--vw));
+  height: calc(3.2 * var(--vw));
+  animation: spin 6s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.name {
+  margin: calc(1.6 * var(--vh)) 0 0;
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 700;
+  font-size: calc(9.2 * var(--vw));
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 0.95;
+  color: #ffffff;
+}
+
+.from {
+  margin: calc(3.2 * var(--vh)) 0 calc(1.6 * var(--vh));
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 500;
+  font-size: calc(1.6 * var(--vw));
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.senders {
+  display: flex;
+  align-items: center;
+  gap: calc(3.4 * var(--vw));
+}
+.sender {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(1.2 * var(--vh));
+}
+.ccca {
+  height: calc(25 * var(--vh));
+  width: auto;
+}
+/* The globe image is the whole Exton mark on the screen's own navy; cut to a
+   circle with the header's orange ring and glow. */
+.globe {
+  height: calc(25 * var(--vh));
+  width: calc(25 * var(--vh));
+  border-radius: 50%;
+  box-shadow: 0 0 0 calc(0.35 * var(--vh)) rgba(248, 155, 114, 0.75), 0 0 calc(4 * var(--vh)) rgba(248, 155, 114, 0.35);
+}
+.senderName {
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: calc(1.7 * var(--vw));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #ffbe97;
+}
+.and {
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: calc(4 * var(--vw));
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: calc(4 * var(--vh));
+}
+
+/* Confetti: twelve pieces falling the panel's height, each on its own clock. */
+.confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.piece {
+  position: absolute;
+  top: calc(-4 * var(--vh));
+  height: calc(1.6 * var(--vh));
+  border-radius: calc(0.2 * var(--vh));
+  opacity: 0;
+  animation-name: fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-fill-mode: both;
+}
+@keyframes fall {
+  0% { opacity: 0; transform: translateY(0) rotate(var(--rot)); }
+  8% { opacity: 0.85; }
+  85% { opacity: 0.85; }
+  100% { opacity: 0; transform: translateY(calc(76 * var(--vh))) rotate(calc(var(--rot) + 260deg)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ball, .piece { animation: none; }
+  .piece { display: none; }
+}

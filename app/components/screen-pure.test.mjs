@@ -263,7 +263,7 @@ test("TvScreen renders the heartbeat beside whatever the TV shows, not inside it
   const src = readFileSync(path.join(APP, "components", "TvScreen.tsx"), "utf8");
   assert.match(src, /<ScreenHeartbeat page=\{tv\.id\} \/>\s*\{RENDER\[tv\.shows\]\(tv\)\}/);
   // The content components a TV can show carry no heartbeat of their own.
-  for (const rel of ["reception/ReceptionBoard.tsx", "exit/ExitScreen.tsx", "exit/WorkshopHero.tsx"]) {
+  for (const rel of ["reception/ReceptionBoard.tsx", "exit/ExitScreen.tsx", "exit/WorkshopHero.tsx", "exit/BirthdayHero.tsx"]) {
     const code = appSources().find(([r]) => r === rel)[1];
     assert.doesNotMatch(code, /useScreenHeartbeat|ScreenHeartbeat/, `${rel} must not beat: TvScreen does`);
   }

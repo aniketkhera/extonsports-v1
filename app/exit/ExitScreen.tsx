@@ -9,6 +9,7 @@ import { STARTER_PACK_URL } from "../../lib/booking";
 import { WORKSHOP } from "../../lib/fitness-workshop";
 import { makeTicker, useTick } from "../components/ticker";
 import WorkshopHero from "./WorkshopHero";
+import BirthdayHero, { BIRTHDAY } from "./BirthdayHero";
 import s from "./exit.module.css";
 import w from "./workshop.module.css";
 
@@ -154,6 +155,14 @@ export default function ExitScreen() {
   useReloadOnDeploy();
   const now = useTick(workshopTicker);
   const withWorkshop = now > 0 && now < Date.parse(WORKSHOP.endsAt);
+  // One evening only (2026-10-21, 3pm to midnight): see BirthdayHero.
+  const withBirthday = now > 0 && now >= Date.parse(BIRTHDAY.startsAt) && now < Date.parse(BIRTHDAY.endsAt);
+  /* Each panel 5 s. Two panels swap on a 10 s clock, three on a 15 s one; the
+     classes say which slot a panel holds (workshop.module.css). */
+  const panels = 1 + (withWorkshop ? 1 : 0) + (withBirthday ? 1 : 0);
+  const slot = (i: number): string =>
+    panels === 2 ? [w.slideA, w.slideB][i] : panels === 3 ? [w.slide3a, w.slide3b, w.slide3c][i] : "";
+  const birthdaySlot = withWorkshop ? 2 : 1;
   /* NO HEARTBEAT IN HERE, on purpose (2026-10-20). The freeze watchdog's beat is
      sent ONCE per page by whoever renders this, named by the ADDRESS: TvScreen.tsx
      as "outside" on /outside (the TV's own address), and app/exit/page.tsx as
@@ -186,7 +195,7 @@ export default function ExitScreen() {
         {/* One cell for both panels while the workshop is on (workshop.module.css
             swaps them every 5 s); otherwise the Starter Pack alone, as before. */}
         <div className={w.stack}>
-        <main className={`${s.hero} ${withWorkshop ? w.slideA : ""}`}>
+        <main className={`${s.hero} ${slot(0)}`}>
           <section className={s.copy}>
             <h1 className={s.title}>
               <span className={`${s.kicker} ${s.rise}`} style={at(0.1)}>Squash</span>
@@ -259,7 +268,8 @@ export default function ExitScreen() {
             </a>
           </div>
         </main>
-        {withWorkshop && <WorkshopHero className={w.slideB} />}
+        {withWorkshop && <WorkshopHero className={slot(1)} />}
+        {withBirthday && <BirthdayHero className={slot(birthdaySlot)} />}
         </div>
 
         {/* The version stamp (2026-10-20): keyed screens or ?diag only, in the

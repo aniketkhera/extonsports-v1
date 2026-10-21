@@ -42,10 +42,39 @@
   52%, 96% { opacity: 1; }
   100% { opacity: 0; }
 }
+/* Three panels (2026-10-21, the evening's birthday greeting joins them): a 15 s clock,
+   5 s each, the same 0.4 s cross-fade (2.67% of 15 s) at each change. */
+.slide3a {
+  animation: slide-3a 15s linear infinite both;
+}
+.slide3b {
+  opacity: 0;
+  animation: slide-3b 15s linear infinite both;
+}
+.slide3c {
+  opacity: 0;
+  animation: slide-3c 15s linear infinite both;
+}
+@keyframes slide-3a {
+  0%, 31.33% { opacity: 1; }
+  34%, 97.33% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes slide-3b {
+  0%, 31.33% { opacity: 0; }
+  34%, 64.67% { opacity: 1; }
+  67.33%, 100% { opacity: 0; }
+}
+@keyframes slide-3c {
+  0%, 64.67% { opacity: 0; }
+  67.33%, 97.33% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 /* Reduced motion: no swapping. The Starter Pack stays, as it was before this. */
 @media (prefers-reduced-motion: reduce) {
-  .slideA { animation: none; opacity: 1; }
-  .slideB { display: none; }
+  .slideA, .slide3a { animation: none; opacity: 1; }
+  .slideB, .slide3b, .slide3c { display: none; }
 }
 
 /* ── THE WORKSHOP ──────────────────────────────────────────────────────────── */
@@ -86,6 +115,17 @@
 .time {
   font-size: calc(2.4 * var(--vw));
   color: #ffffff;
+}
+/* FREE, as a filled chip: the one word that most changes whether someone comes. */
+.free {
+  align-self: center;
+  font-size: calc(2.3 * var(--vw));
+  letter-spacing: 0.12em;
+  color: #0b1623;
+  background: #79ea92;
+  padding: calc(0.5 * var(--vh)) calc(0.9 * var(--vw));
+  border-radius: calc(0.4 * var(--vw));
+  line-height: 1;
 }
 
 /* The organisers' marks, on white: they were drawn for a light background. */
