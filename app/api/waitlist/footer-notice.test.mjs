@@ -78,7 +78,10 @@ function matches(row, col, spec) {
   throw new Error(`fake PostgREST: unsupported filter ${col}=${spec}`);
 }
 
-function fakeBackend({ subscribers = [], welcome = WELCOME, fail = () => false } = {}) {
+/** `delayMs` holds every call that long on a real timer, so two requests can interleave
+ *  the way two visitors' requests do; `onCall` sees each PostgREST call first (a test
+ *  uses it to move a fake clock, as a slow lookup would). */
+function fakeBackend({ subscribers = [], welcome = WELCOME, fail = () => false, delayMs = 0, onCall = () => {} } = {}) {
   let n = 0;
   const rows = subscribers.map((r) => ({
     id: `id-${++n}`, unsubscribe_token: `tok-${n}`, unsubscribed_at: null, tags: [], ...r,
@@ -87,6 +90,7 @@ function fakeBackend({ subscribers = [], welcome = WELCOME, fail = () => false }
   const emails = []; // every Resend send, as the API received it
   async function handle(url, init) {
     const method = (init.method || "GET").toUpperCase();
+    if (delayMs) await new Promise((r) => setTimeout(r, delayMs));
     if (url.origin === "https://api.resend.com") {
       assert.equal(`${method} ${url.pathname}`, "POST /emails", "only single sends are expected");
       const body = JSON.parse(init.body);
@@ -99,6 +103,7 @@ function fakeBackend({ subscribers = [], welcome = WELCOME, fail = () => false }
     const q = Object.fromEntries(url.searchParams);
     const call = { method, table, q, body: init.body ? JSON.parse(init.body) : undefined };
     db.push(call);
+    onCall(call);
     if (fail(call)) return new Response('{"message":"fake PostgREST down"}', { status: 503 });
     if (table === "welcome_emails" && method === "GET") return Response.json(welcome ? [welcome] : []);
     assert.equal(table, "subscribers", `unexpected table ${table}`);
@@ -243,7 +248,9 @@ test("a NEW address: the package does exactly what it did; the staff get the new
   assert.equal(n.subject, "New signup: priya.k@gmail.com");
   const w = words(n.html);
   for (const s of [
-    "Joined from the mailing-list form on extonsports.com, and our welcome email has gone out.",
+    // Not "has gone out": the package sends the welcome and swallows a failure, so all the
+    // wrapper can know is that it is switched on (review, 2026-10-21).
+    "Joined from the mailing-list form on extonsports.com. Our welcome email goes out automatically to new signups.",
     "Name Priya K",
     "When Wed, Oct 21, 2026 · 4:18 PM ET",
     "Near West Chester, PA (approximate)",
@@ -346,6 +353,21 @@ test("welcome switched off (the row, or the site switch): no welcome, and the no
   }
 });
 
+test("the package's welcome send fails: the notice does not say it went out", async () => {
+  // Review, 2026-10-21 (probe C): Resend refused the welcome, mailer-admin logged that and
+  // answered 200 as always, and the notice said "our welcome email has gone out". The
+  // package keeps the outcome to itself, so the footer's sentence states the setting only.
+  const fail = (c) => !!c.email && !isNotify(c.email);
+  const t = await twin({ fail }, () => post(SIGNUP));
+  assertSamePublicBehaviour(t, "welcome refused");
+  assert.equal(welcomes(t.after).length, 0, "no welcome reached anyone");
+  const n = notices(t.after)[0];
+  for (const s of [words(n.html), n.text]) {
+    assert.doesNotMatch(s, /has gone out/);
+    assert.ok(s.includes("Joined from the mailing-list form on extonsports.com. Our welcome email goes out automatically to new signups."), s);
+  }
+});
+
 test("the welcome row cannot be read: the notice makes no claim about the welcome", async () => {
   const fail = (c) => c.table === "welcome_emails";
   const t = await twin({ fail }, () => post({ email: "new@example.com" }));
@@ -389,19 +411,83 @@ test("malformed: not JSON, no address, a bad address → the package's own 400, 
   }
 });
 
-test("per IP: the package's 5 a minute still holds; the 6th is its own 429 and the wrapper looks nothing up", async () => {
+test("per IP: the package's 5 a minute still holds; the 6th is its own 429, and no notice for it", async () => {
+  // The wrapper has no limiter of its own (review, 2026-10-21; see the next test), so it
+  // may look the 6th up, but the package's 429 is what decides: no 200, no notice.
   const be = fakeBackend();
   backend = be;
   const deferred = [];
   const { POST } = F.createFooterSubscribe(CFG, { defer: (w) => deferred.push(w), now: () => AT, log: () => {} });
   const ip = "203.0.113.77";
   for (let i = 0; i < 5; i++) assert.equal((await POST(post({ email: `p${i}@example.com` }, { ip }))).status, 200, `request ${i + 1}`);
-  const before = be.db.length;
   const sixth = await POST(post({ email: "p6@example.com" }, { ip }));
   assert.equal(sixth.status, 429);
-  assert.equal(be.db.length, before, "no lookup for a request the package refuses");
   for (const w of deferred.splice(0)) await w();
   assert.equal(notices(be).length, 5);
+  assert.ok(!be.rows.some((r) => r.email === "p6@example.com"));
+  assert.ok(!notices(be).some((n) => n.subject.includes("p6@")));
+  backend = null;
+});
+
+test("a burst from one IP across the package's window: every address it signs up gets a notice", async () => {
+  // Review, 2026-10-21 (probe B): the wrapper kept its own 5-a-minute count beside the
+  // package's. The package counts a request only after the wrapper's lookup, so the two
+  // windows started apart, and request 11 below was signed up and welcomed by the package
+  // while the wrapper's own count had already refused to look it up: no notice. With one
+  // limiter (the package's) there is nothing to drift.
+  const realNow = Date.now;
+  let clock = 5_000_000;
+  let latency = 100; // each "before" lookup takes 100 ms of the fake clock
+  Date.now = () => clock;
+  try {
+    const be = fakeBackend({ onCall: (c) => { if (/^ilike\./.test(c.q?.email || "")) clock += latency; } });
+    backend = be;
+    const deferred = [];
+    const { POST } = F.createFooterSubscribe(CFG, { defer: (w) => deferred.push(w), now: () => AT, log: () => {} });
+    const ip = "203.0.113.91";
+    const statuses = [];
+    const send = async (email) => statuses.push((await POST(post({ email }, { ip }))).status);
+    for (let i = 1; i <= 5; i++) await send(`b${i}@example.com`);
+    latency = 0;
+    clock = 5_000_000 + 60_050; // a minute after the first request, not yet a minute after the package counted it
+    await send("nope");          // the package's 429 (its minute is still full); no lookup
+    clock += 200;                // now the package's minute has run out too
+    for (let i = 7; i <= 11; i++) await send(`b${i}@example.com`);
+    for (const w of deferred.splice(0)) await w();
+    assert.deepEqual(statuses, [200, 200, 200, 200, 200, 429, 200, 200, 200, 200, 200]);
+    const signedUp = be.rows.map((r) => r.email).sort();
+    const noticed = notices(be).map((n) => n.subject.replace("New signup: ", "")).sort();
+    assert.equal(signedUp.length, 10);
+    assert.deepEqual(noticed, signedUp, "one notice for every address the package signed up");
+  } finally {
+    Date.now = realNow;
+    backend = null;
+  }
+});
+
+/* ── one person, one notice ──────────────────────────────────────────────── */
+
+test("two requests racing for one new address: one row, one welcome, and ONE notice", async () => {
+  // Review, 2026-10-21 (probe A): both requests saw the address absent before and present
+  // after, so the staff got two notices for one person. finish() now claims the row's id
+  // before sending, so on one server instance the second finds it taken. (Two instances
+  // can still each send one; footer-notice.ts says why that is left.)
+  const be = fakeBackend({ delayMs: 15 });
+  backend = be;
+  const deferred = [];
+  const { POST } = F.createFooterSubscribe(CFG, { defer: (w) => deferred.push(w), now: () => AT, log: () => {} });
+  const res = await Promise.all([POST(post(SIGNUP)), POST(post(SIGNUP))]);
+  assert.deepEqual(res.map((r) => r.status), [200, 200]);
+  assert.equal(deferred.length, 2, "both looked new before the package ran");
+  await Promise.all(deferred.splice(0).map((w) => w()));
+  assert.equal(be.rows.length, 1);
+  assert.equal(welcomes(be).length, 1, "the package's unique key still lets one welcome through");
+  assert.equal(notices(be).length, 1, "one notice for one person");
+
+  // The claim is per subscriber row: the next new address gets its own notice.
+  await POST(post({ email: "next@example.com" }));
+  await Promise.all(deferred.splice(0).map((w) => w()));
+  assert.deepEqual(notices(be).map((n) => n.subject), ["New signup: priya.k@gmail.com", "New signup: next@example.com"]);
   backend = null;
 });
 

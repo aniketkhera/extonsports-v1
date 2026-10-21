@@ -13,16 +13,20 @@
        subscribe route and only swaps its plain notice for this one.
 
    Honest about the welcome: the sentence says the welcome email "has gone out" only when
-   the route knows it was sent (or, for the footer, that it is switched on and the package
-   sent it). Off says off, failed says it did not go out, and not knowing says nothing.
+   the route knows it was sent. Off says off, failed says it did not go out, and not knowing
+   says nothing. The footer is the in-between case ('on'): its welcome is sent inside
+   mailer-admin, which logs a failed send and still answers success, so the footer can know
+   the welcome is switched on but never whether this one went. Its sentence states the
+   setting and nothing more (review, 2026-10-21: a refused welcome was announced as sent).
 
    Pure: no imports that run. The Resend send and the database count are handed in
    (lib/signup-notice-send.ts wires the real ones), so node:test can drive all of it. */
 
 export type NoticeSource = 'popup' | 'footer'
 
-/** What happened to the new subscriber's welcome email, as far as the route knows. */
-export type WelcomeStatus = 'sent' | 'off' | 'failed' | 'unknown'
+/** What happened to the new subscriber's welcome email, as far as the route knows.
+ *  'on' = switched on, and sent by code whose outcome the route cannot see (the footer). */
+export type WelcomeStatus = 'sent' | 'on' | 'off' | 'failed' | 'unknown'
 
 export type NoticeGeo = { country: string | null; region: string | null; city: string | null }
 
@@ -94,6 +98,9 @@ const WHERE: Record<NoticeSource, { via: string; html: string; text: string }> =
   footer: { via: 'Mailing-list form', html: 'the <b>mailing-list form</b>', text: 'the mailing-list form' },
 }
 
+/** 'on': the setting, in the present tense, and no claim about this person's email. */
+const WELCOME_ON = 'Our welcome email goes out automatically to new signups.'
+
 /** The one sentence under the address, in HTML and in plain text. */
 function sentence(brand: NoticeBrand, source: NoticeSource, welcome: WelcomeStatus): { html: string; text: string } {
   const host = esc(brand.host)
@@ -103,12 +110,14 @@ function sentence(brand: NoticeBrand, source: NoticeSource, welcome: WelcomeStat
   const tail = source === 'popup'
     ? {
         sent: '. The mailing-list box was ticked, and our welcome email has gone out.',
+        on: `. The mailing-list box was ticked. ${WELCOME_ON}`,
         off: '. The mailing-list box was ticked. Our welcome email is switched off, so none was sent.',
         failed: '. The mailing-list box was ticked, but our welcome email did not go out.',
         unknown: '. The mailing-list box was ticked.',
       }[welcome]
     : {
         sent: ', and our welcome email has gone out.',
+        on: `. ${WELCOME_ON}`,
         off: '. Our welcome email is switched off, so none was sent.',
         failed: ', but our welcome email did not go out.',
         unknown: '.',
@@ -178,6 +187,19 @@ export function acquisitionDetail(a: NoticeAcquisition | null | undefined, ownHo
 function breakableAddress(email: string): string {
   const at = email.lastIndexOf('@')
   return at > 0 ? `${esc(email.slice(0, at + 1))}<wbr>${esc(email.slice(at + 1))}` : esc(email)
+}
+
+/** The address as a mailto URL, percent-encoded (RFC 6068). The address check upstream
+ *  (mailer-admin's /^[^\s@]+@[^\s@]+\.[^\s@]+$/) lets "x?cc=someone@evil.example" through,
+ *  and in a mailto `?` starts headers, `&` separates them, `#` ends the address, `%`
+ *  escapes and `,` adds a recipient; a bare `mailto:${email}` opened a reply to "x" with
+ *  a stranger in cc (review, 2026-10-21). Each side of the last "@" is encoded; "+" is put
+ *  back because RFC 6068 allows it unencoded and sub-addresses (priya+exton@) are common.
+ *  The result still goes through esc() for the attribute. */
+export function mailtoHref(email: string): string {
+  const enc = (s: string) => encodeURIComponent(s).replace(/%2B/gi, '+')
+  const at = email.lastIndexOf('@')
+  return `mailto:${at > 0 ? `${enc(email.slice(0, at))}@${enc(email.slice(at + 1))}` : enc(email)}`
 }
 
 function people(n: number): string {
@@ -260,7 +282,7 @@ export function renderSignupNotice(brand: NoticeBrand, n: NoticeInput): Rendered
 
         <tr><td style="padding:26px 28px 6px;font-family:${FONT};">
           <span style="display:inline-block;font-size:11px;line-height:14px;letter-spacing:1.6px;font-weight:700;color:${PILL.text};background:${PILL.bg};border:1px solid ${PILL.border};border-radius:999px;padding:4px 10px;">NEW SIGNUP</span>
-          <div style="font-size:24px;line-height:30px;font-weight:800;margin-top:12px;overflow-wrap:anywhere;word-break:break-word;"><a href="mailto:${esc(email)}" style="color:${t.text};text-decoration:none;">${breakableAddress(email)}</a></div>
+          <div style="font-size:24px;line-height:30px;font-weight:800;margin-top:12px;overflow-wrap:anywhere;word-break:break-word;"><a href="${esc(mailtoHref(email))}" style="color:${t.text};text-decoration:none;">${breakableAddress(email)}</a></div>
           <div style="font-size:15px;line-height:22px;color:${BODY_GREY};margin-top:6px;">${said.html.replace(/<b>/g, `<b style="color:${t.text};">`)}</div>
         </td></tr>
 

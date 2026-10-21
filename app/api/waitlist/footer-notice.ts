@@ -19,7 +19,8 @@
         the answer;
      3. returns the package's own Response object, untouched, to the browser;
      4. after the response (route.ts runs this in after()), if the address was NOT on the
-        list before and IS on it now, sends the new notice.
+        list before and IS on it now, and this server has not already sent a notice for
+        that subscriber row, sends the new notice.
 
    WHY "absent before, present after" and not something cleverer: the package does not
    say whether it inserted (it answers { success: true } for a new address, a resubscribe,
@@ -27,15 +28,37 @@
    intercepting its fetch or its Resend client, which would break silently on any package
    change. The two lookups are plain reads, and doubt goes one way: a lookup that fails,
    or an address already there in any state, means no notice. So a resubscribe, an
-   existing address or a write that failed never produces one. The one imprecision is two
-   requests for the same never-seen address landing within milliseconds: both see it
-   absent before and present after, and the staff get two notices for one person. The
-   subscriber still gets one welcome (the package's unique key lets one insert win).
+   existing address or a write that failed never produces one.
 
-   What it costs: one extra read (the "before" lookup) ahead of the package, and it is
-   skipped for every request the package would refuse anyway (rate-limited, not JSON, no
-   valid address, a filled honeypot) or when there is nobody to notify. The "after"
+   ONE NOTICE PER PERSON (review, 2026-10-21). Two requests for the same never-seen
+   address landing together both see it absent before and present after; the package's
+   unique key lets one insert (and one welcome) win, but both would send a notice. So the
+   "after" lookup reads the row's id, and finish() claims that id, synchronously, before
+   it sends; the second request finds it claimed and stays quiet. Claims live in this
+   module's memory for 10 minutes. That covers requests on the same server instance, which
+   is where a double-click or a second tab lands while it is warm; two requests served by
+   two different instances can still give two notices. Closing that would need a write
+   (a "noticed" column, or a lock row), which this wrapper deliberately never makes: every
+   write stays the package's.
+
+   NO LIMITER OF ITS OWN (review, 2026-10-21). The wrapper used to keep its own
+   5-a-minute count per IP beside the package's, to skip the "before" lookup for requests
+   the package would throttle. The two windows could not agree: the package counts a
+   request only after the wrapper's lookup, so its window starts later, and a burst from
+   one IP (club Wi-Fi) could leave a request that the package accepted, inserted and
+   welcomed but that the wrapper had refused to look up, so no notice. Now the package's
+   limiter is the only one, and its answer decides: no 200, no notice.
+
+   What it costs: one extra read (the "before" lookup) ahead of the package. It is skipped
+   for anything the wrapper can see the package will refuse (not JSON, no valid address,
+   a filled honeypot) or when there is nobody to notify, but no longer for a request the
+   package will throttle: such a request now costs one read on the subscribers table
+   (property-filtered, at most 100 rows back) before the package's 429. The "after"
    lookup, the welcome check, the count and the send all run after the response.
+
+   What it cannot know: whether the package's welcome send worked. The package logs a
+   failure and answers success either way, so the notice says only that the welcome is
+   switched on ('on' in lib/signup-notice.ts), never that this one went out.
 
    Tests: footer-notice.test.mjs runs the real package route against a fake PostgREST
    and Resend and checks the browser, the rows and the welcome are identical with and
@@ -45,7 +68,7 @@ import { createSubscribeRoute } from 'mailer-admin/api/subscribe'
 import { createSupabase } from 'mailer-admin/lib/supabase'
 import type { MailerConfig } from 'mailer-admin/config'
 import type { NextRequest } from 'next/server'
-import { addressOnList, clientIp, createRateLimiter, geoFrom } from '../mailing-list-optin/optin-core'
+import { addressOnList, geoFrom } from '../mailing-list-optin/optin-core'
 import { sendSignupNotice, type NoticeAcquisition, type NoticeDeps, type NoticeGeo, type WelcomeStatus } from '../../../lib/signup-notice'
 import { noticeDepsFor } from '../../../lib/signup-notice-send'
 
@@ -53,11 +76,9 @@ import { noticeDepsFor } from '../../../lib/signup-notice-send'
  *  skips its lookup for exactly the requests the package will refuse. */
 const PACKAGE_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-/** mailer-admin's limit for the route: 5 a minute per IP (its rateLimit call). The
- *  wrapper keeps its own count of the same requests so a burst the package will turn away
- *  cannot make it read the database either. */
-const PACKAGE_LIMIT = 5
-const PACKAGE_WINDOW_MS = 60_000
+/** How long a sent notice's subscriber id stays claimed. Ten minutes is far longer than
+ *  two racing requests take, and short enough that the map stays small. */
+const CLAIM_MS = 10 * 60_000
 
 export type FooterOptions = {
   /** Run work after the response; route.ts passes next/server's after(). */
@@ -84,7 +105,19 @@ export function createFooterSubscribe(cfg: MailerConfig, opts: FooterOptions) {
   const log = opts.log ?? ((m: string) => console.error(m))
   const notice = opts.notice ?? noticeDepsFor(cfg, log)
   const now = opts.now ?? (() => new Date())
-  const allow = createRateLimiter(PACKAGE_LIMIT, PACKAGE_WINDOW_MS)
+
+  /** Subscriber ids this instance has sent (or is sending) a notice for, with when each
+   *  claim lapses. One map per server: route.ts builds the wrapper once, at module load. */
+  const claimed = new Map<string, number>()
+  /** True the first time `key` is seen within CLAIM_MS. Synchronous on purpose: no await
+   *  between the check and the set, so two finish() calls cannot both pass. */
+  function claim(key: string): boolean {
+    const t = Date.now()
+    for (const [k, until] of claimed) if (until <= t) claimed.delete(k)
+    if (claimed.has(key)) return false
+    claimed.set(key, t + CLAIM_MS)
+    return true
+  }
 
   const hasRecipients = () => {
     const to = cfg.notifyEmail
@@ -94,9 +127,6 @@ export function createFooterSubscribe(cfg: MailerConfig, opts: FooterOptions) {
   /** Decide, BEFORE the package runs, whether this request could be a new signup worth a
    *  notice. Never throws: any doubt is null, and null only means "no notice". */
   async function plan(req: NextRequest): Promise<Plan | null> {
-    // Counted first, like the package's own limiter, so the two agree on which request
-    // is the sixth.
-    if (!allow(clientIp(req.headers))) return null
     if (!hasRecipients() || !supa.configured()) return null
 
     let body: unknown
@@ -134,13 +164,14 @@ export function createFooterSubscribe(cfg: MailerConfig, opts: FooterOptions) {
     }
   }
 
-  /** After the response: notice only if the address is on the list now, active. */
+  /** After the response: notice only if the address is on the list now, active, and its
+   *  row has not had a notice from this instance already. */
   async function finish(p: Plan): Promise<void> {
-    let rows: { unsubscribed_at: string | null }[]
+    let rows: { id: string | null; unsubscribed_at: string | null }[]
     try {
       // The package stores the address exactly as it was read above (trimmed, lower-cased).
-      rows = await supa.selectRows<{ unsubscribed_at: string | null }>('subscribers', {
-        select: 'unsubscribed_at',
+      rows = await supa.selectRows<{ id: string | null; unsubscribed_at: string | null }>('subscribers', {
+        select: 'id,unsubscribed_at',
         filters: { property: `eq.${cfg.property}`, email: `eq.${p.email}` },
         limit: 1,
       })
@@ -149,6 +180,8 @@ export function createFooterSubscribe(cfg: MailerConfig, opts: FooterOptions) {
       return
     }
     if (rows.length === 0 || rows[0].unsubscribed_at) return
+    // By the row's id (it always has one); by the address if it somehow does not.
+    if (!claim(rows[0].id ? `id:${rows[0].id}` : `email:${p.email}`)) return
 
     await sendSignupNotice(
       cfg.notifyEmail,
@@ -157,10 +190,11 @@ export function createFooterSubscribe(cfg: MailerConfig, opts: FooterOptions) {
     )
   }
 
-  /** What the package did about the welcome, as far as can be known from outside it: it
-   *  sends one to every new address when it is switched on (cfg.welcomeEmails and an
-   *  enabled, non-blank welcome_emails row), so on means it went. A send that failed
-   *  inside the package is only in its log, so this cannot see it. Unreadable: no claim. */
+  /** What can be known from outside the package about the welcome: whether it is switched
+   *  on (cfg.welcomeEmails and an enabled, non-blank welcome_emails row), not whether the
+   *  package's send worked, since a failure is only in its log. So on is 'on' (the notice
+   *  states the setting), never 'sent' (the notice would say it went out; review,
+   *  2026-10-21: a welcome Resend refused was announced as sent). Unreadable: no claim. */
   async function welcomeStatus(): Promise<WelcomeStatus> {
     if (cfg.welcomeEmails === false) return 'off'
     try {
@@ -168,7 +202,7 @@ export function createFooterSubscribe(cfg: MailerConfig, opts: FooterOptions) {
         'welcome_emails',
         { select: 'subject,body_md,enabled', filters: { property: `eq.${cfg.property}` }, limit: 1 },
       )
-      return w && w.enabled && w.subject?.trim() && w.body_md?.trim() ? 'sent' : 'off'
+      return w && w.enabled && w.subject?.trim() && w.body_md?.trim() ? 'on' : 'off'
     } catch (e) {
       log(`[waitlist] welcome setting unreadable, notice makes no claim: ${errText(e)}`)
       return 'unknown'
@@ -179,7 +213,8 @@ export function createFooterSubscribe(cfg: MailerConfig, opts: FooterOptions) {
     const p = await plan(req)
     const res = await inner.POST(req)
     // The package answers 200 for every signup it accepted (new, existing or resubscribed)
-    // and for a write that failed; finish() tells those apart by looking.
+    // and for a write that failed; finish() tells those apart by looking. Its 429 (the
+    // only rate limit now) and its 400s never get this far.
     if (p && res.status === 200) opts.defer(() => finish(p))
     return res
   }
