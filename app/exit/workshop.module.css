@@ -75,6 +75,8 @@
 @media (prefers-reduced-motion: reduce) {
   .slideA, .slide3a { animation: none; opacity: 1; }
   .slideB, .slide3b, .slide3c { display: none; }
+  .free, .logos { animation: none; }
+  .note { display: none; }
 }
 
 /* ── THE WORKSHOP ──────────────────────────────────────────────────────────── */
@@ -116,8 +118,10 @@
   font-size: calc(2.4 * var(--vw));
   color: #ffffff;
 }
-/* FREE, as a filled chip: the one word that most changes whether someone comes. */
+/* FREE, as a filled chip: the one word that most changes whether someone comes.
+   It pulses, gently, so the eye finds it first. */
 .free {
+  animation: free-pulse 2.6s ease-in-out infinite;
   align-self: center;
   font-size: calc(2.3 * var(--vw));
   letter-spacing: 0.12em;
@@ -128,8 +132,50 @@
   line-height: 1;
 }
 
-/* The organisers' marks, on white: they were drawn for a light background. */
+/* A quick pulse, then a rest: something that never stops stops being noticed
+   (exit.module.css, the phone icon's lesson). */
+@keyframes free-pulse {
+  0%, 36%, 100% { transform: scale(1); }
+  12% { transform: scale(1.12); }
+  24% { transform: scale(0.98); }
+}
+
+/* Music notes drifting up behind the copy: a Bollywood workout, after all. The
+   copy sits above them (.above). */
+.notes {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.note {
+  position: absolute;
+  bottom: calc(2 * var(--vh));
+  opacity: 0;
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  line-height: 1;
+  animation-name: note-rise;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+  animation-fill-mode: both;
+}
+/* In em of the note's own font (~2.2vw, about 3.9vh): -16em is ~62vh, up the panel.
+   No var() inside keyframes (exit.module.css). */
+@keyframes note-rise {
+  0% { opacity: 0; transform: translate(0, 0) rotate(-8deg); }
+  12% { opacity: 0.55; }
+  50% { transform: translate(0.5em, -8em) rotate(8deg); }
+  80% { opacity: 0.4; }
+  100% { opacity: 0; transform: translate(-0.3em, -16em) rotate(-6deg); }
+}
+.above {
+  position: relative;
+}
+
+/* The organisers' marks, on white: they were drawn for a light background. It
+   floats a little. */
 .logos {
+  animation: tile-float 5s ease-in-out infinite;
   justify-self: center;
   width: calc(19 * var(--vw));
   background: #ffffff;
@@ -159,4 +205,10 @@
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: #1a2a3a;
+}
+
+/* 2.5% of the tile's own height, about 1.4vh. */
+@keyframes tile-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2.5%); }
 }
