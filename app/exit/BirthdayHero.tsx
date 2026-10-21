@@ -16,8 +16,10 @@ import b from "./birthday.module.css";
 
 export const BIRTHDAY = {
   name: "Ayansh Ajmera",
-  /** 3:00 PM EDT, Wed 21 Oct 2026. */
-  startsAt: "2026-10-21T19:00:00Z",
+  /** Brought forward from 3pm (Aniket, 13:34 on the day: "put up the birthday screen now
+   *  instead of 3pm. remove it at the scheduled time"). 1:30 PM EDT, already past, so it
+   *  shows from the moment this deploys. */
+  startsAt: "2026-10-21T17:30:00Z",
   /** Midnight EDT, the start of Thu 22 Oct 2026. */
   endsAt: "2026-10-22T04:00:00Z",
 } as const;
