@@ -6,7 +6,11 @@ import { ScreenHeader, BookingBand, BAND_GAP, BOOK_BAND, BAND_STAMP } from "../c
 import ScreenStamp from "../components/ScreenStamp";
 import { BG, INK, BOX, ORANGE } from "../components/tv-palette";
 import { STARTER_PACK_URL } from "../../lib/booking";
+import { WORKSHOP } from "../../lib/fitness-workshop";
+import { makeTicker, useTick } from "../components/ticker";
+import WorkshopHero from "./WorkshopHero";
 import s from "./exit.module.css";
+import w from "./workshop.module.css";
 
 /* The exit-door screen — the Squash Starter Pack (2026-10-20).
    ──────────────────────────────────────────────────────────────────────────
@@ -61,6 +65,15 @@ const BUY_URL = STARTER_PACK_URL;
    CTA column comes in once and stays, see .riseOnce: the code at .riseOnce's own
    1.2 s, the line under it and the address at at(1.9) and at(2.15).) */
 const at = (seconds: number): CSSProperties => ({ animationDelay: `${seconds}s` });
+
+/* The POWER x SeRa Fitness workshop shares this wall until it ends (2026-10-21,
+   Aniket: "push it as a second screen on the 'outside' display. Rotate between the
+   Starter Pack and this, 5 seconds at each screen"). Decided on the SCREEN's clock,
+   not at build time: the set stays up for weeks between reloads, and the workshop
+   panel has to come down by itself at 8pm on the day. The ticker's server snapshot
+   is 0, so the server and the first client render both show the Starter Pack alone
+   and nothing mismatches; the workshop joins a moment after the page starts. */
+const workshopTicker = makeTicker(30_000);
 
 /* The court, drawn as the rally's camera sees it: on the centre line 11 m from the
    front wall (a gallery seat just behind the back wall), eye 2.6 m up, looking
@@ -139,6 +152,8 @@ function Court() {
 
 export default function ExitScreen() {
   useReloadOnDeploy();
+  const now = useTick(workshopTicker);
+  const withWorkshop = now > 0 && now < Date.parse(WORKSHOP.endsAt);
   /* NO HEARTBEAT IN HERE, on purpose (2026-10-20). The freeze watchdog's beat is
      sent ONCE per page by whoever renders this, named by the ADDRESS: TvScreen.tsx
      as "outside" on /outside (the TV's own address), and app/exit/page.tsx as
@@ -168,7 +183,10 @@ export default function ExitScreen() {
       >
         <ScreenHeader />
 
-        <main className={s.hero}>
+        {/* One cell for both panels while the workshop is on (workshop.module.css
+            swaps them every 5 s); otherwise the Starter Pack alone, as before. */}
+        <div className={w.stack}>
+        <main className={`${s.hero} ${withWorkshop ? w.slideA : ""}`}>
           <section className={s.copy}>
             <h1 className={s.title}>
               <span className={`${s.kicker} ${s.rise}`} style={at(0.1)}>Squash</span>
@@ -241,6 +259,8 @@ export default function ExitScreen() {
             </a>
           </div>
         </main>
+        {withWorkshop && <WorkshopHero className={w.slideB} />}
+        </div>
 
         {/* The version stamp (2026-10-20): keyed screens or ?diag only, in the
             band's corner under the number, as on /reception — see BAND_STAMP. */}
