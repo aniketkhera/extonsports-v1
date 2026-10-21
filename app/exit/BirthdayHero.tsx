@@ -22,6 +22,17 @@ export const BIRTHDAY = {
   endsAt: "2026-10-22T04:00:00Z",
 } as const;
 
+/* Balloons rising up both sides, clear of the name (it spans about 18% to 81%) (2026-10-21, Aniket: "and also
+   to the happy birthday page"). Hand-placed, like the confetti. */
+const BALLOONS: Array<{ left: number; delay: number; dur: number; hue: string; size: number }> = [
+  { left: 1.5, delay: 0.0, dur: 11.0, hue: "#f89b72", size: 1.0 },
+  { left: 6.5, delay: 4.2, dur: 12.5, hue: "#79ea92", size: 0.85 },
+  { left: 11.5, delay: 8.0, dur: 10.5, hue: "#ffbe97", size: 0.9 },
+  { left: 85, delay: 2.0, dur: 12.0, hue: "#79ea92", size: 0.9 },
+  { left: 90, delay: 6.1, dur: 10.8, hue: "#f89b72", size: 1.05 },
+  { left: 95, delay: 9.3, dur: 11.6, hue: "#ffffff", size: 0.8 },
+];
+
 /* A few pieces of confetti, placed by hand so the server and the browser agree (no
    Math.random in a render). Each falls on its own clock; transform and opacity only. */
 const CONFETTI: Array<{ left: number; delay: number; dur: number; hue: string; rot: number; w: number }> = [
@@ -42,6 +53,22 @@ const CONFETTI: Array<{ left: number; delay: number; dur: number; hue: string; r
 export default function BirthdayHero({ className }: { className?: string }) {
   return (
     <section className={`${b.hero} ${className ?? ""}`} aria-label={`Happy birthday, ${BIRTHDAY.name}`}>
+      <div className={b.balloons} aria-hidden>
+        {BALLOONS.map((bl, i) => (
+          <span
+            key={i}
+            className={b.balloon}
+            style={{
+              left: `${bl.left}%`,
+              width: `calc(${4.2 * bl.size} * var(--vw))`,
+              height: `calc(${5.2 * bl.size} * var(--vw))`,
+              ["--hue" as string]: bl.hue,
+              animationDelay: `${bl.delay}s`,
+              animationDuration: `${bl.dur}s`,
+            }}
+          />
+        ))}
+      </div>
       <div className={b.confetti} aria-hidden>
         {CONFETTI.map((c, i) => (
           <span
@@ -53,17 +80,24 @@ export default function BirthdayHero({ className }: { className?: string }) {
               width: `calc(${0.55 * c.w} * var(--vw))`,
               animationDelay: `${c.delay}s`,
               animationDuration: `${c.dur}s`,
-              ["--rot" as string]: `${c.rot}deg`,
+              rotate: `${c.rot}deg`,
             }}
           />
         ))}
       </div>
 
       <div className={b.card}>
-        <p className={b.happy}>
+        <p className={b.happy} aria-label="Happy Birthday">
           {/* eslint-disable-next-line @next/next/no-img-element -- a static SVG; next/image adds nothing here */}
           <img className={b.ball} src="/reception/cricket-ball.svg" alt="" />
-          Happy Birthday
+          {/* Letter by letter, each on its own delay: a wave that runs along the words. */}
+          <span className={b.wave} aria-hidden>
+            {"Happy Birthday".split("").map((ch, i) => (
+              <span key={i} className={ch === " " ? b.gap : b.letter} style={{ animationDelay: `${i * 0.08}s` }}>
+                {ch === " " ? "\u00a0" : ch}
+              </span>
+            ))}
+          </span>
           {/* eslint-disable-next-line @next/next/no-img-element -- a static SVG; next/image adds nothing here */}
           <img className={b.ball} src="/reception/cricket-ball.svg" alt="" />
         </p>

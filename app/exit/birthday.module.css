@@ -44,7 +44,25 @@
   to { transform: rotate(360deg); }
 }
 
+/* The letters of HAPPY BIRTHDAY hop in turn: a wave along the words. */
+.wave {
+  display: inline-flex;
+}
+.letter {
+  display: inline-block;
+  animation: hop 2.6s ease-in-out infinite;
+}
+.gap {
+  display: inline-block;
+  width: 0.35em;
+}
+@keyframes hop {
+  0%, 40%, 100% { transform: translateY(0); }
+  20% { transform: translateY(-0.18em); }
+}
+
 .name {
+  animation: breathe 3.2s ease-in-out infinite;
   margin: calc(1.6 * var(--vh)) 0 0;
   font-family: var(--font-cond), "Arial Narrow", sans-serif;
   font-weight: 700;
@@ -104,6 +122,53 @@
   margin-bottom: calc(4 * var(--vh));
 }
 
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.035); }
+}
+
+/* Balloons: an oval with a highlight and a string, rising the panel's height. */
+.balloons {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.balloon {
+  position: absolute;
+  bottom: calc(-16 * var(--vh));
+  border-radius: 50% 50% 48% 48% / 55% 55% 45% 45%;
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.75) 0 8%, rgba(255, 255, 255, 0) 22%), var(--hue);
+  opacity: 0.85;
+  animation-name: rise;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-fill-mode: both;
+}
+.balloon::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 1px;
+  height: calc(9 * var(--vh));
+  background: rgba(255, 255, 255, 0.45);
+}
+/* In % of the balloon's own size: the smallest is ~7.4vh tall, so -1700% clears
+   the top of the panel from 16vh below it; the sway is a fifth of its width. */
+@keyframes rise {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(20%, -425%); }
+  50% { transform: translate(-15%, -850%); }
+  75% { transform: translate(18%, -1275%); }
+  100% { transform: translate(0, -1700%); }
+}
+
+/* exit.module.css's rule holds here too: inside keyframes, lengths are % / em /
+   unitless only, never var(), so nothing is resolved again while it runs. Travel is
+   a % of the piece's OWN size (or em of its own font), and each piece's tilt is a
+   static `rotate`, not a keyframe value (2026-10-21). */
+
 /* Confetti: twelve pieces falling the panel's height, each on its own clock. */
 .confetti {
   position: absolute;
@@ -122,14 +187,15 @@
   animation-iteration-count: infinite;
   animation-fill-mode: both;
 }
+/* A piece is 1.6vh tall; 4800% of that is ~77vh, the panel's height. */
 @keyframes fall {
-  0% { opacity: 0; transform: translateY(0) rotate(var(--rot)); }
+  0% { opacity: 0; transform: translateY(0) rotate(0deg); }
   8% { opacity: 0.85; }
   85% { opacity: 0.85; }
-  100% { opacity: 0; transform: translateY(calc(76 * var(--vh))) rotate(calc(var(--rot) + 260deg)); }
+  100% { opacity: 0; transform: translateY(4800%) rotate(260deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ball, .piece { animation: none; }
-  .piece { display: none; }
+  .ball, .piece, .letter, .name, .balloon { animation: none; }
+  .piece, .balloon { display: none; }
 }

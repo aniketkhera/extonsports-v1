@@ -1,9 +1,13 @@
 // The POWER x SeRa Fitness "Health & Fitness Workshop", Fri 30 Oct 2026 (added 2026-10-21).
 //
 // One place for what the page at /fitnessworkshop and the exit-door TV slide both say. The words are
-// the organiser's flyer's; the price and the Zelle number are the organiser's own Google Form's,
-// which is the form this one replaces (Aniket, 2026-10-21: "the link to register, go there, and
-// create a form at our end - extonsports.com/fitnessworkshop").
+// the organiser's flyer's; the organiser's own Google Form is the form this one replaces (Aniket,
+// 2026-10-21: "the link to register, go there, and create a form at our end -
+// extonsports.com/fitnessworkshop").
+//
+// FREE since 2026-10-21, the day it went live (Aniket: "the dance workshop is now FREE, so
+// highlight that, remove the $10 charge"). It was $10 a person by Zelle to the organiser; the
+// page no longer asks for a payment or a Zelle number, and the platform no longer requires one.
 //
 // Sign-ups are filed by the platform (orangish-app /api/public/workshop-registration, slug
 // "fitnessworkshop"), which keeps its own copy of the closing time and refuses after it. The copy
@@ -28,8 +32,8 @@ export const WORKSHOP = {
     { k: "Fun", v: "Energetic sessions" },
     { k: "Community", v: "Meet and connect with amazing women" },
   ],
-  pricePerPerson: 10,
-  zelleTo: "(201) 925-2710",
+  free: true,
+  organiserPhone: "(201) 925-2710",
   organiser: "Seema Kizhakkey",
   power: { email: "papowerwomen@gmail.com", site: "power-women.org" },
   /** 6:00 PM EDT on the day. After this the page says sign-ups have closed. */

@@ -21,11 +21,11 @@ const API_BASE = (process.env.ORANGISH_API_BASE || "https://app.orangish.io").re
 
 // Every failure this relay can see on its own (a timeout, an answer that is not the
 // platform's JSON) is AMBIGUOUS: the platform may already have filed the sign-up.
-// Saying "not signed up" there invites a second sign-up and maybe a second Zelle
-// payment, so say we don't know instead (review, 2026-10-21). The platform's own
+// Saying "not signed up" there invites a second sign-up, so say we don't know
+// instead (review, 2026-10-21). The platform's own
 // refusals ("Please give a real email address") pass through as they are.
 const UNSURE =
-  "We couldn't confirm your sign-up. It may already have gone through, so please don't pay again. Call (484) 252-2523 before trying again.";
+  "We couldn't confirm your sign-up. It may already have gone through, so please call (484) 252-2523 before trying again.";
 
 export async function POST(req: Request) {
   let b: Record<string, unknown>;
@@ -42,7 +42,6 @@ export async function POST(req: Request) {
     email: pick("email"),
     phone: pick("phone"),
     participants: pick("participants"),
-    zelleRef: pick("zelleRef"),
     website: pick("website"),
   };
 

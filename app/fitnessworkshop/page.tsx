@@ -20,7 +20,7 @@ import { WORKSHOP, workshopOpen } from "@/lib/fitness-workshop";
 export const metadata: Metadata = {
   title: "Health & Fitness Workshop · Fri Oct 30",
   description:
-    "POWER and SeRa Fitness present a Bollywood-inspired Health & Fitness Workshop at Exton Sports Center, Friday October 30, 6–8 PM. $10 per person, light refreshments included.",
+    "POWER and SeRa Fitness present a Bollywood-inspired Health & Fitness Workshop at Exton Sports Center, Friday October 30, 6–8 PM. Free, with light refreshments.",
   alternates: { canonical: "/fitnessworkshop" },
   // Next replaces the layout's openGraph and twitter objects rather than merging them,
   // so the site's image and card type are repeated here (review, 2026-10-21).
@@ -48,8 +48,8 @@ export default function FitnessWorkshopPage() {
     { k: "When", v: `${WORKSHOP.day} · ${WORKSHOP.time}` },
     { k: "Where", v: `${WORKSHOP.where} (${WORKSHOP.landmark})` },
     { k: "Instructors", v: WORKSHOP.instructors.join(" · ") },
-    { k: "Cost", v: `$${WORKSHOP.pricePerPerson} per person, by Zelle to ${WORKSHOP.zelleTo}. Light refreshments included.` },
-    { k: "Organiser", v: `${WORKSHOP.organiser}, SeRa Fitness · ${WORKSHOP.zelleTo}` },
+    { k: "Cost", v: "Free. Light refreshments included." },
+    { k: "Organiser", v: `${WORKSHOP.organiser}, SeRa Fitness · ${WORKSHOP.organiserPhone}` },
   ];
 
   return (
@@ -85,6 +85,15 @@ export default function FitnessWorkshopPage() {
           <h1 className="text-cond text-white" style={{ fontSize: "clamp(2.6rem, 7vw, 4.8rem)" }}>
             Health &amp; Fitness <span className="text-[var(--color-ember)]">Workshop</span>
           </h1>
+          {/* FREE, made obvious (2026-10-21): it changes whether people come. */}
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <span className="inline-block bg-[var(--color-green)] text-[#0A1019] text-cond text-[1.5rem] leading-none tracking-[0.08em] px-3.5 py-2">
+              FREE
+            </span>
+            <span className="text-white/80 text-[1rem]">
+              {WORKSHOP.day} · {WORKSHOP.time} · light refreshments included
+            </span>
+          </div>
           <p className="mt-4 text-white/80 text-[1.05rem] leading-[1.6] max-w-[620px]">
             {WORKSHOP.tagline} {WORKSHOP.blurb}
           </p>
@@ -111,17 +120,10 @@ export default function FitnessWorkshopPage() {
             <h2 className="text-cond text-white text-[2rem] mb-2">Sign up</h2>
             {open ? (
               <>
-                <ol className="mb-6 space-y-1.5 text-white/75 text-[0.95rem] leading-[1.55]">
-                  <li>
-                    <span className="text-cond text-[var(--color-ember)] mr-2">1</span>
-                    Pay ${WORKSHOP.pricePerPerson} per person by Zelle to{" "}
-                    <strong className="text-white">{WORKSHOP.zelleTo}</strong>.
-                  </li>
-                  <li>
-                    <span className="text-cond text-[var(--color-ember)] mr-2">2</span>
-                    Fill in the form below with your Zelle confirmation number.
-                  </li>
-                </ol>
+                <p className="mb-6 text-white/75 text-[0.95rem] leading-[1.55]">
+                  It&rsquo;s <strong className="text-white">free</strong>. Sign up below so the organiser
+                  knows how many are coming.
+                </p>
                 <WorkshopForm />
               </>
             ) : (
@@ -129,14 +131,14 @@ export default function FitnessWorkshopPage() {
                 <div className="text-cond text-[1.5rem] text-white mb-1.5">Sign-ups have closed</div>
                 <p className="text-white/65 text-[0.92rem] leading-[1.6]">
                   The workshop has started. For anything about it, call the organiser, {WORKSHOP.organiser}, on{" "}
-                  {WORKSHOP.zelleTo}.
+                  {WORKSHOP.organiserPhone}.
                 </p>
               </div>
             )}
           </section>
 
           <p className="mt-10 text-white/50 text-[0.85rem] leading-[1.6]">
-            Questions: {WORKSHOP.organiser}, {WORKSHOP.zelleTo} · POWER,{" "}
+            Questions: {WORKSHOP.organiser}, {WORKSHOP.organiserPhone} · POWER,{" "}
             <a href={`mailto:${WORKSHOP.power.email}`} className="underline hover:text-[var(--color-ember)]">
               {WORKSHOP.power.email}
             </a>{" "}

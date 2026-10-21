@@ -12,14 +12,46 @@ import w from "./workshop.module.css";
    www.extonsports.com/fitnessworkshop (public/fitnessworkshop/qr.svg, the
    flyer's code).
 
-   Static: no hooks, no heartbeat (the page that renders ExitScreen sends that),
-   and no entrance animations, because a panel that fades in every 10 s must not
-   restart its own lines each time. */
+   No hooks and no heartbeat (the page that renders ExitScreen sends that). No
+   entrance animations either: a panel that fades in every few seconds must not
+   restart its own lines each time. What moves is ambient and runs for ever
+   (2026-10-21, Aniket: "maybe add some animation to the sera workshop page"):
+   music notes drifting up behind the copy, FREE pulsing, the logo tile floating,
+   and the code's ring, as on the Starter Pack. Transform and opacity only. */
+
+/* Hand-placed, so the server and the browser agree (no Math.random in a render). */
+const NOTES: Array<{ glyph: string; left: number; delay: number; dur: number; hue: string; size: number }> = [
+  { glyph: "♪", left: 3, delay: 0.0, dur: 7.0, hue: "#f89b72", size: 2.6 },
+  { glyph: "♫", left: 11, delay: 2.4, dur: 8.2, hue: "#79ea92", size: 2.2 },
+  { glyph: "♪", left: 19, delay: 4.6, dur: 7.6, hue: "#ffbe97", size: 2.0 },
+  { glyph: "♫", left: 27, delay: 1.2, dur: 8.8, hue: "#ffffff", size: 2.4 },
+  { glyph: "♪", left: 35, delay: 3.5, dur: 7.2, hue: "#f89b72", size: 2.1 },
+  { glyph: "♫", left: 42, delay: 5.8, dur: 8.0, hue: "#79ea92", size: 2.5 },
+  { glyph: "♪", left: 7, delay: 6.4, dur: 7.8, hue: "#ffffff", size: 1.9 },
+  { glyph: "♫", left: 31, delay: 7.1, dur: 7.4, hue: "#ffbe97", size: 2.2 },
+];
 export default function WorkshopHero({ className }: { className?: string }) {
   const url = WORKSHOP.url.replace(/^https?:\/\/(www\.)?/, "");
   return (
     <section className={`${s.hero} ${className ?? ""}`} aria-label={`${WORKSHOP.title}, ${WORKSHOP.day}`}>
-      <div className={s.copy}>
+      <div className={w.notes} aria-hidden>
+        {NOTES.map((n, i) => (
+          <span
+            key={i}
+            className={w.note}
+            style={{
+              left: `${n.left}%`,
+              color: n.hue,
+              fontSize: `calc(${n.size} * var(--vw))`,
+              animationDelay: `${n.delay}s`,
+              animationDuration: `${n.dur}s`,
+            }}
+          >
+            {n.glyph}
+          </span>
+        ))}
+      </div>
+      <div className={`${s.copy} ${w.above}`}>
         <p className={w.present}>
           <b>POWER</b> &amp; <b>SeRa Fitness</b> present
         </p>
@@ -55,6 +87,7 @@ export default function WorkshopHero({ className }: { className?: string }) {
         <a className={s.buy} href={WORKSHOP.url} aria-label={`Register for the ${WORKSHOP.title}`}>
           <span className={s.scan}>SCAN TO REGISTER</span>
           <span className={s.card}>
+            <span className={s.ring} aria-hidden />
             {/* eslint-disable-next-line @next/next/no-img-element -- a static SVG; next/image adds nothing here */}
             <img className={s.code} src="/fitnessworkshop/qr.svg" alt={`QR code: ${url}`} />
           </span>
