@@ -37,9 +37,12 @@ export const COPY = {
   // the platform holds a new email back while the inbox already has a live link (so nobody
   // can lock a guest out by asking for their address), and a link may live 30 minutes or 2
   // hours — so this promises neither a fresh email nor a time, and says the earlier ones work.
-  // "or a 5-pack" since 2026-10-21 (court 5-pack design §8.3): the platform now also sends
-  // to an address that holds a pack here. Still conditional — it says the same for everyone.
-  sent: "If this email has bookings or a 5-pack with us, we've sent a link and a 6‑digit code. Any link or code from us that hasn't expired still works. On another device? Enter the code from the email.",
+  sent: "If this email has bookings with us, we've sent a link. Any link or code from us that hasn't expired still works. On another device? Enter the 6‑digit code from the email.",
+  // The same, naming a 5-pack (court 5-pack design §8.3) — RequestPanel shows it only while
+  // PACKS_LIVE is on (review R10, 2026-10-21): until then no pack is on sale online, and the
+  // platform's own email names packs only once court_packs_public is on (its A5 deviation 1).
+  // Still conditional — it says the same for everyone.
+  sentWithPack: "If this email has bookings or a 5-pack with us, we've sent a link and a 6‑digit code. Any link or code from us that hasn't expired still works. On another device? Enter the code from the email.",
   haveCode: 'I have a code',
   codeLead: 'Enter the email you booked with and the 6‑digit code from our email.',
   codeLabel: '6‑digit code', // U+2011, a hyphen that never breaks the line after "6"
@@ -202,7 +205,6 @@ export const PACK_COPY = {
   notYou: 'Not you?',
   termsLabel: 'I agree to the terms, disclosure and waiver for Exton Sports',
   phoneLabel: 'Mobile (optional)',
-  finePrint: 'Cancel up to 24 hours before and the credit comes back.',
   booking: 'Booking…',
   unreachable: "We couldn't reach the booking system. Try again in a moment, or pay by card.",
   // The booked screen (mock panel 4).
@@ -215,13 +217,49 @@ export const PACK_COPY = {
   rowValidUntil: 'Valid until',
   bookAgain: 'Book again with my pack',
   cancelThis: 'Cancel this booking',
-  cancelThisNote: '(credit back until 24 hours before)',
   // My bookings: pack cards and pack rows (design §8.3).
   packsHeading: 'My 5-packs',
-  bookWithMyPack: 'Book a court with my pack',
-  confirmYes: 'Yes, cancel — return my credit',
   confirmNo: 'Keep my booking',
 } as const
+
+/* Review UI-4 and UI-10, 2026-10-21: the sentences below were fixed strings in PACK_COPY and
+   read in the singular on a booking that used several credits ("Cancel by … to get the
+   credit back" over "You get back 2 credits"), and "court" on a cricket pack. They count
+   now, the way packConfirmText already did. */
+
+/** "credit" or "credits". */
+function creditWord(n: number): string {
+  return n === 1 ? 'credit' : 'credits'
+}
+
+/** The pack page's fine print under Book: "…and the credit comes back." / "…the credits come back." */
+export function packFinePrint(credits: number, hours = DEFAULT_CUTOFF_HOURS): string {
+  return `Cancel up to ${hours} hours before and the ${creditWord(credits)} ${credits === 1 ? 'comes' : 'come'} back.`
+}
+
+/** The booked screen's note after "Cancel this booking": "(credit back until 24 hours before)". */
+export function cancelThisNote(credits: number, hours = DEFAULT_CUTOFF_HOURS): string {
+  return `(${creditWord(credits)} back until ${hours} hours before)`
+}
+
+/** A pack row's Yes in the cancel sheet: "Yes, cancel — return my credit(s)". */
+export function packConfirmYes(credits: number): string {
+  return `Yes, cancel — return my ${creditWord(credits)}`
+}
+
+/** A pack card's button: "Book a court with my pack", "Book a lane with my pack" for cricket. */
+export function bookWithMyPack(sport: string): string {
+  return `Book a ${unitForSport(sport)} with my pack`
+}
+
+/**
+ * A pack booking that starts inside the self-cancel cutoff (review UI-6, 2026-10-21): the
+ * pack page and the booked screen say this instead of promising the credit back, since the
+ * row they lead to can only say "Under 24 hours — call".
+ */
+export function packInsideCutoff(phone: string, credits: number, hours = DEFAULT_CUTOFF_HOURS): string {
+  return `This game is less than ${hours} hours away, so it can't be cancelled online — call ${phone} to change it. A no-show uses the ${creditWord(credits)}.`
+}
 
 /** The public buy page, /5-pack, and its terms (design §8.2). */
 export const PACK_BUY_COPY = {
@@ -289,12 +327,40 @@ export function dayText(ymd: string | null | undefined, withYear = false): strin
   return (withYear ? DAY_YEAR : DAY).format(d)
 }
 
+const WEEKDAY = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'UTC' })
+
+/** Minutes after midnight → "6:00 PM"; 24:00 (a game ending at midnight) is "12:00 AM". */
+function clock12(minutes: number): string {
+  const m = ((minutes % 1440) + 1440) % 1440
+  const h = Math.floor(m / 60)
+  return `${h % 12 === 0 ? 12 : h % 12}:${String(m % 60).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`
+}
+
+/**
+ * The slot's time in the app booking form's own words — "6:00 PM–7:00 PM, Sun, Oct 25" —
+ * from the parked selection (club-local date, HH:MM, hours). Review UI-5, 2026-10-21: the
+ * guest read the form's wording one click earlier, and the platform's whenText
+ * ("Sun, Oct 25 · 6:00–7:00 PM") inside the summary made four '·'-separated parts in
+ * another order. Null for a selection that is not a real date, time and 1–12 hours.
+ */
+export function slotWhenText(sel: { date: string; startTime: string; hours: number }): string | null {
+  const day = dayText(sel.date)
+  const t = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(sel.startTime)
+  if (!day || !t || !Number.isInteger(sel.hours) || sel.hours < 1 || sel.hours > 12) return null
+  const start = Number(t[1]) * 60 + Number(t[2])
+  const weekday = WEEKDAY.format(new Date(`${sel.date}T12:00:00Z`))
+  return `${clock12(start)}–${clock12(start + sel.hours * 60)}, ${weekday}, ${day}`
+}
+
 /**
  * The summary box (design §8.1): "1 badminton court, 6:00 PM–7:00 PM, Sun, Oct 18 · 1 credit ·
- * By card $45.00". Shown before sign-in too — it describes the SLOT, never a pack.
+ * By card $45.00". Shown before sign-in too — it describes the SLOT, never a pack. The time
+ * is built from `sel`, the slot this site parked and the platform priced (view.ts checks the
+ * answer is for its sport and credits); without one, the platform's own whenText.
  */
-export function slotSummary(slot: QuoteSlot): string {
-  return `${slot.courts} ${slot.sport.toLowerCase()} ${unitText(slot.unit, slot.courts)}, ${slot.whenText} · ${creditsText(slot.credits)} · By card ${money(slot.cardTotalCents)}`
+export function slotSummary(slot: QuoteSlot, sel?: { date: string; startTime: string; hours: number }): string {
+  const when = (sel && slotWhenText(sel)) ?? slot.whenText
+  return `${slot.courts} ${slot.sport.toLowerCase()} ${unitText(slot.unit, slot.courts)}, ${when} · ${creditsText(slot.credits)} · By card ${money(slot.cardTotalCents)}`
 }
 
 /** "This hour is $45.00 by card — your pack saves you $5.00." — only when it does save. */
@@ -490,9 +556,9 @@ export function rowPaidWithPack(packName: string, credits: number): string {
   return `Paid with ${packName} · ${creditsText(credits)}`
 }
 
-/** A pack row's cancel line, while self-cancel is open. */
-export function rowPackCancelBy(cancelByText: string): string {
-  return `Cancel by ${cancelByText} to get the credit back.`
+/** A pack row's cancel line, while self-cancel is open: "…to get the credit(s) back." */
+export function rowPackCancelBy(cancelByText: string, credits = 1): string {
+  return `Cancel by ${cancelByText} to get the ${creditWord(credits)} back.`
 }
 
 /** A pack row inside the cutoff (design §8.3): "Under 24 hours — call 484-252-2523". */

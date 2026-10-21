@@ -49,6 +49,11 @@ export type BookingView = {
   creditsReturned: number | null // pack rows, once cancelled
   cancelledBy: CancelledBy // cancelled rows only
   packName: string | null // "Badminton 5-pack" — pack rows only
+  // "PK-3F2A9C" — WHICH pack paid (the platform's packRef, the card's own ref). Pack rows
+  // only, and null when the platform sent none or one of another shape (review UI-2,
+  // 2026-10-21): it only decides whether the cancel sheet may name the pack's date, so a
+  // bad ref says less rather than hiding the booking.
+  packRef: string | null
 }
 
 export type ListView = {
@@ -159,12 +164,14 @@ function toBooking(raw: unknown): BookingView | null {
   let credits: number | null = null
   let packName: string | null = null
   let creditsReturned: number | null = null
+  let packRef: string | null = null
   if (paidWith === 'pack') {
     credits = count(r.credits, 1, 20)
     packName = text(r.packName, 60)
     const back = optional(r.creditsReturned, (v) => count(v, 0, 20))
     if (credits === null || !packName || back === undefined) return null
     creditsReturned = back
+    packRef = typeof r.packRef === 'string' && PACK_REF_RE.test(r.packRef) ? r.packRef : null
   }
 
   return {
@@ -183,6 +190,7 @@ function toBooking(raw: unknown): BookingView | null {
     creditsReturned: status === 'cancelled' ? creditsReturned : null,
     cancelledBy: status === 'cancelled' ? cancelledBy : null,
     packName,
+    packRef,
   }
 }
 
@@ -624,6 +632,10 @@ export type BookedPack = {
   creditsTotal: number
   validUntilText: string | null
   clockText: string | null
+  // Review UI-7, 2026-10-21: whose clock validUntilText belongs to — the booked screen states
+  // a firm "Valid until" only for 'started'. Optional on the wire (today's platform sends
+  // none; the page then uses the quote's choice.clock); a value outside the set drops the block.
+  clock: PackClock | null
 }
 export type BookView = {
   status: BookStatus
@@ -665,9 +677,10 @@ function toBookedPack(raw: unknown): BookedPack | null {
   const creditsLeft = creditsTotal === null ? null : count(p.creditsLeft, 0, creditsTotal)
   const validUntilText = optional(p.validUntilText, (v) => text(v, 80))
   const clockText = optional(p.clockText, (v) => text(v, 160))
+  const clock = optional(p.clock, (v) => PACK_CLOCKS.find((k) => k === v) ?? null)
   if (!name || creditsTotal === null || creditsLeft === null || validUntilText === undefined
-    || clockText === undefined) return null
-  return { name, creditsLeft, creditsTotal, validUntilText, clockText }
+    || clockText === undefined || clock === undefined) return null
+  return { name, creditsLeft, creditsTotal, validUntilText, clockText, clock }
 }
 
 /** booked / already, with whichever details check out. A booking whose details do not
@@ -822,6 +835,10 @@ export type PurchaseView = {
   credits: number | null
   priceCents: number | null
   maskedEmail: string | null
+  // Review UI-2, 2026-10-21: the platform sends these since its integration, so the ready
+  // page's "Book your first game" needs no second call to know the pack's sport.
+  sportId: string | null
+  name: string | null // "Badminton 5-pack"
 }
 
 export function toPurchase(json: unknown): PurchaseView | null {
@@ -835,5 +852,7 @@ export function toPurchase(json: unknown): PurchaseView | null {
     credits: count(j.credits, 1, 20),
     priceCents: cents(j.priceCents),
     maskedEmail: masked(j.maskedEmail),
+    sportId: typeof j.sportId === 'string' && UUID_RE.test(j.sportId) ? j.sportId : null,
+    name: text(j.name, 60),
   }
 }

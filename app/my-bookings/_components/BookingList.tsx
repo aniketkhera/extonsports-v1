@@ -25,17 +25,23 @@ const BOOK_HERE = "/#top";
  * The date a pack row's cancel sheet may promise — "Your credit keeps your pack's date:
  * valid until Nov 29" (design §8.3) — or null, and the sheet then says less.
  *
- * Only when it is CERTAIN, 2026-10-21: a row names its pack ("Badminton 5-pack") but not
- * which one, so exactly one of the guest's packs must carry that name; and that pack's 60
- * days must have STARTED (a game played), because a provisional clock is anchored on
- * bookings like this one and moves when it goes (design §3, "Window") — promising the old
- * date there would be a promise the platform does not keep.
+ * Only when it is CERTAIN, 2026-10-21: exactly one of the guest's packs must be the one the
+ * row drew from; and that pack's 60 days must have STARTED (a game played), because a
+ * provisional clock is anchored on bookings like this one and moves when it goes (design §3,
+ * "Window") — promising the old date there would be a promise the platform does not keep.
+ *
+ * Which pack: the row's packRef, the platform's own ref for it ("PK-3F2A9C", the card's ref),
+ * since review UI-2 — so a guest holding two packs of one name is told the right one's date.
+ * A row that names a ref no card carries gets no promise (never a guess by name). Only a
+ * platform that sends no ref falls back to the name, and then only when one pack has it.
  */
 export function keptValidUntilFor(row: BookingView, packs: PackView[]): string | null {
   if (row.paidWith !== "pack" || !row.packName) return null;
-  const named = packs.filter((p) => p.name === row.packName);
-  if (named.length !== 1) return null;
-  const p = named[0];
+  const mine = row.packRef
+    ? packs.filter((p) => p.ref === row.packRef)
+    : packs.filter((p) => p.name === row.packName);
+  if (mine.length !== 1) return null;
+  const p = mine[0];
   return p.clock === "started" ? p.validUntilText : null;
 }
 

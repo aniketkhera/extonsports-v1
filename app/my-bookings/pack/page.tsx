@@ -4,14 +4,14 @@ import Link from "next/link";
 import { readDeviceToken, readPackSelection } from "@/lib/my-bookings/session-server";
 import { packQuote } from "@/lib/my-bookings/platform";
 import { clientIpOf } from "@/lib/my-bookings/guard";
-import { mintRequestKey } from "@/lib/my-bookings/session";
+import { mintRequestKey, type PackSelection } from "@/lib/my-bookings/session";
 import type { PackChoice, PackClock, PackRefusalReason, PackView, QuoteSlot } from "@/lib/my-bookings/view";
 import {
-  FALLBACK_PHONE, PACK_COPY, PACK_SIGNIN, bookMessage, bookingAs, buySportPack, packLine, payByCard, refusalText,
-  savesLine, slotSummary, type RefusalContext,
+  DEFAULT_CUTOFF_HOURS, FALLBACK_PHONE, PACK_COPY, PACK_SIGNIN, bookMessage, bookingAs, buySportPack, packLine,
+  payByCard, refusalText, savesLine, slotSummary, type RefusalContext,
 } from "@/lib/my-bookings/copy";
 import { PACK_PATH, PACKS_LIVE, bookByCardUrl, bookWithPackUrl } from "@/lib/booking";
-import { clubDate } from "@/lib/opening";
+import { clubDate, startsWithinHours } from "@/lib/opening";
 import RequestPanel from "../_components/RequestPanel";
 import NotYou from "../_components/NotYou";
 import PhoneText from "../_components/PhoneText";
@@ -70,11 +70,12 @@ function Heading({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** The summary box: "2 badminton courts, 6:00 PM–7:00 PM, Sun, Oct 25 · 2 credits · By card $90.00". */
-function SlotBox({ slot }: { slot: QuoteSlot }) {
+/** The summary box: "2 badminton courts, 6:00 PM–7:00 PM, Sun, Oct 25 · 2 credits · By card $90.00" —
+ *  the time in the app form's own words, from the parked slot (review UI-5, copy.ts slotSummary). */
+function SlotBox({ slot, sel }: { slot: QuoteSlot; sel: PackSelection }) {
   return (
     <div className="border border-[var(--legal-line)] bg-[var(--legal-surface)]" style={{ padding: "16px clamp(14px,4vw,18px)" }}>
-      <p className="text-white text-[1rem] leading-snug">{slotSummary(slot)}</p>
+      <p className="text-white text-[1rem] leading-snug">{slotSummary(slot, sel)}</p>
     </div>
   );
 }
@@ -104,8 +105,7 @@ function choiceNow(choice: PackChoice, packs: PackView[], credits: number): { le
   return { left, clock: started ? "started" : "provisional" };
 }
 
-function PackCard({ choice, packs, credits }: { choice: PackChoice; packs: PackView[]; credits: number }) {
-  const now = choiceNow(choice, packs, credits);
+function PackCard({ choice, now }: { choice: PackChoice; now: { left: number; clock: PackClock } }) {
   return (
     <div className="border border-[var(--color-ember)] bg-[var(--color-ember)]/10 mt-4" style={{ padding: "12px 14px" }}>
       <p className="text-cond text-white text-[1.1rem] uppercase tracking-wide">{choice.packName}</p>
@@ -194,7 +194,7 @@ export default async function PackPage() {
     return (
       <>
         <Heading>{PACK_COPY.title}</Heading>
-        <SlotBox slot={slot} />
+        <SlotBox slot={slot} sel={sel} />
         <div className="mt-8">
           <RequestPanel variant="pack" next="/my-bookings/pack" buyHref={buyUrl} />
         </div>
@@ -221,6 +221,10 @@ export default async function PackPage() {
 
   if (view.session === "match" && view.choice) {
     const saves = savesLine(slot);
+    const now = choiceNow(view.choice, view.packs, slot.credits);
+    // Review UI-6: a game under 24 real hours away can't be cancelled online, so the fine
+    // print and the booked screen say "call" instead of promising the credit back.
+    const insideCutoff = startsWithinHours(sel.date, sel.startTime, DEFAULT_CUTOFF_HOURS);
     return (
       <PackConfirm
         sel={sel}
@@ -237,9 +241,11 @@ export default async function PackPage() {
         buyUrl={buyUrl}
         refusalCtx={ctx}
         phone={FALLBACK_PHONE}
+        insideCutoff={insideCutoff}
+        clock={now.clock}
         packCard={
           <>
-            <PackCard choice={view.choice} packs={view.packs} credits={slot.credits} />
+            <PackCard choice={view.choice} now={now} />
             {saves && (
               <p
                 className="text-white/80 text-[0.92rem] leading-relaxed mt-3 border-l-2 border-[var(--color-green)] bg-[var(--color-green)]/10"
@@ -253,7 +259,7 @@ export default async function PackPage() {
       >
         <Heading>{PACK_COPY.title}</Heading>
         <BookingAs email={email} />
-        <SlotBox slot={slot} />
+        <SlotBox slot={slot} sel={sel} />
       </PackConfirm>
     );
   }
@@ -264,7 +270,7 @@ export default async function PackPage() {
     <>
       <Heading>{PACK_COPY.title}</Heading>
       <BookingAs email={email} />
-      <SlotBox slot={slot} />
+      <SlotBox slot={slot} sel={sel} />
       <div className="mt-6">
         <Problem text={refusal ? refusalText(refusal, ctx) : PACK_COPY.unreachable}>
           <a href={view.cardUrl} className={BTN_PRIMARY}>

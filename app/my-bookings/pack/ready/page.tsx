@@ -47,9 +47,12 @@ function Unknown() {
   );
 }
 
-/** The offer for the purchase's sport (its name, its id for the booking link), or null. */
+/** The offer for the purchase's sport — by its id when the platform sent one, else by its
+ *  name — or null. */
 function offerFor(v: PurchaseView, offers: OfferView[] | null): OfferView | null {
-  if (!offers || !v.sport) return null;
+  if (!offers) return null;
+  if (v.sportId) return offers.find((o) => o.sportId === v.sportId) ?? null;
+  if (!v.sport) return null;
   const sport = v.sport.toLowerCase();
   return offers.find((o) => o.sport.toLowerCase() === sport) ?? null;
 }
@@ -68,15 +71,19 @@ export default async function PackReadyPage({
   const v = r.view;
   if (v.state === "pending") return <PurchaseStatus maskedEmail={v.maskedEmail} phone={FALLBACK_PHONE} />;
 
-  // Active. The offers only now (not on every "pending" poll): the pack's name, its
-  // window and its sport id for the booking link. If they are down, the rows they would
-  // have filled are left out and the form opens in pack mode for the guest to pick.
+  // Active. The offers only now (not on every "pending" poll), for the window — "Valid 60
+  // days from your first game". The pack's name and sport id come in the purchase answer
+  // itself since the platform's integration (review UI-2, 2026-10-21), so "Book your first
+  // game" opens the form for the right sport even with the offers down; an older answer
+  // without them still matches the offer by sport, as before. With neither, the form opens
+  // in pack mode for the guest to pick.
   const o = await packOffers(ip, { desk: true });
   const offers = o.kind === "ok" ? o.view : null;
   const offer = offerFor(v, offers?.offers ?? null);
+  const sportId = v.sportId ?? offer?.sportId;
 
   const rows: Array<[string, string]> = [];
-  const name = offer?.name ?? v.sport;
+  const name = v.name ?? offer?.name ?? v.sport;
   if (name) rows.push([PACK_BUY_COPY.rowPack, name]);
   if (v.credits !== null) rows.push([PACK_BUY_COPY.rowCredits, ofLeft(v.credits, v.credits)]);
   if (offers) rows.push([PACK_BUY_COPY.rowValid, validWindowText(offers.windowDays)]);
@@ -114,7 +121,7 @@ export default async function PackReadyPage({
       {/* The app's booking form in pack mode, for this pack's sport. It leaves this site on
           purpose (design §0): the form's "Continue with my 5-pack" brings the guest back to
           /my-bookings/pack here. Same tab; the layout's no-referrer keeps ?cs= out of it. */}
-      <a href={bookWithPackUrl(offer?.sportId)} rel="noreferrer" className={`${BTN_PRIMARY} block text-center mt-6`}>
+      <a href={bookWithPackUrl(sportId)} rel="noreferrer" className={`${BTN_PRIMARY} block text-center mt-6`}>
         {PACK_BUY_COPY.bookFirst}
       </a>
       <p className="text-white/60 text-[0.88rem] leading-relaxed mt-4">{PACK_BUY_COPY.receiptNote}</p>

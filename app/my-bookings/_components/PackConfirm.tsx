@@ -4,11 +4,12 @@ import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import type { PackSelection } from "@/lib/my-bookings/session";
 import {
-  PACK_REFUSALS, fromSiteBook, isBookSuccess, type BookView, type PackRefusalReason, type PackRefusalView,
+  PACK_REFUSALS, fromSiteBook, isBookSuccess, type BookStatus, type BookView, type PackClock, type PackRefusalReason,
+  type PackRefusalView,
 } from "@/lib/my-bookings/view";
 import {
-  COPY, PACK_COPY, PACK_SIGNIN, bookButton, bookMessage, bookedLead, bookedPaidWith, buySportPack, ofLeft, payByCard,
-  refusalText, type RefusalContext,
+  COPY, PACK_COPY, PACK_SIGNIN, bookButton, bookMessage, bookedLead, bookedPaidWith, buySportPack, cancelThisNote, ofLeft,
+  packFinePrint, packInsideCutoff, payByCard, refusalText, type RefusalContext,
 } from "@/lib/my-bookings/copy";
 import { BTN_PRIMARY, BTN_SECONDARY, ERROR, INPUT, LABEL, postJson } from "./ui";
 import PhoneText from "./PhoneText";
@@ -35,7 +36,16 @@ import PhoneText from "./PhoneText";
    on: pick another time, or reload (a fresh quote and a fresh key).
 
    The selection goes back in the body only as an ECHO: the route books the parked slot,
-   and refuses ('changed') if it is no longer the one this page showed. */
+   and refuses ('changed') if it is no longer the one this page showed.
+
+   Review fixes, 2026-10-21:
+   • UI-6 — `insideCutoff` (the page works it out from the parked slot and the club's clock):
+     a game under 24 hours away can't be cancelled online, so the fine print and the booked
+     screen say "call …" instead of promising the credit back.
+   • UI-7 — `clock` is the quote's clock for this pack after this booking (choiceFor). The
+     booked screen states a firm "Valid until" only for a STARTED clock (the book answer's
+     own clock wins when the platform sends one); otherwise the clock sentence.
+   • UI-8 — "try again" and "slow down" say "or pay by card", so they show the card link. */
 
 type Phase = "idle" | "pending" | "booked";
 
@@ -45,11 +55,22 @@ const BUY_FIXES: readonly PackRefusalReason[] = ["no_pack", "wrong_sport", "expi
 const PICK_ANOTHER = ["taken", "started", "no_rate", "club_closed_hours"] as const;
 /** The page is out of date: a reload re-quotes and mints a new key. */
 const RELOAD = ["changed", "credits_changed", "terms_changed", "signed_out"] as const;
+/** Nothing was booked and the slot still stands: paying by card for it is safe (review UI-8). */
+const CARD_TOO = ["try_again", "slow_down", "off"] as const;
 
 const TERMS_WORDS = "terms, disclosure and waiver";
 
 function isOneOf<T extends string>(list: readonly T[], v: string): v is T {
   return (list as readonly string[]).includes(v);
+}
+
+/**
+ * Whether the answer to Book shows "Pay by card $X": a pack refusal, the switch off, or a
+ * "try again" / "slow down" whose sentence offers the card (review UI-8). NEVER after a
+ * doubt ('unknown'): the booking may have landed, and paying again would book it twice.
+ */
+export function showsPayByCard(status: BookStatus | null): boolean {
+  return status !== null && (isOneOf(PACK_REFUSALS, status) || isOneOf(CARD_TOO, status));
 }
 
 /** A pack refusal with no details (fromSiteBook keeps only details that check out). */
@@ -81,13 +102,34 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function Booked({ v, email, bookAgainUrl }: { v: BookView; email: string; bookAgainUrl: string }) {
+/** The booked screen (mock panel 4). Exported for its tests; only PackConfirm renders it. */
+export function Booked({
+  v,
+  email,
+  bookAgainUrl,
+  clock,
+  insideCutoff,
+  phone,
+}: {
+  v: BookView;
+  email: string;
+  bookAgainUrl: string;
+  clock: PackClock | null; // the quote's, for the pack after this booking
+  insideCutoff: boolean;
+  phone: string;
+}) {
   const b = v.booking;
   const p = v.pack;
   // The cancel sheet for THIS series opens from ?cancel= on My bookings (§8.3), the same
   // tokenless link the confirmation email carries. Without the series id, the list itself.
   const cancelHref = b ? `/my-bookings?cancel=${encodeURIComponent(b.seriesId)}` : "/my-bookings";
-  const lightsOrClock = b?.lightsNote ?? (p && !p.validUntilText ? p.clockText : null);
+  // A firm date only for a started clock (review UI-7): a provisional one moves if this game
+  // goes, which the pack page had just said. The answer's own clock first, then the quote's.
+  const started = (p?.clock ?? clock) === "started";
+  const validUntil = started ? (p?.validUntilText ?? null) : null;
+  const clockNote = p && !validUntil ? p.clockText : null;
+  const notes = [b?.lightsNote ?? null, clockNote].filter((n): n is string => !!n);
+  const credits = b?.credits ?? 1;
   return (
     <div role="status" aria-live="polite">
       <div className="w-11 h-11 rounded-full bg-[var(--color-ember)] flex items-center justify-center" aria-hidden="true">
@@ -109,13 +151,22 @@ function Booked({ v, email, bookAgainUrl }: { v: BookView; email: string; bookAg
             <b>{ofLeft(p.creditsLeft, p.creditsTotal)}</b>
           </Row>
         )}
-        {p?.validUntilText && <Row label={PACK_COPY.rowValidUntil}>{p.validUntilText}</Row>}
+        {validUntil && <Row label={PACK_COPY.rowValidUntil}>{validUntil}</Row>}
       </dl>
 
-      {p && (
-        <div className="border border-[var(--color-ember)] bg-[var(--color-ember)]/10 mt-5" style={{ padding: "12px 14px" }}>
-          <PackBar left={p.creditsLeft} total={p.creditsTotal} />
-          {lightsOrClock && <p className="text-white/80 text-[0.92rem] leading-relaxed">{lightsOrClock}</p>}
+      {/* Only when there is something to say in it (review UI-7): the lights, or the clock. */}
+      {notes.length > 0 && (
+        <div
+          data-booked-note
+          className="border border-[var(--color-ember)] bg-[var(--color-ember)]/10 mt-5"
+          style={{ padding: "12px 14px" }}
+        >
+          {p && <PackBar left={p.creditsLeft} total={p.creditsTotal} />}
+          {notes.map((n) => (
+            <p key={n} className="text-white/80 text-[0.92rem] leading-relaxed">
+              {n}
+            </p>
+          ))}
         </div>
       )}
 
@@ -124,12 +175,18 @@ function Booked({ v, email, bookAgainUrl }: { v: BookView; email: string; bookAg
           {PACK_COPY.bookAgain}
         </a>
       </div>
-      <p className="text-white/60 text-[0.9rem] leading-relaxed mt-4">
-        <Link href={cancelHref} className="underline underline-offset-4 text-[var(--ember-ink)]">
-          {PACK_COPY.cancelThis}
-        </Link>{" "}
-        {PACK_COPY.cancelThisNote}
-      </p>
+      {insideCutoff ? (
+        <p className="text-white/60 text-[0.9rem] leading-relaxed mt-4">
+          <PhoneText text={packInsideCutoff(phone, credits)} phone={phone} />
+        </p>
+      ) : (
+        <p className="text-white/60 text-[0.9rem] leading-relaxed mt-4">
+          <Link href={cancelHref} className="underline underline-offset-4 text-[var(--ember-ink)]">
+            {PACK_COPY.cancelThis}
+          </Link>{" "}
+          {cancelThisNote(credits)}
+        </p>
+      )}
     </div>
   );
 }
@@ -151,6 +208,8 @@ export default function PackConfirm({
   buyUrl,
   refusalCtx,
   phone,
+  insideCutoff,
+  clock,
 }: {
   children: ReactNode; // the heading, "Booking as …" and the slot — true whatever Book answers
   packCard: ReactNode; // the pack as quoted, and the savings — hidden once Book says the pack can't pay
@@ -168,6 +227,8 @@ export default function PackConfirm({
   buyUrl: string | null; // null while PACKS_LIVE is off — the page decides
   refusalCtx: RefusalContext;
   phone: string; // the club's
+  insideCutoff: boolean; // the slot starts within the self-cancel cutoff (review UI-6)
+  clock: PackClock | null; // the quote's clock for the pack after this booking (review UI-7)
 }) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<BookView | null>(null);
@@ -201,7 +262,18 @@ export default function PackConfirm({
     }
   }
 
-  if (phase === "booked" && result) return <Booked v={result} email={email} bookAgainUrl={bookAgainUrl} />;
+  if (phase === "booked" && result) {
+    return (
+      <Booked
+        v={result}
+        email={email}
+        bookAgainUrl={bookAgainUrl}
+        clock={clock}
+        insideCutoff={insideCutoff}
+        phone={phone}
+      />
+    );
+  }
 
   const status = result?.status ?? null;
   const refused = status !== null && isOneOf(PACK_REFUSALS, status);
@@ -291,11 +363,17 @@ export default function PackConfirm({
           <button type="button" className={`${BTN_PRIMARY} w-full sm:w-auto`} disabled={phase === "pending"} onClick={book}>
             {phase === "pending" ? PACK_COPY.booking : bookButton(credits)}
           </button>
-          <p className="text-white/60 text-[0.88rem] leading-relaxed mt-3">{PACK_COPY.finePrint}</p>
+          <p className="text-white/60 text-[0.88rem] leading-relaxed mt-3">
+            {insideCutoff ? (
+              <PhoneText text={packInsideCutoff(phone, credits)} phone={phone} />
+            ) : (
+              packFinePrint(credits)
+            )}
+          </p>
         </div>
       )}
 
-      {(refused || off) && (
+      {showsPayByCard(status) && (
         <div className="mt-6 flex flex-wrap gap-3">
           <a href={cardUrl} className={BTN_PRIMARY}>
             {payByCard(cardTotalCents)}

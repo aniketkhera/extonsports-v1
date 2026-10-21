@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { BookingView, CancelView } from "@/lib/my-bookings/view";
 import { fromSiteCancel, isCancelSuccess } from "@/lib/my-bookings/view";
 import {
-  COPY, PACK_COPY, callClub, cancelMessage, confirmText, packConfirmText, rowCancelBy, rowCancelled, rowCourts,
-  rowPackCancelBy, rowPackCancelled, rowPackTooLate, rowPaid, rowPaidWithPack, rowTitle, tooLate, unitForSport,
+  COPY, PACK_COPY, callClub, cancelMessage, confirmText, packConfirmText, packConfirmYes, rowCancelBy, rowCancelled,
+  rowCourts, rowPackCancelBy, rowPackCancelled, rowPackTooLate, rowPaid, rowPaidWithPack, rowTitle, tooLate,
+  unitForSport,
 } from "@/lib/my-bookings/copy";
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_TEXT, postJson } from "./ui";
 import PhoneText from "./PhoneText";
@@ -37,7 +39,13 @@ import { PackMeter } from "./PackCard";
 
    keptValidUntil — "Your credit keeps your pack's date: valid until Nov 29" — is passed
    only when BookingList knows for certain which pack this is and its 60 days have
-   started; otherwise the sentence stops before it (copy.ts packConfirmText). */
+   started; otherwise the sentence stops before it (copy.ts packConfirmText).
+
+   AFTER A CANCEL THAT WORKED, router.refresh() (review UI-1, 2026-10-21). The pack cards
+   above were drawn when the page loaded, so they kept "1 of 5 left" and the cancelled game
+   under "Upcoming" while this row said "3 of 5 left". A refresh re-renders the server page,
+   which asks the platform again (cp_holder_packs) — nothing is worked out here. The list
+   keys this row by its series, so its state, and the result message below, stay put. */
 type Phase = "idle" | "confirm" | "pending" | "result";
 
 export default function BookingRow({
@@ -58,6 +66,7 @@ export default function BookingRow({
   const [phase, setPhase] = useState<Phase>(opened ? "confirm" : "idle");
   const [result, setResult] = useState<CancelView | null>(null);
   const sheet = useRef<HTMLDivElement>(null);
+  const router = useRouter();
   // view.ts guarantees credits and packName on every pack row; checked again so a card
   // row can never fall into the pack wording.
   const isPack = b.paidWith === "pack" && b.packName !== null && b.credits !== null;
@@ -74,8 +83,10 @@ export default function BookingRow({
     if (phase === "pending") return;
     setPhase("pending");
     const r = await postJson("/api/my-bookings/cancel", { seriesId: b.seriesId });
-    setResult(fromSiteCancel(r.status, r.json));
+    const v = fromSiteCancel(r.status, r.json);
+    setResult(v);
     setPhase("result");
+    if (isCancelSuccess(v)) router.refresh();
   }
 
   const done = result ? isCancelSuccess(result) : false;
@@ -118,7 +129,7 @@ export default function BookingRow({
 
         {phase !== "result" && !standing && (
           <p className="text-white/60 text-[0.88rem] leading-relaxed mt-3">
-            {isPack ? rowPackCancelBy(b.cancelByText) : rowCancelBy(b.cancelByText)}
+            {isPack ? rowPackCancelBy(b.cancelByText, b.credits!) : rowCancelBy(b.cancelByText)}
           </p>
         )}
       </div>
@@ -135,8 +146,8 @@ export default function BookingRow({
       )}
 
       {/* A pack cancel that worked: the pack as the PLATFORM now counts it (cancel.html
-          step 3). The cards above are as the page loaded them; this is the fresh count,
-          and the sentence above says it in words. */}
+          step 3), from the cancel's own answer; the sentence above says it in words. The
+          cards above catch up when router.refresh() lands (review UI-1). */}
       {result && done && result.pack && (
         <PackMeter left={result.pack.creditsLeft} total={result.pack.creditsTotal} />
       )}
@@ -171,7 +182,7 @@ export default function BookingRow({
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <button type="button" className={BTN_PRIMARY} disabled={phase === "pending"} onClick={cancel}>
-              {phase === "pending" ? COPY.pending : isPack ? PACK_COPY.confirmYes : COPY.confirmYes}
+              {phase === "pending" ? COPY.pending : isPack ? packConfirmYes(b.credits!) : COPY.confirmYes}
             </button>
             <button
               type="button"

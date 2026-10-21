@@ -92,6 +92,48 @@ export function clubDate(d: Date): string {
   return `${p.year}-${p.month}-${p.day}`
 }
 
+/** How far the club's wall clock is ahead of UTC at an instant, in ms (−4 h in EDT, −5 h in EST). */
+function clubOffsetMs(at: number): number {
+  const f = new Intl.DateTimeFormat('en-US', {
+    timeZone: CLUB_TZ, hourCycle: 'h23',
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit',
+  })
+  const p = Object.fromEntries(f.formatToParts(new Date(at)).map((x) => [x.type, Number(x.value)]))
+  const wall = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second)
+  return wall - Math.floor(at / 1000) * 1000
+}
+
+/**
+ * The instant of a club-local wall time — "2026-10-25", "18:00" → 22:00Z (EDT), and
+ * "2026-11-08", "18:00" → 23:00Z (EST). Null for anything that is not a real date and a
+ * 00:00–23:59 time. Court 5-pack, review UI-6 (2026-10-21): the pack page needs it to tell
+ * a game inside the 24-hour self-cancel cutoff, which the platform counts in REAL hours.
+ *
+ * The offset is read from Intl at the instant itself (twice, so a guess that lands on the
+ * other side of a DST change corrects itself) — never a hard-coded −04:00 (see
+ * sportShutOnDate below for what that cost once).
+ */
+export function clubInstant(ymd: string, hhmm: string): Date | null {
+  const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd)
+  const t = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(hhmm)
+  if (!d || !t) return null
+  const wall = Date.UTC(Number(d[1]), Number(d[2]) - 1, Number(d[3]), Number(t[1]), Number(t[2]))
+  if (new Date(wall).toISOString().slice(0, 10) !== ymd) return null // 2026-02-30
+  let at = wall - clubOffsetMs(wall)
+  at = wall - clubOffsetMs(at)
+  return new Date(at)
+}
+
+/**
+ * Does a club-local start fall within `hours` real hours of `now` (or has it passed)?
+ * Exactly `hours` away counts as within — the platform's self-cancel cutoff answers
+ * too_late at exactly 24 hours. A start that is not a real date and time is not within.
+ */
+export function startsWithinHours(ymd: string, hhmm: string, hours: number, now: Date = new Date()): boolean {
+  const at = clubInstant(ymd, hhmm)
+  return at !== null && at.getTime() - now.getTime() <= hours * 3_600_000
+}
+
 /**
  * Is this sport un-bookable on this whole DAY? Used by anything that draws a
  * calendar: a date before the sport comes online is not an empty day, it is a

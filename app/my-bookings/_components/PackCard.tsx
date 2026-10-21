@@ -1,5 +1,5 @@
 import type { PackView } from "@/lib/my-bookings/view";
-import { PACK_COPY, packLine, packStatusText, packUseLine } from "@/lib/my-bookings/copy";
+import { bookWithMyPack, packLine, packStatusText, packUseLine } from "@/lib/my-bookings/copy";
 import { BTN_PRIMARY } from "./ui";
 
 /* One of the guest's 5-packs, above their bookings, 2026-10-21 (orangish-app
@@ -11,7 +11,7 @@ import { BTN_PRIMARY } from "./ui";
    the 60-day rule — design §3). This card adds nothing up and works nothing out; it
    prints what the allow-list in lib/my-bookings/view.ts let through.
 
-   ⛔ ONLY A USABLE PACK OFFERS "Book a court with my pack". An expired, used-up,
+   ⛔ ONLY A USABLE PACK OFFERS "Book a court with my pack" ("a lane" for cricket, review UI-10). An expired, used-up,
    all-booked, refunded or disputed pack says why instead (copy.ts packStatusText) — a
    button that leads to a refusal is worse than none. The link is pack.bookUrl, which
    view.ts BUILT from the checked sport id (lib/booking.ts bookWithPackUrl); the
@@ -101,7 +101,7 @@ export default function PackCard({ pack: p }: { pack: PackView }) {
 
       {usable && (
         <a href={p.bookUrl} rel="noreferrer" className={`${BTN_PRIMARY} inline-block mt-4`}>
-          {PACK_COPY.bookWithMyPack}
+          {bookWithMyPack(p.sport)}
         </a>
       )}
     </li>

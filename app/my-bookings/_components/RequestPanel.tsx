@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { COPY, FALLBACK_PHONE, PACK_SIGNIN, platformDown } from "@/lib/my-bookings/copy";
+import { PACKS_LIVE } from "@/lib/booking";
 import type { NextPath } from "@/lib/my-bookings/session";
 import CodeForm from "./CodeForm";
 import PhoneText from "./PhoneText";
@@ -25,7 +26,11 @@ import { BTN_PRIMARY, BTN_TEXT, ERROR, INPUT, LABEL, postJson } from "./ui";
    arriving? Check the address, or buy a 5-pack." The buy link comes in as `buyHref`, which
    the page sets only while PACKS_LIVE is on (the buy page deploys unlinked); without it the
    sentence stops at "Check the address." `next` is handed on to CodeForm, which checks it
-   against the allow-list where it navigates. */
+   against the allow-list where it navigates.
+
+   The list's sentence names a 5-pack (COPY.sentWithPack) only while PACKS_LIVE is on
+   (review R10, 2026-10-21): the site deploys with no pack on sale, and the platform's own
+   sign-in email names packs only once court_packs_public is on. */
 
 export default function RequestPanel({
   note,
@@ -73,7 +78,7 @@ export default function RequestPanel({
     return (
       <div>
         <p className="text-white/80 text-[1rem] leading-relaxed" role="status">
-          {pack ? PACK_SIGNIN.sent : COPY.sent}
+          {pack ? PACK_SIGNIN.sent : PACKS_LIVE ? COPY.sentWithPack : COPY.sent}
         </p>
         {pack && (
           <p className="text-white/65 text-[0.95rem] leading-relaxed mt-2">
