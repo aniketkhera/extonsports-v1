@@ -22,6 +22,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // The bookings calendar. 'daily' because its content genuinely changes
     // every day — it is a live availability grid, not a brochure page.
     { path: '/calendar', changeFrequency: 'daily', priority: 0.8 },
+    // Sign-ups for the POWER x SeRa Fitness workshop, Fri 30 Oct 2026 (added 2026-10-21).
+    // Take it out after the workshop, with the page.
+    { path: '/fitnessworkshop', changeFrequency: 'weekly', priority: 0.6 },
   ]
 
   return routes.map(({ path, changeFrequency, priority }) => ({
