@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { COPY, FALLBACK_PHONE, platformDown } from "@/lib/my-bookings/copy";
+import { COPY, FALLBACK_PHONE, PACK_SIGNIN, platformDown } from "@/lib/my-bookings/copy";
+import { nextPathOf, type NextPath } from "@/lib/my-bookings/session";
 import { BTN_PRIMARY, ERROR, INPUT, LABEL, postJson } from "./ui";
 import PhoneText from "./PhoneText";
 
@@ -10,8 +11,22 @@ import PhoneText from "./PhoneText";
    without it ("I have a code") both fields show together.
 
    Every refusal reads the same — wrong, expired, used up, or an address that was never
-   sent a code — because the platform answers them all with one 400. */
-export default function CodeForm({ email }: { email?: string }) {
+   sent a code — because the platform answers them all with one 400.
+
+   `next` and `variant`, 2026-10-21 (court 5-pack, orangish-app docs/court-packs.md §8.1):
+   on /my-bookings/pack a code signs the guest in and goes BACK to the pack page, where the
+   parked slot is waiting. `next` is re-checked against the allow-list right where it is
+   used (nextPathOf), so no prop — however a parent built it — can send a freshly
+   signed-in guest anywhere but /my-bookings or /my-bookings/pack. */
+export default function CodeForm({
+  email,
+  next,
+  variant = "list",
+}: {
+  email?: string;
+  next?: NextPath;
+  variant?: "list" | "pack";
+}) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -30,7 +45,7 @@ export default function CodeForm({ email }: { email?: string }) {
     if (r.status === 200) {
       // A full load, not a client transition: the page must re-render on the server
       // with the cookie the response just set.
-      window.location.assign("/my-bookings");
+      window.location.assign(nextPathOf(next));
       return;
     }
     setBusy(false);
@@ -44,7 +59,7 @@ export default function CodeForm({ email }: { email?: string }) {
       {!email && (
         <div className="mb-4">
           <label htmlFor="mb-code-email" className={LABEL}>
-            {COPY.emailLabel}
+            {variant === "pack" ? PACK_SIGNIN.emailLabel : COPY.emailLabel}
           </label>
           <input
             id="mb-code-email"

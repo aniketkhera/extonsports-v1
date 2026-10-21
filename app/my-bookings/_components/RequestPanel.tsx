@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { COPY, FALLBACK_PHONE, platformDown } from "@/lib/my-bookings/copy";
+import Link from "next/link";
+import { COPY, FALLBACK_PHONE, PACK_SIGNIN, platformDown } from "@/lib/my-bookings/copy";
+import type { NextPath } from "@/lib/my-bookings/session";
 import CodeForm from "./CodeForm";
 import PhoneText from "./PhoneText";
 import { BTN_PRIMARY, BTN_TEXT, ERROR, INPUT, LABEL, postJson } from "./ui";
@@ -14,11 +16,38 @@ import { BTN_PRIMARY, BTN_TEXT, ERROR, INPUT, LABEL, postJson } from "./ui";
    code field opens under it either way, so the next screen does not differ either.
 
    The email stays in component state only — not in the URL, not in storage — and is
-   handed to CodeForm so the guest types the code alone. */
-export default function RequestPanel({ note }: { note?: string }) {
+   handed to CodeForm so the guest types the code alone.
+
+   The pack variant, 2026-10-21 (court 5-pack, orangish-app docs/court-packs.md §8.1): on
+   /my-bookings/pack the same panel asks for the email with PACK_SIGNIN's words ("Send me
+   a code"), and after Send says PACK_SIGNIN.sent — still ONE sentence for every address,
+   on the same /api/my-bookings/request and the same 202 behind it — then "Nothing
+   arriving? Check the address, or buy a 5-pack." The buy link comes in as `buyHref`, which
+   the page sets only while PACKS_LIVE is on (the buy page deploys unlinked); without it the
+   sentence stops at "Check the address." `next` is handed on to CodeForm, which checks it
+   against the allow-list where it navigates. */
+
+/* Here, not in lib/my-bookings/copy.ts, only because that file belongs to the pack
+   foundation and was frozen when this was built; it should move to PACK_SIGNIN. The pack
+   page promises a CODE, so its resend says code (the list's says link). */
+const PACK_SEND_NEW = "Send a new code";
+
+export default function RequestPanel({
+  note,
+  next,
+  variant = "list",
+  buyHref = null,
+}: {
+  note?: string;
+  next?: NextPath;
+  variant?: "list" | "pack";
+  buyHref?: string | null;
+}) {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "sent" | "code">("idle");
   const [error, setError] = useState("");
+  const pack = variant === "pack";
+  const sendNew = pack ? PACK_SEND_NEW : COPY.sendNew;
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -49,10 +78,27 @@ export default function RequestPanel({ note }: { note?: string }) {
     return (
       <div>
         <p className="text-white/80 text-[1rem] leading-relaxed" role="status">
-          {COPY.sent}
+          {pack ? PACK_SIGNIN.sent : COPY.sent}
         </p>
+        {pack && (
+          <p className="text-white/65 text-[0.95rem] leading-relaxed mt-2">
+            {buyHref ? (
+              <>
+                {PACK_SIGNIN.nothingArriving}{" "}
+                <Link href={buyHref} className="underline underline-offset-4 text-[var(--ember-ink)]">
+                  {PACK_SIGNIN.buyLink}
+                </Link>
+                .
+              </>
+            ) : (
+              // "Nothing arriving? Check the address, or" without its buy link.
+              PACK_SIGNIN.nothingArriving.replace(/, or$/, ".")
+            )}
+          </p>
+        )}
         <div className="mt-6">
-          <CodeForm email={email} />
+          {pack && <p className="text-white/65 text-[0.98rem] leading-relaxed mb-4">{PACK_SIGNIN.codeLead}</p>}
+          <CodeForm email={email} next={next} variant={variant} />
         </div>
         <button
           type="button"
@@ -62,7 +108,7 @@ export default function RequestPanel({ note }: { note?: string }) {
             setError("");
           }}
         >
-          {COPY.sendNew}
+          {sendNew}
         </button>
       </div>
     );
@@ -71,10 +117,10 @@ export default function RequestPanel({ note }: { note?: string }) {
   if (state === "code") {
     return (
       <div>
-        <p className="text-white/65 text-[0.98rem] leading-relaxed mb-6">{COPY.codeLead}</p>
-        <CodeForm />
+        <p className="text-white/65 text-[0.98rem] leading-relaxed mb-6">{pack ? PACK_SIGNIN.codeLead : COPY.codeLead}</p>
+        <CodeForm next={next} variant={variant} />
         <button type="button" className={`${BTN_TEXT} mt-6`} onClick={() => setState("idle")}>
-          {COPY.sendNew}
+          {sendNew}
         </button>
       </div>
     );
@@ -87,14 +133,16 @@ export default function RequestPanel({ note }: { note?: string }) {
           {note}
         </p>
       )}
-      {!note && <p className="text-white/65 text-[0.98rem] leading-relaxed mb-6">{COPY.lead}</p>}
+      {!note && (
+        <p className="text-white/65 text-[0.98rem] leading-relaxed mb-6">{pack ? PACK_SIGNIN.emailLead : COPY.lead}</p>
+      )}
 
       <form onSubmit={submit} noValidate className={note ? "mt-6" : undefined}>
         {/* Honeypot — hidden from people, filled by bots (the BadmintonEnquiry pattern). */}
         <input type="text" name="company" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
 
         <label htmlFor="mb-email" className={LABEL}>
-          {COPY.emailLabel}
+          {pack ? PACK_SIGNIN.emailLabel : COPY.emailLabel}
         </label>
         <input
           id="mb-email"
@@ -118,7 +166,13 @@ export default function RequestPanel({ note }: { note?: string }) {
 
         <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-4">
           <button type="submit" className={BTN_PRIMARY} disabled={state === "sending"}>
-            {state === "sending" ? COPY.sending : COPY.sendButton}
+            {state === "sending"
+              ? pack
+                ? PACK_SIGNIN.sending
+                : COPY.sending
+              : pack
+                ? PACK_SIGNIN.sendCode
+                : COPY.sendButton}
           </button>
           <button
             type="button"
