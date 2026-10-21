@@ -128,6 +128,39 @@ export const STARTER_PACK_URL = `${APP_URL}/starter/exton-sports`
 export const PAY_URL = `${APP_URL}/pay/exton-sports`
 
 /**
+ * "Email my bookings", 2026-10-21 — Aniket: "someone enters their email id and we email them
+ * their current and forthcoming bookings ... this can be a popup or something? easy to do -
+ * one email id, press send and the popup disappears."
+ *
+ * The hero's "My bookings" button opens a popup (app/components/MyBookingsEmail.tsx) that
+ * POSTs { club, email, website } STRAIGHT FROM THE BROWSER to this platform route. No site
+ * relay, on purpose: a relay would make every visitor arrive from the relay's one IP, which
+ * is exactly why the enquiry and workshop routes call their per-IP limits "nearly worthless".
+ * The route allows only https://www.extonsports.com and https://extonsports.com (plus
+ * localhost outside production) and answers 202 for every well-formed address, whether it
+ * has bookings or not, so the popup can never tell a stranger what an address books here.
+ * Contract: orangish-app docs/booking-list-email.md.
+ *
+ * ⚠️ 'exton-sports' IS THE PLATFORM'S SLUG (locations.slug), like BOOK_COURT_URL above; a
+ * town name here fails silently as a 400 the visitor reads as "couldn't send".
+ */
+export const BOOKING_LIST_EMAIL_URL = `${APP_URL}/api/public/booking-list-email`
+export const BOOKING_LIST_CLUB = 'exton-sports'
+
+/**
+ * ⛔ THE KILL SWITCH for the hero's "My bookings" button and its popup. `false` hides both;
+ * the calendar stays in the footer either way. The platform has its own switch
+ * (locations.features.booking_list_email): while that is off the route answers 404, and the
+ * popup says it couldn't send, which is honest and gives nothing away. So the order is the
+ * platform first, then Aniket's own live test, then this site (orangish-app
+ * docs/booking-list-email.md, "Rollout").
+ *
+ * Named apart from the unmerged /my-bookings branch's MY_BOOKINGS_LIVE on purpose: that is a
+ * different feature (sign in by link, see and cancel), and the two must not share a switch.
+ */
+export const BOOKING_LIST_EMAIL_LIVE = true
+
+/**
  * ⛔ ONLINE REGISTRATION. Governs the Register buttons on the squash and
  * dance/fitness rows — cricket and badminton deliberately have none, because
  * their bookings are not managed on the platform (Aniket, 2026-10-05).

@@ -1,5 +1,6 @@
 import WhatsAppButton from "./WhatsAppButton";
 import OrangishPill from "./OrangishPill";
+import CalendarFooterLink from "./CalendarFooterLink";
 import { CONTACT_EMAIL } from "../../lib/legal";
 import { BOOK_COURT_URL, PAY_URL } from "../../lib/booking";
 import { RATE_BANDS, BAND_BLURB } from "../../lib/rates";
@@ -112,6 +113,11 @@ export default function Footer() {
           links={[
             { label: "Court rates", href: "/#top" },
             { label: "Book a court or lane", href: BOOK_COURT_URL },
+            /* 2026-10-21, Aniket: the hero's "Show calendar of bookings" button moved here,
+               "make it like all the other links in the footer". Same look as its neighbours;
+               a plain click opens the calendar overlay, anything else goes to /calendar
+               (CalendarFooterLink.tsx). The hero row now has "My bookings" in its place. */
+            { label: "Calendar of bookings", href: "/calendar", calendar: true },
             { label: "Make an adhoc payment", href: PAY_URL },
             { label: "Bulk & block bookings", href: `mailto:${CONTACT_EMAIL}` },
             { label: "Academies & juniors", href: "/#top" },
@@ -163,7 +169,9 @@ function FooterCol({
   links,
 }: {
   title: string;
-  links: { label: string; href: string }[];
+  /** `calendar: true` renders the item as CalendarFooterLink: the same <a>, plus the
+   *  overlay it opens. This file stays a Server Component; only that link is a client island. */
+  links: { label: string; href: string; calendar?: true }[];
 }) {
   return (
     <div className="text-center">
@@ -173,14 +181,18 @@ function FooterCol({
       <ul className="space-y-2.5 text-sm">
         {links.map((l) => (
           <li key={l.label}>
-            <a
-              href={l.href}
-              target={l.href.startsWith("http") ? "_blank" : undefined}
-              rel={l.href.startsWith("http") ? "noreferrer" : undefined}
-              className="text-white/55 hover:text-white transition"
-            >
-              {l.label}
-            </a>
+            {l.calendar ? (
+              <CalendarFooterLink label={l.label} />
+            ) : (
+              <a
+                href={l.href}
+                target={l.href.startsWith("http") ? "_blank" : undefined}
+                rel={l.href.startsWith("http") ? "noreferrer" : undefined}
+                className="text-white/55 hover:text-white transition"
+              >
+                {l.label}
+              </a>
+            )}
           </li>
         ))}
       </ul>
