@@ -87,9 +87,10 @@ test("TV pages are never indexed, and never in the sitemap", () => {
   }
 });
 
-test("a TV page's viewport is its content's: none for the board, /exit's dark ground for the Starter Pack", () => {
+test("a TV page's viewport is its content's: none for the board, the dark ground for the Starter Pack and the vestibule", () => {
   assert.deepEqual(R.tvViewport("reception"), {});
-  assert.deepEqual(R.tvViewport("vestibule"), {});
+  // The vestibule's own layout (2026-10-21) paints the same dark ground as /exit.
+  assert.deepEqual(R.tvViewport("vestibule"), { themeColor: "#0B1623", colorScheme: "dark" });
   assert.deepEqual(R.tvViewport("outside"), { themeColor: "#0B1623", colorScheme: "dark" });
   assert.deepEqual(R.contentViewport("starter-pack"), R.tvViewport("outside"));
   // /exit takes it from the same place, so the two heads cannot drift apart.

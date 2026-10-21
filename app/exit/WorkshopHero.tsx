@@ -17,7 +17,11 @@ import w from "./workshop.module.css";
    restart its own lines each time. What moves is ambient and runs for ever
    (2026-10-21, Aniket: "maybe add some animation to the sera workshop page"):
    music notes drifting up behind the copy, FREE pulsing, the logo tile floating,
-   and the code's ring, as on the Starter Pack. Transform and opacity only. */
+   and the code's ring, as on the Starter Pack. Transform and opacity only.
+
+   `panel` (2026-10-21, the vestibule's right half): the same content for a box
+   about 1.3:1 — the copy over the logos on the left, the code on the right
+   (workshop.module.css, .panelLayout). Unset, the markup is what /exit draws. */
 
 /* Hand-placed, so the server and the browser agree (no Math.random in a render). */
 const NOTES: Array<{ glyph: string; left: number; delay: number; dur: number; hue: string; size: number }> = [
@@ -30,10 +34,10 @@ const NOTES: Array<{ glyph: string; left: number; delay: number; dur: number; hu
   { glyph: "♪", left: 7, delay: 6.4, dur: 7.8, hue: "#ffffff", size: 1.9 },
   { glyph: "♫", left: 31, delay: 7.1, dur: 7.4, hue: "#ffbe97", size: 2.2 },
 ];
-export default function WorkshopHero({ className }: { className?: string }) {
+export default function WorkshopHero({ className, panel = false }: { className?: string; panel?: boolean }) {
   const url = WORKSHOP.url.replace(/^https?:\/\/(www\.)?/, "");
   return (
-    <section className={`${s.hero} ${className ?? ""}`} aria-label={`${WORKSHOP.title}, ${WORKSHOP.day}`}>
+    <section className={[s.hero, panel && w.panelLayout, className].filter(Boolean).join(" ")} aria-label={`${WORKSHOP.title}, ${WORKSHOP.day}`}>
       <div className={w.notes} aria-hidden>
         {NOTES.map((n, i) => (
           <span
@@ -83,7 +87,7 @@ export default function WorkshopHero({ className }: { className?: string }) {
         <img className={w.sera} src="/fitnessworkshop/sera-logo.webp" alt="SeRa Fitness" width={432} height={441} />
       </div>
 
-      <div className={s.cta}>
+      <div className={panel ? `${s.cta} ${w.ctaCell}` : s.cta}>
         <a className={s.buy} href={WORKSHOP.url} aria-label={`Register for the ${WORKSHOP.title}`}>
           <span className={s.scan}>SCAN TO REGISTER</span>
           <span className={s.card}>

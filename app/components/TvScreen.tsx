@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import ReceptionBoard from "../reception/ReceptionBoard";
 import ExitScreen from "../exit/ExitScreen";
+import VestibuleScreen from "../vestibule/VestibuleScreen";
 import ScreenHeartbeat from "./ScreenHeartbeat";
 import { tvScreen, type TvContent, type TvEntry, type TvId } from "./tv-screens";
 
@@ -42,6 +43,7 @@ import { tvScreen, type TvContent, type TvEntry, type TvId } from "./tv-screens"
 const RENDER: Record<TvContent, (tv: TvEntry) => ReactNode> = {
   "court-board": () => <ReceptionBoard />,
   "starter-pack": () => <ExitScreen />,
+  "board-and-promos": () => <VestibuleScreen />,
 };
 
 export default function TvScreen({ id }: { id: TvId }) {

@@ -199,3 +199,15 @@
   .ball, .piece, .letter, .name, .balloon { animation: none; }
   .piece, .balloon { display: none; }
 }
+
+/* ── THE VESTIBULE'S PANEL (2026-10-21) ───────────────────────────────────────
+   The greeting in the vestibule screen's right half, a box about 1.3:1. The
+   screen scales the units it hands down, so the card is the same card, smaller;
+   the logos come down a little more so the two names fit side by side. */
+.panel .ccca,
+.panel .globe {
+  height: calc(21 * var(--vh));
+}
+.panel .globe {
+  width: calc(21 * var(--vh));
+}
