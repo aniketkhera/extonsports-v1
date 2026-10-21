@@ -133,7 +133,7 @@ test("sendBookingList refuses a malformed address locally and sends nothing", as
   assert.equal(called, false);
 });
 
-test("the copy is the approved copy, and the toast is ONE sentence whatever happens", () => {
+test("the copy is the approved copy, and the toast says the same whatever happens", () => {
   assert.equal(P.COPY.title, "Email my bookings");
   assert.equal(P.COPY.line, "We'll email you today's and upcoming bookings.");
   assert.equal(P.COPY.toast, "Sent. If that email has bookings with us, they're on their way.");
@@ -143,19 +143,123 @@ test("the copy is the approved copy, and the toast is ONE sentence whatever happ
   assert.equal(P.COPY.failed, "We couldn't send that just now. Please try again, or call (484) 252-2523.");
   assert.doesNotMatch(P.COPY.failed, /\(484\) 252/, "no breakable space inside the phone number");
   assert.equal(P.COPY.send, "Send");
-  // About 4 s (spec), long enough to read eleven words, short enough not to linger.
-  assert.ok(P.TOAST_MS >= 3500 && P.TOAST_MS <= 5000, String(P.TOAST_MS));
+  // About 8 s since the second line (Aniket, 2026-10-21): long enough to read both lines,
+  // and it still goes away on its own.
+  assert.ok(P.TOAST_MS >= 7000 && P.TOAST_MS <= 9000, String(P.TOAST_MS));
   // Nothing in the copy may depend on the address or the response.
   assert.doesNotMatch(Object.values(P.COPY).join(" "), /\$\{|no bookings|not found|unknown/i);
 });
 
+test("the toast's second line: the approved words, the number a tel: link, the same every time", () => {
+  // Aniket, 2026-10-21: "1. add it." The line sits under "Sent…" in every case, ticked box
+  // or not, so it says nothing about the address either.
+  const line = P.COPY.toastHelp + P.TOAST_PHONE + ".";
+  assert.equal(line.replace(/ /g, " "), "Nothing arriving? Check it's the email you booked with, or call (484) 252-2523.");
+  assert.doesNotMatch(P.TOAST_PHONE, / /, "no breakable space inside the number");
+  assert.equal(P.TOAST_TEL, "tel:+14842522523");
+  const popup = read("app/components/MyBookingsEmail.tsx");
+  assert.match(popup, /href=\{TOAST_TEL\}/, "the number is a link");
+  assert.match(popup, /\{COPY\.toastHelp\}/);
+  // The toast is shown by the booking-list answer alone; the box never reaches it.
+  const toast = popup.slice(popup.indexOf('role="status"'));
+  assert.doesNotMatch(toast, /optin/i, "the toast does not vary with the box");
+});
+
+/* ── the mailing-list box ─────────────────────────────────────────────────── */
+
+test("the box: its words, ticked by default, a real labelled checkbox before Send", () => {
+  // Aniket, 2026-10-21: "also adda a checkbox, checked by default - add to our mailing list?"
+  assert.equal(P.COPY.optin, "Add me to the Exton Sports mailing list");
+  const popup = read("app/components/MyBookingsEmail.tsx");
+  assert.match(popup, /const \[optin, setOptin\] = useState\(true\)/, "ticked by default");
+  const box = popup.slice(popup.indexOf('type="checkbox"') - 400, popup.indexOf('type="checkbox"') + 600);
+  assert.match(box, /type="checkbox"/);
+  assert.match(box, /checked=\{optin\}/);
+  assert.match(box, /onChange=\{\(e\) => setOptin\(e\.target\.checked\)\}/);
+  assert.match(box, /<label[\s\S]*\{COPY\.optin\}[\s\S]*<\/label>/, "the words are the box's label");
+  // Under the field and BEFORE Send, in the page and in Tab order, so nobody presses Send
+  // without having passed it.
+  const field = popup.indexOf('type="email"');
+  const check = popup.indexOf('type="checkbox"');
+  const send = popup.indexOf('type="submit"');
+  assert.ok(field > 0 && check > field && send > check, `order: field=${field} box=${check} send=${send}`);
+  assert.match(popup, /\[inputRef\.current, optinRef\.current, sendRef\.current, closeRef\.current\]/);
+});
+
+test("nextTrapIndex with the box: field → box → Send → × → field, and back with Shift", () => {
+  assert.deepEqual([0, 1, 2, 3].map((i) => P.nextTrapIndex(i, 4, false)), [1, 2, 3, 0]);
+  assert.deepEqual([0, 1, 2, 3].map((i) => P.nextTrapIndex(i, 4, true)), [3, 0, 1, 2]);
+  assert.equal(P.nextTrapIndex(-1, 4, false), 0);
+  assert.equal(P.nextTrapIndex(-1, 4, true), 3);
+});
+
+test("the mailing-list request: same-origin, JSON, {email, website} and nothing the route could trust", () => {
+  assert.equal(P.OPTIN_URL, "/api/mailing-list-optin");
+  assert.ok(read("app/api/mailing-list-optin/route.ts").length > 0, "the route is where the popup posts");
+  const init = P.optinInit("  priya.k@gmail.com ");
+  assert.equal(init.method, "POST");
+  assert.equal(init.credentials, "same-origin");
+  assert.equal(init.keepalive, true, "survives the visitor leaving the page straight after Send");
+  assert.deepEqual(init.headers, { "Content-Type": "application/json" });
+  // No source, no property: the route sets both itself.
+  assert.deepEqual(JSON.parse(init.body), { email: "priya.k@gmail.com", website: "" });
+  assert.equal(JSON.parse(P.optinInit("a@b.co", "bot").body).website, "bot", "the honeypot goes along");
+});
+
+test("joinMailingList never throws and refuses a malformed address without a request", async () => {
+  const seen = [];
+  const ok = async (url, init) => { seen.push({ url, init }); return { status: 202 }; };
+  assert.equal(await P.joinMailingList("a@b.co", { fetchImpl: ok }), true);
+  assert.equal(seen[0].url, "/api/mailing-list-optin");
+  assert.ok(seen[0].init.signal, "a timeout signal is attached");
+  assert.equal(await P.joinMailingList("a@b.co", { fetchImpl: async () => ({ status: 429 }) }), false);
+  assert.equal(await P.joinMailingList("a@b.co", { fetchImpl: async () => { throw new TypeError("Failed to fetch"); } }), false);
+  let called = false;
+  assert.equal(await P.joinMailingList("a@b", { fetchImpl: async () => { called = true; return { status: 202 }; } }), false);
+  assert.equal(called, false);
+});
+
+test("sendWithOptin: the box adds a mailing-list request; the two never affect each other", async () => {
+  const calls = [];
+  const impl = (booking, join) => ({
+    sendBookingList: async (email, o) => { calls.push(["booking", email, o.website]); return booking(); },
+    joinMailingList: (email, o) => { calls.push(["join", email, o.website]); return join(); },
+  });
+
+  // Ticked: both requests, same address, same honeypot.
+  assert.equal(await P.sendWithOptin("p@x.com", { optin: true, website: "" }, impl(async () => "sent", async () => true)), "sent");
+  assert.deepEqual(calls.sort(), [["booking", "p@x.com", ""], ["join", "p@x.com", ""]]);
+
+  // Unticked: no mailing-list call at all.
+  calls.length = 0;
+  assert.equal(await P.sendWithOptin("p@x.com", { optin: false, website: "" }, impl(async () => "sent", async () => true)), "sent");
+  assert.deepEqual(calls, [["booking", "p@x.com", ""]]);
+
+  // The mailing list failing, hanging or throwing leaves the booking answer as it was.
+  for (const join of [async () => false, () => new Promise(() => {}), () => { throw new Error("boom"); }, async () => { throw new Error("boom"); }]) {
+    assert.equal(await P.sendWithOptin("p@x.com", { optin: true }, impl(async () => "sent", join)), "sent");
+  }
+  // And the booking list failing does not stop the mailing-list request.
+  calls.length = 0;
+  assert.equal(await P.sendWithOptin("p@x.com", { optin: true }, impl(async () => "failed", async () => true)), "failed");
+  assert.ok(calls.some((c) => c[0] === "join"));
+});
+
+test("the popup sends through sendWithOptin with the box's state, and resets the box after a send", () => {
+  const popup = read("app/components/MyBookingsEmail.tsx");
+  assert.match(popup, /await sendWithOptin\(email, \{ optin, website: honeypot \}\)/);
+  assert.doesNotMatch(popup, /await sendBookingList\(/, "no second path that skips the box");
+  assert.match(popup, /setEmail\(""\);\s*setOptin\(true\);/, "a fresh form after a send is ticked again");
+});
+
 /* ── the popup's focus trap ───────────────────────────────────────────────── */
 
-test("nextTrapIndex: field → Send → × → field, and back with Shift", () => {
-  // Stops, in order: 0 the field, 1 Send, 2 ×.
+test("nextTrapIndex: three stops cycle both ways (the field, the box, × while Send is disabled)", () => {
+  // Since the box (2026-10-21) there are four stops; while sending, Send is disabled and
+  // drops out, leaving three. The shape below is the same either way.
   assert.deepEqual([0, 1, 2].map((i) => P.nextTrapIndex(i, 3, false)), [1, 2, 0]);
   assert.deepEqual([0, 1, 2].map((i) => P.nextTrapIndex(i, 3, true)), [2, 0, 1]);
-  // While sending, Send is disabled and drops out; the two stops left still cycle.
+  // Two stops still cycle.
   assert.deepEqual([0, 1].map((i) => P.nextTrapIndex(i, 2, false)), [1, 0]);
   assert.deepEqual([0, 1].map((i) => P.nextTrapIndex(i, 2, true)), [1, 0]);
 });
