@@ -243,7 +243,8 @@
   gap: calc(1.4 * var(--vw));
 }
 /* Sized so the three fit the copy column's width with the tile's padding: measured
-   at 1080p, POWER 200px, the words, SeRa 150px tall. */
+   at 1080p inside the vestibule's 0.8 scale, POWER 200px wide, the words, SeRa
+   121px tall. */
 .panelLayout .power {
   width: calc(13 * var(--vw)) !important;
   flex: none;
@@ -259,4 +260,11 @@
 .panelLayout .ctaCell {
   grid-column: 2;
   grid-row: 1 / span 2;
+}
+/* FREE in the brand orange here, not green (2026-10-21, Aniket: "make the FREE chip
+   orange on the vestibule"). The vestibule's cards use green for a free court
+   (ALL OPEN), and a pulsing green FREE beside them could read as one. The exit
+   door shows no court state, so it keeps green. */
+.panelLayout .free {
+  background: #f89b72;
 }
