@@ -138,9 +138,10 @@ test("/api/court-slots passes only the fixed words and never forwards `who`", as
   assert.ok(body.blocks.every((b) => !("who" in b)), "who is never forwarded");
 });
 
-/* The public relay and the lights (2026-10-18, "Add there too"): the schedule only,
-   and only when asked. The bridge's report and any override never pass. */
-test("/api/court-slots forwards the lights SCHEDULE only when asked, and never the bridge", async (t) => {
+/* The public relay and the lights (2026-10-18, "Add there too"): only when asked. The
+   schedule only at first; since 2026-10-21 the bridge's live state too ("show the real
+   on/off state on the public page too"), cut to lib/public-lights.ts's allow-list. */
+test("/api/court-slots forwards the lights only when asked: the schedule and the live state", async (t) => {
   const grid = { timeZone: "America/New_York", days: ["2026-10-18"], courts: [], blocks: [] };
   const lightsUp = {
     sports: ["badminton"],
@@ -161,16 +162,18 @@ test("/api/court-slots forwards the lights SCHEDULE only when asked, and never t
   assert.doesNotMatch(asked.at(-1), /lights=1/);
   assert.equal("lights" in plain, false);
 
-  // Asked: requested upstream; windows only, bridge null, no override anywhere.
+  // Asked: requested upstream; the windows and the live state, each cut to its fields.
   const withL = await (await R.GET(new Request("https://extonsports.com/api/court-slots?lights=1"))).json();
   assert.match(asked.at(-1), /[?&]lights=1(&|$)/);
   assert.deepEqual(withL.lights, {
     sports: ["badminton"],
     now: "2026-10-18T14:00:00.000Z",
     windows: [{ zone: "badminton", on_at: "2026-10-18T19:45:00.000Z", off_at: "2026-10-18T22:15:00.000Z" }],
-    bridge: null,
+    bridge: {
+      reported_at: "2026-10-18T13:59:50.000Z",
+      zones: [{ zone: "badminton", on: true, override: { on: true, until: "2026-10-18T20:00:00Z" } }],
+    },
   });
-  assert.equal(JSON.stringify(withL).includes("override"), false);
 
   // ⛔ One unreadable window withholds them all; no lights upstream means none here.
   upstream = { ...grid, lights: { ...lightsUp, windows: [...lightsUp.windows, { zone: "badminton", on_at: "soon", off_at: "later" }] } };
