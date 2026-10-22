@@ -12,7 +12,7 @@ import { SESSION_TEXT, SPORT_OBJECT, span } from "../board/board-lib";
 import { usePromos } from "../exit/promos";
 import StarterHero from "../exit/StarterHero";
 import WorkshopHero from "../exit/WorkshopHero";
-import BirthdayHero from "../exit/BirthdayHero";
+import CccaHero from "../exit/CccaHero";
 import w from "../exit/workshop.module.css";
 import v from "./vestibule.module.css";
 
@@ -32,9 +32,10 @@ import v from "./vestibule.module.css";
        disagree with the desk about who is on court — but none of reception's
        ten-row COMING UP list. The vestibule is walked through, not stood at.
      RIGHT, ROTATING — the exit-door screen's promotions, 5 s each: the Starter
-       Pack, the workshop until 8pm on 30 Oct, the birthday until midnight on
-       21 Oct. Which are up is promos.ts, shared with the exit door, so both walls
-       change panel at the same moment and take a panel down at the same moment.
+       Pack, Chester County Cricket Academy (from 2026-10-22), and the workshop
+       until 8pm on 30 Oct. (The birthday ran until midnight on 21 Oct.) Which are
+       up is promos.ts, shared with the exit door, so both walls change panel at
+       the same moment and take a panel down at the same moment.
 
    ⛔ NAMES: unchanged, and not decided here. The vestibule's key has
    names_visible off, so its feed carries the partner organisations and nothing
@@ -183,7 +184,7 @@ export default function VestibuleScreen() {
      one row of it, and looks two further for a booking starting at the same moment.
      `currentOnly`: ON NOW lists only what is on court this minute (see the hook). */
   const { panels, today, stale } = useCourtPanels({ upcoming: 3, upNextMax: UP_NEXT_MAX, currentOnly: true });
-  const { withWorkshop, withBirthday, count, slot, birthdaySlot } = usePromos();
+  const { up, slot } = usePromos();
 
   return (
     <div style={{ position: "absolute", inset: 0, background: BG }}>
@@ -214,19 +215,19 @@ export default function VestibuleScreen() {
           <div className={v.promoFrame}>
             <div className={v.promoScale}>
               <div className={`${w.stack} ${v.promoStack}`}>
-                <StarterHero className={slot(0)} panel />
-                {withWorkshop && <WorkshopHero className={slot(1)} panel />}
-                {withBirthday && <BirthdayHero className={slot(birthdaySlot)} panel />}
+                <StarterHero className={slot("starter")} panel />
+                <CccaHero className={slot("ccca")} panel />
+                {up.includes("workshop") && <WorkshopHero className={slot("workshop")} panel />}
               </div>
             </div>
             {/* Which of the N panels is up: a dot each, the lit one on the same
                 swap clock as the panels (the same slot classes), so it can never
                 point at a panel that is not showing. */}
-            {count > 1 && (
+            {up.length > 1 && (
               <div className={v.dots} aria-hidden>
-                {Array.from({ length: count }, (_, i) => (
-                  <span key={i} className={v.dot}>
-                    <span className={`${v.dotOn} ${slot(i)}`} />
+                {up.map((key) => (
+                  <span key={key} className={v.dot}>
+                    <span className={`${v.dotOn} ${slot(key)}`} />
                   </span>
                 ))}
               </div>

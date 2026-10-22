@@ -6,7 +6,7 @@ import ScreenStamp from "../components/ScreenStamp";
 import { BG, INK, BOX } from "../components/tv-palette";
 import StarterHero from "./StarterHero";
 import WorkshopHero from "./WorkshopHero";
-import BirthdayHero from "./BirthdayHero";
+import CccaHero from "./CccaHero";
 import { usePromos } from "./promos";
 import w from "./workshop.module.css";
 
@@ -58,7 +58,7 @@ export default function ExitScreen() {
   /* Which promotions are up and which slot each holds: promos.ts, shared with the
      vestibule since 2026-10-21 so both walls change panels at the same moment.
      The Starter Pack's own panel is StarterHero.tsx since the same day. */
-  const { withWorkshop, withBirthday, slot, birthdaySlot } = usePromos();
+  const { up, slot } = usePromos();
   /* NO HEARTBEAT IN HERE, on purpose (2026-10-20). The freeze watchdog's beat is
      sent ONCE per page by whoever renders this, named by the ADDRESS: TvScreen.tsx
      as "outside" on /outside (the TV's own address), and app/exit/page.tsx as
@@ -91,9 +91,9 @@ export default function ExitScreen() {
         {/* One cell for both panels while the workshop is on (workshop.module.css
             swaps them every 5 s); otherwise the Starter Pack alone, as before. */}
         <div className={w.stack}>
-        <StarterHero className={slot(0)} />
-        {withWorkshop && <WorkshopHero className={slot(1)} />}
-        {withBirthday && <BirthdayHero className={slot(birthdaySlot)} />}
+        <StarterHero className={slot("starter")} />
+        <CccaHero className={slot("ccca")} />
+        {up.includes("workshop") && <WorkshopHero className={slot("workshop")} />}
         </div>
 
         {/* The version stamp (2026-10-20): keyed screens or ?diag only, in the

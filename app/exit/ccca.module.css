@@ -1,0 +1,243 @@
+/* The Chester County Cricket Academy panel (2026-10-22): the academy's flyer in the wall
+   screens' look. Same rules as exit.module.css, for the same weak VIZIO browsers: literal
+   colours, sizes in the 16:9 box's units (--vw/--vh, see tv-palette BOX), and only
+   transform and opacity animate, with no var() inside @keyframes. The grid, the title, the
+   tick list and the code card are exit.module.css's own classes (CccaHero.tsx), so the
+   three promotions read as one screen. */
+
+/* ── THE COPY ──────────────────────────────────────────────────────────────── */
+/* LEARN · PRACTICE · IMPROVE · ACHIEVE, the flyer's own line, set like the workshop's
+   "present" line: small tracked caps over the title. */
+.motto {
+  margin: 0 0 calc(1.6 * var(--vh));
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 500;
+  font-size: calc(1.45 * var(--vw));
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.86);
+}
+.motto b {
+  color: #f89b72;
+  font-weight: 600;
+}
+/* Narrower than the Starter Pack's 6.2: "CRICKET ACADEMY" has to fit the copy column. */
+.big {
+  font-size: calc(4.6 * var(--vw));
+}
+.tagline {
+  margin: calc(1.8 * var(--vh)) 0 0;
+  font-size: calc(1.75 * var(--vw));
+  font-weight: 500;
+  line-height: 1.2;
+  color: #ffffff;
+}
+
+/* ── THE FIVE PLAYER GROUPS ────────────────────────────────────────────────── */
+/* A ladder, ROOKIES to ELITE: five bars rising left to right, the name under each, and
+   a cricket ball hopping up them. The flyer lists the groups as five equal tiles; a
+   rising row says "you move up" without a sentence to read. */
+.ladder {
+  margin: calc(3 * var(--vh)) 0 0;
+  max-width: calc(44 * var(--vw));
+}
+.ladderHead {
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: calc(1.15 * var(--vw));
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #f89b72;
+  margin-bottom: calc(1.2 * var(--vh));
+}
+/* The bars' box. The mover is exactly this box, so the ball's path, written in % of it,
+   lands on the bars at any width. */
+.bars {
+  position: relative;
+  height: calc(9 * var(--vh));
+  display: flex;
+  align-items: flex-end;
+  /* 0.18 of a bar (3.15% of five bars and four gaps): the keyframes' x positions assume it (CccaHero.tsx). */
+  column-gap: 3.15%;
+}
+.bar {
+  flex: 1;
+  border-radius: calc(0.35 * var(--vw)) calc(0.35 * var(--vw)) 0 0;
+  background: linear-gradient(180deg, rgba(248, 155, 114, 0.95) 0%, rgba(248, 155, 114, 0.45) 100%);
+  box-shadow: inset 0 calc(0.25 * var(--vh)) 0 rgba(255, 255, 255, 0.35);
+}
+/* ELITE in gold, the step at the top. */
+.bar.top {
+  background: linear-gradient(180deg, #ffc43d 0%, rgba(255, 196, 61, 0.5) 100%);
+}
+.names {
+  display: flex;
+  column-gap: 3.15%;
+  margin-top: calc(0.8 * var(--vh));
+  border-top: calc(0.12 * var(--vw)) solid rgba(255, 255, 255, 0.35);
+  padding-top: calc(0.7 * var(--vh));
+}
+.names span {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: calc(1.1 * var(--vw));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #ffffff;
+  white-space: nowrap;
+}
+.names span:last-child {
+  color: #ffc43d;
+}
+
+/* The ball: one hop up each step, a rest on ELITE, gone, again — every 6.5 s. The mover
+   is the bars' box; translate(x%, y%) puts the ball's foot on (x, y) of it. Sampled from
+   a parabola per hop, so straight steps between samples read as an arc. */
+.mover {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform: translate(91.26%, 0%);
+  animation: hop 6.5s linear infinite;
+}
+.ball {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(2.4 * var(--vw));
+  height: calc(2.4 * var(--vw));
+  transform: translate(-50%, -100%);
+}
+.ball img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  animation: spin 1.1s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes hop {
+  0% { transform: translate(8.74%, 70%); opacity: 0; }
+  5% { transform: translate(8.74%, 70%); opacity: 1; }
+  8% { transform: translate(8.74%, 70%); }
+  10.25% { transform: translate(13.9%, 46.5%); }
+  12.5% { transform: translate(19.06%, 36%); }
+  14.75% { transform: translate(24.21%, 38.5%); }
+  17% { transform: translate(29.37%, 54%); }
+  19.25% { transform: translate(34.53%, 30.5%); }
+  21.5% { transform: translate(39.69%, 20%); }
+  23.75% { transform: translate(44.84%, 22.5%); }
+  26% { transform: translate(50%, 38%); }
+  28.25% { transform: translate(55.16%, 14%); }
+  30.5% { transform: translate(60.31%, 3%); }
+  32.75% { transform: translate(65.47%, 5%); }
+  35% { transform: translate(70.63%, 20%); }
+  37.25% { transform: translate(75.79%, -4.5%); }
+  39.5% { transform: translate(80.94%, -16%); }
+  41.75% { transform: translate(86.1%, -14.5%); }
+  44% { transform: translate(91.26%, 0%); }
+  84% { transform: translate(91.26%, 0%); opacity: 1; }
+  90% { transform: translate(91.26%, 0%); opacity: 0; }
+  100% { transform: translate(91.26%, 0%); opacity: 0; }
+}
+
+/* FREE for girls: gold, as the boards print CCCA's free girls' hour ("Only Girls – Free
+   Coaching", SESSION_GOLD) — and never green, which on the vestibule's cards means a free
+   court. It pulses like the workshop's FREE. */
+.free {
+  display: inline-block;
+  margin-right: 0.35em;
+  padding: 0.08em 0.4em 0.1em;
+  border-radius: calc(0.3 * var(--vw));
+  background: #ffc43d;
+  color: #0b1623;
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  animation: free-pulse 2.6s ease-in-out infinite;
+}
+@keyframes free-pulse {
+  0%, 36%, 100% { transform: scale(1); }
+  12% { transform: scale(1.12); }
+  24% { transform: scale(0.98); }
+}
+
+/* ── THE CREST ─────────────────────────────────────────────────────────────── */
+/* The middle column on the exit door: the academy's crest on a warm light, floating a
+   little, as the workshop's logo tile does. */
+.crestCol {
+  justify-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+.crestCol::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(closest-side, rgba(248, 155, 114, 0.28) 0%, rgba(248, 155, 114, 0) 100%);
+}
+.crest {
+  position: relative;
+  width: calc(19 * var(--vw));
+  height: auto;
+  animation: float 5s ease-in-out infinite;
+}
+/* 2.5% of the crest's own height. */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2.5%); }
+}
+/* The crest inside the copy: only in the vestibule's panel, where there is no middle
+   column (see .panelLayout). */
+.crestInline {
+  display: none;
+}
+
+/* "Call Sachin Zope" under the code: the site's own ask ("Call us!"). */
+.phone {
+  display: block;
+  margin-top: calc(0.4 * var(--vh));
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: calc(2.2 * var(--vw));
+  letter-spacing: 0.04em;
+  color: #ffbe97;
+  white-space: nowrap;
+}
+
+/* ── THE VESTIBULE'S PANEL ─────────────────────────────────────────────────── */
+/* In the vestibule's right half, a box about 1.3:1 at 0.8 scale (vestibule.module.css
+   .promoScale): copy | code, the middle column gone and the crest moved to the head of
+   the copy, beside the motto. */
+.panelLayout {
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: calc(2.4 * var(--vw));
+  padding: 0 calc(3 * var(--vw));
+}
+.panelLayout .crestCol {
+  display: none;
+}
+.panelLayout .crestInline {
+  display: block;
+  height: calc(13 * var(--vh));
+  width: auto;
+  margin-bottom: calc(1.2 * var(--vh));
+}
+.panelLayout .ladder {
+  max-width: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mover, .ball img, .free, .crest {
+    animation: none;
+  }
+  .mover {
+    display: none;
+  }
+}
