@@ -42,8 +42,9 @@
   52%, 96% { opacity: 1; }
   100% { opacity: 0; }
 }
-/* Three panels (2026-10-21, the evening's birthday greeting joins them): a 15 s clock,
-   5 s each, the same 0.4 s cross-fade (2.67% of 15 s) at each change. */
+/* Three panels (2026-10-21, for the evening's birthday greeting; from 2026-10-22 the
+   Starter Pack, CCCA and the workshop): a 15 s clock, 5 s each, the same 0.4 s
+   cross-fade (2.67% of 15 s) at each change. */
 .slide3a {
   animation: slide-3a 15s linear infinite both;
 }
