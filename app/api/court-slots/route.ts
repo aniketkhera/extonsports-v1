@@ -132,7 +132,14 @@ export async function GET(req: Request) {
     const res = await fetch(
       // sessions=1: ask for the partners' JUNIOR COACHING / OPEN PLAY split (2026-10-14).
       `${API_BASE}/api/public/court-slots?club=${encodeURIComponent(CLUB_ID)}&days=${days}&sessions=1${wantLights ? '&lights=1' : ''}`,
-      { next: { revalidate: 60 }, signal: AbortSignal.timeout(5000) },
+      /* 15 s with the lights, 60 s without (2026-10-21). The lights now carry the
+         bridge's live report, and the chip trusts a report for 3 minutes on the
+         viewer's clock (board-lib lightChip); the bridge reports once a minute and
+         the platform caches ?lights=1 for 15 s + 15 s stale. A minute here on top
+         of that, served stale once, could age a report past 3 minutes, and the chip
+         would fall back to the schedule: LIGHTS OFF over a lit hall. The calendar
+         and the homepage do not ask for lights and keep their minute. */
+      { next: { revalidate: wantLights ? 15 : 60 }, signal: AbortSignal.timeout(5000) },
     )
     if (!res.ok) return NextResponse.json(EMPTY)
 

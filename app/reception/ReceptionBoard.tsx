@@ -744,9 +744,11 @@ export function useCourtPanels({ upcoming, upNextMax, currentOnly = false }: { u
   useEffect(() => {
     mounted.current = true;
     const key = readKey();
-    /* Unkeyed, the page asks the relay for the lights SCHEDULE too (?lights=1, 2026-10-18,
-       Aniket: "Add there too"): the chip then follows the windows alone, with no
-       bridge report and no override — those stay behind a TV's key. */
+    /* Unkeyed, the page asks the relay for the lights too (?lights=1, 2026-10-18,
+       Aniket: "Add there too"). The schedule only at first, with the bridge's report
+       and any override behind a TV's key; since 2026-10-21 the live state as well
+       ("show the real on/off state on the public page too"), so a laptop and the TVs
+       give the same chip. What the relay forwards: lib/public-lights.ts. */
     const url = key ? `${PLATFORM}/api/public/court-board?days=21` : "/api/court-slots?lights=1";
     const init: RequestInit = key
       ? { cache: "no-store", headers: { Authorization: `Bearer ${key}` } }
