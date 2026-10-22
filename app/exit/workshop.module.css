@@ -261,3 +261,10 @@
   grid-column: 2;
   grid-row: 1 / span 2;
 }
+/* FREE in the brand orange here, not green (2026-10-21, Aniket: "make the FREE chip
+   orange on the vestibule"). The vestibule's cards use green for a free court
+   (ALL OPEN), and a pulsing green FREE beside them could read as one. The exit
+   door shows no court state, so it keeps green. */
+.panelLayout .free {
+  background: #f89b72;
+}
