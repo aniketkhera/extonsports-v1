@@ -113,14 +113,15 @@ export default function Footer() {
           links={[
             { label: "Court rates", href: "/#top" },
             { label: "Book a court or lane", href: BOOK_COURT_URL },
-            // 2026-10-20: see or cancel a guest booking. Right after "Book", where somebody
-            // who booked looks first; gated until the platform side is switched on (lib/booking.ts).
-            ...(MY_BOOKINGS_LIVE ? [{ label: "My bookings", href: MY_BOOKINGS_PATH }] : []),
             /* 2026-10-21, Aniket: the hero's "Show calendar of bookings" button moved here,
                "make it like all the other links in the footer". Same look as its neighbours;
                a plain click opens the calendar overlay, anything else goes to /calendar
                (CalendarFooterLink.tsx). The hero row now has "My bookings" in its place. */
             { label: "Calendar of bookings", href: "/calendar", calendar: true },
+            // 2026-10-20: see or cancel a guest booking, near "Book", where somebody who booked
+            // looks first — after the calendar, which Aniket put right under "Book" on 2026-10-21
+            // (my-bookings-pure.test.mjs). Gated until the platform side is switched on (lib/booking.ts).
+            ...(MY_BOOKINGS_LIVE ? [{ label: "My bookings", href: MY_BOOKINGS_PATH }] : []),
             // 2026-10-21: the court pack's buy page (orangish-app docs/court-packs.md §8.2).
             // A relative path, so FooterCol opens it in the same tab. Gated until the owner's
             // live test and the key-box revoke are done (lib/booking.ts PACKS_LIVE).
