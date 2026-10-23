@@ -155,8 +155,14 @@ export const BOOKING_LIST_CLUB = 'exton-sports'
  * platform first, then Aniket's own live test, then this site (orangish-app
  * docs/booking-list-email.md, "Rollout").
  *
- * Named apart from the unmerged /my-bookings branch's MY_BOOKINGS_LIVE on purpose: that is a
- * different feature (sign in by link, see and cancel), and the two must not share a switch.
+ * Named apart from MY_BOOKINGS_LIVE (below) on purpose: that is a different feature (sign in
+ * by link or code, see and cancel, at /my-bookings), and the two must not share a switch.
+ * 2026-10-22, when /my-bookings was rebased onto this: the two stay independent both ways.
+ * Flipping MY_BOOKINGS_LIVE never touches this one, and this one being false hides the
+ * popup together with the /my-bookings line inside it (the footer link stays). The
+ * platform's switches are as separate: features.booking_list_email here,
+ * features.guest_self_manage and guest_self_manage_email there, so turning the guest
+ * feature off leaves "Email my bookings" working.
  */
 export const BOOKING_LIST_EMAIL_LIVE = true
 
@@ -216,7 +222,21 @@ export const CLASS_ONLINE_BOOKING_LIVE = true
 export const MY_BOOKINGS_PATH = '/my-bookings'
 
 /**
- * ⛔ THE ENTRY POINTS, NOT THE PAGE. Governs only the footer link and the hero button.
+ * ⛔ THE ENTRY POINTS, NOT THE PAGE. Governs only the site's two links to /my-bookings:
+ * the footer's "Manage or cancel a booking" and the "Booked online and need to cancel?
+ * Sign in" line inside the hero's "My bookings" popup (app/components/MyBookingsEmail.tsx).
+ *
+ * 2026-10-22, reconciling it with the shipped "Email my bookings" (the defaults put to
+ * Aniket for review): the hero keeps ONE "My bookings", the email popup, which covers
+ * every booking an address holds (member, on-account and guest); this page covers only
+ * courts booked and paid for online, so it must not take the button over. The branch's
+ * second hero button to /my-bookings is gone; the popup line replaces it, because the
+ * hero row is the only entry a phone sees above the fold (the nav has no phone menu).
+ * Flipping this NEVER touches BOOKING_LIST_EMAIL_LIVE, and turning the platform's
+ * features.guest_self_manage off leaves "Email my bookings" working. While
+ * BOOKING_LIST_EMAIL_LIVE is false the popup, and so its line, is not shown at all; the
+ * footer link is then the only entry.
+ *
  * /my-bookings itself is live as soon as this site deploys — on purpose, BEFORE anything
  * links to it (switch-on step 4): the platform's emails link to it from step 7 on, and a
  * link to a page that is not there yet would be a 404 in a guest's inbox. Until the

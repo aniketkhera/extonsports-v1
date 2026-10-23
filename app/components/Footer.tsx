@@ -118,11 +118,15 @@ export default function Footer() {
                a plain click opens the calendar overlay, anything else goes to /calendar
                (CalendarFooterLink.tsx). The hero row now has "My bookings" in its place. */
             { label: "Calendar of bookings", href: "/calendar", calendar: true },
-            // 2026-10-20: see or cancel a guest booking, gated until the platform side is
-            // switched on (lib/booking.ts). After the calendar, not before it (rebase,
-            // 2026-10-22): the calendar's place right under "Book" is pinned by
-            // app/components/my-bookings-pure.test.mjs.
-            ...(MY_BOOKINGS_LIVE ? [{ label: "My bookings", href: MY_BOOKINGS_PATH }] : []),
+            /* /my-bookings: see or cancel a court booked and paid for online (2026-10-20),
+               gated by MY_BOOKINGS_LIVE until the platform side is switched on (lib/booking.ts).
+               2026-10-22, reconciling it with the shipped "Email my bookings" (the default
+               put to Aniket for review): labelled "Manage or cancel a booking", NOT "My
+               bookings", because the hero's "My bookings" is the email popup, which also
+               covers member and on-account bookings, and one name must not mean two things.
+               After the calendar, not before it: the calendar's place right under "Book" is
+               pinned by app/components/my-bookings-pure.test.mjs. */
+            ...(MY_BOOKINGS_LIVE ? [{ label: "Manage or cancel a booking", href: MY_BOOKINGS_PATH }] : []),
             { label: "Make an adhoc payment", href: PAY_URL },
             { label: "Bulk & block bookings", href: `mailto:${CONTACT_EMAIL}` },
             { label: "Academies & juniors", href: "/#top" },
