@@ -469,10 +469,17 @@ export function toPack(raw: unknown): PackView | null {
 /* ── the quote (POST /api/public/guest-packs/quote, design §6.2) ────────────────────── */
 
 /** Why no pack can pay for this slot, most specific first (design §3, "Refusal priority"),
- *  plus 'all_booked' (every credit booked, none played yet — §8.1's third wording). */
+ *  plus 'all_booked' (every credit booked, none played yet — §8.1's third wording).
+ *
+ *  'too_far_ahead', 2026-10-22. Aniket: "let's make the pack bookings upto 60 days for 5 pack
+ *  and 120 days for 10 pack.. cancel and re-booking is fine." A pack booking may be made up
+ *  to the pack's own play window ahead (60 / 120 days from today, club-local) instead of the
+ *  club's card window (30 at Exton); the slot is past that for every pack the guest could
+ *  otherwise use. Where it ranks against the others is the platform's (CP_REFUSAL_ORDER);
+ *  this list is only the set of reasons the site knows a sentence for. */
 export type PackRefusalReason =
   | 'no_pack' | 'wrong_sport' | 'too_many_credits' | 'closed' | 'used_up' | 'all_booked'
-  | 'expired' | 'outside_window' | 'not_enough_credits'
+  | 'expired' | 'too_far_ahead' | 'outside_window' | 'not_enough_credits'
 
 /**
  * A refusal and the details its sentence needs (lib/my-bookings/copy.ts refusalText).
@@ -487,13 +494,30 @@ export type PackRefusalView = {
   creditsLeft: number | null // not_enough_credits: the best pack's credits left
   creditsTotal: number | null // used_up / all_booked
   lo: string | null // outside_window: first usable date, YYYY-MM-DD
-  hi: string | null // outside_window / expired: last usable date (valid until)
+  // outside_window / expired: last usable date (valid until). On 'expired' the platform sends
+  // it as validUntil (refusalOf reads that first, 2026-10-22); held here as hi either way.
+  hi: string | null
+  // too_far_ahead (2026-10-22): the furthest ahead, in days from today, that any of the
+  // guest's otherwise-usable packs of this sport can book — the platform's max_days, sent as
+  // maxDays like every other detail (max_credits → maxCredits). A pack's horizon is its
+  // play_window_days, so it is bounded as an offer's window is (7–366); outside that, null,
+  // and the sentence says less.
+  maxDays: number | null
 }
 
 export const PACK_REFUSALS: readonly PackRefusalReason[] = [
   'no_pack', 'wrong_sport', 'too_many_credits', 'closed', 'used_up', 'all_booked',
-  'expired', 'outside_window', 'not_enough_credits',
+  'expired', 'too_far_ahead', 'outside_window', 'not_enough_credits',
 ]
+
+/**
+ * Refusals whose way on is another DATE, not a card (2026-10-22): the pack pages show "Pick
+ * another time" for these where every other refusal shows "Pay by card". A date too far
+ * ahead for the guest's pack is too far for a card as well — every pack horizon Exton sells
+ * (60 and 120 days) is longer than its card window (30, copy.ts CARD_WINDOW_DAYS) — so "Pay
+ * by card" would only walk the guest to the app form's "Card bookings open 30 days ahead."
+ */
+export const PICK_ANOTHER_REFUSALS: readonly PackRefusalReason[] = ['too_far_ahead']
 
 function refusalOf(r: Record<string, unknown> | null, reason: unknown): PackRefusalView | null {
   const why = PACK_REFUSALS.find((x) => x === reason)
@@ -501,6 +525,12 @@ function refusalOf(r: Record<string, unknown> | null, reason: unknown): PackRefu
   const sports = Array.isArray(r.sports)
     ? r.sports.map((s) => text(s, 60)).filter((s): s is string => s !== null).slice(0, 5)
     : []
+  // 2026-10-22 (review of the booking horizon): the platform's 'expired' refusal is
+  // { reason: 'expired', validUntil } (orangish-app lib/court-pack-rules.ts PackRefusal), and
+  // this read only `hi`, so "expired on Nov 29" lost its date. validUntil first; `hi` still
+  // counts, because this site's own book route echoes a PackRefusalView (hi) to the browser
+  // (fromSiteBook), and the platform may send hi beside validUntil.
+  const hi = why === 'expired' ? (ymd(r.validUntil) ?? ymd(r.hi)) : ymd(r.hi)
   return {
     reason: why,
     need: count(r.need, 1, 20),
@@ -509,7 +539,8 @@ function refusalOf(r: Record<string, unknown> | null, reason: unknown): PackRefu
     creditsLeft: count(r.creditsLeft, 0, 20),
     creditsTotal: count(r.creditsTotal, 1, 20),
     lo: ymd(r.lo),
-    hi: ymd(r.hi),
+    hi,
+    maxDays: count(r.maxDays, 7, 366),
   }
 }
 

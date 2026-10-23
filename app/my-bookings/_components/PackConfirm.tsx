@@ -4,8 +4,8 @@ import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import type { PackSelection } from "@/lib/my-bookings/session";
 import {
-  PACK_REFUSALS, fromSiteBook, isBookSuccess, type BookStatus, type BookView, type PackClock, type PackRefusalReason,
-  type PackRefusalView,
+  PACK_REFUSALS, PICK_ANOTHER_REFUSALS, fromSiteBook, isBookSuccess, type BookStatus, type BookView, type PackClock,
+  type PackRefusalReason, type PackRefusalView,
 } from "@/lib/my-bookings/view";
 import {
   COPY, PACK_COPY, PACK_SIGNIN, bookButton, bookMessage, bookedLead, bookedPaidWith, buySportPack, cancelThisNote, ofLeft,
@@ -45,7 +45,20 @@ import PhoneText from "./PhoneText";
    • UI-7 — `clock` is the quote's clock for this pack after this booking (choiceFor). The
      booked screen states a firm "Valid until" only for a STARTED clock (the book answer's
      own clock wins when the platform sends one); otherwise the clock sentence.
-   • UI-8 — "try again" and "slow down" say "or pay by card", so they show the card link. */
+   • UI-8 — "try again" and "slow down" say "or pay by card", so they show the card link.
+
+   2026-10-22 (Aniket: pack bookings up to 60 days ahead for a 5-pack, 120 for a 10-pack):
+   'too_far_ahead' at Book — the pack that was quoted is no longer usable and the others
+   cannot reach the date — says "Pick an earlier date", so it offers "Pick another time", not
+   "Pay by card": a card cannot book that far ahead either (view.ts PICK_ANOTHER_REFUSALS).
+
+   2026-10-22, review of the booking horizon: a pack can book a date past the card window (30
+   days, copy.ts cardOpenOn), and there "Pay by card" handed the app's form a date it will
+   not take by card — the form moved the booking to TODAY at the same start time. The page
+   passes `cardUrl` null for such a date, and then nothing here offers or mentions a card:
+   no card link, no "or pay by card" in the sentences (refusalText's ctx.card, bookMessage's
+   card), and the answers that would have shown the card show "Pick another time" instead
+   (beside "Buy a … court pack" where a new pack would fix it). "Try again" keeps Book. */
 
 type Phase = "idle" | "pending" | "booked";
 
@@ -69,14 +82,26 @@ function isOneOf<T extends string>(list: readonly T[], v: string): v is T {
  * Whether the answer to Book shows "Pay by card $X": a pack refusal, the switch off, or a
  * "try again" / "slow down" whose sentence offers the card (review UI-8). NEVER after a
  * doubt ('unknown'): the booking may have landed, and paying again would book it twice.
+ * Never when `card` is false (2026-10-22): the date is past the card window.
  */
-export function showsPayByCard(status: BookStatus | null): boolean {
-  return status !== null && (isOneOf(PACK_REFUSALS, status) || isOneOf(CARD_TOO, status));
+export function showsPayByCard(status: BookStatus | null, card = true): boolean {
+  return card && status !== null && !isOneOf(PICK_ANOTHER_REFUSALS, status)
+    && (isOneOf(PACK_REFUSALS, status) || isOneOf(CARD_TOO, status));
+}
+
+/** Whether the answer to Book shows "Pick another time": the slot can't be booked online, or
+ *  a pack refusal whose way on is another date (too_far_ahead, 2026-10-22). With `card` false
+ *  (2026-10-22, past the card window) also every pack refusal and the switch off — the answers
+ *  that hide Book and would have offered the card. Not try_again / slow_down: Book stays. */
+export function showsPickAnother(status: BookStatus | null, card = true): boolean {
+  if (status === null) return false;
+  if (isOneOf(PICK_ANOTHER, status) || isOneOf(PICK_ANOTHER_REFUSALS, status)) return true;
+  return !card && (isOneOf(PACK_REFUSALS, status) || status === "off");
 }
 
 /** A pack refusal with no details (fromSiteBook keeps only details that check out). */
 function bareRefusal(reason: PackRefusalReason): PackRefusalView {
-  return { reason, need: null, sports: [], maxCredits: null, creditsLeft: null, creditsTotal: null, lo: null, hi: null };
+  return { reason, need: null, sports: [], maxCredits: null, creditsLeft: null, creditsTotal: null, lo: null, hi: null, maxDays: null };
 }
 
 /**
@@ -229,7 +254,7 @@ export default function PackConfirm({
   credits: number;
   email: string; // masked
   sport: string;
-  cardUrl: string;
+  cardUrl: string | null; // null: the date is past the card window — no card anywhere (2026-10-22)
   cardTotalCents: number;
   pickAnotherUrl: string;
   bookAgainUrl: string;
@@ -284,20 +309,25 @@ export default function PackConfirm({
     );
   }
 
+  // One switch for the card (2026-10-22): the page's cardUrl, so the link and the sentences
+  // can never disagree about whether this date can be paid by card.
+  const card = cardUrl !== null;
   const status = result?.status ?? null;
   const refused = status !== null && isOneOf(PACK_REFUSALS, status);
-  const pickAnother = status !== null && isOneOf(PICK_ANOTHER, status);
+  const pickAnother = showsPickAnother(status, card);
   const reload = status !== null && isOneOf(RELOAD, status);
   const unknown = status === "unknown";
   const off = status === "off";
   // Book stays only for answers that left the ground as it was: retry, tick, fix the phone.
   const canBook = !refused && !pickAnother && !reload && !unknown && !off;
+  // "Buy a … court pack" for a refusal a new pack would fix — with the card or with Pick another time.
+  const buyHref = refused && isOneOf(BUY_FIXES, status ?? "") ? buyUrl : null;
 
   let message: string | null = null;
   if (result && refused) {
-    message = refusalText(result.refusal ?? bareRefusal(result.status as PackRefusalReason), refusalCtx);
+    message = refusalText(result.refusal ?? bareRefusal(result.status as PackRefusalReason), { ...refusalCtx, card });
   } else if (result) {
-    message = bookMessage(result, phone);
+    message = bookMessage(result, phone, card);
   }
   const quiet = status === "terms_required" || status === "bad_phone";
 
@@ -382,24 +412,32 @@ export default function PackConfirm({
         </div>
       )}
 
-      {showsPayByCard(status) && (
+      {cardUrl !== null && showsPayByCard(status, card) && (
         <div className="mt-6 flex flex-wrap gap-3">
           <a href={cardUrl} className={BTN_PRIMARY}>
             {payByCard(cardTotalCents)}
           </a>
-          {buyUrl && refused && isOneOf(BUY_FIXES, status ?? "") && (
-            <Link href={buyUrl} className={BTN_SECONDARY}>
+          {buyHref && (
+            <Link href={buyHref} className={BTN_SECONDARY}>
               {buySportPack(sport)}
             </Link>
           )}
         </div>
       )}
 
+      {/* Past the card window a pack refusal shows Pick another time where the card was, and
+          keeps "Buy a … court pack" beside it (2026-10-22). With a card, buyHref is always null
+          here: too_far_ahead and the slot answers are not BUY_FIXES. */}
       {pickAnother && (
-        <div className="mt-6">
+        <div className="mt-6 flex flex-wrap gap-3">
           <a href={pickAnotherUrl} className={`${BTN_PRIMARY} inline-block`}>
             {PACK_COPY.pickAnother}
           </a>
+          {buyHref && (
+            <Link href={buyHref} className={BTN_SECONDARY}>
+              {buySportPack(sport)}
+            </Link>
+          )}
         </div>
       )}
 

@@ -3,8 +3,8 @@
 import { useState } from "react";
 import type { OfferView } from "@/lib/my-bookings/view";
 import {
-  FALLBACK_PHONE, PACK_BUY_COPY, checkoutMessage, money, packSportsLine, payButton, perHourLine, sizeTile,
-  sportTilePrice, whatYouGet,
+  FALLBACK_PHONE, PACK_BUY_COPY, bookingAndChanges, checkoutMessage, money, packSportsLine, payButton, perHourLine,
+  sizeTile, sportTilePrice, whatYouGet,
 } from "@/lib/my-bookings/copy";
 import { isEmailShape } from "@/lib/my-bookings/guard";
 import { PACK_TERMS_PATH, bookWithPackUrl } from "@/lib/booking";
@@ -21,6 +21,14 @@ import PhoneText from "../my-bookings/_components/PhoneText";
    badminton tiles together and could never pick the 10-pack. Everything under the rows is
    the CHOSEN offer's own: its price, per-hour, credits, and its own window (60 days for a
    5-pack, 120 for a 10-pack) — never a page-wide number.
+
+   BOOKING HORIZON, 2026-10-22. Aniket: "let's make the pack bookings upto 60 days for 5 pack
+   and 120 days for 10 pack.. cancel and re-booking is fine." A pack books as far ahead as its
+   own window (card bookings stay at the club's 30 days), so each size tile says how far ahead
+   it books, and a "Booking and changes" box under "What you get" says how booking and
+   changing work — both from the offers' own windows (copy.ts sizeTile, bookingAndChanges),
+   the box from the CHOSEN sport's sizes, so it is true of the sport on screen. It has no
+   "change" button to describe: a change is a cancel and a new booking.
 
    Sport → size → what you get → email → tick → Pay. Pay posts to THIS site's
    /api/court-packs/checkout, which relays to the platform; the platform prices the pack
@@ -192,7 +200,7 @@ export default function BuyForm({
           <div className="grid gap-2" style={cols(sizes.length)}>
             {sizes.map((o) => {
               const on = o.credits === choice.credits;
-              const [credits, price, perHour] = sizeTile(o);
+              const [credits, price, perHour, ahead] = sizeTile(o);
               return (
                 <label key={`${o.sportId}:${o.credits}`} className={`${TILE} ${on ? TILE_ON : TILE_OFF}`}>
                   <input
@@ -206,6 +214,7 @@ export default function BuyForm({
                   <span className="text-mono text-[0.72rem] tracking-[0.08em] uppercase">{credits}</span>
                   <small className={`block text-[0.85rem] mt-0.5 ${on ? "" : "text-white/80"}`}>{price}</small>
                   <small className={`block text-[0.78rem] ${on ? "" : "text-white/60"}`}>{perHour}</small>
+                  <small className={`block text-[0.78rem] ${on ? "" : "text-white/60"}`}>{ahead}</small>
                 </label>
               );
             })}
@@ -247,6 +256,20 @@ export default function BuyForm({
               </li>
             ))}
           </ul>
+
+          {/* Booking and changes (2026-10-22) — the chosen sport's sizes, each its own window. */}
+          <section aria-labelledby="buy-changes" className="mt-6 border border-[var(--legal-line)] bg-[var(--legal-surface)] p-4">
+            <h2 id="buy-changes" className={LABEL}>
+              {PACK_BUY_COPY.changesTitle}
+            </h2>
+            <ul className="mt-1 space-y-1.5">
+              {bookingAndChanges(sizes, phone).map((line) => (
+                <li key={line} className="text-white/80 text-[0.92rem] leading-snug">
+                  <PhoneText text={line} phone={phone} />
+                </li>
+              ))}
+            </ul>
+          </section>
         </>
       )}
 

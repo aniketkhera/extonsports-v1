@@ -20,6 +20,38 @@ export const FALLBACK_PHONE = CONTACT_PHONE
 /** The cutoff the owner set on 2026-10-18; the platform's GUEST_SELF_CANCEL_CUTOFF_HOURS. */
 export const DEFAULT_CUTOFF_HOURS = 24
 
+/**
+ * How far ahead a CARD booking opens at Exton: the platform's locations.court_booking_window_days
+ * (30). The /court-packs "Booking and changes" box says it, beside the packs' own horizons
+ * (2026-10-22, Aniket: "let's make the pack bookings upto 60 days for 5 pack and 120 days for 10
+ * pack.."), and the pack pages offer "Pay by card" only inside it (cardOpenOn, below). The
+ * platform's offers and quote answers do not carry the club's window, so it is mirrored here
+ * as DEFAULT_CUTOFF_HOURS is; a change to the column needs this changed too. The packs' own
+ * horizons are never written here — they are each offer's windowDays.
+ */
+export const CARD_WINDOW_DAYS = 30
+
+/**
+ * Whether the app's form can book `date` (club-local YYYY-MM-DD) BY CARD, counted from the
+ * club-local `today`: the last card date is today + cardDays − 1, as the app's own
+ * lastBookableDate (orangish-app lib/guest-court-booking-rules.ts) counts it.
+ *
+ * WHY, 2026-10-22 (review of the booking horizon): a pack books up to 60 or 120 days ahead,
+ * a card only 30, and the pack pages offered "Pay by card" — and a "By card $X" price and
+ * ", or pay by card" sentences — for every date. The card link hands the app's form a date it
+ * will not take by card, and the form moved the booking to TODAY at the same start time
+ * without a word. Past this date the pack pages offer "Pick another time" instead. A
+ * malformed date is treated as inside the window (the page says what it always said);
+ * session.ts has already checked the parked one.
+ */
+export function cardOpenOn(date: string, today: string, cardDays: number = CARD_WINDOW_DAYS): boolean {
+  const t = /^(\d{4})-(\d{2})-(\d{2})$/.exec(today)
+  if (!t || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return true
+  const last = new Date(Date.UTC(Number(t[1]), Number(t[2]) - 1, Number(t[3]) + Math.max(1, cardDays) - 1))
+  if (Number.isNaN(last.getTime())) return true
+  return date <= last.toISOString().slice(0, 10)
+}
+
 const USD = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
 
 /** 4500 -> "$45.00". */
@@ -214,6 +246,8 @@ export const PACK_COPY = {
   phoneLabel: 'Mobile (optional)',
   booking: 'Booking…',
   unreachable: "We couldn't reach the booking system. Try again in a moment, or pay by card.",
+  // 2026-10-22: the same, for a date past the card window (cardOpenOn) — there is no card to offer.
+  unreachableNoCard: "We couldn't reach the booking system. Try again in a moment.",
   // The booked screen (mock panel 4).
   bookedTitle: "You're booked",
   rowCourt: 'Court',
@@ -283,6 +317,8 @@ export const PACK_BUY_COPY = {
   sportLabel: 'Sport',
   // 2026-10-22: the second choice, under the sport — 5 credits or 10.
   sizeLabel: 'Pack',
+  // 2026-10-22: the box under "What you get" (bookingAndChanges).
+  changesTitle: 'Booking and changes',
   // Pay, while nothing is chosen (a ?sport= the club sells no pack for: no tile is picked).
   choose: 'Choose a pack',
   whatYouGet: 'What you get',
@@ -377,10 +413,18 @@ export function slotWhenText(sel: { date: string; startTime: string; hours: numb
  * By card $45.00". Shown before sign-in too — it describes the SLOT, never a pack. The time
  * is built from `sel`, the slot this site parked and the platform priced (view.ts checks the
  * answer is for its sport and credits); without one, the platform's own whenText.
+ *
+ * `card` false (2026-10-22: the date is past the card window, cardOpenOn) drops the
+ * "· By card $45.00" part — a price for something the guest cannot do on that date.
  */
-export function slotSummary(slot: QuoteSlot, sel?: { date: string; startTime: string; hours: number }): string {
+export function slotSummary(
+  slot: QuoteSlot,
+  sel?: { date: string; startTime: string; hours: number },
+  card = true,
+): string {
   const when = (sel && slotWhenText(sel)) ?? slot.whenText
-  return `${slot.courts} ${slot.sport.toLowerCase()} ${unitText(slot.unit, slot.courts)}, ${when} · ${creditsText(slot.credits)} · By card ${money(slot.cardTotalCents)}`
+  const base = `${slot.courts} ${slot.sport.toLowerCase()} ${unitText(slot.unit, slot.courts)}, ${when} · ${creditsText(slot.credits)}`
+  return card ? `${base} · By card ${money(slot.cardTotalCents)}` : base
 }
 
 /** "This hour is $45.00 by card — your pack saves you $5.00." — only when it does save. */
@@ -471,6 +515,10 @@ export type RefusalContext = {
   phone: string
   date: string // the booking's date, YYYY-MM-DD
   today: string // club-local today, YYYY-MM-DD (lib/opening.ts clubDate)
+  // 2026-10-22: whether the page offers "Pay by card" for this date (cardOpenOn). false drops
+  // the ", or pay by card" clauses: past the card window the way on is another time, and the
+  // page shows "Pick another time" instead of the card link. Only false drops them.
+  card: boolean
 }
 
 function sportList(sports: string[]): string {
@@ -492,6 +540,8 @@ export function refusalText(r: PackRefusalView, ctx: RefusalContext): string {
   const need = r.need ?? ctx.need
   const units = unitText(ctx.unit, 2)
   const on = dayText(ctx.date)
+  // 2026-10-22: no card past the card window (RefusalContext.card), so no "or pay by card".
+  const orCard = ctx.card === false ? '' : ', or pay by card'
   switch (r.reason) {
     case 'no_pack':
       return `There's no court pack on ${ctx.email ?? 'this email'}.`
@@ -501,22 +551,29 @@ export function refusalText(r: PackRefusalView, ctx: RefusalContext): string {
     }
     case 'too_many_credits':
       return r.maxCredits !== null
-        ? `This booking needs ${creditsText(need)} and your largest ${sport} pack holds ${creditsText(r.maxCredits)}. Book fewer ${units} or hours, or pay by card.`
-        : `This booking needs ${creditsText(need)}, more than one ${sport} pack holds. Book fewer ${units} or hours, or pay by card.`
+        ? `This booking needs ${creditsText(need)} and your largest ${sport} pack holds ${creditsText(r.maxCredits)}. Book fewer ${units} or hours${orCard}.`
+        : `This booking needs ${creditsText(need)}, more than one ${sport} pack holds. Book fewer ${units} or hours${orCard}.`
     case 'not_enough_credits': {
       if (r.creditsLeft === null) {
-        return `This booking needs ${creditsText(need)} and your ${sport} pack doesn't have enough left. Book fewer ${units} or hours, or pay by card.`
+        return `This booking needs ${creditsText(need)} and your ${sport} pack doesn't have enough left. Book fewer ${units} or hours${orCard}.`
       }
       const fix = r.creditsLeft === 1 ? `Book 1 ${ctx.unit} for 1 hour` : `Book fewer ${units} or hours`
-      return `This booking needs ${creditsText(need)} and your ${sport} pack has ${r.creditsLeft} left. ${fix}, or pay by card.`
+      return `This booking needs ${creditsText(need)} and your ${sport} pack has ${r.creditsLeft} left. ${fix}${orCard}.`
     }
+    case 'too_far_ahead':
+      // 2026-10-22 (Aniket: pack bookings up to 60 days ahead for a 5-pack, 120 for a
+      // 10-pack): the slot is past the furthest any of the guest's usable packs can book.
+      // maxDays is the platform's — the largest horizon among those packs — never a guess.
+      return r.maxDays !== null
+        ? `You can book up to ${r.maxDays} days ahead with your court pack. Pick an earlier date.`
+        : "You can't book that far ahead with your court pack. Pick an earlier date."
     case 'outside_window': {
       const lo = dayText(r.lo)
       const hi = dayText(r.hi)
       const tail = on ? `, and this booking is on ${on}.` : '.'
       if (lo && hi && r.lo && r.lo > ctx.today) return `Your ${sport} pack can be used from ${lo} to ${hi}${tail}`
       if (hi) return `Your ${sport} pack is valid until ${hi}${tail}`
-      return `Your ${sport} pack can't be used on that date. Pick another time, or pay by card.`
+      return `Your ${sport} pack can't be used on that date. Pick another time${orCard}.`
     }
     case 'expired': {
       const hi = dayText(r.hi)
@@ -547,8 +604,11 @@ export function bookedPaidWith(packName: string, credits: number): string {
  * What the pack page says after Book, for every outcome but booked/already (which show
  * the booked screen) and the pack refusals (refusalText). 'unknown' sends the guest to
  * My bookings, where a booking that did land is listed; it never says "nothing changed".
+ *
+ * `card` false (2026-10-22: the date is past the card window, cardOpenOn) leaves out "or pay
+ * by card" / "You can still pay by card." — the page shows no card link for that date.
  */
-export function bookMessage(v: BookView, phone: string = FALLBACK_PHONE): string {
+export function bookMessage(v: BookView, phone: string = FALLBACK_PHONE, card = true): string {
   switch (v.status) {
     case 'booked':
     case 'already':
@@ -572,16 +632,20 @@ export function bookMessage(v: BookView, phone: string = FALLBACK_PHONE): string
     case 'signed_out':
       return "This phone is signed out. Enter your email and we'll send you a code."
     case 'off':
-      return "Booking with a court pack isn't available right now. You can still pay by card."
+      return card
+        ? "Booking with a court pack isn't available right now. You can still pay by card."
+        : "Booking with a court pack isn't available right now."
     case 'slow_down':
       return COPY.tooMany
     case 'try_again':
-      return "That didn't go through, and nothing has changed. Try again in a moment, or pay by card."
+      return card
+        ? "That didn't go through, and nothing has changed. Try again in a moment, or pay by card."
+        : "That didn't go through, and nothing has changed. Try again in a moment."
     case 'unknown':
       return "We couldn't confirm that. Reload My bookings in a minute to check."
     default:
       // A pack refusal: the page renders refusalText with the slot's context instead.
-      return "This pack can't pay for that booking. You can still pay by card."
+      return card ? "This pack can't pay for that booking. You can still pay by card." : "This pack can't pay for that booking."
   }
 }
 
@@ -693,9 +757,73 @@ export function sportTilePrice(prices: number[]): string {
   return prices.length === 1 ? money(low) : `from ${money(low)}`
 }
 
-/** A size tile, top to bottom: "10 credits", "$350.00", "$35.00 an hour" (2026-10-22). */
-export function sizeTile(o: Pick<OfferView, 'credits' | 'priceCents' | 'perHourCents'>): [string, string, string] {
-  return [creditsText(o.credits), money(o.priceCents), `${money(o.perHourCents)} an hour`]
+/**
+ * A size tile, top to bottom: "10 credits", "$350.00", "$35.00 an hour" (2026-10-22), and how
+ * far ahead that pack books, "Books 120 days ahead" — the offer's own windowDays (Aniket,
+ * 2026-10-22: "let's make the pack bookings upto 60 days for 5 pack and 120 days for 10
+ * pack.."), so a size whose window changes on the platform says so with no deploy here. Kept to
+ * one short line: two tiles share a 375 px phone's row.
+ */
+export function sizeTile(
+  o: Pick<OfferView, 'credits' | 'priceCents' | 'perHourCents' | 'windowDays'>,
+): [string, string, string, string] {
+  return [creditsText(o.credits), money(o.priceCents), `${money(o.perHourCents)} an hour`, `Books ${o.windowDays} days ahead`]
+}
+
+/** "a 5-pack", "an 8-pack", "an 11-pack", "an 18-pack". */
+function aPack(credits: number): string {
+  return `${/^(8|11|18)$/.test(String(credits)) ? 'an' : 'a'} ${credits}-pack`
+}
+
+/** [60, 120] → "60 or 120"; [60, 90, 120] → "60, 90 or 120". */
+function orList(xs: (string | number)[]): string {
+  const s = xs.map(String)
+  return s.length <= 1 ? (s[0] ?? '') : `${s.slice(0, -1).join(', ')} or ${s[s.length - 1]}`
+}
+
+/**
+ * The "Booking and changes" box on /court-packs (2026-10-22). Aniket: "let's make the pack
+ * bookings upto 60 days for 5 pack and 120 days for 10 pack.. cancel and re-booking is fine."
+ * In order:
+ *   Book up to 60 days ahead with a 5-pack, or 120 with a 10-pack (card bookings open 30 days ahead).
+ *   Every game must fall within your pack's 60 or 120 days from your first game.
+ *   To change a booking, cancel it and book again.
+ *   Cancel online up to 24 hours before and the credit goes back on your pack.
+ *   Inside 24 hours, the desk can help: call 484-252-2523.
+ *   A no-show uses the credit.
+ *   A credit that comes back keeps your pack's dates.
+ *
+ * `sizes` are ONE sport's offers, smallest first (BuyForm passes the chosen sport's), so every
+ * number in the first two lines is an offer's own windowDays — a size the platform switches
+ * off, or a window it changes, changes the box with no deploy. Sizes that share one window say
+ * it once ("…with a court pack"). There is no "change" button: a change is a cancel and a new
+ * booking (Aniket, 2026-10-22). The last line is the approved terms' own rule (2026-10-22-1:
+ * "A credit returned to the pack keeps the pack's dates"), in the box's words.
+ */
+export function bookingAndChanges(
+  sizes: Pick<OfferView, 'credits' | 'windowDays'>[],
+  phone: string = FALLBACK_PHONE,
+  cardDays = CARD_WINDOW_DAYS,
+  hours = DEFAULT_CUTOFF_HOURS,
+): string[] {
+  const windows = [...new Set(sizes.map((o) => o.windowDays))].sort((a, b) => a - b)
+  // One window for every size: say it once. Otherwise each size with its own, in order:
+  // "60 days ahead with a 5-pack, or 120 with a 10-pack".
+  const parts = windows.length === 1
+    ? [`${windows[0]} days ahead with ${sizes.length === 1 ? aPack(sizes[0].credits) : 'a court pack'}`]
+    : sizes.map((o, i) => `${o.windowDays}${i === 0 ? ' days ahead' : ''} with ${aPack(o.credits)}`)
+  const listed = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(', ')}, or ${parts[parts.length - 1]}`
+  const ahead = `Book up to ${listed} (card bookings open ${cardDays} days ahead).`
+  return [
+    ...(windows.length > 0
+      ? [ahead, `Every game must fall within your pack's ${orList(windows)} days from your first game.`]
+      : []),
+    'To change a booking, cancel it and book again.',
+    `Cancel online up to ${hours} hours before and the credit goes back on your pack.`,
+    `Inside ${hours} hours, the desk can help: call ${phone}.`,
+    'A no-show uses the credit.',
+    "A credit that comes back keeps your pack's dates.",
+  ]
 }
 
 /**
