@@ -217,6 +217,11 @@ export const CLASS_ONLINE_BOOKING_LIVE = true
  * stay in the platform, reached server-to-server (lib/my-bookings/platform.ts). Spec:
  * orangish-app docs/guest-my-bookings.md.
  *
+ * The page's visible name, since the review fixes of 2026-10-22, is "Manage or cancel a
+ * booking" (its heading and <title>, matching the footer link); on the site "My bookings"
+ * names only the hero button that opens the "Email my bookings" popup. The feature keeps
+ * its working name in code and docs, and the URL stays /my-bookings.
+ *
  * Relative, so it opens in the same tab — it is this site, not the app.
  */
 export const MY_BOOKINGS_PATH = '/my-bookings'

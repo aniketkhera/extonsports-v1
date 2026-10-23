@@ -26,7 +26,13 @@ export function money(cents: number): string {
 }
 
 export const COPY = {
-  title: 'My bookings',
+  // Review fixes, 2026-10-22: the page's heading, and with " · Exton Sports Center" its
+  // <title> (app/my-bookings/layout.tsx). It was "My bookings", but the footer link that
+  // leads here reads "Manage or cancel a booking", and on the home page "My bookings" is the
+  // hero button that opens the "Email my bookings" popup, a different thing (it emails a
+  // list; this page signs in and cancels). One name per thing: this page takes the footer
+  // link's words, and "My bookings" names only that button. The URL stays /my-bookings.
+  title: 'Manage or cancel a booking',
   lead: "See or cancel a court you booked online. Enter the email you booked with and we'll send you a link.",
   emailLabel: 'Email',
   sendButton: 'Send me a link',
@@ -66,26 +72,33 @@ export const COPY = {
 } as const
 
 /**
- * The one line under the request form for everybody this page cannot help, 2026-10-22 (the
- * default put to Aniket for review when this page was rebased onto the shipped "Email my
- * bookings"). A sign-in link goes only to an address that booked and paid for a court online
+ * The one line at the foot of the request panel for everybody this page cannot help,
+ * 2026-10-22 (the default put to Aniket for review when this page was rebased onto the
+ * shipped "Email my bookings"). A sign-in link goes only to an address that booked and paid for a court online
  * as the hirer (orangish-app docs/guest-my-bookings.md, scope C1), so a member, or somebody
  * who booked on account or through a club, would wait here for an email that never comes.
  * The home page's "My bookings" popup emails today's and upcoming bookings of every kind an
  * address holds, so the line points there, and to the phone.
  *
- * ⛔ STATIC. The same words for every visitor, shown before anything is sent and never
- * changed by an answer, so it says nothing about whether an address has bookings (owner,
- * 2026-10-18). It promises neither a sign-in nor a cancel from the popup: that email is a
- * list. `listEmailLive` is lib/booking.ts BOOKING_LIST_EMAIL_LIVE; while that popup is
- * switched off the line names only the phone, so it never points at a button that is not
- * there. `link`, when present, is rendered as a link to the home page between `before` and
+ * ⛔ STATIC. The same words for every visitor and in EVERY state of the request panel —
+ * before anything is sent, after "Send me a link" (the "sent" screen) and on "I have a
+ * code" — and never changed by an answer, so it says nothing about whether an address has
+ * bookings (owner, 2026-10-18). Review fixes, 2026-10-22: it used to vanish on the "sent"
+ * screen, which is exactly where a member is left waiting for a link that never comes.
+ * It promises neither a sign-in nor a cancel from the popup: that email is a list.
+ * `listEmailLive` is lib/booking.ts BOOKING_LIST_EMAIL_LIVE; while that popup is switched
+ * off the line names only the phone, so it never points at a button that is not there.
+ * `link`, when present, is rendered as a link to the home page between `before` and
  * `after`; the phone is always in `after`, so it renders through PhoneText as a tel: link.
+ *
+ * Review fixes, 2026-10-22: `link` is the hero button's own label, "My bookings" (shown in
+ * capitals there, as MY BOOKINGS), in quotes. It said "Email my bookings", the popup's
+ * title, which no visitor can see until they have found and pressed that button.
  */
 export function otherBookings(phone: string, listEmailLive: boolean): { before: string; link?: string; after: string } {
   const before = "Booked as a member, or on account? Those bookings don't get a sign-in link here. "
   return listEmailLive
-    ? { before: before + 'Use ', link: 'Email my bookings', after: ` on the home page to have them emailed to you, or call ${phone}.` }
+    ? { before: before + 'Use "', link: 'My bookings', after: `" on the home page to have them emailed to you, or call ${phone}.` }
     : { before, after: `Call ${phone}.` }
 }
 

@@ -124,8 +124,11 @@ export default function Footer() {
                put to Aniket for review): labelled "Manage or cancel a booking", NOT "My
                bookings", because the hero's "My bookings" is the email popup, which also
                covers member and on-account bookings, and one name must not mean two things.
-               After the calendar, not before it: the calendar's place right under "Book" is
-               pinned by app/components/my-bookings-pure.test.mjs. */
+               Review fixes, 2026-10-22: the page itself now carries this label as its heading
+               and <title> too (COPY.title in lib/my-bookings/copy.ts), so the link and the
+               page it opens say the same thing. After the calendar, not before it: the
+               calendar's place right under "Book" is pinned by
+               app/components/my-bookings-pure.test.mjs. */
             ...(MY_BOOKINGS_LIVE ? [{ label: "Manage or cancel a booking", href: MY_BOOKINGS_PATH }] : []),
             { label: "Make an adhoc payment", href: PAY_URL },
             { label: "Bulk & block bookings", href: `mailto:${CONTACT_EMAIL}` },

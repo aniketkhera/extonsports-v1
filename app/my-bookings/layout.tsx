@@ -15,8 +15,10 @@ import OrangishPill from "../components/OrangishPill";
 // go out from next.config.ts, robots.ts disallows the path, and SiteChrome drops the
 // analytics, visit beacon and WhatsApp bubble here (see PRIVATE_PATHS there).
 
+// The title is COPY.title (lib/my-bookings/copy.ts) plus the club's name; the test pins the
+// two together. Review fixes, 2026-10-22: it was "My bookings", the home page's popup button.
 export const metadata: Metadata = {
-  title: { absolute: "My bookings · Exton Sports Center" },
+  title: { absolute: "Manage or cancel a booking · Exton Sports Center" },
   robots: { index: false, follow: false },
   referrer: "no-referrer",
 };
