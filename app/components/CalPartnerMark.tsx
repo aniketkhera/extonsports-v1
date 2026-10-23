@@ -22,7 +22,7 @@ const SHORT: Record<BrandKey, string> = {
   ccca: "CCCA",
   "philadelphia-badminton": "PHILA",
   sera: "SeRa",
-  throwball: "Throwball",
+  throwball: "Phoenix",
 };
 
 const FG = "rgba(var(--cal-fg),0.92)";
@@ -73,10 +73,19 @@ export default function CalPartnerMark({ org, rows }: { org: BrandKey; rows: num
       </span>
     );
   }
-  /* No artwork: the name in type (Throwball, 2026-10-23). This was the Sera branch's
-     fall-through until then, so a new key would have worn the studio's mark. Mixed
-     case as the owner wrote it: textTransform 'none' against .text-cond's capitals,
-     the same rule CalFreeMark follows below. */
+  if (org === "throwball") {
+    /* Phoenix, Reshma's throwball team (2026-10-23): the team in the accent over the
+       sport, stacked like SquashTigers. Mixed case as the owner wrote it:
+       textTransform 'none' against .text-cond's capitals, as CalFreeMark does below. */
+    return (
+      <span aria-hidden className="text-cond" style={{ fontSize: "0.56rem", letterSpacing: "0.04em", lineHeight: 1.05, textTransform: "none" }}>
+        <span style={{ display: "block", color: ACCENT }}>Phoenix</span>
+        <span style={{ display: "block", color: FG }}>Throwball</span>
+      </span>
+    );
+  }
+  /* No artwork: the name in type. This was the Sera branch's fall-through until
+     2026-10-23, so a new key would have worn the studio's mark. */
   return (
     <span aria-hidden className="text-cond" style={{ fontSize: "0.56rem", letterSpacing: "0.04em", color: FG, textTransform: "none" }}>
       {SHORT[org]}

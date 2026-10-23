@@ -319,7 +319,7 @@ export default function BookingsCalendar({
   }
 
   /* ⛔ THIS CALENDAR NAMES THE PARTNERS AND NOBODY ELSE, 2026-10-08. (Four then; a
-     fifth word, Throwball, a regular group's Sunday series, joined 2026-10-23.)
+     fifth key, 'throwball' — Phoenix, a regular group's Sunday series — joined 2026-10-23.)
      It stamped the holder's INITIALS on the first row of each booking until
      that morning. They came off because this page is public, Google indexes
      it and the link gets emailed around: two initials plus a court and an hour
@@ -422,14 +422,14 @@ export default function BookingsCalendar({
     ccca: "CCCA",
     "philadelphia-badminton": "PHILA",
     sera: "SeRa",
-    throwball: "Throwball",
+    throwball: "Phoenix",
   };
   const PARTNER_FULL: Record<BrandKey, string> = {
     squashtigers: "SquashTigers",
     ccca: "Chester County Cricket Academy",
     "philadelphia-badminton": "Philadelphia Badminton",
     sera: "Sera Dance & Fitness",
-    throwball: "Throwball",
+    throwball: "Phoenix Throwball",
   };
 
   const shell = (
@@ -814,7 +814,7 @@ export default function BookingsCalendar({
                   : []),
                 ["PHILA — Philadelphia Badminton", PARTNER_FILL["philadelphia-badminton"], "solid"],
                 ["SeRa — Sera Dance & Fitness", PARTNER_FILL.sera, "solid"],
-                ...(throwballShown ? [["Throwball", PARTNER_FILL.throwball, "solid"] as const] : []),
+                ...(throwballShown ? [["Phoenix Throwball", PARTNER_FILL.throwball, "solid"] as const] : []),
                 ["other coaching", FILL.programme, "solid"],
                 ["not bookable yet", FILL.shut, "dashed"],
               ] as Array<[label: string, bg: string, bs: "solid" | "dashed", linkTo?: BrandKey]>).map(([label, bg, bs, linkTo]) => {

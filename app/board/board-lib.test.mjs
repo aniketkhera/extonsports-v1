@@ -141,10 +141,10 @@ test("/api/court-slots passes only the fixed words and never forwards `who`", as
 /* Throwball (2026-10-23): Reshma's team's Sunday 18:30-20:30 series, named on the public
    calendar at Aniket's request. A fixed key like the four partners: the feed's `org`
    names it, and the relay forwards that word and nothing else. */
-test("Throwball is named from the key, as THROWBALL, and carries no session", () => {
+test("Throwball is named from the key, as PHOENIX THROWBALL, and carries no session", () => {
   const tb = { ...base, kind: "programme", from: 1110, to: 1230, org: "throwball" };
   assert.equal(L.brandFor(tb), "throwball");
-  assert.equal(L.holderLabel(tb), "THROWBALL");
+  assert.equal(L.holderLabel(tb), "PHOENIX THROWBALL");
   assert.equal(L.sessionOf(tb), null);
   // The fallback matcher, for a programme block from a feed without keys.
   assert.equal(L.brandFor({ ...base, kind: "programme", who: "Throwball" }), "throwball");

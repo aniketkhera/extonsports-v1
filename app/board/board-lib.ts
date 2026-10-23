@@ -121,7 +121,8 @@ export const PARTNER_TEXT: Record<BrandKey, string> = {
   ccca: "CHESTER COUNTY CRICKET ACADEMY",
   squashtigers: "SQUASHTIGERS",
   sera: "SERA DANCE & FITNESS",
-  throwball: "THROWBALL",
+  /* Phoenix, Reshma's throwball team (2026-10-23). The key stays 'throwball'. */
+  throwball: "PHOENIX THROWBALL",
 };
 
 export function holderLabel(b: NamedBlock): string {
