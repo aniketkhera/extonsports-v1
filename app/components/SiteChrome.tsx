@@ -34,9 +34,26 @@ import { SCREEN_PATHS } from "./tv-screens";
 // cannot repeat /reception's first week either. /exit, /board and /comingsoon are
 // listed there by hand, because none of them is a TV's own address.
 
+// /my-bookings, 2026-10-20 — a guest's own bookings and their Cancel. A different reason
+// from the screens, and a stricter one: this page is PRIVATE.
+//   • Vercel Analytics and TrackBeacon read location.href, and the visit log is read by
+//     staff; one person's bookings page has no business in either. (/my-bookings/link
+//     carries a sign-in token in its query; it is a route that 303s, never rendered, but
+//     the rule is simpler kept for the whole path.)
+//   • the green WhatsApp bubble sits bottom-right — exactly over a row's Cancel button on
+//     a phone — and links to app.orangish.io, an Orangish address the owner wants kept
+//     off this path (2026-10-18: guests see extonsports.com only).
+// BookingThemeCarry goes too (second review, 2026-10-20): it only rewrites links to the
+// platform's booking page, and nothing on this path links there any more — the empty
+// state's "Book a court or lane" goes to this site's own home page instead.
+const PRIVATE_PATHS = ["/my-bookings"];
+
 export default function SiteChrome() {
   const pathname = usePathname();
   if (pathname && SCREEN_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+    return null;
+  }
+  if (pathname && PRIVATE_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     return null;
   }
   return (

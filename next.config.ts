@@ -1,7 +1,27 @@
 import type { NextConfig } from "next";
 
+// The headers every /my-bookings answer carries, 2026-10-20 — pages, the link route and
+// its API alike. private, no-store: each answer is one guest's, several set or clear the
+// device cookie, and no CDN or back-forward cache may hand one to the next person on a
+// shared device. no-referrer: nothing from this path (in particular /my-bookings/link's
+// token) may leave in a Referer. noindex: belt to robots.ts's braces. The route handlers
+// set the first two themselves as well, so neither depends on this file alone.
+const MY_BOOKINGS_HEADERS = [
+  { key: 'Cache-Control', value: 'private, no-store' },
+  { key: 'Referrer-Policy', value: 'no-referrer' },
+  { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
+];
+
 const nextConfig: NextConfig = {
   transpilePackages: ['mailer-admin'],
+
+  async headers() {
+    return [
+      { source: '/my-bookings', headers: MY_BOOKINGS_HEADERS },
+      { source: '/my-bookings/:path*', headers: MY_BOOKINGS_HEADERS },
+      { source: '/api/my-bookings/:path*', headers: MY_BOOKINGS_HEADERS },
+    ];
+  },
 
   // The head-badminton-coach posting came down with the careers section, and
   // head-cricket-coach came down before it. Both were live, both were `index,

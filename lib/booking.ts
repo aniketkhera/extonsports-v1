@@ -158,8 +158,14 @@ export const BOOKING_LIST_CLUB = 'exton-sports'
  * platform first, then Aniket's own live test, then this site (orangish-app
  * docs/booking-list-email.md, "Rollout").
  *
- * Named apart from the unmerged /my-bookings branch's MY_BOOKINGS_LIVE on purpose: that is a
- * different feature (sign in by link, see and cancel), and the two must not share a switch.
+ * Named apart from MY_BOOKINGS_LIVE (below) on purpose: that is a different feature (sign in
+ * by link or code, see and cancel, at /my-bookings), and the two must not share a switch.
+ * 2026-10-22, when /my-bookings was rebased onto this: the two stay independent both ways.
+ * Flipping MY_BOOKINGS_LIVE never touches this one, and this one being false hides the
+ * popup together with the /my-bookings line inside it (the footer link stays). The
+ * platform's switches are as separate: features.booking_list_email here,
+ * features.guest_self_manage and guest_self_manage_email there, so turning the guest
+ * feature off leaves "Email my bookings" working.
  */
 export const BOOKING_LIST_EMAIL_LIVE = true
 
@@ -205,6 +211,63 @@ export const BOOKING_LIST_EMAIL_LIVE = true
  * the comment on the class entry in Hero.tsx.
  */
 export const CLASS_ONLINE_BOOKING_LIVE = true
+
+/**
+ * "My bookings" — a guest's own upcoming court bookings, and Cancel, 2026-10-20. Owner,
+ * 2026-10-18: "let's build the cancel path", "im ok with refund for now", "i want to stay
+ * away from the orangish-app". So the PAGES are this site's (app/my-bookings), on
+ * www.extonsports.com, with a first-party cookie; the bookings, the refund and the emails
+ * stay in the platform, reached server-to-server (lib/my-bookings/platform.ts). Spec:
+ * orangish-app docs/guest-my-bookings.md.
+ *
+ * The page's visible name, since the review fixes of 2026-10-22, is "Manage or cancel a
+ * booking" (its heading and <title>, matching the footer link); on the site "My bookings"
+ * names only the hero button that opens the "Email my bookings" popup. The feature keeps
+ * its working name in code and docs, and the URL stays /my-bookings.
+ *
+ * Relative, so it opens in the same tab — it is this site, not the app.
+ */
+export const MY_BOOKINGS_PATH = '/my-bookings'
+
+/**
+ * ⛔ THE ENTRY POINTS, NOT THE PAGE. Governs only the site's two links to /my-bookings:
+ * the footer's "Manage or cancel a booking" and the "Booked online and need to cancel?
+ * Sign in" line inside the hero's "My bookings" popup (app/components/MyBookingsEmail.tsx).
+ *
+ * 2026-10-22, reconciling it with the shipped "Email my bookings" (the defaults put to
+ * Aniket for review): the hero keeps ONE "My bookings", the email popup, which covers
+ * every booking an address holds (member, on-account and guest); this page covers only
+ * courts booked and paid for online, so it must not take the button over. The branch's
+ * second hero button to /my-bookings is gone; the popup line replaces it, because the
+ * hero row is the only entry a phone sees above the fold (the nav has no phone menu).
+ * Flipping this NEVER touches BOOKING_LIST_EMAIL_LIVE, and turning the platform's
+ * features.guest_self_manage off leaves "Email my bookings" working. While
+ * BOOKING_LIST_EMAIL_LIVE is false the popup, and so its line, is not shown at all; the
+ * footer link is then the only entry.
+ *
+ * /my-bookings itself is live as soon as this site deploys — on purpose, BEFORE anything
+ * links to it (switch-on step 4): the platform's emails link to it from step 7 on, and a
+ * link to a page that is not there yet would be a 404 in a guest's inbox. Until the
+ * platform's features.guest_self_manage is switched on at Exton, every call behind it
+ * answers 404 not_available and the page says so; a visible link would lead only to that.
+ * Same shape as CLASS_ONLINE_BOOKING_LIVE above.
+ *
+ * BEFORE FLIPPING IT (switch-on step 9 of orangish-app docs/guest-my-bookings.md §7,
+ * rewritten 2026-10-20 after the second review): steps 1–8 done — the migration applied
+ * and verified; EXTON_RELAY_SECRET set to the SAME value in both Vercel projects (this
+ * site and orangish-app; `openssl rand -base64 32`); the platform deployed, then THIS site
+ * with this still false; the production Resend account's extonsports.com domain checked;
+ * charge.refund.updated enabled on the platform webhook; the flag on; and the owner's
+ * live end-to-end cancel of a TWO-court booking checked (Stripe refund, calendar, TVs,
+ * lights schedule, both emails, the audit row) — a multi-court series has never run in
+ * production. The confirmation email's own "Manage or cancel" button is step 10, after
+ * this (features.guest_self_manage_email).
+ *
+ * The relay secret is a switch in its own right (security review, 2026-10-20): while it
+ * is unset on either side, every /my-bookings call fails closed and the page says "we
+ * can't show your bookings right now" (lib/my-bookings/platform.ts).
+ */
+export const MY_BOOKINGS_LIVE = false
 
 /** The booking CTA target, and whether it leaves the site. */
 export function bookingTarget(url: string): { href: string; external: boolean } {
