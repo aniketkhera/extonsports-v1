@@ -19,7 +19,7 @@ import { readDeviceToken } from '@/lib/my-bookings/session-server'
 // Every known outcome is 200 {status, …}: the HTTP status is about this route, the
 // `status` field about the booking, and the row renders it either way.
 //
-// A SERIES PAID WITH A COURT 5-PACK (2026-10-21, orangish-app docs/court-packs.md §7.2)
+// A SERIES PAID WITH A COURT PACK (2026-10-21, orangish-app docs/court-packs.md §7.2)
 // comes through this same route and this same call: the platform forks to the pack path
 // itself (cancelGuestSeries → cancelPackSeries → cp_return_series), returns the credit
 // instead of refunding, and never reaches Stripe. Nothing changes here. Its answer carries

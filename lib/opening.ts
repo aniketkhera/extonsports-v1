@@ -106,7 +106,7 @@ function clubOffsetMs(at: number): number {
 /**
  * The instant of a club-local wall time — "2026-10-25", "18:00" → 22:00Z (EDT), and
  * "2026-11-08", "18:00" → 23:00Z (EST). Null for anything that is not a real date and a
- * 00:00–23:59 time. Court 5-pack, review UI-6 (2026-10-21): the pack page needs it to tell
+ * 00:00–23:59 time. Court pack, review UI-6 (2026-10-21): the pack page needs it to tell
  * a game inside the 24-hour self-cancel cutoff, which the platform counts in REAL hours.
  *
  * The offset is read from Intl at the instant itself (twice, so a guess that lands on the

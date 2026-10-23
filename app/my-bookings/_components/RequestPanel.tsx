@@ -19,16 +19,17 @@ import { BTN_PRIMARY, BTN_TEXT, ERROR, INPUT, LABEL, postJson } from "./ui";
    The email stays in component state only — not in the URL, not in storage — and is
    handed to CodeForm so the guest types the code alone.
 
-   The pack variant, 2026-10-21 (court 5-pack, orangish-app docs/court-packs.md §8.1): on
+   The pack variant, 2026-10-21 (court pack, orangish-app docs/court-packs.md §8.1): on
    /my-bookings/pack the same panel asks for the email with PACK_SIGNIN's words ("Send me
    a code"), and after Send says PACK_SIGNIN.sent — still ONE sentence for every address,
    on the same /api/my-bookings/request and the same 202 behind it — then "Nothing
-   arriving? Check the address, or buy a 5-pack." The buy link comes in as `buyHref`, which
-   the page sets only while PACKS_LIVE is on (the buy page deploys unlinked); without it the
-   sentence stops at "Check the address." `next` is handed on to CodeForm, which checks it
-   against the allow-list where it navigates.
+   arriving? Check the address, or buy a court pack." The buy link comes in as `buyHref`,
+   which the page sets only while PACKS_LIVE is on (the buy page deploys unlinked) and, since
+   2026-10-22, only for a sport with a pack on sale (no squash); without it the sentence
+   stops at "Check the address." `next` is handed on to CodeForm, which checks it against
+   the allow-list where it navigates.
 
-   The list's sentence names a 5-pack (COPY.sentWithPack) only while PACKS_LIVE is on
+   The list's sentence names a court pack (COPY.sentWithPack) only while PACKS_LIVE is on
    (review R10, 2026-10-21): the site deploys with no pack on sale, and the platform's own
    sign-in email names packs only once court_packs_public is on. */
 

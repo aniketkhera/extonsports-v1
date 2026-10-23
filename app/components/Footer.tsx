@@ -121,10 +121,11 @@ export default function Footer() {
                a plain click opens the calendar overlay, anything else goes to /calendar
                (CalendarFooterLink.tsx). The hero row now has "My bookings" in its place. */
             { label: "Calendar of bookings", href: "/calendar", calendar: true },
-            // 2026-10-21: the court 5-pack's buy page (orangish-app docs/court-packs.md §8.2).
+            // 2026-10-21: the court pack's buy page (orangish-app docs/court-packs.md §8.2).
             // A relative path, so FooterCol opens it in the same tab. Gated until the owner's
             // live test and the key-box revoke are done (lib/booking.ts PACKS_LIVE).
-            ...(PACKS_LIVE ? [{ label: "5-pack", href: PACK_PATH }] : []),
+            // 2026-10-22: "Court packs" — renamed from "5-pack" with the 10-pack (Aniket).
+            ...(PACKS_LIVE ? [{ label: "Court packs", href: PACK_PATH }] : []),
             { label: "Make an adhoc payment", href: PAY_URL },
             { label: "Bulk & block bookings", href: `mailto:${CONTACT_EMAIL}` },
             { label: "Academies & juniors", href: "/#top" },

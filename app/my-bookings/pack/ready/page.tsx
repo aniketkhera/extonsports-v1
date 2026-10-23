@@ -13,8 +13,14 @@ import { PackMeter } from "../../_components/PackCard";
 import { BTN_PRIMARY } from "../../_components/ui";
 import PurchaseStatus from "./PurchaseStatus";
 
-// /my-bookings/pack/ready?cs={CHECKOUT_SESSION_ID} — where Stripe sends a 5-pack buyer
+// /my-bookings/pack/ready?cs={CHECKOUT_SESSION_ID} — where Stripe sends a court pack buyer
 // after paying, 2026-10-21 (orangish-app docs/court-packs.md §4 success_url, §8.2).
+//
+// TWO SIZES, 2026-10-22 (Aniket): a 5-pack is good for 60 days and a 10-pack for 120, so
+// the "Valid" row is THIS pack's window — the purchase answer's own windowDays when the
+// platform sends it, else the window of the offer matching the purchase's sport AND size
+// (by sport alone, the first offer — the 5-pack — would tell a 10-pack buyer "60 days"),
+// else no row. A wrong number of days is worse than none.
 //
 // PRIVATE: under /my-bookings, so the layout's noindex and no-referrer, next.config.ts's
 // private no-store headers, robots.ts's disallow and SiteChrome's no-analytics all apply.
@@ -36,7 +42,7 @@ import PurchaseStatus from "./PurchaseStatus";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: { absolute: "Your 5-pack · Exton Sports Center" },
+  title: { absolute: "Your court pack · Exton Sports Center" },
 };
 
 function Unknown() {
@@ -47,14 +53,25 @@ function Unknown() {
   );
 }
 
-/** The offer for the purchase's sport — by its id when the platform sent one, else by its
- *  name — or null. */
-function offerFor(v: PurchaseView, offers: OfferView[] | null): OfferView | null {
-  if (!offers) return null;
-  if (v.sportId) return offers.find((o) => o.sportId === v.sportId) ?? null;
-  if (!v.sport) return null;
+/** The offers of the purchase's sport — by its id when the platform sent one, else by its
+ *  name. */
+function sportOffers(v: PurchaseView, offers: OfferView[] | null): OfferView[] {
+  if (!offers) return [];
+  if (v.sportId) return offers.filter((o) => o.sportId === v.sportId);
+  if (!v.sport) return [];
   const sport = v.sport.toLowerCase();
-  return offers.find((o) => o.sport.toLowerCase() === sport) ?? null;
+  return offers.filter((o) => o.sport.toLowerCase() === sport);
+}
+
+/**
+ * The offer this purchase was, matched by sport AND size (2026-10-22: two sizes per sport),
+ * or null. Without a size from the platform, only a sport that sells one size is a match —
+ * guessing between a 5-pack and a 10-pack would name the wrong window.
+ */
+function offerFor(v: PurchaseView, offers: OfferView[] | null): OfferView | null {
+  const same = sportOffers(v, offers);
+  if (v.credits !== null) return same.find((o) => o.credits === v.credits) ?? null;
+  return same.length === 1 ? same[0] : null;
 }
 
 export default async function PackReadyPage({
@@ -71,22 +88,25 @@ export default async function PackReadyPage({
   const v = r.view;
   if (v.state === "pending") return <PurchaseStatus maskedEmail={v.maskedEmail} phone={FALLBACK_PHONE} />;
 
-  // Active. The offers only now (not on every "pending" poll), for the window — "Valid 60
-  // days from your first game". The pack's name and sport id come in the purchase answer
-  // itself since the platform's integration (review UI-2, 2026-10-21), so "Book your first
-  // game" opens the form for the right sport even with the offers down; an older answer
-  // without them still matches the offer by sport, as before. With neither, the form opens
-  // in pack mode for the guest to pick.
-  const o = await packOffers(ip, { desk: true });
-  const offers = o.kind === "ok" ? o.view : null;
-  const offer = offerFor(v, offers?.offers ?? null);
-  const sportId = v.sportId ?? offer?.sportId;
+  // Active. The offers only now (not on every "pending" poll), and only for what the
+  // purchase answer did not carry itself: the window — "Valid 60 days from your first game"
+  // (120 for a 10-pack) — and, from an older platform, the name and sport. The pack's name
+  // and sport id come in the purchase answer since the platform's integration (review UI-2,
+  // 2026-10-21), so "Book your first game" opens the form for the right sport even with the
+  // offers down; an older answer without them still matches the offer, by sport and size.
+  // With neither, the form opens in pack mode for the guest to pick.
+  const needOffers = v.windowDays === null || !v.sportId || !v.name;
+  const o = needOffers ? await packOffers(ip, { desk: true }) : null;
+  const offerList = o?.kind === "ok" ? o.view.offers : null;
+  const offer = offerFor(v, offerList);
+  const sportId = v.sportId ?? offer?.sportId ?? sportOffers(v, offerList)[0]?.sportId;
+  const windowDays = v.windowDays ?? offer?.windowDays ?? null;
 
   const rows: Array<[string, string]> = [];
   const name = v.name ?? offer?.name ?? v.sport;
   if (name) rows.push([PACK_BUY_COPY.rowPack, name]);
   if (v.credits !== null) rows.push([PACK_BUY_COPY.rowCredits, ofLeft(v.credits, v.credits)]);
-  if (offers) rows.push([PACK_BUY_COPY.rowValid, validWindowText(offers.windowDays)]);
+  if (windowDays !== null) rows.push([PACK_BUY_COPY.rowValid, validWindowText(windowDays)]);
   if (v.priceCents !== null) rows.push([PACK_BUY_COPY.rowPaid, paidByCard(v.priceCents)]);
   if (v.maskedEmail) rows.push([PACK_BUY_COPY.rowEmail, v.maskedEmail]);
 
@@ -119,7 +139,7 @@ export default async function PackReadyPage({
       </dl>
 
       {/* The app's booking form in pack mode, for this pack's sport. It leaves this site on
-          purpose (design §0): the form's "Continue with my 5-pack" brings the guest back to
+          purpose (design §0): the form's "Continue with my court pack" brings the guest back to
           /my-bookings/pack here. Same tab; the layout's no-referrer keeps ?cs= out of it. */}
       <a href={bookWithPackUrl(sportId)} rel="noreferrer" className={`${BTN_PRIMARY} block text-center mt-6`}>
         {PACK_BUY_COPY.bookFirst}

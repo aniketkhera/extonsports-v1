@@ -20,12 +20,15 @@ const nextConfig: NextConfig = {
       { source: '/my-bookings', headers: MY_BOOKINGS_HEADERS },
       { source: '/my-bookings/:path*', headers: MY_BOOKINGS_HEADERS },
       { source: '/api/my-bookings/:path*', headers: MY_BOOKINGS_HEADERS },
-      // The court 5-pack's checkout relay, 2026-10-21 (orangish-app docs/court-packs.md
+      // The court pack's checkout relay, 2026-10-21 (orangish-app docs/court-packs.md
       // §8.2): its body carries the buyer's email and its answer a Stripe Checkout URL, so
       // the same private, no-store answer. The pack's receipt page,
-      // /my-bookings/pack/ready?cs=, is already under /my-bookings/:path* above. /5-pack
-      // and /5-pack/terms are PUBLIC pages and are deliberately not listed here.
-      { source: '/api/5-pack/:path*', headers: MY_BOOKINGS_HEADERS },
+      // /my-bookings/pack/ready?cs=, is already under /my-bookings/:path* above.
+      // /court-packs and /court-packs/terms are PUBLIC pages and are deliberately not
+      // listed here. 2026-10-22: the relay moved from /api/5-pack with the rename to
+      // "court packs" (Aniket), and this rule moved WITH it — left on the old path, the new
+      // relay's answer would silently lose private/no-store.
+      { source: '/api/court-packs/:path*', headers: MY_BOOKINGS_HEADERS },
     ];
   },
 
@@ -45,6 +48,19 @@ const nextConfig: NextConfig = {
     return [
       { source: '/careers', destination: '/', permanent: true },
       { source: '/careers/:path*', destination: '/', permanent: true },
+
+      // ── /5-pack → /court-packs (2026-10-22) ────────────────────────────────
+      // Aniket, 2026-10-22: the product is "court packs" now, in two sizes, so the buy page
+      // and its terms moved (lib/booking.ts PACK_PATH, PACK_TERMS_PATH). Nothing public ever
+      // linked /5-pack (PACKS_LIVE was never on, the page was noindex and out of the
+      // sitemap), but the platform builds three links from ITS copy of the paths — Stripe's
+      // cancel_url, the desk Checkout's consent line and the booking form's buy link — so
+      // these cover the minutes the two deploys disagree, and any Checkout made before the
+      // app moved. Permanent (308), as decided: the old name is not coming back. Next passes
+      // the query through, so /5-pack?sport=<id> lands on /court-packs?sport=<id> with its
+      // tile picked. One exact rule per page: there is nothing else under /5-pack.
+      { source: '/5-pack', destination: '/court-packs', permanent: true },
+      { source: '/5-pack/terms', destination: '/court-packs/terms', permanent: true },
 
       // ── /pay → the pay page in the Orangish app (2026-10-15) ───────────────
       // The address Aniket's Gmail footer prints ("Pay online: extonsports.com/pay ·

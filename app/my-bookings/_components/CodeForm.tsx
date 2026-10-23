@@ -13,7 +13,7 @@ import PhoneText from "./PhoneText";
    Every refusal reads the same — wrong, expired, used up, or an address that was never
    sent a code — because the platform answers them all with one 400.
 
-   `next` and `variant`, 2026-10-21 (court 5-pack, orangish-app docs/court-packs.md §8.1):
+   `next` and `variant`, 2026-10-21 (court pack, orangish-app docs/court-packs.md §8.1):
    on /my-bookings/pack a code signs the guest in and goes BACK to the pack page, where the
    parked slot is waiting. `next` is re-checked against the allow-list right where it is
    used (nextPathOf), so no prop — however a parent built it — can send a freshly

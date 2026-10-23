@@ -12,7 +12,7 @@ import { BTN_PRIMARY } from "../_components/ui";
 // so and offers a new one. Whether the link is still VALID is not known until the press
 // — this page never calls the platform.
 //
-// THE COURT 5-PACK, 2026-10-21 (orangish-app docs/court-packs.md §8.1, "Link path"): a guest
+// THE COURT PACK, 2026-10-21 (orangish-app docs/court-packs.md §8.1, "Link path"): a guest
 // booking with a pack who taps the emailed button instead of typing the code lands here
 // too. While a slot is parked in this browser (__Host-exton_pack_sel, 30 minutes) the press
 // goes on to /my-bookings/pack, where that slot waits, and "Send a new link" goes back

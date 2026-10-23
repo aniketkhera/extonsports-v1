@@ -23,7 +23,7 @@ export function readLinkToken(): Promise<string | null> {
 }
 
 /**
- * The court 5-pack slot parked by GET /my-bookings/pack/start, or null, 2026-10-21
+ * The court pack slot parked by GET /my-bookings/pack/start, or null, 2026-10-21
  * (orangish-app docs/court-packs.md §8.1). Re-checked by ./session.ts decodePackSel, the
  * same rules as the query string it came from, so a hand-edited cookie reads as "no slot"
  * ("Pick a time first"), never as a slot the platform is asked about. Clearing it is the

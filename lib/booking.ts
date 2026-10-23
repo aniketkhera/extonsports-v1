@@ -242,33 +242,75 @@ export const MY_BOOKINGS_PATH = '/my-bookings'
 export const MY_BOOKINGS_LIVE = false
 
 /**
- * THE COURT 5-PACK, 2026-10-21. Owner, 2026-10-20: "let's go with the implentation.." —
- * five one-hour credits for one sport, $200 squash and badminton, $275 cricket, used within
- * 60 days of the first game played (orangish-app docs/court-packs.md). Bought on
- * PACK_PATH (this site, then Stripe); spent from the app's booking form, which hands the
- * slot to PACK_BOOK_PATH here, where the remembered device lives (§0).
+ * COURT PACKS, 2026-10-21; two sizes since 2026-10-22. Owner, 2026-10-20: "let's go with
+ * the implentation.." (orangish-app docs/court-packs.md). Aniket, 2026-10-22: the product
+ * is "court packs", sold in two sizes per sport, BADMINTON AND CRICKET ONLY (squash is no
+ * longer sold; its courts still book by card):
+ *   badminton 5-pack $200 (5 credits, $40 each) and 10-pack $350 (10 credits, $35 each);
+ *   cricket   5-pack $275 (5 credits, $55 each) and 10-pack $500 (10 credits, $50 each);
+ *   a 5-pack's credits are good for 60 days and a 10-pack's for 120, from the first game
+ *   played; either size expires unused 12 months after purchase.
+ * Nothing above is hard-coded on this site: every price, size and window comes from the
+ * platform's court_pack_offers, through the offers endpoint (lib/my-bookings/view.ts
+ * toOffers). Bought on PACK_PATH (this site, then Stripe); spent from the app's booking
+ * form, which hands the slot to PACK_BOOK_PATH here, where the remembered device lives (§0).
+ *
+ * The buy page moved from /5-pack to /court-packs with the rename (2026-10-22); next.config.ts
+ * redirects the old two paths permanently, query and all. These two MUST equal orangish-app
+ * lib/court-pack-rules.ts CP_PACK_PATHS.buy and .terms: the app builds Stripe's cancel_url,
+ * the desk Checkout's consent line and the booking form's buy link from its own copy.
  */
-export const PACK_PATH = '/5-pack'
-export const PACK_TERMS_PATH = '/5-pack/terms'
-/** Where the app form's "Continue with my 5-pack" lands, via /my-bookings/pack/start. */
+export const PACK_PATH = '/court-packs'
+export const PACK_TERMS_PATH = '/court-packs/terms'
+/** Where the app form's "Continue with my court pack" lands, via /my-bookings/pack/start. */
 export const PACK_BOOK_PATH = '/my-bookings/pack'
 
 /**
  * ⛔ THE ENTRY POINTS, NOT THE PAGES — the MY_BOOKINGS_LIVE pattern. Governs only the
- * "5-pack" links in the Hero, the RateCard and the Footer, and the sitemap entry. The pages
- * deploy unlinked and fail closed: until the platform's features.court_packs_public is on,
- * /5-pack's offers answer 404 and the page says packs are not on sale.
+ * "Court packs" links in the Hero, the RateCard and the Footer, the sitemap entry, and the
+ * pack pages' "Buy a … court pack" (packBuyUrl). The pages deploy unlinked and fail closed:
+ * until the platform's features.court_packs_public is on, /court-packs's offers answer 404
+ * and the page says packs are not on sale.
  *
  * BEFORE FLIPPING IT (design §12, step 8): steps 0–7 done — My bookings fully live; the
  * pack migrations applied and verified with Aniket's yes; the platform deployed with both
  * flags absent, then this site with this still false; court_packs on; the owner's live
  * test (a desk sale, a 2-court × 1 h pack booking, a self-cancel, a desk return inside 24
  * hours, the two-phone race for the last credit, cp_audit_invariants empty, a refund that
- * closes the pack); court_packs_public on and one pack bought online from the unlinked
- * /5-pack, then refunded. AND the key-box revoke live (Aniket, 2026-10-20: a cancelled
- * booking's code is deleted from the box; "Do not ship the pack before the revoke is live").
+ * closes the pack; 2026-10-22: the desk sale is a Badminton 10-pack, its pack card and a
+ * 6-credit booking checked for "120 days"); court_packs_public on and ONE pack bought online
+ * from the unlinked /court-packs — a Badminton 5-pack, the size the desk test did not buy
+ * (docs/court-packs.md switch-on step 7 in orangish-app) — then refunded. AND the key-box revoke live (Aniket,
+ * 2026-10-20: a cancelled booking's code is deleted from the box; "Do not ship the pack
+ * before the revoke is live").
  */
 export const PACKS_LIVE = false
+
+/**
+ * The buy page for one sport — "/court-packs?sport=<id>", with "&credits=<n>" when a size
+ * is asked for and on sale — or null when the club sells no pack for that sport, 2026-10-22.
+ *
+ * Aniket, 2026-10-22: squash packs are no longer sold, but squash courts still exist, so a
+ * squash slot can still reach the pack page (a stale or hand-made link). Its "Buy a squash
+ * court pack" would land on a page with no squash offer, so a pack page offers the buy link
+ * ONLY for a sport the offers list sells — `offers` is the platform's live list
+ * (lib/my-bookings/platform.ts packOffers), never a list kept here. No list (the offers are
+ * down, or off) is no link: paying by card is always still there.
+ *
+ * Callers gate it behind PACKS_LIVE themselves (lib/my-bookings/pack-book.test.mjs checks).
+ */
+export function packBuyUrl(
+  sportId: string,
+  offers: ReadonlyArray<{ sportId: string; credits: number }> | null,
+  credits?: number | null,
+): string | null {
+  if (!offers || !SLOT_UUID_RE.test(sportId) || !offers.some((o) => o.sportId === sportId)) return null
+  const p = new URLSearchParams({ sport: sportId })
+  if (typeof credits === 'number' && offers.some((o) => o.sportId === sportId && o.credits === credits)) {
+    p.set('credits', String(credits))
+  }
+  return `${PACK_PATH}?${p}`
+}
 
 /** A slot on the app's form, in its deep-link vocabulary. lib/my-bookings/session.ts
  *  PackSelection is one. */
@@ -295,7 +337,7 @@ function slotParams(p: URLSearchParams, slot: BookingSlot): void {
 }
 
 /**
- * The app's booking form in pack mode (?pay=pack shows "My 5-pack" even before
+ * The app's booking form in pack mode (?pay=pack shows "My court pack" even before
  * court_packs_public). With a sport, that sport is picked; with a slot, that slot too, so
  * "Pick another time" keeps the guest's day. Built HERE from values this site checked, so a
  * pack card's "Book a court with my pack" never follows a link the platform sent.

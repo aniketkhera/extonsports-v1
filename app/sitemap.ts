@@ -26,10 +26,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // Sign-ups for the POWER x SeRa Fitness workshop, Fri 30 Oct 2026 (added 2026-10-21).
     // Take it out after the workshop, with the page.
     { path: '/fitnessworkshop', changeFrequency: 'weekly', priority: 0.6 },
-    // The court 5-pack's buy page, 2026-10-21 — listed only once PACKS_LIVE is on, with
+    // The court pack's buy page, 2026-10-21 — listed only once PACKS_LIVE is on, with
     // the Hero and Footer links (orangish-app docs/court-packs.md §12, step 8). Until then
-    // the page is deployed but unlinked, and noindex (app/5-pack/page.tsx). /5-pack/terms
-    // stays out, like the legal pages.
+    // the page is deployed but unlinked, and noindex (app/court-packs/page.tsx; /court-packs
+    // since the 2026-10-22 rename, and the old /5-pack only redirects there, so it is never
+    // listed). /court-packs/terms stays out, like the legal pages.
     ...(PACKS_LIVE ? [{ path: PACK_PATH, changeFrequency: 'monthly' as const, priority: 0.6 }] : []),
   ]
 

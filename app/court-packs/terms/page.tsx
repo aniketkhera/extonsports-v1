@@ -8,23 +8,26 @@ import { PACKS_LIVE, PACK_TERMS_PATH } from "@/lib/booking";
 import PhoneText from "../../my-bookings/_components/PhoneText";
 import OrangishPill from "../../components/OrangishPill";
 
-// www.extonsports.com/5-pack/terms — the court 5-pack terms, 2026-10-21 (orangish-app
+// www.extonsports.com/court-packs/terms — the court pack terms, 2026-10-21 (orangish-app
 // docs/court-packs.md §8.2). The wording is the PLATFORM's (lib/court-pack-terms.ts, with
 // its version), so the page a buyer reads is the version their pack records; it is
 // rendered here as text only — view.ts toOffers drops any link the sections carry.
+// 2026-10-22: moved from /5-pack/terms with the rename to "court packs" (next.config.ts
+// redirects the old path); the two-size wording (version 2026-10-22-1, "Exton Sports —
+// court pack terms") arrives from the platform like any other, so nothing here changed.
 //
 // From the DESK variant of the offers (packOffers {desk: true}), which needs only the
 // club's court_packs flag: a desk sale's Stripe page says "By paying you agree to the
-// 5-pack terms: www.extonsports.com/5-pack/terms" before any public sale exists.
+// court pack terms: www.extonsports.com/court-packs/terms" before any public sale exists.
 //
-// Fails closed like /5-pack: off, down or unconfigured, it says it can't show them and
+// Fails closed like /court-packs: off, down or unconfigured, it says it can't show them and
 // gives the phone — never a blank page, and never someone else's wording.
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: PACK_BUY_COPY.termsTitle,
-  description: "The terms of an Exton Sports Center court 5-pack.",
+  description: "The terms of an Exton Sports Center court pack.",
   alternates: { canonical: PACK_TERMS_PATH },
   robots: { index: PACKS_LIVE, follow: PACKS_LIVE },
 };

@@ -32,7 +32,7 @@
 //
 // cache:'no-store' everywhere, never `revalidate` — every answer here is one person's.
 //
-// THE COURT 5-PACK (2026-10-21, orangish-app docs/court-packs.md §4, §6.2) adds five
+// THE COURT PACK (2026-10-21, orangish-app docs/court-packs.md §4, §6.2) adds five
 // relays at the end of this file — packOffers, packCheckout, packPurchase, packQuote,
 // packBook — under the same rules: the relay secret and the visitor's IP on every call,
 // no call at all without the secret, the device token only as a bearer and only where a
@@ -232,7 +232,7 @@ export async function signOut(token: string, ip: string): Promise<void> {
   }
 }
 
-/* ══ THE COURT 5-PACK (2026-10-21) ═════════════════════════════════════════════════════
+/* ══ THE COURT PACK (2026-10-21) ═════════════════════════════════════════════════════
    Five relays, one per platform endpoint. Each one: no secret → no call and the "platform
    down" answer; anything that is not a clean, allow-listed answer → that same answer,
    except packBook, whose doubt is 'unknown' (./view.ts toBooked). Inputs are re-checked
@@ -243,11 +243,12 @@ export async function signOut(token: string, ip: string): Promise<void> {
 export type OffersResult = { kind: 'ok'; view: OffersView } | { kind: 'off' } | { kind: 'unavailable' }
 
 /**
- * What a 5-pack costs, per sport, and the 5-pack terms (design §4). The public variant
- * answers 404 unless court_packs_public is on; `desk: true` asks for the variant that
- * needs only court_packs — for /5-pack/terms, which a DESK sale's Checkout links to
- * ("By paying you agree to the 5-pack terms: www.extonsports.com/5-pack/terms") before
- * any public sale exists. 5 s, like the list: a page waits on it.
+ * What each court pack costs — per sport AND size since 2026-10-22, each offer with its own
+ * window — and the court pack terms (design §4). The public variant answers 404 unless
+ * court_packs_public is on; `desk: true` asks for the variant that needs only court_packs —
+ * for /court-packs/terms, which a DESK sale's Checkout links to ("By paying you agree to the
+ * court pack terms: www.extonsports.com/court-packs/terms") before any public sale exists.
+ * 5 s, like the list: a page waits on it.
  */
 export async function packOffers(ip: string, opts: { desk?: boolean } = {}): Promise<OffersResult> {
   const secret = relaySecret()
@@ -269,8 +270,11 @@ export async function packOffers(ip: string, opts: { desk?: boolean } = {}): Pro
   }
 }
 
+// bad_size, 2026-10-22: the platform's 400 for a size that is not an active offer of the
+// sport (orangish-app app/api/public/court-packs/checkout, "credits must be 5 or 10 and
+// must match an active offer"), and this site's own for a size that is not a whole number.
 export type CheckoutError =
-  | 'bad_email' | 'terms_required' | 'terms_changed' | 'bad_sport' | 'club_not_payable'
+  | 'bad_email' | 'terms_required' | 'terms_changed' | 'bad_sport' | 'bad_size' | 'club_not_payable'
   | 'off' | 'slow_down' | 'try_again'
 export type CheckoutResult = { ok: true; url: string } | { ok: false; error: CheckoutError }
 
@@ -293,7 +297,7 @@ function stripeCheckoutUrl(v: unknown): string | null {
 }
 
 const CHECKOUT_ERRORS: readonly CheckoutError[] = [
-  'bad_email', 'terms_required', 'terms_changed', 'bad_sport', 'club_not_payable',
+  'bad_email', 'terms_required', 'terms_changed', 'bad_sport', 'bad_size', 'club_not_payable',
 ]
 
 /**
@@ -302,17 +306,24 @@ const CHECKOUT_ERRORS: readonly CheckoutError[] = [
  * arrived — the platform refuses terms_required itself. 25 s: the platform calls Stripe
  * inside this request. A timeout is 'try_again': nothing is charged until the guest pays
  * on Stripe's page, which they never reached.
+ *
+ * 2026-10-22, two sizes: `credits` names the size (5 or 10 at Exton) alongside the sport —
+ * the pair the platform looks its offer up by (court_pack_offers unique on location, sport,
+ * credits; cp_create_pending's p_credits). Still no price: a size is a choice, not an amount.
+ * Re-checked here as a whole 1–20 (the platform's own bound) and never sent otherwise.
  */
 export async function packCheckout(
-  input: { sportId: string; email: string; agreeTerms: boolean; termsVersion: string },
+  input: { sportId: string; credits: number; email: string; agreeTerms: boolean; termsVersion: string },
   ip: string,
 ): Promise<CheckoutResult> {
   const secret = relaySecret()
   if (!secret) return { ok: false, error: 'try_again' }
+  if (!Number.isInteger(input.credits) || input.credits < 1 || input.credits > 20) return { ok: false, error: 'bad_size' }
   try {
     const res = await post(secret, ip, '/api/public/court-packs/checkout', {
       club: CLUB,
       sportId: input.sportId,
+      credits: input.credits,
       email: input.email,
       agreeTerms: input.agreeTerms === true,
       termsVersion: input.termsVersion,

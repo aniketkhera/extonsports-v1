@@ -25,7 +25,7 @@ import { PackMeter } from "./PackCard";
    The series id travels in the POST body, never the URL; who is asking is the httpOnly
    cookie, which this component cannot see.
 
-   A ROW PAID WITH A 5-PACK (2026-10-21, orangish-app docs/court-packs.md §8.3; the look is
+   A ROW PAID WITH A COURT PACK (2026-10-21, orangish-app docs/court-packs.md §8.3; the look is
    cancel.html) uses the same button and the same POST — the platform forks to the pack
    path (cp_return_series) — and says everything in CREDITS: "Paid with Badminton 5-pack ·
    1 credit", "Cancel by … to get the credit back", "Under 24 hours — call …", "Cancelled

@@ -3,7 +3,7 @@ import { clearCookie, setCookie } from '@/lib/my-bookings/http'
 import { PACK_SEL_COOKIE, packSelCookie, parsePackSelection } from '@/lib/my-bookings/session'
 
 // GET /my-bookings/pack/start?s&d&t&h&n&c — where the app's booking form sends a guest who
-// pressed "Continue with my 5-pack", 2026-10-21 (owner, 2026-10-20: "let's go with the
+// pressed "Continue with my court pack" ("…my 5-pack" until 2026-10-22), 2026-10-21 (owner, 2026-10-20: "let's go with the
 // implentation.."; orangish-app docs/court-packs.md §8.1).
 //
 // WHY A ROUTE AND NOT THE PAGE: the slot has to be parked in a cookie, and a page cannot

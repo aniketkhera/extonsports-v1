@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { readDeviceToken, readPackSelection } from "@/lib/my-bookings/session-server";
-import { packQuote } from "@/lib/my-bookings/platform";
+import { packOffers, packQuote } from "@/lib/my-bookings/platform";
 import { clientIpOf } from "@/lib/my-bookings/guard";
 import { mintRequestKey, type PackSelection } from "@/lib/my-bookings/session";
 import type { PackChoice, PackClock, PackRefusalReason, PackView, QuoteSlot } from "@/lib/my-bookings/view";
@@ -10,7 +10,7 @@ import {
   DEFAULT_CUTOFF_HOURS, FALLBACK_PHONE, PACK_COPY, PACK_SIGNIN, bookMessage, bookingAs, buySportPack, packLine,
   payByCard, refusalText, savesLine, slotSummary, type RefusalContext,
 } from "@/lib/my-bookings/copy";
-import { PACK_PATH, PACKS_LIVE, bookByCardUrl, bookWithPackUrl } from "@/lib/booking";
+import { PACKS_LIVE, bookByCardUrl, bookWithPackUrl, packBuyUrl } from "@/lib/booking";
 import { clubDate, startsWithinHours } from "@/lib/opening";
 import RequestPanel from "../_components/RequestPanel";
 import NotYou from "../_components/NotYou";
@@ -19,18 +19,19 @@ import PackConfirm, { PackBar } from "../_components/PackConfirm";
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_TEXT } from "../_components/ui";
 
 // extonsports.com/my-bookings/pack — book the slot the app's form handed over with a court
-// 5-pack, 2026-10-21. Owner, 2026-10-20: "let's go with the implentation.."; the screens are
+// pack, 2026-10-21. Owner, 2026-10-20: "let's go with the implentation.."; the screens are
 // orangish-app docs/court-packs.md §8.1 (mock panels 2–4), word for word from
 // lib/my-bookings/copy.ts.
 //
 // WHY HERE AND NOT IN THE APP'S FORM (§0): the remembered device is this site's host-only
 // cookie, which the app cannot read, and a second sign-in on the app was ruled out. So the
-// form's "Continue with my 5-pack" goes to /my-bookings/pack/start, which parks the slot,
-// and lands here.
+// form's "Continue with my court pack" goes to /my-bookings/pack/start, which parks the
+// slot, and lands here. (Aniket, 2026-10-22: credits are spent only through that form and
+// this site at launch — not the member app.)
 //
 // ONE URL, every state, decided on the server from two cookies and one quote:
 //   no parked slot              → "Pick a time first." [Book a court] (the form, pack mode)
-//   quote 'off' (flag off)      → "Booking with a 5-pack isn't available…" + pay by card
+//   quote 'off' (flag off)      → "Booking with a court pack isn't available…" + pay by card
 //   quote unreachable / no relay→ "We couldn't reach the booking system…" + pay by card
 //   slotProblem                 → the platform's sentence + [Pick another time]
 //   session 'none'              → the slot, then the email → code sign-in (RequestPanel),
@@ -50,16 +51,20 @@ import { BTN_PRIMARY, BTN_SECONDARY, BTN_TEXT } from "../_components/ui";
 //
 // Links: "Pay by card" and "Pick another time" leave for the app's form — on purpose (§0;
 // the form owns prices and live availability) — and are built in lib/booking.ts from the
-// slot this site checked, never from a URL the platform sent. "Buy a 5-pack" goes to this
-// site's /5-pack, and only while PACKS_LIVE is on: the buy pages deploy unlinked (§12).
+// slot this site checked, never from a URL the platform sent. "Buy a … court pack" goes to
+// this site's /court-packs, and only while PACKS_LIVE is on: the buy pages deploy unlinked
+// (§12). 2026-10-22 (Aniket: squash packs are no longer sold, squash courts remain): only
+// for a sport the live offers list sells (lib/booking.ts packBuyUrl), so a squash slot that
+// reaches this page by a stale link is never walked to a page with no squash pack on it —
+// it gets "Pay by card". The offers are asked for alongside the quote, never after it.
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: { absolute: "Book with my 5-pack · Exton Sports Center" },
+  title: { absolute: "Book with my court pack · Exton Sports Center" },
 };
 
-/** Refusals that a new pack would fix, so they also offer "Buy a … 5-pack" (§8.1). */
+/** Refusals that a new pack would fix, so they also offer "Buy a … court pack" (§8.1). */
 const BUY_FIXES: ReadonlySet<PackRefusalReason> = new Set(["no_pack", "wrong_sport", "expired", "used_up", "all_booked"]);
 
 function Heading({ children }: { children: React.ReactNode }) {
@@ -158,9 +163,11 @@ export default async function PackPage() {
   }
 
   const token = await readDeviceToken();
-  const r = await packQuote(sel, clientIpOf(await headers()), token);
+  const ip = clientIpOf(await headers());
+  const [r, sale] = await Promise.all([packQuote(sel, ip, token), PACKS_LIVE ? packOffers(ip) : null]);
   // sel.sportId is a checked uuid (session.ts); the buy page reads ?sport= to pre-select it.
-  const buyUrl = PACKS_LIVE ? `${PACK_PATH}?sport=${encodeURIComponent(sel.sportId)}` : null;
+  // null unless that sport has a pack on sale right now (see the header).
+  const buyUrl = PACKS_LIVE ? packBuyUrl(sel.sportId, sale?.kind === "ok" ? sale.view.offers : null) : null;
 
   if (r.kind !== "ok") {
     return (

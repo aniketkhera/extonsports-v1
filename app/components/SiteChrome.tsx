@@ -49,7 +49,7 @@ import { PACK_PATH } from "../../lib/booking";
 // state's "Book a court or lane" goes to this site's own home page instead.
 const PRIVATE_PATHS = ["/my-bookings"];
 
-// /5-pack, 2026-10-21 (the court 5-pack's buy page and its terms) — PUBLIC, so analytics
+// /court-packs (/5-pack until 2026-10-22), 2026-10-21 (the court pack's buy page and its terms) — PUBLIC, so analytics
 // and the beacon stay, but not the bubble: on a phone the 82px "Book a court or lane"
 // circle floats over the buy form's tick box and its full-width Pay button (seen in the
 // S3 render check), and it leads away from the purchase to the card booking form. The

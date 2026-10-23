@@ -2,9 +2,16 @@ import { UUID_RE, clientIp, hit, isEmailShape, readJsonBody } from '@/lib/my-boo
 import { json, refuseCrossSite } from '@/lib/my-bookings/http'
 import { packCheckout } from '@/lib/my-bookings/platform'
 
-// POST /api/5-pack/checkout {sportId, email, agreeTerms, termsVersion} — start buying a
-// court 5-pack, 2026-10-21 (owner, 2026-10-20: "let's go with the implentation.." —
+// POST /api/court-packs/checkout {sportId, credits, email, agreeTerms, termsVersion} — start
+// buying a court pack, 2026-10-21 (owner, 2026-10-20: "let's go with the implentation.." —
 // orangish-app docs/court-packs.md §4 and §8.2).
+//
+// 2026-10-22 (Aniket): renamed from /api/5-pack/checkout with the product ("court packs"),
+// and a SIZE alongside the sport — a 5-pack or a 10-pack. `credits` must be a whole number
+// (1–20, the platform's own bound) or the call never leaves this site (400 bad_size); which
+// sizes are on sale is the platform's to say, so a whole number it does not sell comes back
+// as ITS bad_size. next.config.ts's private-headers rule moved to /api/court-packs/:path* in
+// the same change.
 //
 // This site decides NOTHING about the money. The platform makes a pending pack priced
 // from ITS offer row (never from this call), checks the club can take a card payment
@@ -46,6 +53,9 @@ export async function POST(req: Request) {
 
   const sportId = typeof body.sportId === 'string' && UUID_RE.test(body.sportId) ? body.sportId : null
   if (!sportId) return json({ error: 'bad_sport' }, 400)
+  const credits = typeof body.credits === 'number' && Number.isInteger(body.credits) && body.credits >= 1
+    && body.credits <= 20 ? body.credits : null
+  if (credits === null) return json({ error: 'bad_size' }, 400)
   const email = typeof body.email === 'string' ? body.email.trim() : ''
   if (!isEmailShape(email)) return json({ error: 'bad_email' }, 400)
   const termsVersion = typeof body.termsVersion === 'string' && body.termsVersion.length > 0
@@ -53,6 +63,6 @@ export async function POST(req: Request) {
   if (!termsVersion) return json({ error: 'bad_request' }, 400)
   if (body.agreeTerms !== true) return json({ error: 'terms_required' }, 400)
 
-  const r = await packCheckout({ sportId, email, agreeTerms: true, termsVersion }, ip)
+  const r = await packCheckout({ sportId, credits, email, agreeTerms: true, termsVersion }, ip)
   return r.ok ? json({ url: r.url }) : json({ error: r.error })
 }

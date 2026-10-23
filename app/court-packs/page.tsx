@@ -8,28 +8,33 @@ import { PACKS_LIVE, PACK_PATH } from "@/lib/booking";
 import OrangishPill from "../components/OrangishPill";
 import BuyForm from "./BuyForm";
 
-// www.extonsports.com/5-pack — buy a court 5-pack, 2026-10-21. Owner, 2026-10-20: "let's
+// www.extonsports.com/court-packs — buy a court pack, 2026-10-21. Owner, 2026-10-20: "let's
 // go with the implentation.." (orangish-app docs/court-packs.md §8.2; buy.html with the
 // design's corrected copy).
+//
+// 2026-10-22 (Aniket): renamed from /5-pack (next.config.ts redirects it here, query and
+// all), and two sizes per sport — a 5-pack and a 10-pack, badminton and cricket only. The
+// form picks a sport, then a size; every price, size and window on it is that offer's own.
 //
 // PUBLIC, BUT FAIL CLOSED. The offers come live from the platform's PUBLIC endpoint, which
 // answers 404 until the club's court_packs_public flag is on; that, an outage, a bad
 // answer, an empty list or no relay secret on this deploy all render the same honest
-// "5-packs aren't on sale online right now" — never a form that cannot work. Prices are
-// the platform's (court_pack_offers), so a price change needs no deploy here.
+// "Court packs aren't on sale online right now" — never a form that cannot work. Prices,
+// sizes and windows are the platform's (court_pack_offers), so a change needs no deploy here.
 //
 // UNLINKED UNTIL PACKS_LIVE (lib/booking.ts; design §12 step 8): the Hero, Footer and
 // sitemap links appear only then, and until then the page asks not to be indexed.
 //
 // The visitor's IP goes with the call (lib/my-bookings/platform.ts — the platform's
-// per-IP limits trust it only alongside the relay secret). ?sport=<id> picks the tile:
-// the app form's promo box and Stripe's cancel_url both come back with it. Shell: the
-// my-bookings / legal-page look — one quiet column, the club's name as the way home.
+// per-IP limits trust it only alongside the relay secret). ?sport=<id> picks the sport and
+// ?credits=<n> the size (2026-10-22): the app form's promo box and Stripe's cancel_url
+// both come back with them. Shell: the my-bookings / legal-page look — one quiet column,
+// the club's name as the way home.
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "5-pack",
+  title: "Court packs",
   description: PACK_BUY_COPY.lead,
   alternates: { canonical: PACK_PATH },
   robots: { index: PACKS_LIVE, follow: PACKS_LIVE },
@@ -63,6 +68,9 @@ export default async function PackPage({
 }) {
   const sp = await searchParams;
   const sport = typeof sp.sport === "string" ? sp.sport : null;
+  // A size is a whole number or nothing; whether it is on sale is the form's to check
+  // against the offers (an unknown one picks the sport's smallest).
+  const credits = typeof sp.credits === "string" && /^[1-9]\d?$/.test(sp.credits) ? Number(sp.credits) : null;
   const r = await packOffers(clientIpOf(await headers()));
   const onSale = r.kind === "ok" && r.view.offers.length > 0 ? r.view : null;
 
@@ -92,9 +100,8 @@ export default async function PackPage({
           <BuyForm
             offers={onSale.offers}
             termsVersion={onSale.terms.version}
-            windowDays={onSale.windowDays}
-            unusedMonths={onSale.unusedMonths}
             initialSportId={sport}
+            initialCredits={credits}
           />
         </>
       ) : (

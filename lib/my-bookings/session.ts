@@ -1,5 +1,5 @@
 // The first-party cookies behind extonsports.com/my-bookings, 2026-10-20 — two for
-// signing in, and since 2026-10-21 a third that parks a court 5-pack booking's slot
+// signing in, and since 2026-10-21 a third that parks a court pack booking's slot
 // (PACK_SEL_COOKIE, at the end of this file).
 //
 // WHY COOKIES ON THIS SITE, NOT THE PLATFORM'S: the owner's rule for this path (2026-10-18,
@@ -91,10 +91,10 @@ export function clearedCookie(name: string): { name: string; value: ''; options:
   return { name, value: '', options: { ...opts(0), maxAge: 0 } }
 }
 
-/* ── The court 5-pack (2026-10-21) ─────────────────────────────────────────────────────
+/* ── The court pack (2026-10-21) ─────────────────────────────────────────────────────
    Owner, 2026-10-20: "let's go with the implentation.." — orangish-app docs/court-packs.md
    §8.1. The guest picks a slot on the app's booking form and presses "Continue with my
-   5-pack"; the form sends them to GET /my-bookings/pack/start?s&d&t&h&n&c, which parks
+   court pack"; the form sends them to GET /my-bookings/pack/start?s&d&t&h&n&c, which parks
    the slot HERE and 303s to /my-bookings/pack. Why a cookie and not the query string: the
    pack page signs a guest in by code (it may reload, or come back through an emailed
    link to /my-bookings/open), and the slot has to survive that without ever riding in an

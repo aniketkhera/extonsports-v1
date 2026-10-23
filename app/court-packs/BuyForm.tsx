@@ -3,22 +3,36 @@
 import { useState } from "react";
 import type { OfferView } from "@/lib/my-bookings/view";
 import {
-  FALLBACK_PHONE, PACK_BUY_COPY, checkoutMessage, money, payButton, perHourLine, whatYouGet,
+  FALLBACK_PHONE, PACK_BUY_COPY, checkoutMessage, money, packSportsLine, payButton, perHourLine, sizeTile,
+  sportTilePrice, whatYouGet,
 } from "@/lib/my-bookings/copy";
 import { isEmailShape } from "@/lib/my-bookings/guard";
 import { PACK_TERMS_PATH, bookWithPackUrl } from "@/lib/booking";
 import { BTN_PRIMARY, ERROR, INPUT, LABEL, postJson } from "../my-bookings/_components/ui";
 import PhoneText from "../my-bookings/_components/PhoneText";
 
-/* The 5-pack buy form on /5-pack, 2026-10-21 (orangish-app docs/court-packs.md §8.2; the
-   look is buy.html panels 1 and 2, with the copy the design corrected: 60 days, no
+/* The court pack buy form on /court-packs, 2026-10-21 (orangish-app docs/court-packs.md
+   §8.2; the look is buy.html panels 1 and 2, with the copy the design corrected: no
    "proposed" tags, the PACK terms rather than the booking waiver).
 
-   Sport → what you get → email → tick → Pay. Pay posts to THIS site's
-   /api/5-pack/checkout, which relays to the platform; the platform prices the pack from
-   its own offer row and answers a Stripe Checkout URL, and the browser goes there. No
-   price, pack or amount from this form is trusted by anyone: the sport id, the address
+   TWO SIZES, 2026-10-22 (Aniket): a 5-pack and a 10-pack per sport, badminton and cricket
+   only. An offer is a sport AND a size, so the choice is two rows — Sport, then Pack — and
+   the state is the pair {sportId, credits}; one row of tiles keyed by sport alone lit both
+   badminton tiles together and could never pick the 10-pack. Everything under the rows is
+   the CHOSEN offer's own: its price, per-hour, credits, and its own window (60 days for a
+   5-pack, 120 for a 10-pack) — never a page-wide number.
+
+   Sport → size → what you get → email → tick → Pay. Pay posts to THIS site's
+   /api/court-packs/checkout, which relays to the platform; the platform prices the pack
+   from its own offer row and answers a Stripe Checkout URL, and the browser goes there. No
+   price or amount from this form is trusted by anyone: the sport id, the size, the address
    and the tick are all it sends.
+
+   ?sport= and ?credits= pre-pick (the app form's promo, Stripe's cancel_url). No ?sport=
+   picks the first sport; a ?sport= the club sells no pack for (squash, since 2026-10-22)
+   picks NOTHING and says which sports packs are for — quietly switching a squash player to
+   badminton could sell them a pack they cannot use. A size that sport does not sell picks
+   its smallest; changing sport keeps the size when the new sport sells it.
 
    The address stays in the form — not in the URL, not in storage — and the answer is the
    same whatever address is typed (owner, 2026-10-18: never reveal whether an email has
@@ -27,7 +41,7 @@ import PhoneText from "../my-bookings/_components/PhoneText";
 
 type BuyError = Parameters<typeof checkoutMessage>[0];
 const BUY_ERRORS: readonly BuyError[] = [
-  "bad_email", "terms_required", "terms_changed", "bad_sport", "club_not_payable", "off", "slow_down", "try_again",
+  "bad_email", "terms_required", "terms_changed", "bad_sport", "bad_size", "club_not_payable", "off", "slow_down", "try_again",
 ];
 
 /**
@@ -47,43 +61,81 @@ export function stripeHref(v: unknown): string | null {
   }
 }
 
+/** One sport's offers, smallest first (view.ts toOffers already sorts them so). */
+function sizesOf(offers: OfferView[], sportId: string): OfferView[] {
+  return offers.filter((o) => o.sportId === sportId);
+}
+
+/**
+ * The size to show for a sport: the one asked for when that sport sells it, else the
+ * sport's smallest. null for a sport with nothing on sale.
+ */
+export function pickSize(offers: OfferView[], sportId: string, credits: number | null): number | null {
+  const sizes = sizesOf(offers, sportId);
+  return (sizes.find((o) => o.credits === credits) ?? sizes[0])?.credits ?? null;
+}
+
+/** The pair the form starts on, from ?sport= and ?credits= (see the header). */
+export function initialChoice(
+  offers: OfferView[],
+  sportId: string | null,
+  credits: number | null,
+): { sportId: string; credits: number | null } {
+  const sport = sportId === null ? offers[0]?.sportId ?? "" : offers.some((o) => o.sportId === sportId) ? sportId : "";
+  return { sportId: sport, credits: sport ? pickSize(offers, sport, credits) : null };
+}
+
 const ALREADY_LINK = "Book a court";
+
+const TILE = "cursor-pointer border text-center py-3 px-2 transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--color-ember)]";
+const TILE_ON = "bg-[var(--color-ember)] border-[var(--color-ember)] text-black";
+const TILE_OFF = "border-[var(--color-line-2)] text-white/80 hover:border-[var(--color-ember)]";
+/** Up to three tiles a row, as before — two sports and two sizes each fit a phone. */
+const cols = (n: number) => ({ gridTemplateColumns: `repeat(${Math.max(1, Math.min(n, 3))}, minmax(0, 1fr))` });
 
 export default function BuyForm({
   offers,
   termsVersion,
-  windowDays,
-  unusedMonths,
   initialSportId,
+  initialCredits = null,
   phone = FALLBACK_PHONE,
 }: {
   offers: OfferView[];
   termsVersion: string;
-  windowDays: number;
-  unusedMonths: number;
   /** ?sport= — the app form's promo and Stripe's cancel_url bring the guest back with it. */
   initialSportId: string | null;
+  /** ?credits= — the size, 2026-10-22 (Stripe's cancel_url carries it). */
+  initialCredits?: number | null;
   phone?: string;
 }) {
-  const [sportId, setSportId] = useState(
-    () => offers.find((o) => o.sportId === initialSportId)?.sportId ?? offers[0]?.sportId ?? "",
-  );
+  const [choice, setChoice] = useState(() => initialChoice(offers, initialSportId, initialCredits));
   const [agree, setAgree] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const offer = offers.find((o) => o.sportId === sportId) ?? null;
+
+  // The sports in the platform's order, each once.
+  const sports = offers.filter((o, i) => offers.findIndex((x) => x.sportId === o.sportId) === i);
+  const sizes = choice.sportId ? sizesOf(offers, choice.sportId) : [];
+  const offer = sizes.find((o) => o.credits === choice.credits) ?? null;
+  // Arrived with a ?sport= that is not on sale (squash): nothing picked yet, and why.
+  const notSold = initialSportId !== null && !offers.some((o) => o.sportId === initialSportId) && !choice.sportId;
+
+  function pickSport(sportId: string) {
+    setChoice((c) => ({ sportId, credits: pickSize(offers, sportId, c.credits) }));
+  }
 
   async function pay(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (busy) return;
     setError("");
     const email = String(new FormData(e.currentTarget).get("email") || "").trim();
-    if (!offer) return setError(checkoutMessage("bad_sport", phone));
+    if (!offer) return setError(checkoutMessage(choice.sportId ? "bad_size" : "bad_sport", phone));
     if (!isEmailShape(email)) return setError(checkoutMessage("bad_email", phone));
     if (!agree) return setError(checkoutMessage("terms_required", phone));
     setBusy(true);
-    const r = await postJson("/api/5-pack/checkout", {
+    const r = await postJson("/api/court-packs/checkout", {
       sportId: offer.sportId,
+      credits: offer.credits,
       email,
       agreeTerms: true,
       termsVersion,
@@ -106,33 +158,60 @@ export default function BuyForm({
     <form onSubmit={pay} noValidate>
       <fieldset>
         <legend className={LABEL}>{PACK_BUY_COPY.sportLabel}</legend>
-        <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.min(offers.length, 3)}, minmax(0, 1fr))` }}>
-          {offers.map((o) => {
-            const on = o.sportId === sportId;
+        {notSold && (
+          <p className="text-white/70 text-[0.92rem] leading-relaxed mb-2.5" role="status">
+            {packSportsLine(sports.map((o) => o.sport))}
+          </p>
+        )}
+        <div className="grid gap-2" style={cols(sports.length)}>
+          {sports.map((s) => {
+            const on = s.sportId === choice.sportId;
             return (
-              <label
-                key={o.sportId}
-                className={`cursor-pointer border text-center py-3 px-2 transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--color-ember)] ${
-                  on
-                    ? "bg-[var(--color-ember)] border-[var(--color-ember)] text-black"
-                    : "border-[var(--color-line-2)] text-white/80 hover:border-[var(--color-ember)]"
-                }`}
-              >
+              <label key={s.sportId} className={`${TILE} ${on ? TILE_ON : TILE_OFF}`}>
                 <input
                   type="radio"
                   name="sport"
-                  value={o.sportId}
+                  value={s.sportId}
                   checked={on}
-                  onChange={() => setSportId(o.sportId)}
+                  onChange={() => pickSport(s.sportId)}
                   className="sr-only"
                 />
-                <span className="text-mono text-[0.72rem] tracking-[0.08em] uppercase">{o.sport}</span>
-                <small className={`block text-[0.85rem] mt-0.5 ${on ? "" : "text-white/60"}`}>{money(o.priceCents)}</small>
+                <span className="text-mono text-[0.72rem] tracking-[0.08em] uppercase">{s.sport}</span>
+                <small className={`block text-[0.85rem] mt-0.5 ${on ? "" : "text-white/60"}`}>
+                  {sportTilePrice(sizesOf(offers, s.sportId).map((o) => o.priceCents))}
+                </small>
               </label>
             );
           })}
         </div>
       </fieldset>
+
+      {sizes.length > 0 && (
+        <fieldset className="mt-4">
+          <legend className={LABEL}>{PACK_BUY_COPY.sizeLabel}</legend>
+          <div className="grid gap-2" style={cols(sizes.length)}>
+            {sizes.map((o) => {
+              const on = o.credits === choice.credits;
+              const [credits, price, perHour] = sizeTile(o);
+              return (
+                <label key={`${o.sportId}:${o.credits}`} className={`${TILE} ${on ? TILE_ON : TILE_OFF}`}>
+                  <input
+                    type="radio"
+                    name="size"
+                    value={String(o.credits)}
+                    checked={on}
+                    onChange={() => setChoice({ sportId: o.sportId, credits: o.credits })}
+                    className="sr-only"
+                  />
+                  <span className="text-mono text-[0.72rem] tracking-[0.08em] uppercase">{credits}</span>
+                  <small className={`block text-[0.85rem] mt-0.5 ${on ? "" : "text-white/80"}`}>{price}</small>
+                  <small className={`block text-[0.78rem] ${on ? "" : "text-white/60"}`}>{perHour}</small>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+      )}
 
       {offer && (
         <>
@@ -152,7 +231,7 @@ export default function BuyForm({
 
           <h2 className={`${LABEL} mt-6`}>{PACK_BUY_COPY.whatYouGet}</h2>
           <ul className="border-t border-[var(--legal-line)]">
-            {whatYouGet(offer, windowDays, unusedMonths).map((line) => (
+            {whatYouGet(offer).map((line) => (
               <li key={line} className="flex gap-2.5 py-2.5 border-b border-[var(--legal-line)] text-white/80 text-[0.95rem] leading-snug">
                 <span
                   aria-hidden="true"
@@ -221,14 +300,14 @@ export default function BuyForm({
         )}
 
         <button type="submit" className={`${BTN_PRIMARY} w-full mt-4`} disabled={busy || !offer}>
-          {busy ? PACK_BUY_COPY.paying : offer ? payButton(offer.priceCents) : PACK_BUY_COPY.paying}
+          {busy ? PACK_BUY_COPY.paying : offer ? payButton(offer.priceCents) : PACK_BUY_COPY.choose}
         </button>
         <p className="text-white/60 text-[0.82rem] leading-relaxed mt-3">{PACK_BUY_COPY.finePrint}</p>
       </div>
 
       {/* "Book a court" goes to the app's booking form in pack mode — it is the platform's
-          form that shows the "My 5-pack" switch — in a new tab, like every booking link on
-          the public site. */}
+          form that shows the "My court pack" switch — in a new tab, like every booking link
+          on the public site. */}
       <p className="text-white/60 text-[0.88rem] leading-relaxed mt-5">
         {at < 0 ? (
           PACK_BUY_COPY.alreadyHave

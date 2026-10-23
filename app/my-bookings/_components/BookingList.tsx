@@ -9,7 +9,7 @@ import { BTN_PRIMARY } from "./ui";
    together. Past series are omitted upstream; a series this guest cancelled online stays
    until its start, muted, so a reload confirms the cancel.
 
-   Since 2026-10-21 the guest's court 5-packs sit ABOVE the bookings (orangish-app
+   Since 2026-10-21 the guest's court packs sit ABOVE the bookings (orangish-app
    docs/court-packs.md §8.3), usable packs first — view.ts orders them. A guest with a pack
    and nothing booked yet sees the pack and the usual empty state under it. */
 

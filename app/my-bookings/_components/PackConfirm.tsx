@@ -49,7 +49,8 @@ import PhoneText from "./PhoneText";
 
 type Phase = "idle" | "pending" | "booked";
 
-/** Refusals that a new pack would fix (§8.1): they also offer "Buy a … 5-pack". */
+/** Refusals that a new pack would fix (§8.1): they also offer "Buy a … court pack" — when
+ *  the page passed a buyUrl, which it does only for a sport on sale (2026-10-22). */
 const BUY_FIXES: readonly PackRefusalReason[] = ["no_pack", "wrong_sport", "expired", "used_up", "all_booked"];
 /** The slot itself is gone or not bookable online: Book cannot succeed; pick another time. */
 const PICK_ANOTHER = ["taken", "started", "no_rate", "club_closed_hours"] as const;
@@ -78,7 +79,14 @@ function bareRefusal(reason: PackRefusalReason): PackRefusalView {
   return { reason, need: null, sports: [], maxCredits: null, creditsLeft: null, creditsTotal: null, lo: null, hi: null };
 }
 
-/** The pack's credits as a bar: one block per credit, the used ones pale (mock panels 3–4). */
+/**
+ * The pack's credits as a bar: one block per credit, the used ones pale (mock panels 3–4).
+ *
+ * 2026-10-22, the 10-pack: the blocks were a fixed 28 px with no wrap, and ten of them plus
+ * their gaps (334 px) overflow the ember card on a 375 px phone (about 307 px inside its
+ * padding) — a horizontal scroll. Each block now SHARES the row (flex 1 1 0) up to its old
+ * 28 px and no thinner than 10 px, so a 5-pack looks as before and a 10-pack fits.
+ */
 export function PackBar({ left, total }: { left: number; total: number }) {
   const n = Math.max(0, Math.min(total, 20));
   return (
@@ -86,7 +94,8 @@ export function PackBar({ left, total }: { left: number; total: number }) {
       {Array.from({ length: n }, (_, i) => (
         <span
           key={i}
-          className={`block h-2 w-7 ${i < n - left ? "bg-[var(--color-ember)]/30" : "bg-[var(--color-ember)]"}`}
+          data-bar-credit
+          className={`block h-2 flex-1 min-w-[10px] max-w-7 ${i < n - left ? "bg-[var(--color-ember)]/30" : "bg-[var(--color-ember)]"}`}
         />
       ))}
     </div>

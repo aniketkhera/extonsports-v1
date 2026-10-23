@@ -9,7 +9,7 @@ import { BTN_TEXT, postJson } from "./ui";
    cookie is httpOnly, so only the server can clear it; the route also revokes the
    session upstream. Whatever it answers, the page reloads into the email form.
 
-   `next` and `variant`, 2026-10-21 (court 5-pack, orangish-app docs/court-packs.md §8.1):
+   `next` and `variant`, 2026-10-21 (court pack, orangish-app docs/court-packs.md §8.1):
    on /my-bookings/pack it is the short "Not you?" after "Booking as a•••@… on this phone",
    and it reloads the PACK page, which then asks for an email with the slot still parked
    (forget clears the device and link cookies, never the slot). `next` is re-checked

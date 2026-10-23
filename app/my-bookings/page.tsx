@@ -30,7 +30,7 @@ import PhoneText from "./_components/PhoneText";
 // the platform being down.
 //
 // ?cancel=<seriesId>, 2026-10-21 (orangish-app docs/court-packs.md §8.3): the court
-// 5-pack confirmation email's "Cancel this booking" link. It opens that row's cancel sheet
+// pack confirmation email's "Cancel this booking" link. It opens that row's cancel sheet
 // — nothing more; the guest still presses Yes. Tokenless, so the email may carry it: the
 // series is only ever looked up in THIS device's own list, and a stranger with the link
 // sees the email form. Taken only as one UUID; anything else opens nothing. A signed-out

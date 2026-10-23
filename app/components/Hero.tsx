@@ -2047,12 +2047,13 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
             </a>
           )}
 
-          {/* 5-PACK, 2026-10-21 — five one-hour credits at the off-peak price (orangish-app
-              docs/court-packs.md §8.2). In this row because it is the one a reader is in
-              when they have just read "$45" — the pack's whole offer is that price for
-              less. Outlined like its neighbours, same tab (this site's own page), and
-              hidden until the owner's live test and the key-box revoke are done
-              (lib/booking.ts PACKS_LIVE). */}
+          {/* COURT PACKS, 2026-10-21 — one-hour credits at the off-peak price or less
+              (orangish-app docs/court-packs.md §8.2; renamed from "5-pack" and sold as a
+              5-pack and a 10-pack, badminton and cricket, since 2026-10-22 — Aniket). In
+              this row because it is the one a reader is in when they have just read "$45" —
+              the pack's whole offer is that price for less. Outlined like its neighbours,
+              same tab (this site's own page), and hidden until the owner's live test and the
+              key-box revoke are done (lib/booking.ts PACKS_LIVE). */}
           {PACKS_LIVE && (
             <a
               href={PACK_PATH}
@@ -2061,7 +2062,7 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
               }`}
               style={{ fontSize: RATE_LABEL }}
             >
-              5-pack
+              Court packs
             </a>
           )}
 

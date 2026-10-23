@@ -2,14 +2,16 @@ import type { PackView } from "@/lib/my-bookings/view";
 import { bookWithMyPack, packLine, packStatusText, packUseLine } from "@/lib/my-bookings/copy";
 import { BTN_PRIMARY } from "./ui";
 
-/* One of the guest's 5-packs, above their bookings, 2026-10-21 (orangish-app
+/* One of the guest's court packs, above their bookings, 2026-10-21 (orangish-app
    docs/court-packs.md §8.3; the look is cancel.html's "My pack" panel: an ember-edged
    card, the pack's name in the condensed face, a bar of one segment per credit, and
    "2 of 5 left · valid until Nov 29").
 
    EVERY NUMBER AND DATE HERE IS THE PLATFORM'S (cp_pack_state, the one implementation of
-   the 60-day rule — design §3). This card adds nothing up and works nothing out; it
-   prints what the allow-list in lib/my-bookings/view.ts let through.
+   the window rule — design §3). This card adds nothing up and works nothing out; it
+   prints what the allow-list in lib/my-bookings/view.ts let through. 2026-10-22, two
+   sizes: so a 10-pack's card says "120 days" and a 5-pack's "60" with nothing here knowing
+   either number — the clock sentence is each pack's own.
 
    ⛔ ONLY A USABLE PACK OFFERS "Book a court with my pack" ("a lane" for cricket, review UI-10). An expired, used-up,
    all-booked, refunded or disputed pack says why instead (copy.ts packStatusText) — a
@@ -18,8 +20,8 @@ import { BTN_PRIMARY } from "./ui";
    platform's own bookUrl is never followed.
 
    ⚠️ THAT LINK LEAVES extonsports.com, ON PURPOSE (design §0 and §8.3): the booking form —
-   prices, live availability, the "My 5-pack" switch — is the app's, and its "Continue
-   with my 5-pack" brings the guest straight back to /my-bookings/pack on this site, where
+   prices, live availability, the "My court pack" switch — is the app's, and its "Continue
+   with my court pack" brings the guest straight back to /my-bookings/pack on this site, where
    the remembered phone lives. Same tab for that reason, and the layout's no-referrer
    keeps this page's address out of the hop. No sign-in token ever rides on it.
 
@@ -42,6 +44,10 @@ const SEGMENT: Record<"left" | "booked" | "used", string> = {
  * The bar: one segment per credit, spent first — used (played, or no longer on the pack),
  * then booked (upcoming), then left — as the mockups draw it. Decorative: the sentence
  * beside it carries the same numbers for a screen reader.
+ *
+ * 2026-10-22, the 10-pack: fixed 28 px segments wrapped a 10-pack's bar to nine on one row
+ * and one on the next on a phone. Each segment now shares the row (flex 1 1 0), up to its
+ * old 28 px and no thinner than 10 px, so a 5-pack looks as before and ten fit on one line.
  */
 export function PackMeter({ left, booked = 0, total }: { left: number; booked?: number; total: number }) {
   const kinds: Array<keyof typeof SEGMENT> = [];
@@ -55,7 +61,7 @@ export function PackMeter({ left, booked = 0, total }: { left: number; booked?: 
           key={i}
           data-credit={k}
           className="block"
-          style={{ width: "28px", height: "8px", background: SEGMENT[k] }}
+          style={{ flex: "1 1 0", minWidth: "10px", maxWidth: "28px", height: "8px", background: SEGMENT[k] }}
         />
       ))}
     </span>

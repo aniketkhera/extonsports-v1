@@ -17,7 +17,7 @@ import PhoneText from "./PhoneText";
    (security review, 2026-10-20 — the first pass showed "expired" for a limit someone
    else could run up).
 
-   `next` and `variant`, 2026-10-21 (court 5-pack, orangish-app docs/court-packs.md §8.1):
+   `next` and `variant`, 2026-10-21 (court pack, orangish-app docs/court-packs.md §8.1):
    a guest who was booking with a pack and tapped the emailed link instead of typing the
    code comes back to /my-bookings/pack, where the slot is parked. /my-bookings/open
    decides that on the server (only while the slot cookie is live); `next` is re-checked

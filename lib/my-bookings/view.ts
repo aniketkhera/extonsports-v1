@@ -7,7 +7,7 @@
 // fails a check is dropped; a top level that fails is null, which the page renders as
 // "can't show your bookings right now", never as "you have none".
 //
-// The court 5-pack's answers (2026-10-21, orangish-app docs/court-packs.md §4, §6.2, §7.1)
+// The court pack's answers (2026-10-21, orangish-app docs/court-packs.md §4, §6.2, §7.1)
 // follow the same rule, at the end of this file: pack cards, the quote, the book answer,
 // the offers and the purchase. Two extra rules for them:
 //   • LINKS ARE OURS. A pack's "Book a court with my pack" and a quote's "Pay by card
@@ -43,7 +43,7 @@ export type BookingView = {
   cancellable: boolean
   blockedReason: BlockedReason
   refundedCents: number | null
-  // The court 5-pack (2026-10-21). On a card row: 'card' and four nulls.
+  // The court pack (2026-10-21). On a card row: 'card' and four nulls.
   paidWith: PaidWith
   credits: number | null // the credits this series used — pack rows only
   creditsReturned: number | null // pack rows, once cancelled
@@ -61,7 +61,7 @@ export type ListView = {
   email: string | null
   cutoffHours: number
   bookings: BookingView[]
-  /** The guest's 5-packs at this club (2026-10-21); [] from a platform without packs. */
+  /** The guest's court packs at this club (2026-10-21), any size; [] from a platform without packs. */
   packs: PackView[]
 }
 
@@ -170,7 +170,7 @@ function toBooking(raw: unknown): BookingView | null {
   const refundedCents = r.refundedCents === null || r.refundedCents === undefined ? null : cents(r.refundedCents)
   if (refundedCents === null && r.refundedCents !== null && r.refundedCents !== undefined) return null
 
-  // The court 5-pack (2026-10-21, design §7.1). A row from a platform without packs has
+  // The court pack (2026-10-21, design §7.1). A row from a platform without packs has
   // none of these keys and is a card row; a value outside the closed sets drops the row.
   const paidWith: PaidWith | null = r.paidWith === undefined || r.paidWith === null || r.paidWith === 'card'
     ? 'card'
@@ -382,7 +382,7 @@ export function redeemRefusal(e: RedeemRefusal): {
   return { status: 503, body: { error: 'try_again' }, clearLink: false }
 }
 
-/* ══ THE COURT 5-PACK (2026-10-21) ═════════════════════════════════════════════════════
+/* ══ THE COURT PACK (2026-10-21) ═════════════════════════════════════════════════════
    orangish-app docs/court-packs.md. Each type below is what a page may receive; each to*
    function is the only way an answer becomes one. */
 
@@ -787,27 +787,42 @@ export function isBookSuccess(v: BookView): boolean {
 
 /* ── buying: the offers and the purchase (design §4) ────────────────────────────────── */
 
+/**
+ * One pack on sale: a sport AND a size (2026-10-22). Aniket, 2026-10-22: two sizes per sport
+ * — a 5-pack (60 days) and a 10-pack (120 days), badminton and cricket only — so an offer is
+ * identified by (sportId, credits), the pair the checkout sends; no offer id ever leaves the
+ * platform. The window and the unused expiry are the OFFER's own (they differ by size), never
+ * a page-wide number.
+ */
 export type OfferView = {
   sportId: string
   sport: string
-  name: string
-  credits: number
+  name: string // "Badminton 10-pack"
+  credits: number // 5 or 10 at Exton; any whole 1–20 the platform's CHECK allows
   priceCents: number
   perHourCents: number // priceCents / credits, exactly
   cardStandardCents: number | null // the same hour by card, from the published rates
   cardPeakCents: number | null
+  windowDays: number // 60 for a 5-pack, 120 for a 10-pack: days from the first game played
+  unusedMonths: number // 12: an unused pack expires this long after purchase
 }
-/** The 5-pack terms (orangish-app lib/court-pack-terms.ts), as text only — no links. */
+/** The court pack terms (orangish-app lib/court-pack-terms.ts), as text only — no links. */
 export type PackTermsSection = { heading: string; body: string }
 export type PackTermsView = { version: string; title: string; sections: PackTermsSection[] }
+/**
+ * The offers answer. 2026-10-22: the top-level windowDays/unusedMonths are gone from the
+ * platform's answer (they were the MIN over every offer, which would have advertised a
+ * 10-pack as 60 days); each offer carries its own.
+ */
 export type OffersView = {
-  offers: OfferView[] // may be [] — nothing on sale
+  offers: OfferView[] // may be [] — nothing on sale. Sports in the platform's order, sizes ascending.
   terms: PackTermsView
-  windowDays: number // 60
-  unusedMonths: number // 12
 }
 
-function toOffer(raw: unknown): OfferView | null {
+/** An answer from before 2026-10-22 had one window for every offer, at the top level. */
+type OfferFallback = { windowDays: number | null; unusedMonths: number | null }
+
+function toOffer(raw: unknown, fallback: OfferFallback): OfferView | null {
   const o = obj(raw)
   if (!o) return null
   const sportId = typeof o.sportId === 'string' && UUID_RE.test(o.sportId) ? o.sportId : null
@@ -818,11 +833,33 @@ function toOffer(raw: unknown): OfferView | null {
   const perHourCents = cents(o.perHourCents)
   const cardStandardCents = optional(o.cardStandardCents, cents)
   const cardPeakCents = optional(o.cardPeakCents, cents)
+  // The offer's own window, as the platform's CHECKs bound it (play_window_days 7–366,
+  // unused_months 1–24). A value that is SENT but out of range drops the offer: it is never
+  // replaced by the fallback, which exists only for a platform that sends none per offer
+  // (one deployed ahead of the other — the site goes first, design §12). Then every offer
+  // was one size per sport and the top level was that offer's own number.
+  const windowDays = o.windowDays === undefined || o.windowDays === null ? fallback.windowDays : count(o.windowDays, 7, 366)
+  const unusedMonths = o.unusedMonths === undefined || o.unusedMonths === null ? fallback.unusedMonths : count(o.unusedMonths, 1, 24)
   if (!sportId || !sport || !name || credits === null || !priceCents || perHourCents === null
-    || cardStandardCents === undefined || cardPeakCents === undefined) return null
+    || cardStandardCents === undefined || cardPeakCents === undefined || windowDays === null || unusedMonths === null) return null
   // The platform's own CHECK (price_cents % credits = 0): a credit is whole cents.
   if (priceCents % credits !== 0 || perHourCents !== priceCents / credits) return null
-  return { sportId, sport, name, credits, priceCents, perHourCents, cardStandardCents, cardPeakCents }
+  return { sportId, sport, name, credits, priceCents, perHourCents, cardStandardCents, cardPeakCents, windowDays, unusedMonths }
+}
+
+/**
+ * One offer per (sport, size), sizes ascending within each sport, the sports in the order the
+ * platform sent them (2026-10-22). The platform's unique (location_id, sport_id, credits)
+ * makes a repeat impossible; if one arrives anyway, the site cannot tell which price is
+ * real, so it shows NEITHER — that size is simply not offered here.
+ */
+function offerList(offers: OfferView[]): OfferView[] {
+  const key = (o: OfferView) => `${o.sportId}:${o.credits}`
+  const seen = new Map<string, number>()
+  for (const o of offers) seen.set(key(o), (seen.get(key(o)) ?? 0) + 1)
+  const once = offers.filter((o) => seen.get(key(o)) === 1)
+  const sports = [...new Set(once.map((o) => o.sportId))]
+  return sports.flatMap((s) => once.filter((o) => o.sportId === s).sort((a, b) => a.credits - b.credits))
 }
 
 function toTermsSection(raw: unknown): PackTermsSection | null {
@@ -846,11 +883,11 @@ export function toOffers(json: unknown): OffersView | null {
   if (!t || !version || !title || !Array.isArray(t.sections) || t.sections.length > 40) return null
   const sections = t.sections.map(toTermsSection)
   if (sections.length === 0 || sections.some((s) => s === null)) return null
-  const windowDays = count(j.windowDays, 7, 366)
-  const unusedMonths = count(j.unusedMonths, 1, 24)
-  if (windowDays === null || unusedMonths === null) return null
-  const offers = j.offers.map(toOffer).filter((o): o is OfferView => o !== null)
-  return { offers, terms: { version, title, sections: sections as PackTermsSection[] }, windowDays, unusedMonths }
+  // Only the fallback for an offer that carries no window of its own (see toOffer); an
+  // answer without them is fine now — the 2026-10-22 platform sends none.
+  const fallback: OfferFallback = { windowDays: count(j.windowDays, 7, 366), unusedMonths: count(j.unusedMonths, 1, 24) }
+  const offers = offerList(j.offers.map((o) => toOffer(o, fallback)).filter((o): o is OfferView => o !== null))
+  return { offers, terms: { version, title, sections: sections as PackTermsSection[] } }
 }
 
 export type PurchaseState = 'active' | 'pending' | 'unknown'
@@ -864,7 +901,12 @@ export type PurchaseView = {
   // Review UI-2, 2026-10-21: the platform sends these since its integration, so the ready
   // page's "Book your first game" needs no second call to know the pack's sport.
   sportId: string | null
-  name: string | null // "Badminton 5-pack"
+  name: string | null // "Badminton 10-pack"
+  // 2026-10-22, two sizes: the BOUGHT pack's own window (its play_window_days snapshot), so
+  // the ready page's "Valid 120 days from your first game" is this pack's rule, not a guess
+  // from the offers. Optional on the wire: null when not sent, and the page then takes the
+  // window of the offer matching this purchase's sport AND size.
+  windowDays: number | null
 }
 
 export function toPurchase(json: unknown): PurchaseView | null {
@@ -880,5 +922,6 @@ export function toPurchase(json: unknown): PurchaseView | null {
     maskedEmail: masked(j.maskedEmail),
     sportId: typeof j.sportId === 'string' && UUID_RE.test(j.sportId) ? j.sportId : null,
     name: text(j.name, 60),
+    windowDays: count(j.windowDays, 7, 366),
   }
 }
