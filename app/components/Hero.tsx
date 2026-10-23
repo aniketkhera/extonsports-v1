@@ -1759,6 +1759,11 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
               className="flex items-center min-w-0"
               style={{ minHeight: canProbe ? "26px" : undefined }}
             >
+            {/* The name and one line on what the space is, stacked so the
+                hovered week still opens to the right of both (Aniket,
+                2026-10-22: 100-foot lanes, wood-sprung floors, all-glass
+                squash courts). The line is always visible, hover or not. */}
+            <span className="flex flex-col min-w-0 shrink-0">
             {stacked && week ? (
               <button
                 type="button"
@@ -1797,6 +1802,10 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
                 {r.sport}
               </span>
             )}
+              <span className="text-mono text-white/45 whitespace-nowrap" style={{ fontSize: RATE_LABEL }}>
+                {r.feature}
+              </span>
+            </span>
             {/* Only the hovered sport's row paints one. Three weeks at once
                 would be a heatmap nobody asked for, and the point of moving it
                 here was that the answer belongs to the price under the pointer. */}
