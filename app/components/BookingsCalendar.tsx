@@ -267,6 +267,10 @@ export default function BookingsCalendar({
   const freeGirlsShown = dayBlocks.some(
     (b) => shownCourtIds.has(b.courtId) && sessionOf(b) === "free-girls-class",
   );
+  /* Same rule for Throwball's legend entry (2026-10-23): only on a grid that shows it. */
+  const throwballShown = dayBlocks.some(
+    (b) => shownCourtIds.has(b.courtId) && brandFor(b) === "throwball",
+  );
 
   const [winFrom, winTo] = useMemo(() => {
     if (allHours) return [0, 1440];
@@ -314,7 +318,8 @@ export default function BookingsCalendar({
     return `${BOOK_COURT_URL}?${p.toString()}`;
   }
 
-  /* ⛔ THIS CALENDAR NAMES THE FOUR PARTNERS AND NOBODY ELSE, 2026-10-08.
+  /* ⛔ THIS CALENDAR NAMES THE PARTNERS AND NOBODY ELSE, 2026-10-08. (Four then; a
+     fifth key, 'throwball' — Phoenix, a regular group's Sunday series — joined 2026-10-23.)
      It stamped the holder's INITIALS on the first row of each booking until
      that morning. They came off because this page is public, Google indexes
      it and the link gets emailed around: two initials plus a court and an hour
@@ -409,18 +414,22 @@ export default function BookingsCalendar({
     ccca: "rgba(255,196,61,0.42)",
     "philadelphia-badminton": "rgba(120,170,255,0.38)",
     sera: "rgba(214,130,220,0.36)",
+    /* Teal (2026-10-23): the one hue none of the others or FILL.programme's green use. */
+    throwball: "rgba(56,190,190,0.38)",
   };
   const PARTNER_SHORT: Record<BrandKey, string> = {
     squashtigers: "ST",
     ccca: "CCCA",
     "philadelphia-badminton": "PHILA",
     sera: "SeRa",
+    throwball: "Phoenix",
   };
   const PARTNER_FULL: Record<BrandKey, string> = {
     squashtigers: "SquashTigers",
     ccca: "Chester County Cricket Academy",
     "philadelphia-badminton": "Philadelphia Badminton",
     sera: "Sera Dance & Fitness",
+    throwball: "Phoenix Throwball",
   };
 
   const shell = (
@@ -454,7 +463,7 @@ export default function BookingsCalendar({
               Calendar of bookings
             </h2>
             <p className="text-white/45 mt-1" style={{ fontSize: "0.8rem", maxWidth: "48ch" }}>
-              Every court, as it stands. The club's resident academies are named;
+              Every court, as it stands. The club's resident academies and regular groups are named;
               everything else is somebody's private hire.
             </p>
           </div>
@@ -689,16 +698,19 @@ export default function BookingsCalendar({
                         if (org && st !== "past" && hitFrom !== undefined && hitTo !== undefined) {
                           const link = PARTNER_LINK[org];
                           const span = Math.max(1, (Math.min(hitTo, winTo) - Math.max(hitFrom, winFrom)) / STEP);
+                          /* Throwball (2026-10-23) is named with nowhere to go, so its
+                             block is the same overlay on a plain cell, not a link. */
+                          const Tag = link ? "a" : "span";
                           return (
-                            <a
+                            <Tag
                               key={c.id}
-                              href={link.href}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="xcal-partner"
+                              {...(link ? { href: link.href, target: "_blank", rel: "noreferrer" } : { role: "img" })}
+                              /* The ember hover means "you can act on this", so a cell
+                                 with no link does not get it. */
+                              className={link ? "xcal-partner" : undefined}
                               style={{ ...common, position: "relative" }}
-                              title={`${c.name} · ${clockLabel(slot)} — ${whose}. ${link.label}.`}
-                              aria-label={`${c.name} at ${clockLabel(slot)}: ${whose}. ${link.label}.`}
+                              title={`${c.name} · ${clockLabel(slot)} — ${whose}.${link ? ` ${link.label}.` : ""}`}
+                              aria-label={`${c.name} at ${clockLabel(slot)}: ${whose}.${link ? ` ${link.label}.` : ""}`}
                             >
                               {atStart && (
                                 <span
@@ -711,7 +723,7 @@ export default function BookingsCalendar({
                                   }}
                                 >
                                   {free ? <CalFreeMark rows={span} /> : <CalPartnerMark org={org} rows={span} />}
-                                  {span >= 4 && (
+                                  {link && span >= 4 && (
                                     <span
                                       className="text-mono"
                                       style={{ fontSize: "0.42rem", letterSpacing: "0.08em", color: "var(--ember-ink)" }}
@@ -721,7 +733,7 @@ export default function BookingsCalendar({
                                   )}
                                 </span>
                               )}
-                            </a>
+                            </Tag>
                           );
                         }
                         /* "Private" for an individual's hour, the partner's
@@ -802,20 +814,23 @@ export default function BookingsCalendar({
                   : []),
                 ["PHILA — Philadelphia Badminton", PARTNER_FILL["philadelphia-badminton"], "solid"],
                 ["SeRa — Sera Dance & Fitness", PARTNER_FILL.sera, "solid"],
+                ...(throwballShown ? [["Phoenix Throwball", PARTNER_FILL.throwball, "solid"] as const] : []),
                 ["other coaching", FILL.programme, "solid"],
                 ["not bookable yet", FILL.shut, "dashed"],
               ] as Array<[label: string, bg: string, bs: "solid" | "dashed", linkTo?: BrandKey]>).map(([label, bg, bs, linkTo]) => {
                 /* The four partner entries link to the partner, as their hours do —
                    and so does the free girls' entry, to CCCA, as its cells do. */
                 const key = linkTo ?? (Object.keys(PARTNER_FULL) as BrandKey[]).find((k) => label.endsWith(PARTNER_FULL[k]));
+                // Throwball is named but has no link (lib/booking.ts PARTNER_LINK).
+                const link = key ? PARTNER_LINK[key] : null;
                 const swatch = (
                   <span
                     className="inline-block"
                     style={{ width: 11, height: 11, background: bg, border: `1px ${bs} rgba(var(--cal-fg),0.30)` }}
                   />
                 );
-                return key ? (
-                  <a key={label} href={PARTNER_LINK[key].href} target="_blank" rel="noreferrer"
+                return link ? (
+                  <a key={label} href={link.href} target="_blank" rel="noreferrer"
                     className="inline-flex items-center gap-1.5 hover:text-white transition-colors">
                     {swatch}
                     {label}

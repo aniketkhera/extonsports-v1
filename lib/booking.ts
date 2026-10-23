@@ -97,13 +97,16 @@ export const SQUAD_CLASS_URL = `${APP_URL}/c/exton-junior-squad`
  * vocabulary (lib/court-partners.ts there; BrandKey in app/board/board-lib.ts here).
  */
 export const PARTNER_LINK: Record<
-  'squashtigers' | 'ccca' | 'philadelphia-badminton' | 'sera',
-  { href: string; label: string }
+  'squashtigers' | 'ccca' | 'philadelphia-badminton' | 'sera' | 'throwball',
+  { href: string; label: string } | null
 > = {
   'philadelphia-badminton': { href: 'https://philadelphiabadminton.com', label: 'Learn more' },
   ccca: { href: 'https://cccricketacademy.com', label: 'Learn more' },
   squashtigers: { href: SQUAD_CLASS_URL, label: 'Book a squad' },
   sera: { href: BOLLYWOOD_CLASS_URL, label: 'Book a class' },
+  /* Named but with nowhere to send anyone (2026-10-23): a private team's weekly hire,
+     not a business with a site or a class to join. Its hours are not links. */
+  throwball: null,
 }
 
 /**
