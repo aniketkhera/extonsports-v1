@@ -138,6 +138,43 @@ test("/api/court-slots passes only the fixed words and never forwards `who`", as
   assert.ok(body.blocks.every((b) => !("who" in b)), "who is never forwarded");
 });
 
+/* Throwball (2026-10-23): Reshma's team's Sunday 18:30-20:30 series, named on the public
+   calendar at Aniket's request. A fixed key like the four partners: the feed's `org`
+   names it, and the relay forwards that word and nothing else. */
+test("Throwball is named from the key, as THROWBALL, and carries no session", () => {
+  const tb = { ...base, kind: "programme", from: 1110, to: 1230, org: "throwball" };
+  assert.equal(L.brandFor(tb), "throwball");
+  assert.equal(L.holderLabel(tb), "THROWBALL");
+  assert.equal(L.sessionOf(tb), null);
+  // The fallback matcher, for a programme block from a feed without keys.
+  assert.equal(L.brandFor({ ...base, kind: "programme", who: "Throwball" }), "throwball");
+  // Never from a court booking's holder string: that is a person.
+  assert.equal(L.brandFor({ ...base, kind: "booking", who: "Throwball" }), null);
+});
+
+test("an org this bundle does not know is treated as no org, never a blank holder", () => {
+  // A TV on an older bundle when the platform adds a key: PRIVATE, not undefined.
+  assert.equal(L.brandFor({ ...base, kind: "booking", org: "some-new-key" }), null);
+  assert.equal(L.holderLabel({ ...base, kind: "booking", org: "some-new-key" }), "PRIVATE");
+});
+
+test("/api/court-slots forwards 'throwball' and still drops an unknown org", async (t) => {
+  const upstream = {
+    timeZone: "America/New_York",
+    days: ["2026-11-01"],
+    courts: [{ id: "c1", sport: "Badminton", sportId: "s", name: "BADMINTON 1", label: "1" }],
+    blocks: [
+      { ...base, date: "2026-11-01", kind: "programme", from: 1110, to: 1230, org: "throwball", who: "Throwball" },
+      { ...base, date: "2026-11-01", kind: "programme", from: 1230, to: 1290, org: "reshma" },
+    ],
+  };
+  t.mock.method(globalThis, "fetch", async () => ({ ok: true, json: async () => upstream }));
+  const R = await import("../api/court-slots/route.ts");
+  const body = await (await R.GET(new Request("https://extonsports.com/api/court-slots?days=7"))).json();
+  assert.deepEqual(body.blocks.map((b) => b.org ?? null), ["throwball", null]);
+  assert.ok(body.blocks.every((b) => !("who" in b)), "who is never forwarded");
+});
+
 /* The public relay and the lights (2026-10-18, "Add there too"): only when asked. The
    schedule only at first; since 2026-10-21 the bridge's live state too ("show the real
    on/off state on the public page too"), cut to lib/public-lights.ts's allow-list. */

@@ -121,6 +121,7 @@ export const PARTNER_TEXT: Record<BrandKey, string> = {
   ccca: "CHESTER COUNTY CRICKET ACADEMY",
   squashtigers: "SQUASHTIGERS",
   sera: "SERA DANCE & FITNESS",
+  throwball: "THROWBALL",
 };
 
 export function holderLabel(b: NamedBlock): string {
@@ -144,7 +145,7 @@ export function holderLabel(b: NamedBlock): string {
    the source strings come from events.name and squad_programs.name, which are
    typed by hand in the admin and have already varied — "Philadelphia Badminton"
    and "Philadelphia Badminton Academy" are both in the data. */
-export type BrandKey = "philadelphia-badminton" | "ccca" | "squashtigers" | "sera";
+export type BrandKey = "philadelphia-badminton" | "ccca" | "squashtigers" | "sera" | "throwball";
 
 /* ── WHAT KIND OF SESSION (2026-10-14) ───────────────────────────────────────────
    Aniket: with Philadelphia Badminton's hours, "also write if its JUNIOR COACHING
@@ -236,7 +237,10 @@ export function boardLabel(b: NamedBlock): string {
    By lib/court-holders.ts's contract a programme label is an organisation, a
    programme or a coach — never the name of whoever hired the court. */
 export function brandFor(b: { org?: BrandKey; who?: string; kind?: SlotBlock["kind"] }): BrandKey | null {
-  if (b.org) return b.org;
+  /* Only a key this file knows (2026-10-23). A screen still on an older bundle when
+     the platform starts sending a new key would otherwise index PARTNER_TEXT with
+     it and print a blank holder; an unknown key now falls through like no key. */
+  if (b.org && b.org in PARTNER_TEXT) return b.org;
   return b.kind === "programme" ? brandOf(b.who) : null;
 }
 
@@ -254,6 +258,8 @@ export function brandOf(who: string | undefined): BrandKey | null {
      by the studio, so the class name routes here too. Not 'dance' on its own:
      a session the club runs itself must not inherit a partner's mark. */
   if (s.includes("sera") || s.includes("bollywood")) return "sera";
+  /* Reshma's team's Sunday series (2026-10-23). A sport's name, never a person's. */
+  if (s.includes("throwball")) return "throwball";
   return null;
 }
 

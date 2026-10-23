@@ -50,7 +50,8 @@ export type SlotBlock = {
   /** 'booking' = somebody hired it. 'programme' = academy, squad or lesson. */
   kind: 'booking' | 'programme'
   /**
-   * ⛔ THE ONLY IDENTITY THIS PROXY WILL CARRY, and it is four fixed strings.
+   * ⛔ THE ONLY IDENTITY THIS PROXY WILL CARRY, and it is a few fixed strings (the
+   * four partners below, and since 2026-10-23 'throwball').
    *
    * The partner organisation holding the hour — SquashTigers, Chester County
    * Cricket Academy, Philadelphia Badminton, Sera Dance & Fitness — resolved
@@ -61,7 +62,7 @@ export type SlotBlock = {
    * It is gone: initials plus an exact court and hour identify a person at a
    * club this size, and this page is public and indexed.
    */
-  org?: 'squashtigers' | 'ccca' | 'philadelphia-badminton' | 'sera'
+  org?: 'squashtigers' | 'ccca' | 'philadelphia-badminton' | 'sera' | 'throwball'
   /**
    * A partner's session — junior coaching or open play (2026-10-14, Aniket: show
    * the reception board's tags "on the public page too"). Two fixed words that name
@@ -101,8 +102,11 @@ export type CourtSlots = {
 
 const EMPTY: CourtSlots = { timeZone: 'America/New_York', days: [], courts: [], blocks: [] }
 
-/** The four keys this proxy will forward. Anything else is dropped silently. */
-const PARTNERS = ['squashtigers', 'ccca', 'philadelphia-badminton', 'sera'] as const
+/** The keys this proxy will forward. Anything else is dropped silently.
+    'throwball' (2026-10-23): Reshma's team's Sunday 18:30-20:30 series, which Aniket
+    asked the calendar to name. A fixed word from the platform's closed vocabulary,
+    like the four partners — never the event's own title. */
+const PARTNERS = ['squashtigers', 'ccca', 'philadelphia-badminton', 'sera', 'throwball'] as const
 const SESSIONS = ['junior-coaching', 'open-play', 'free-girls-class'] as const
 
 /* How many days to ask the platform for.
@@ -169,7 +173,7 @@ export async function GET(req: Request) {
         .map((b) => {
           // ⛔ AN ALLOW-LIST, NOT A PASS-THROUGH, and that is the whole guard:
           // whatever the upstream sends, the only identity that can reach this
-          // public page is one of four fixed keys. The previous version capped
+          // public page is one of the fixed keys in PARTNERS. The previous version capped
           // `who` at four characters on the same reasoning — the upstream was
           // meant to have reduced it to initials, and forwarding a full name to
           // a public page on the strength of a remote response is the mistake
