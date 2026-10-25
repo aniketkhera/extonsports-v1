@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { OfferView } from "@/lib/my-bookings/view";
 import {
-  FALLBACK_PHONE, PACK_BUY_COPY, bookingAndChanges, checkoutMessage, money, packSportsLine, payButton, perHourLine,
+  COPY, FALLBACK_PHONE, PACK_BUY_COPY, bookingAndChanges, checkoutMessage, money, packSportsLine, payButton, perHourLine,
   sizeTile, sportTilePrice, whatYouGet,
 } from "@/lib/my-bookings/copy";
 import { isEmailShape } from "@/lib/my-bookings/guard";
@@ -120,6 +120,13 @@ export default function BuyForm({
   const [agree, setAgree] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // The platform answered terms_changed (2026-10-25, site review, low): the terms this page
+  // loaded, and the termsVersion prop Pay sends, are out of date. A re-tick would send the
+  // same old version and be refused again, for ever, so from here only a reload can go on —
+  // it fetches the new terms and their version — as PackConfirm does for its RELOAD
+  // answers. Pay gives way to Reload, the tick is cleared and cannot be given again here,
+  // and pay() refuses to post (Enter in the email field still submits the form).
+  const [termsStale, setTermsStale] = useState(false);
 
   // The sports in the platform's order, each once.
   const sports = offers.filter((o, i) => offers.findIndex((x) => x.sportId === o.sportId) === i);
@@ -134,7 +141,7 @@ export default function BuyForm({
 
   async function pay(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (busy) return;
+    if (busy || termsStale) return;
     setError("");
     const email = String(new FormData(e.currentTarget).get("email") || "").trim();
     if (!offer) return setError(checkoutMessage(choice.sportId ? "bad_size" : "bad_sport", phone));
@@ -157,7 +164,12 @@ export default function BuyForm({
     }
     setBusy(false);
     const known = BUY_ERRORS.find((x) => x === j.error);
-    setError(checkoutMessage(r.status === 429 ? "slow_down" : (known ?? "try_again"), phone));
+    const why = r.status === 429 ? "slow_down" : (known ?? "try_again");
+    if (why === "terms_changed") {
+      setTermsStale(true);
+      setAgree(false);
+    }
+    setError(checkoutMessage(why, phone));
   }
 
   const at = PACK_BUY_COPY.alreadyHave.indexOf(ALREADY_LINK);
@@ -304,6 +316,7 @@ export default function BuyForm({
             type="checkbox"
             name="agreeTerms"
             checked={agree}
+            disabled={termsStale}
             onChange={(e) => setAgree(e.target.checked)}
             className="mt-[2px] h-5 w-5 shrink-0 accent-[var(--color-ember)]"
           />
@@ -322,9 +335,15 @@ export default function BuyForm({
           </p>
         )}
 
-        <button type="submit" className={`${BTN_PRIMARY} w-full mt-4`} disabled={busy || !offer}>
-          {busy ? PACK_BUY_COPY.paying : offer ? payButton(offer.priceCents) : PACK_BUY_COPY.choose}
-        </button>
+        {termsStale ? (
+          <button type="button" className={`${BTN_PRIMARY} w-full mt-4`} onClick={() => window.location.reload()}>
+            {COPY.reload}
+          </button>
+        ) : (
+          <button type="submit" className={`${BTN_PRIMARY} w-full mt-4`} disabled={busy || !offer}>
+            {busy ? PACK_BUY_COPY.paying : offer ? payButton(offer.priceCents) : PACK_BUY_COPY.choose}
+          </button>
+        )}
         <p className="text-white/60 text-[0.82rem] leading-relaxed mt-3">{PACK_BUY_COPY.finePrint}</p>
       </div>
 

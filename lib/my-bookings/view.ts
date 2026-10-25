@@ -754,8 +754,8 @@ function bookedOf(status: 'booked' | 'already', bookingRaw: unknown, packRaw: un
 /**
  * The platform's answer to a pack book, as one of a closed set. httpStatus 0 = no answer.
  *
- * ⚠️ WHEN IN DOUBT, 'unknown' — "Reload My bookings in a minute to check" — the cancel
- * rule again. A timeout or a 5xx other than 503 may have landed after cp_book_with_pack
+ * ⚠️ WHEN IN DOUBT, 'unknown' — "check the bookings page in a minute" (copy.ts
+ * bookMessage) — the cancel rule again. A timeout or a 5xx other than 503 may have landed after cp_book_with_pack
  * committed; "nothing changed, try again" would then be a lie (a retry with the same
  * request key is safe — it answers 'already' — but the guest must not be told nothing
  * happened). Only the platform's 503 (busy, or try_again after its own re-read found no

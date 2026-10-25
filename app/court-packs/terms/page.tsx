@@ -48,19 +48,27 @@ export default async function PackTermsPage() {
 
         <main className="mt-6">
           <h1
-            className="text-cond text-white mb-8"
+            className={`text-cond text-white ${terms ? "mb-2" : "mb-8"}`}
             style={{ fontSize: "clamp(2rem,5vw,3rem)", lineHeight: 1.05, letterSpacing: "-0.01em" }}
           >
             {terms?.title ?? PACK_BUY_COPY.termsTitle}
           </h1>
 
           {terms ? (
-            terms.sections.map((s, i) => (
-              <section key={i} className="mb-8">
-                <h2 className="text-[1.05rem] font-semibold mb-2.5 text-white/90">{s.heading}</h2>
-                <p className="text-white/70 text-[0.95rem] leading-[1.75] whitespace-pre-line">{s.body}</p>
-              </section>
-            ))
+            <>
+              {/* Which version this is (2026-10-25, site review): the version a purchase
+                  records, so the buyer and the desk can match the page to it. Only with the
+                  platform's terms — no version is shown over the "can't show" fallback. */}
+              <p className="text-mono text-[0.72rem] tracking-[0.08em] text-white/60 mb-8">
+                {PACK_BUY_COPY.termsVersion(terms.version)}
+              </p>
+              {terms.sections.map((s, i) => (
+                <section key={i} className="mb-8">
+                  <h2 className="text-[1.05rem] font-semibold mb-2.5 text-white/90">{s.heading}</h2>
+                  <p className="text-white/70 text-[0.95rem] leading-[1.75] whitespace-pre-line">{s.body}</p>
+                </section>
+              ))}
+            </>
           ) : (
             <p className="text-white/70 text-[1rem] leading-relaxed" role="status">
               <PhoneText text={PACK_BUY_COPY.termsUnavailable(FALLBACK_PHONE)} phone={FALLBACK_PHONE} />

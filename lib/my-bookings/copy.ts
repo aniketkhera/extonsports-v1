@@ -351,6 +351,15 @@ export const PACK_BUY_COPY = {
   title: 'Court packs.',
   titleAccent: 'Peak for off-peak.',
   lead: "Five or ten one-hour bookings, any hour we're open — peak hours at the off-peak price, or less.",
+  // /court-packs's <meta name="description">, 2026-10-25 (site review, low). It was `lead`,
+  // which states the sizes and a price claim in a STATIC string that search results and link
+  // previews keep long after the platform's offers change (sizes, prices and windows are all
+  // court_pack_offers rows, changed with no deploy here). So it names no size and no price —
+  // only what is sold and where. The sports ARE named: which sports have packs was Aniket's
+  // call (2026-10-22, badminton and cricket, no squash), not a price that moves with a row;
+  // when that call changes, this line changes with it. `lead` stays on the page, beside the
+  // offers it describes.
+  metaDescription: 'Prepaid court and lane time at Exton Sports Center — badminton and cricket.',
   sportLabel: 'Sport',
   // 2026-10-22: the second choice, under the sport — 5 credits or 10.
   sizeLabel: 'Pack',
@@ -371,6 +380,14 @@ export const PACK_BUY_COPY = {
   alreadyHave: 'Already have a pack? Book a court and choose “My court pack” when you pay.',
   notOnSale: "Court packs aren't on sale online right now.",
   termsTitle: 'Court pack terms',
+  /**
+   * The line under /court-packs/terms's title, 2026-10-25 (site review, low): "Version
+   * 2026-10-22-1". The page is "the version their pack records" (its header) but never said
+   * which version it was, so a buyer — or the desk, on the phone — could not match the page
+   * to the version a purchase stored. The version is the platform's (view.ts toOffers), as
+   * text.
+   */
+  termsVersion: (version: string) => `Version ${version}`,
   /** /court-packs/terms when the platform is off, down or unconfigured. */
   termsUnavailable: (phone: string = FALLBACK_PHONE) =>
     `We can't show the court pack terms right now. Try again in a minute, or call ${phone}.`,
@@ -640,7 +657,14 @@ export function bookedPaidWith(packName: string, credits: number): string {
 /**
  * What the pack page says after Book, for every outcome but booked/already (which show
  * the booked screen) and the pack refusals (refusalText). 'unknown' sends the guest to
- * My bookings, where a booking that did land is listed; it never says "nothing changed".
+ * the /my-bookings page, where a booking that did land is listed; it never says "nothing
+ * changed".
+ *
+ * 'unknown', 2026-10-25 (site review, low): it said "Reload My bookings in a minute", but
+ * that page has been "Manage or cancel a booking" since the 2026-10-22 review fixes (COPY.title)
+ * and "My bookings" now names only the home page's popup button — a different thing, which
+ * emails a list. PackConfirm's button under this sentence is labelled COPY.title, so the
+ * sentence is built from COPY.title too: rename the page and both follow, never one alone.
  *
  * `card` false (2026-10-22: the date is past the card window, cardOpenOn) leaves out "or pay
  * by card" / "You can still pay by card." — the page shows no card link for that date.
@@ -679,7 +703,7 @@ export function bookMessage(v: BookView, phone: string = FALLBACK_PHONE, card = 
         ? "That didn't go through, and nothing has changed. Try again in a moment, or pay by card."
         : "That didn't go through, and nothing has changed. Try again in a moment."
     case 'unknown':
-      return "We couldn't confirm that. Reload My bookings in a minute to check."
+      return `We couldn't confirm that. Open “${COPY.title}” in a minute to check.`
     default:
       // A pack refusal: the page renders refusalText with the slot's context instead.
       return card ? "This pack can't pay for that booking. You can still pay by card." : "This pack can't pay for that booking."
@@ -891,7 +915,11 @@ export function checkoutMessage(
     case 'terms_required':
       return 'Tick the box to agree to the court pack terms.'
     case 'terms_changed':
-      return 'The court pack terms have just changed. Read them and tick the box again.'
+      // 2026-10-25 (site review, low): it said "Read them and tick the box again", but the
+      // form sends the terms version the PAGE loaded, so a re-tick re-sends the old version
+      // and is refused again, for ever. Only a reload fetches the new terms and their
+      // version; BuyForm shows a Reload button in place of Pay and clears the tick.
+      return 'The court pack terms have just changed. Reload the page to read the new terms, then tick the box again.'
     case 'bad_sport':
       return 'Choose a sport.'
     case 'bad_size':

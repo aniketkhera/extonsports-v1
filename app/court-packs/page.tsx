@@ -33,9 +33,11 @@ import BuyForm from "./BuyForm";
 
 export const dynamic = "force-dynamic";
 
+// The description is size-free and price-free (2026-10-25, site review): it is static, and
+// the sizes and prices are the platform's rows. See PACK_BUY_COPY.metaDescription.
 export const metadata: Metadata = {
   title: "Court packs",
-  description: PACK_BUY_COPY.lead,
+  description: PACK_BUY_COPY.metaDescription,
   alternates: { canonical: PACK_PATH },
   robots: { index: PACKS_LIVE, follow: PACKS_LIVE },
 };
