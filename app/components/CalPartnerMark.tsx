@@ -22,6 +22,7 @@ const SHORT: Record<BrandKey, string> = {
   ccca: "CCCA",
   "philadelphia-badminton": "PHILA",
   sera: "SeRa",
+  throwball: "Phoenix",
 };
 
 const FG = "rgba(var(--cal-fg),0.92)";
@@ -62,12 +63,32 @@ export default function CalPartnerMark({ org, rows }: { org: BrandKey; rows: num
       </span>
     );
   }
+  if (org === "sera") {
+    return (
+      <span aria-hidden style={{ display: "flex", flexDirection: "column", alignItems: "center", lineHeight: 1 }}>
+        <span style={{ fontFamily: "var(--font-caveat), cursive", fontWeight: 700, fontSize: "0.9rem", color: ACCENT }}>SeRa</span>
+        {rows >= 3 && (
+          <span className="text-cond" style={{ fontSize: "0.42rem", letterSpacing: "0.14em", color: FG }}>FITNESS</span>
+        )}
+      </span>
+    );
+  }
+  if (org === "throwball") {
+    /* Phoenix, Reshma's throwball team (2026-10-23): the team in the accent over the
+       sport, stacked like SquashTigers. Mixed case as the owner wrote it:
+       textTransform 'none' against .text-cond's capitals, as CalFreeMark does below. */
+    return (
+      <span aria-hidden className="text-cond" style={{ fontSize: "0.56rem", letterSpacing: "0.04em", lineHeight: 1.05, textTransform: "none" }}>
+        <span style={{ display: "block", color: ACCENT }}>Phoenix</span>
+        <span style={{ display: "block", color: FG }}>Throwball</span>
+      </span>
+    );
+  }
+  /* No artwork: the name in type. This was the Sera branch's fall-through until
+     2026-10-23, so a new key would have worn the studio's mark. */
   return (
-    <span aria-hidden style={{ display: "flex", flexDirection: "column", alignItems: "center", lineHeight: 1 }}>
-      <span style={{ fontFamily: "var(--font-caveat), cursive", fontWeight: 700, fontSize: "0.9rem", color: ACCENT }}>SeRa</span>
-      {rows >= 3 && (
-        <span className="text-cond" style={{ fontSize: "0.42rem", letterSpacing: "0.14em", color: FG }}>FITNESS</span>
-      )}
+    <span aria-hidden className="text-cond" style={{ fontSize: "0.56rem", letterSpacing: "0.04em", color: FG, textTransform: "none" }}>
+      {SHORT[org]}
     </span>
   );
 }

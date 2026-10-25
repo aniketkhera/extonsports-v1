@@ -118,10 +118,18 @@ export default function Footer() {
                a plain click opens the calendar overlay, anything else goes to /calendar
                (CalendarFooterLink.tsx). The hero row now has "My bookings" in its place. */
             { label: "Calendar of bookings", href: "/calendar", calendar: true },
-            // 2026-10-20: see or cancel a guest booking, near "Book", where somebody who booked
-            // looks first — after the calendar, which Aniket put right under "Book" on 2026-10-21
-            // (my-bookings-pure.test.mjs). Gated until the platform side is switched on (lib/booking.ts).
-            ...(MY_BOOKINGS_LIVE ? [{ label: "My bookings", href: MY_BOOKINGS_PATH }] : []),
+            /* /my-bookings: see or cancel a court booked and paid for online (2026-10-20),
+               gated by MY_BOOKINGS_LIVE until the platform side is switched on (lib/booking.ts).
+               2026-10-22, reconciling it with the shipped "Email my bookings" (the default
+               put to Aniket for review): labelled "Manage or cancel a booking", NOT "My
+               bookings", because the hero's "My bookings" is the email popup, which also
+               covers member and on-account bookings, and one name must not mean two things.
+               Review fixes, 2026-10-22: the page itself now carries this label as its heading
+               and <title> too (COPY.title in lib/my-bookings/copy.ts), so the link and the
+               page it opens say the same thing. After the calendar, not before it: the
+               calendar's place right under "Book" is pinned by
+               app/components/my-bookings-pure.test.mjs. */
+            ...(MY_BOOKINGS_LIVE ? [{ label: "Manage or cancel a booking", href: MY_BOOKINGS_PATH }] : []),
             // 2026-10-21: the court pack's buy page (orangish-app docs/court-packs.md §8.2).
             // A relative path, so FooterCol opens it in the same tab. Gated until the owner's
             // live test and the key-box revoke are done (lib/booking.ts PACKS_LIVE).

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore }
 import type { RefObject } from "react";
 import { createPortal } from "react-dom";
 import { COPY, TOAST_MS, TOAST_PHONE, TOAST_TEL, createToastClock, isEmailShaped, nextTrapIndex, sendWithOptin, type Outcome } from "./my-bookings-pure";
+import { MY_BOOKINGS_LIVE, MY_BOOKINGS_PATH } from "../../lib/booking";
 
 /* "Email my bookings": the popup behind the hero's "My bookings" button, and its toast.
    ──────────────────────────────────────────────────────────────────────────────────────
@@ -30,6 +31,15 @@ import { COPY, TOAST_MS, TOAST_PHONE, TOAST_TEL, createToastClock, isEmailShaped
    address to /api/mailing-list-optin, which only ever adds an address the list has never
    had (never re-subscribes anyone); unticked, that request is not made. The toast does not
    know the box exists.
+
+   The /my-bookings line, 2026-10-22 (the default put to Aniket for review when the guest
+   sign-in page was rebased onto this popup): "Booked online and need to cancel? Sign in",
+   under the form, only while MY_BOOKINGS_LIVE is true. This popup stays the hero's ONE "My
+   bookings", because it covers every booking an address holds (member, on-account, guest)
+   and /my-bookings covers only courts booked and paid for online; the line is how a phone,
+   which sees only the hero row above the fold, reaches the sign-in page. A plain same-tab
+   link and nothing more: /my-bookings never mounts this popup, so the guest's private
+   path makes no browser call to the platform. Static words, the same for every visitor.
 
    Colours are the site's tokens, so light and dark both follow the theme; the scrim is a
    literal, as BookingsCalendar's is, because it darkens whatever is behind in both. */
@@ -62,6 +72,7 @@ export default function MyBookingsEmail({
   const inputRef = useRef<HTMLInputElement>(null);
   const optinRef = useRef<HTMLInputElement>(null);
   const sendRef = useRef<HTMLButtonElement>(null);
+  const signInRef = useRef<HTMLAnchorElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const toastClockRef = useRef<ReturnType<typeof createToastClock> | null>(null);
   /* Made on first use, from event handlers only (never during render). */
@@ -113,14 +124,16 @@ export default function MyBookingsEmail({
   /* A small trap: input → box → Send → × → input, and back the other way with Shift. It only
      hears keys while focus is inside the panel, which is why the panel itself takes focus
      on a click (tabIndex -1, below); from there, i is -1 and nextTrapIndex brings Tab back
-     in at the field and Shift+Tab at ×. */
+     in at the field and Shift+Tab at ×. The "Sign in" link (2026-10-22) comes between Send
+     and × while MY_BOOKINGS_LIVE shows it, in page order; switched off, its ref is null
+     and drops out, and the trap is exactly as before. */
   function onPanelKeyDown(e: React.KeyboardEvent) {
     if (e.key !== "Tab") return;
-    const order = [inputRef.current, optinRef.current, sendRef.current, closeRef.current].filter(
-      (el): el is HTMLInputElement | HTMLButtonElement => !!el && !el.disabled,
+    const order = [inputRef.current, optinRef.current, sendRef.current, signInRef.current, closeRef.current].filter(
+      (el): el is HTMLInputElement | HTMLButtonElement | HTMLAnchorElement => !!el && !("disabled" in el && el.disabled),
     );
     if (!order.length) return;
-    const i = order.indexOf(document.activeElement as HTMLInputElement | HTMLButtonElement);
+    const i = order.indexOf(document.activeElement as HTMLInputElement | HTMLButtonElement | HTMLAnchorElement);
     e.preventDefault();
     order[nextTrapIndex(i, order.length, e.shiftKey)].focus();
   }
@@ -305,6 +318,24 @@ export default function MyBookingsEmail({
                 {error === "invalid" ? COPY.invalid : error === "failed" ? COPY.failed : ""}
               </p>
             </form>
+
+            {/* The way to /my-bookings (2026-10-22; see the header). Gated by MY_BOOKINGS_LIVE
+                alone, never by anything the address turns out to have. The link takes the
+                line's colour and is marked by its underline, like the toast's number, so it
+                reads on both themes; the focus ring is --ember-ink, as on the box. */}
+            {MY_BOOKINGS_LIVE && (
+              <p style={{ margin: "18px 0 0", fontSize: 14, lineHeight: "20px", color: "var(--color-fog)" }}>
+                {COPY.signInLead}
+                <a
+                  ref={signInRef}
+                  href={MY_BOOKINGS_PATH}
+                  className="underline underline-offset-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ember-ink)]"
+                  style={{ color: "inherit" }}
+                >
+                  {COPY.signInLink}
+                </a>
+              </p>
+            )}
 
             <button
               ref={closeRef}

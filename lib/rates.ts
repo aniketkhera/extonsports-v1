@@ -209,15 +209,18 @@ export const CAP_HOURS = [1, 2, 3] as const
 
 export type SportRate = {
   sport: string
+  /** One line under the sport's name in the rate card: what the space is.
+      Aniket's wording, 2026-10-22. */
+  feature: string
 } & Record<BandKey, number>
 
 /* Cricket, badminton, squash — the club's own order, matching the academies
    panel in the hero. Not alphabetical and not cheapest-first; changing it here
    changes the hero table, and SPORT_ORDER below keeps the footer in step. */
 export const COURT_RATES: SportRate[] = [
-  { sport: 'Cricket', offPeak: 55, peak: 65 },
-  { sport: 'Badminton', offPeak: 40, peak: 45 },
-  { sport: 'Squash', offPeak: 40, peak: 45 },
+  { sport: 'Cricket', feature: '100-foot lanes', offPeak: 55, peak: 65 },
+  { sport: 'Badminton', feature: 'Wood-sprung floors', offPeak: 40, peak: 45 },
+  { sport: 'Squash', feature: 'All-glass squash courts', offPeak: 40, peak: 45 },
 ]
 
 /** One order for every sport list on the site. */

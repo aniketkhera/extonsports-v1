@@ -34,6 +34,14 @@ export const COPY = {
   /* The mailing-list box, Aniket 2026-10-21: "also adda a checkbox, checked by default -
      add to our mailing list?" */
   optin: "Add me to the Exton Sports mailing list",
+  /* The way from this popup to /my-bookings, 2026-10-22: shown only while MY_BOOKINGS_LIVE
+     is true (lib/booking.ts), "Sign in" the link. The default put to Aniket for review when
+     /my-bookings was rebased onto this popup: the hero keeps ONE "My bookings" (this popup,
+     which covers member and on-account bookings too), and a phone, which sees only the
+     hero row above the fold, still reaches the sign-in page from here. Not in the
+     2026-10-21 mockups. Static, like every line here: it says nothing about any address. */
+  signInLead: "Booked online and need to cancel? ",
+  signInLink: "Sign in",
   invalid: "Please enter a valid email address.",
   /* The platform is down, switched off, or the request never left. Nothing about the
      address is involved, so saying so gives nothing away; keeping the popup open (rather

@@ -347,7 +347,9 @@ test("the box: its words, ticked by default, a real labelled checkbox before Sen
   const check = popup.indexOf('type="checkbox"');
   const send = popup.indexOf('type="submit"');
   assert.ok(field > 0 && check > field && send > check, `order: field=${field} box=${check} send=${send}`);
-  assert.match(popup, /\[inputRef\.current, optinRef\.current, sendRef\.current, closeRef\.current\]/);
+  // 2026-10-22: the /my-bookings "Sign in" link sits between Send and × in the trap, as on
+  // the page; while MY_BOOKINGS_LIVE hides it its ref is null and the trap is as before.
+  assert.match(popup, /\[inputRef\.current, optinRef\.current, sendRef\.current, signInRef\.current, closeRef\.current\]/);
 });
 
 test("nextTrapIndex with the box: field → box → Send → × → field, and back with Shift", () => {

@@ -8,7 +8,7 @@ import type { CourtAvailability } from "../api/court-availability/route";
 import type { SchedulePayload } from "../api/schedule/route";
 import type { ProgramSchedule } from "@/lib/club-schedule";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, CLASS_FEES_NOTE } from "../../lib/rates";
-import { BOLLYWOOD_CLASS_URL, SQUAD_CLASS_URL, STARTER_PACK_URL, BOOK_COURT_URL, PAY_URL, CLASS_ONLINE_BOOKING_LIVE, BOOKING_LIST_EMAIL_LIVE, MY_BOOKINGS_LIVE, MY_BOOKINGS_PATH, PACKS_LIVE, PACK_PATH } from "../../lib/booking";
+import { BOLLYWOOD_CLASS_URL, SQUAD_CLASS_URL, STARTER_PACK_URL, BOOK_COURT_URL, PAY_URL, CLASS_ONLINE_BOOKING_LIVE, BOOKING_LIST_EMAIL_LIVE, PACKS_LIVE, PACK_PATH } from "../../lib/booking";
 import { SPORT_BOOKING_OPENS_LABEL, sportBookingOpen, sportShutOnDate, sportsNotYetOpen } from "../../lib/opening";
 import { pbaScheduleOn, PBA_COURTS } from "../../lib/pba-schedule";
 import { SQUAD_SCHEDULE, SQUAD_NOTE, SQUAD_TERM } from "../../lib/squad-schedule";
@@ -1759,6 +1759,11 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
               className="flex items-center min-w-0"
               style={{ minHeight: canProbe ? "26px" : undefined }}
             >
+            {/* The name and one line on what the space is, stacked so the
+                hovered week still opens to the right of both (Aniket,
+                2026-10-22: 100-foot lanes, wood-sprung floors, all-glass
+                squash courts). The line is always visible, hover or not. */}
+            <span className="flex flex-col min-w-0 shrink-0">
             {stacked && week ? (
               <button
                 type="button"
@@ -1797,6 +1802,10 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
                 {r.sport}
               </span>
             )}
+              <span className="text-mono text-white/45 whitespace-nowrap" style={{ fontSize: RATE_LABEL }}>
+                {r.feature}
+              </span>
+            </span>
             {/* Only the hovered sport's row paints one. Three weeks at once
                 would be a heatmap nobody asked for, and the point of moving it
                 here was that the answer belongs to the price under the pointer. */}
@@ -2029,23 +2038,6 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
           >
             Make an adhoc payment
           </a>
-
-          {/* MY BOOKINGS, 2026-10-20 — see or cancel a court booked online. Here as well as
-              the footer because this row is the only entry point a phone sees above the
-              fold (the nav has no phone menu, and is left alone so its lg+ fit need not be
-              re-measured). Outlined like its neighbours; SAME TAB, no target, because it is
-              this site's own page. Hidden until the platform side is on (lib/booking.ts). */}
-          {MY_BOOKINGS_LIVE && (
-            <a
-              href={MY_BOOKINGS_PATH}
-              className={`text-mono text-[var(--color-ember)] border border-[var(--color-ember)]/50 hover:border-[var(--color-ember)] hover:text-white transition-colors ${
-                stacked ? "block w-full text-center py-[13px] px-5" : "inline-block py-[11px] px-[22px]"
-              }`}
-              style={{ fontSize: RATE_LABEL }}
-            >
-              My bookings
-            </a>
-          )}
 
           {/* COURT PACKS, 2026-10-21 — one-hour credits at the off-peak price or less
               (orangish-app docs/court-packs.md §8.2; renamed from "5-pack" and sold as a
