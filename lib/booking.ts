@@ -325,7 +325,10 @@ export const PACKS_LIVE = false
  * (lib/my-bookings/platform.ts packOffers), never a list kept here. No list (the offers are
  * down, or off) is no link: paying by card is always still there.
  *
- * Callers gate it behind PACKS_LIVE themselves (lib/my-bookings/pack-book.test.mjs checks).
+ * Callers that LINK to it gate it behind PACKS_LIVE themselves (lib/my-bookings/pack-book.test.mjs
+ * checks). The one exception is the short-link route app/court-packs/[sport]/route.ts
+ * (2026-10-25): it redirects a typed or scanned address rather than putting a link on the
+ * site, and the page it lands on shows PACK_BUY_COPY.notOnSale until packs are on sale.
  */
 export function packBuyUrl(
   sportId: string,

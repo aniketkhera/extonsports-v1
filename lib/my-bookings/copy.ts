@@ -11,13 +11,17 @@
 // fallback for answers that carry none — a timeout has no body to carry it in.
 
 import { CONTACT_PHONE } from '../legal'
+import { MY_BOOKINGS_PATH } from '../booking'
+import { DEVICE_MAX_AGE_S } from './session'
 import type {
   BookView, CancelView, OfferView, PackClock, PackRefusalView, PackStatus, PackUseView, QuoteSlot,
 } from './view'
 
 export const FALLBACK_PHONE = CONTACT_PHONE
 
-/** The cutoff the owner set on 2026-10-18; the platform's GUEST_SELF_CANCEL_CUTOFF_HOURS. */
+/** The cutoff the owner set on 2026-10-18; the platform's GUEST_SELF_CANCEL_CUTOFF_HOURS, and
+ *  for a pack booking its CP_SELF_CANCEL_CUTOFF_HOURS (orangish-app lib/court-pack-rules.ts,
+ *  "the same 24 hours as a card booking"). One number here for both, as on the platform. */
 export const DEFAULT_CUTOFF_HOURS = 24
 
 /**
@@ -379,6 +383,8 @@ export const PACK_BUY_COPY = {
   // instruction must name a button that exists.
   alreadyHave: 'Already have a pack? Book a court and choose “My court pack” when you pay.',
   notOnSale: "Court packs aren't on sale online right now.",
+  // 2026-10-25: the box under the form (howToUsePack, below).
+  howToTitle: 'How to use your pack',
   termsTitle: 'Court pack terms',
   /**
    * The line under /court-packs/terms's title, 2026-10-25 (site review, low): "Version
@@ -402,6 +408,103 @@ export const PACK_BUY_COPY = {
   receiptNote: "We've emailed your receipt with a Book with my pack button — tap it on this phone within an hour and you won't need a code here for 90 days.",
   pendingTitle: 'Payment received — setting up your pack…',
 } as const
+
+/**
+ * The buttons and headings "How to use your pack" sends a guest to, each WORD FOR WORD from
+ * the screen it is on — checked by grep on 2026-10-25. An instruction that names a button the
+ * guest cannot find is worse than none, so a rename on any of these screens changes this too.
+ *
+ * siteBook: Aniket's wording (2026-10-25) said "choose Book a court", but every booking button
+ * on this site — the Hero's, the Nav's and the Footer's — has read "Book a court or lane" since
+ * 2026-10-13 (Hero.tsx RECREATION). The guest looks for what is on the screen.
+ */
+export const PACK_HOWTO_LABELS = {
+  // This site's booking button (Hero.tsx, Nav.tsx, Footer.tsx).
+  siteBook: 'Book a court or lane',
+  // The receipt's button: orangish-app lib/court-pack-purchase-email.ts (receiptNote names it too).
+  receiptBook: 'Book with my pack',
+  // The app booking form's pay switch, and the button it gives in pack mode: orangish-app
+  // app/book-court/[slug]/GuestCourtBooking.tsx (the switch shows while court_packs_public is
+  // on, which is also what puts a pack on sale here).
+  payWith: 'How do you want to pay?',
+  myPack: 'My court pack',
+  continueWithPack: 'Continue with my court pack',
+  // A row's button on /my-bookings, pack rows included (BookingRow.tsx).
+  cancel: COPY.cancelButton,
+} as const
+
+type HowToOffer = Pick<OfferView, 'sport' | 'name' | 'credits' | 'windowDays' | 'unusedMonths'>
+
+/** ["a", "b", "c"] → "a, b and c". */
+function andList(xs: string[]): string {
+  return xs.length <= 1 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`
+}
+
+/**
+ * "How to use your pack" on /court-packs: five steps and one line of rules, 2026-10-25. Aniket
+ * asked for it, and approved the steps in substance the same day. A buyer has never seen the
+ * booking form's pay switch, and until now the page said only "Already have a pack? Book a
+ * court…", one line for someone who already knows the way.
+ *
+ * NO NUMBER IS TYPED HERE, so the steps cannot drift from the product they describe:
+ *  - each pack's window and its unused expiry are the offers' own windowDays and unusedMonths
+ *    (court_pack_offers rows, changed on the platform with no deploy here);
+ *  - the cutoff is `hours`, DEFAULT_CUTOFF_HOURS (the platform's CP_SELF_CANCEL_CUTOFF_HOURS);
+ *  - the days a phone stays signed in are DEVICE_MAX_AGE_S, the most this site's device cookie
+ *    ever keeps (session.ts: the platform's expiry, capped at 90 days);
+ *  - the phone is the caller's — the page passes FALLBACK_PHONE, the one BuyForm defaults to.
+ *
+ * `offers` are EVERY offer on sale: the page shows this once, under the form, for all sports,
+ * not for the sport picked. So the units follow what is sold ("court or lane" while cricket
+ * is), and the rules name a window per SIZE ("A 5-pack is good for 60 days from your first game
+ * and a 10-pack for 120.") only while every sport sells that size with one window. If two
+ * sports' windows for a size ever differ, it names each offer instead, so the line is never
+ * true of one sport and false of the other.
+ */
+export function howToUsePack(
+  offers: HowToOffer[],
+  phone: string = FALLBACK_PHONE,
+  hours = DEFAULT_CUTOFF_HOURS,
+  rememberDays = Math.floor(DEVICE_MAX_AGE_S / 86_400),
+): { steps: string[]; rules: string } {
+  const L = PACK_HOWTO_LABELS
+  // "court"; "court or lane" while a cricket pack is on sale (a cricket booking is a lane).
+  const units = [...new Set(offers.map((o) => unitForSport(o.sport)))].sort()
+  const one = units.length > 0 ? units.join(' or ') : 'court'
+  const many = units.length > 0 ? units.map((u) => `${u}s`).join(' or ') : 'courts'
+  const steps = [
+    `Book: go to extonsports.com and choose “${L.siteBook}” — or tap “${L.receiptBook}” in your receipt email.`,
+    `Choose your sport, date, time, ${many} and hours (1 credit = 1 ${one} for 1 hour, whole hours only).`,
+    `Under “${L.payWith}” choose “${L.myPack}”, then “${L.continueWithPack}”.`,
+    `Confirm: the first time on a phone, we email you a 6‑digit code. After that, the phone is remembered for ${rememberDays} days.`,
+    `Need to cancel? At least ${hours} hours before, go to extonsports.com${MY_BOOKINGS_PATH} and press “${L.cancel}” — the credit goes back on your pack. Later than that, call ${phone}.`,
+  ]
+
+  const sizes = [...new Set(offers.map((o) => o.credits))].sort((a, b) => a - b)
+  const windowsOf = (c: number) => [...new Set(offers.filter((o) => o.credits === c).map((o) => o.windowDays))]
+  const perSize = sizes.every((c) => windowsOf(c).length === 1)
+  const firstGame = sizes.length === 0
+    ? []
+    : perSize
+      ? [`${andList(sizes.map((c, i) => {
+          const pack = aPack(c)
+          return i === 0
+            ? `${pack.charAt(0).toUpperCase()}${pack.slice(1)} is good for ${windowsOf(c)[0]} days from your first game`
+            : `${pack} for ${windowsOf(c)[0]}`
+        }))}.`]
+      : [`Each pack is good for its own number of days from your first game: ${offers.map((o) => `${o.name} ${o.windowDays}`).join(', ')}.`]
+  const windows = [...new Set(offers.map((o) => o.windowDays))].sort((a, b) => a - b)
+  const months = [...new Set(offers.map((o) => o.unusedMonths))].sort((a, b) => a - b)
+  const rules = [
+    ...firstGame,
+    ...(windows.length > 0 ? [`Book up to ${orList(windows)} days ahead.`] : []),
+    ...(months.length > 0
+      ? [`Unused packs expire ${orList(months)} ${months.length === 1 && months[0] === 1 ? 'month' : 'months'} after purchase.`]
+      : []),
+    'One sport per pack.',
+  ].join(' ')
+  return { steps, rules }
+}
 
 /** "1 credit", "2 credits". */
 export function creditsText(n: number): string {

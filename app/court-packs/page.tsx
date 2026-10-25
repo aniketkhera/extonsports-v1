@@ -3,9 +3,12 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { clientIpOf } from "@/lib/my-bookings/guard";
 import { packOffers } from "@/lib/my-bookings/platform";
-import { PACK_BUY_COPY } from "@/lib/my-bookings/copy";
+import { FALLBACK_PHONE, PACK_BUY_COPY, howToUsePack } from "@/lib/my-bookings/copy";
+import type { OfferView } from "@/lib/my-bookings/view";
 import { PACKS_LIVE, PACK_PATH } from "@/lib/booking";
 import OrangishPill from "../components/OrangishPill";
+import { LABEL } from "../my-bookings/_components/ui";
+import PhoneText from "../my-bookings/_components/PhoneText";
 import BuyForm from "./BuyForm";
 
 // www.extonsports.com/court-packs — buy a court pack, 2026-10-21. Owner, 2026-10-20: "let's
@@ -63,6 +66,33 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * "How to use your pack", 2026-10-25 (Aniket asked for it): five steps and the rules, under
+ * the form. Every word is copy.ts howToUsePack's — the labels it quotes, the windows from these
+ * offers, the cutoff — so this only lays it out, in the "Booking and changes" box's look
+ * (BuyForm.tsx). Rendered only beside the form: on "not on sale" there is no pack to use.
+ * The phone is FALLBACK_PHONE, the number BuyForm already falls back to on this page; it is
+ * a tel: link through PhoneText, as in that box.
+ */
+function HowToUse({ offers, phone }: { offers: OfferView[]; phone: string }) {
+  const { steps, rules } = howToUsePack(offers, phone);
+  return (
+    <section aria-labelledby="buy-howto" className="mt-8 border border-[var(--legal-line)] bg-[var(--legal-surface)] p-4">
+      <h2 id="buy-howto" className={LABEL}>
+        {PACK_BUY_COPY.howToTitle}
+      </h2>
+      <ol className="mt-1 space-y-1.5 list-decimal pl-5">
+        {steps.map((line) => (
+          <li key={line} className="text-white/80 text-[0.92rem] leading-snug">
+            <PhoneText text={line} phone={phone} />
+          </li>
+        ))}
+      </ol>
+      <p className="text-white/60 text-[0.85rem] leading-relaxed mt-3">{rules}</p>
+    </section>
+  );
+}
+
 export default async function PackPage({
   searchParams,
 }: {
@@ -105,6 +135,7 @@ export default async function PackPage({
             initialSportId={sport}
             initialCredits={credits}
           />
+          <HowToUse offers={onSale.offers} phone={FALLBACK_PHONE} />
         </>
       ) : (
         <p className="text-white/70 text-[1rem] leading-relaxed" role="status">
