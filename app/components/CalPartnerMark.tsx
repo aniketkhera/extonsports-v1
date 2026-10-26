@@ -1,8 +1,8 @@
 /* A partner's mark for the calendar of bookings, 2026-10-13 — Aniket: "show it on the
    extonsports.com calendar too", after the booking page started showing whose hours are
    whose. The same lockups the reception board and the partner strip draw (PBA's Space
-   Grotesk wordmark, the CCCA shield, SQUASH/TIGERS type, the studio's script SeRa),
-   shrunk to fit one court column.
+   Grotesk wordmark, the CCCA shield, SQUASH/TIGERS type, the studio's script SeRa,
+   and since 2026-10-26 Phoenix Throwball's crest), shrunk to fit one court column.
 
    `rows` is how many half-hour rows the block spans on screen. One row (15px) is too
    short for a lockup, so it keeps the short label the calendar always used. Decorative:
@@ -76,11 +76,24 @@ export default function CalPartnerMark({ org, rows }: { org: BrandKey; rows: num
   if (org === "throwball") {
     /* Phoenix, Reshma's throwball team (2026-10-23): the team in the accent over the
        sport, stacked like SquashTigers. Mixed case as the owner wrote it:
-       textTransform 'none' against .text-cond's capitals, as CalFreeMark does below. */
+       textTransform 'none' against .text-cond's capitals, as CalFreeMark does below.
+
+       Their crest on top since 2026-10-26 (Aniket: "add this logo to the booking
+       calendar as well"), above the words as CCCA's shield is above CCCA. Sized to the
+       block, because the overlay clips: their Sunday shows as four rows (18:00-20:00 —
+       the 18:15-19:45 hire rounded out), which takes a 26px crest and both words; a
+       shorter block drops "Throwball" and shrinks the crest rather than cut either.
+       The crest's own PHOENIX lettering is unreadable at this size, which is why the
+       name stays in type under it. */
+    const crest = rows >= 4 ? 26 : rows >= 3 ? 18 : 13;
     return (
-      <span aria-hidden className="text-cond" style={{ fontSize: "0.56rem", letterSpacing: "0.04em", lineHeight: 1.05, textTransform: "none" }}>
-        <span style={{ display: "block", color: ACCENT }}>Phoenix</span>
-        <span style={{ display: "block", color: FG }}>Throwball</span>
+      <span aria-hidden style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/partners/phoenix-128.webp" alt="" width={128} height={128} style={{ width: crest, height: crest, display: "block" }} />
+        <span className="text-cond" style={{ fontSize: "0.56rem", letterSpacing: "0.04em", lineHeight: 1.05, textTransform: "none" }}>
+          <span style={{ display: "block", color: ACCENT }}>Phoenix</span>
+          {rows >= 3 && <span style={{ display: "block", color: FG }}>Throwball</span>}
+        </span>
       </span>
     );
   }

@@ -513,6 +513,32 @@ export function Lockup({ brand, who }: { brand: BrandKey | null; who: string }) 
       </div>
     );
   }
+  if (brand === "throwball") {
+    /* Phoenix, Reshma's throwball team (2026-10-26, Aniket: "show it on the TV with
+       their booking"). Built as CCCA's is: the crest at the shield's height, then the
+       team in ember over the sport. Until today it fell through to the plain name
+       below and read PHOENIX THROWBALL. Type at 1.4vw, not CCCA's 1.15: the words are
+       shorter, and two lines of 1.4vw come to the crest's 3.1vw, so the lockup is no
+       taller than CCCA's and fits wherever theirs does — the NOW area's three-entry
+       arithmetic in BigEntry assumes partner lockups of about that height.
+       The crest is the team's JPEG with the white cut out. Its black outline is lost on
+       this navy, but the flames carry the shape; checked against BG before shipping. */
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: "calc(0.6 * var(--vw))" }}>
+        <Image
+          src="/partners/phoenix-256.webp"
+          alt=""
+          width={256}
+          height={256}
+          style={{ height: "calc(3.1 * var(--vw))", width: "auto" }}
+        />
+        <div className="text-cond" style={{ fontSize: "calc(1.4 * var(--vw))", lineHeight: 1.08, letterSpacing: "0.05em" }}>
+          <span style={{ display: "block", color: EMBER }}>Phoenix</span>
+          <span style={{ display: "block", color: INK }}>Throwball</span>
+        </div>
+      </div>
+    );
+  }
   /* Not a partner — somebody's own hire. On reception that is their name; on
      the vestibule the feed carries no name and holderLabel has already made it
      "PRIVATE" (board-lib, 2026-10-09). Printing `who` either way keeps one
