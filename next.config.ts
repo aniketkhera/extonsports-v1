@@ -69,7 +69,9 @@ const nextConfig: NextConfig = {
       // on /court-packs. permanent: false (307), as for /pay below: this address is on paper,
       // and a browser that cached a 308 could never be sent anywhere else. /packs/:path*
       // reaches the sport short links (/packs/badminton) and the terms; Next passes the query
-      // through. Above the apex -> www rule, so the apex goes straight there in one hop.
+      // through. The QR encodes www, so it is one hop. A typed apex address takes two (apex
+      // /packs -> apex /court-packs -> www): the destination is relative, so matching before
+      // the apex rule does not save a hop here, unlike /pay, whose destination is absolute.
       { source: '/packs', destination: '/court-packs', permanent: false },
       { source: '/packs/:path*', destination: '/court-packs/:path*', permanent: false },
 
