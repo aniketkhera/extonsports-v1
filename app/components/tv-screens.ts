@@ -24,9 +24,11 @@ import type { Metadata, Viewport } from "next";
 
    ⛔ NAMES ARE NOT DECIDED HERE, AND NOT BY THE ROUTE. Whether the court board
    names bookers is decided server-side per screen KEY (board_screens.names_visible
-   on the platform). The reception key names them, the vestibule key does not, and
-   no key at all gets the public view. /vestibule opened with the reception key
-   would name people, and /reception opened with no key would not. The key
+   on the platform). Since 2026-10-25 no TV key names anyone — reception's did until
+   Aniket turned it off, because players can read that TV from the courts — and
+   no key at all gets the public view. Naming goes with the KEY, not the page: a
+   key with names on would name people on any of these routes, and /reception
+   opened with no key never does. The key
    travels in the URL fragment (#k=). Browsers keep a fragment across the apex →
    www 308 and never send it to a server.
 

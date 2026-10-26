@@ -1,22 +1,26 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { makeTicker, useTick } from "../components/ticker";
 import Image from "next/image";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
-import { ScreenHeader, BookingBand, BAND_GAP, BOOK_BAND, BAND_STAMP } from "../components/ScreenChrome";
+import { ScreenHeader, BookingBand, BAND_GAP, BOOK_BAND, BAND_STAMP, secondTicker } from "../components/ScreenChrome";
 import ScreenStamp from "../components/ScreenStamp";
 import { BG, INK, EMBER, GREEN, LABEL, NEXT_VAL, NEXT_LBL, MUTED, RULE_SOFT, PANEL, BOX } from "../components/tv-palette";
 import {
-  PLATFORM, readKey, clubNow, span, holderLabel, brandFor, sessionOf, splitUpNext, lightChip, SESSION_TEXT, SPORT_OBJECT,
-  type BrandKey, type LightChip, type Lights, type NamedBlock, type NamedSlots, type SessionKey,
+  PLATFORM, readKey, clubNow, span, clock, holderLabel, brandFor, sessionOf, splitUpNext, lightChip, SESSION_TEXT, SPORT_OBJECT,
+  courtNudges, nudgeFace, clubInstant, startOf, endOf, bandKey,
+  type BrandKey, type LightChip, type Lights, type NamedBlock, type NamedSlots, type SessionKey, type NudgeFace,
 } from "../board/board-lib";
 
 /* The clock is an external store, shared with /comingsoon — see
    app/components/ticker.ts for why it is not useState + useEffect. The visible
    seconds tick in components/ScreenChrome (the header, since 2026-10-20). */
-/** Decides which hour counts as "now". Slower on purpose — see the board below. */
-const quarterMinuteTicker = makeTicker(15_000);
+/** Decides which hour counts as "now". Slower on purpose — see the board below.
+ *  On the wall clock's quarter minutes since 2026-10-25 (ticker.ts), so it lands on
+ *  the second a booking ends — the OFF COURT countdown's TIME UP and the next group's
+ *  ON NOW change together, not up to 15 s apart. */
+const quarterMinuteTicker = makeTicker(15_000, { align: true });
 
 /* The reception desk screen — the 55" M55Q6-L4 at 10.1.10.72.
    ──────────────────────────────────────────────────────────────────────────
@@ -89,6 +93,12 @@ const SESSION_ORANGE = "#F89B72";
    CCCA's colour on both; a yellow, not an orange, so it never reads as JUNIOR
    COACHING from across the room. */
 const SESSION_GOLD = "#FFC43D";
+/* OFF COURT (2026-10-25): the countdown, the TIME UP plate and the edge on the courts
+   another party is waiting for. A hot red-orange, so it belongs to no other meaning on
+   this board: redder and far more saturated than SESSION_ORANGE (JUNIOR COACHING, the
+   lights' countdown), nowhere near SESSION_GOLD or the lights' yellow, and ⛔ never
+   GREEN, which means a court is free. ~5.6:1 on BG, for type this size. */
+const OFF_COURT = "#FF5B45";
 export const PANEL_SHADOW = [
   "0 calc(1.7 * var(--vh)) calc(3.8 * var(--vh)) rgba(0,0,0,0.66)",            // the box sits off the wall
   "0 calc(0.5 * var(--vh)) calc(1.1 * var(--vh)) rgba(0,0,0,0.45)",            // the contact shadow under it
@@ -131,6 +141,22 @@ export type Entry = {
    *  free girls' hour, 2026-10-15; null for everything else. */
   session: SessionKey | null;
   /** Court labels in the order they appear, e.g. ["1","2","3"]. */
+  courts: string[];
+  /** The OFF COURT countdown on this entry, when it ends inside the lead (2026-10-25);
+   *  only on a screen that asked for nudges. See courtNudges in board-lib. */
+  nudge?: EntryNudge;
+};
+
+/** One entry's countdown: what courtNudges said for its courts, folded together. */
+export type EntryNudge = {
+  /** "next" when ANY of its courts has another party next — that is the one that hurts. */
+  kind: "next" | "free";
+  /** The end, as an instant on this TV's clock, so the second-by-second face needs no
+   *  date maths. */
+  endMs: number;
+  /** "next": the earliest of the next parties' starts, club-local minutes from today. */
+  nextAt?: number;
+  /** The courts the line is about: those another party is waiting for, or those free after. */
   courts: string[];
 };
 
@@ -201,6 +227,8 @@ function mergeBlocks(blocks: NamedBlock[], label: Map<string, string>): Entry[] 
   }
 
   const out: Entry[] = [];
+  /** Each row's bandKey, so the stitch below joins only a row of the same key. */
+  const keyOf = new Map<Entry, string>();
   const sortCourts = (xs: string[]) =>
     xs.sort((a, b) => Number(a) - Number(b) || a.localeCompare(b));
 
@@ -216,23 +244,23 @@ function mergeBlocks(blocks: NamedBlock[], label: Map<string, string>): Entry[] 
 
       /* Keyed on the SESSION as well as the holder (2026-10-14): PBA's junior
          coaching and its open play share the holder text, and keyed on that
-         alone the 7:30 split would be grouped straight back into one row. */
+         alone the 7:30 split would be grouped straight back into one row.
+         And for an unnamed holder, on its own run too (bandKey in board-lib,
+         2026-10-25): PRIVATE is everybody without a name, not one person. */
       const byWho = new Map<string, Entry>();
       for (const b of covering) {
-        const who = holderLabel(b);
-        const session = sessionOf(b);
-        const key = `${session ?? ""}|${who}`;
+        const key = bandKey(b);
         const found = byWho.get(key);
         if (found) found.courts.push(label.get(b.courtId) ?? "");
         else {
           byWho.set(key, {
-            date, from, to, who, session,
+            date, from, to, who: holderLabel(b), session: sessionOf(b),
             brand: brandFor(b), courts: [label.get(b.courtId) ?? ""],
           });
         }
       }
 
-      for (const band of byWho.values()) {
+      for (const [key, band] of byWho) {
         sortCourts(band.courts);
         /* Re-join a band to the one before it when NOTHING about it changed —
            same holder, same courts, and butted right up against it. Without
@@ -244,13 +272,12 @@ function mergeBlocks(blocks: NamedBlock[], label: Map<string, string>): Entry[] 
           (e) =>
             e.date === date &&
             e.to === band.from &&
-            e.who === band.who &&
-            e.session === band.session &&
+            keyOf.get(e) === key &&
             e.courts.length === band.courts.length &&
             e.courts.every((c, n) => c === band.courts[n]),
         );
         if (prev) prev.to = band.to;
-        else out.push(band);
+        else { out.push(band); keyOf.set(band, key); }
       }
     }
   }
@@ -299,9 +326,13 @@ function dayDiff(a: string, b: string): number {
    under about 0.75 alpha reads grey from the desk. The words survive as the
    aria-label (courtsLabel below). */
 export function CourtBoxes({
-  sport, labels, taken, big,
-}: { sport: string; labels: string[]; taken: string[]; big?: boolean }) {
+  sport, labels, taken, big, alarm = [],
+}: { sport: string; labels: string[]; taken: string[]; big?: boolean; alarm?: string[] }) {
   const on = new Set(taken);
+  /* The courts another party is waiting for, while OFF COURT counts down (2026-10-25):
+     edged and washed in OFF_COURT, so a group on court 2 of three can tell from the
+     court that the line is about them. */
+  const hot = new Set(alarm);
   const size = big ? "calc(2.1 * var(--vw))" : "calc(1.02 * var(--vw))";
   return (
     <span
@@ -311,14 +342,15 @@ export function CourtBoxes({
     >
       {labels.map((l) => {
         const isOn = on.has(l);
+        const isHot = isOn && hot.has(l);
         return (
           <span
             key={l}
             style={{
               width: size, height: size, flex: "none", boxSizing: "border-box",
               borderRadius: big ? "calc(0.22 * var(--vw))" : "calc(0.14 * var(--vw))",
-              border: `${big ? "calc(0.18 * var(--vw))" : "calc(0.12 * var(--vw))"} solid ${isOn ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.55)"}`,
-              background: isOn ? "rgba(255,255,255,0.10)" : "transparent",
+              border: `${big ? "calc(0.18 * var(--vw))" : "calc(0.12 * var(--vw))"} solid ${isHot ? OFF_COURT : isOn ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.55)"}`,
+              background: isHot ? `${OFF_COURT}40` : isOn ? "rgba(255,255,255,0.10)" : "transparent",
               display: "inline-flex",
             }}
           >
@@ -516,14 +548,95 @@ function BigEntry({
         <Lockup brand={e.brand} who={e.who} />
         {e.session && <SessionTag session={e.session} />}
       </div>
-      <div className="text-cond" style={{ fontSize: "calc(3.1 * var(--vw))", color: INK, lineHeight: 1.03 }}>
-        {span(e.from, e.to)}
+      {e.nudge ? (
+        <NudgedFoot e={e} nudge={e.nudge} sport={sport} labels={labels} big={big} />
+      ) : (
+        <EntryFoot e={e} sport={sport} labels={labels} big={big} face={{ kind: "none" }} />
+      )}
+    </div>
+  );
+}
+
+/* An entry that is counting down, re-drawn every second — on the header clock's own
+   ticker, so the two change on the same frame. Only this re-renders each second; the
+   board's grouping stays on its quarter-minute tick. Before the first tick (the server
+   render) it draws exactly what an ordinary entry draws. */
+function NudgedFoot({
+  e, nudge, sport, labels, big,
+}: { e: Entry; nudge: EntryNudge; sport: string; labels: string[]; big: boolean }) {
+  const ms = useTick(secondTicker);
+  const face: NudgeFace = ms ? nudgeFace(nudge.kind, nudge.endMs - ms) : { kind: "none" };
+  return <EntryFoot e={e} sport={sport} labels={labels} big={big} face={face} nudge={nudge} />;
+}
+
+/* The time line and the court boxes under a big entry. With no countdown showing they
+   are what they always were. With one, the TIME is what gives way — never the holder,
+   which stays whatever the screen's key allows — at the same 3.1vw, so the NOW area
+   (single pixels to spare with three groups on court) does not grow by a pixel; and
+   the line beside the boxes says what follows, in the room the boxes leave free.
+
+     OFF COURT IN 7 MIN   then   OFF COURT IN 2:59   then   [TIME UP]
+                          NEXT GROUP AT 7 PM (with COURT 2 · first, when only some
+                          of the entry's courts have someone waiting)
+     ENDS IN 7 MIN        FREE AFTER · EXTEND IN THE APP, ember, no seconds
+
+   The seconds are tabular so the line does not shuffle sideways every second. */
+function EntryFoot({
+  e, sport, labels, big, face, nudge,
+}: { e: Entry; sport: string; labels: string[]; big: boolean; face: NudgeFace; nudge?: EntryNudge }) {
+  const noun = sport === "Cricket" ? "LANE" : "COURT";
+  const showing = face.kind !== "none" ? nudge : undefined;
+  /* Only some of this entry's courts? Then say which, beside the boxes. */
+  const which = nudge && nudge.courts.length < e.courts.length
+    ? `${noun}${nudge.courts.length > 1 ? "S" : ""} ${nudge.courts.join(", ")}` : "";
+  let line: ReactNode = span(e.from, e.to);
+  let ink = INK;
+  let note = "";
+  if (showing) {
+    switch (face.kind) {
+      case "offIn":
+        line = `OFF ${noun} IN ${face.min} MIN`; ink = OFF_COURT; break;
+      case "offSec":
+        line = <>OFF {noun} IN <span style={{ fontVariantNumeric: "tabular-nums" }}>{face.clock}</span></>; ink = OFF_COURT; break;
+      case "timeUp":
+        line = (
+          /* inline-block at the line's own height: an inline span's background is the
+             font's whole ascent-to-descent, taller than this 1.03 line, and on the
+             mock-up it ran up over the holder's name and down over the boxes. */
+          <span style={{ display: "inline-block", lineHeight: "inherit", background: OFF_COURT, color: BG, borderRadius: "calc(0.3 * var(--vw))", padding: "0 calc(0.6 * var(--vw))" }}>
+            TIME UP
+          </span>
+        );
+        break;
+      case "endsIn":
+        line = `ENDS IN ${face.min} MIN`; ink = EMBER; break;
+    }
+    note = showing.kind === "next"
+      ? `${which ? `${which} · ` : ""}NEXT GROUP AT ${clock(showing.nextAt ?? 0)}`
+      : `${which ? `${which} ` : ""}FREE AFTER · EXTEND IN THE APP`;
+  }
+  const alarm = showing?.kind === "next" ? showing.courts : [];
+  return (
+    <>
+      <div className="text-cond" style={{ fontSize: "calc(3.1 * var(--vw))", color: ink, lineHeight: 1.03, whiteSpace: "nowrap" }}>
+        {line}
       </div>
       {/* display:flex so the row has no inherited 16px/1.5 line box under it. */}
-      <div style={{ display: "flex", marginTop: "calc(0.5 * var(--vh))" }}>
-        <CourtBoxes sport={sport} labels={labels} taken={e.courts} big={big} />
+      <div style={{ display: "flex", alignItems: "center", gap: "calc(0.8 * var(--vw))", marginTop: "calc(0.5 * var(--vh))", minWidth: 0 }}>
+        <CourtBoxes sport={sport} labels={labels} taken={e.courts} big={big} alarm={alarm} />
+        {note && (
+          <span
+            className="text-cond"
+            style={{
+              fontSize: big ? "calc(1.2 * var(--vw))" : "calc(0.95 * var(--vw))", letterSpacing: "0.06em", lineHeight: 1.05,
+              color: showing?.kind === "next" ? INK : EMBER, minWidth: 0,
+            }}
+          >
+            {note}
+          </span>
+        )}
       </div>
-    </div>
+    </>
   );
 }
 
@@ -725,7 +838,16 @@ const LIGHTS_CARRY_MS = 3 * 60_000;
 
    The reload-on-deploy hook and the heartbeat are NOT in here: a screen calls
    useReloadOnDeploy itself, and the heartbeat is TvScreen's (see below). */
-export function useCourtPanels({ upcoming, upNextMax, currentOnly = false }: { upcoming: number; upNextMax: number; currentOnly?: boolean }): {
+/* `nudges` (reception, 2026-10-25): the OFF COURT countdown — see courtNudges in
+   board-lib for the rules and EntryFoot for the drawing. It also does two things to
+   the entries, both needed for the countdown to tell the truth:
+     · every block takes its TRUE start and end (exactFrom / exactTo) where the feed
+       sent them, so Sunday's throwball reads 6:15 – 7:45 PM and leaves ON NOW at
+       7:45, the moment its countdown runs out, not at 8;
+     · a booking another party is waiting on STAYS under ON NOW through its TIME UP
+       hold, beside the group that is now due on, instead of vanishing at its end.
+   The vestibule does not pass it and is unchanged. */
+export function useCourtPanels({ upcoming, upNextMax, currentOnly = false, nudges = false }: { upcoming: number; upNextMax: number; currentOnly?: boolean; nudges?: boolean }): {
   panels: Panel[]; today: string; stale: boolean;
 } {
   const [data, setData] = useState<NamedSlots | null>(null);
@@ -799,6 +921,8 @@ export function useCourtPanels({ upcoming, upNextMax, currentOnly = false }: { u
        object is what keeps this memo from re-running every render. */
     if (!data || !tick) return { panels: [], today: "" };
     const { date: today, minutes } = clubNow(new Date(tick));
+    /** Now with its seconds, as a fraction of a minute — for the countdown's window. */
+    const nowMin = minutes + (((tick % 60_000) + 60_000) % 60_000) / 60_000;
 
     const sports = Array.from(new Set(data.courts.map((c) => c.sport)));
     sports.sort((a, b) => {
@@ -810,9 +934,18 @@ export function useCourtPanels({ upcoming, upNextMax, currentOnly = false }: { u
       const courts = data.courts.filter((c) => c.sport === sport);
       const ids = new Set(courts.map((c) => c.id));
       const label = new Map(courts.map((c) => [c.id, c.label || c.name]));
-      const mine = data.blocks.filter((b) => ids.has(b.courtId));
+      const raw = data.blocks.filter((b) => ids.has(b.courtId));
+      const mine = nudges
+        ? raw.map((b) => (b.exactFrom === undefined && b.exactTo === undefined ? b : { ...b, from: startOf(b), to: endOf(b) }))
+        : raw;
+      const nudging = nudges ? courtNudges(mine, today, nowMin) : [];
+      /* Ended, but another party is waiting: held under ON NOW for its TIME UP. */
+      const holding = nudging.filter((n) => n.kind === "next" && n.end <= minutes).map((n) => n.block);
 
-      const live = mine.filter((b) => b.date === today && b.from <= minutes && minutes < b.to);
+      const live = [
+        ...mine.filter((b) => b.date === today && b.from <= minutes && minutes < b.to),
+        ...holding,
+      ];
 
       /* Everything still to come: later today, then whole days after it.
          Merged with the SAME function as the live list so a booking that
@@ -833,6 +966,27 @@ export function useCourtPanels({ upcoming, upNextMax, currentOnly = false }: { u
         nowEntries = mergeBlocks(live, label);
         aheadEntries = mergeBlocks(ahead, label);
       }
+      /* Each nudge onto the entry that holds its court and ends when its block ends —
+         by holder and session too, so it never lands on somebody else's row. An entry
+         over several courts takes "next" if ANY of them has someone waiting, and says
+         which (EntryFoot), because that is the one that hurts. */
+      for (const e of nudging.length ? nowEntries : []) {
+        const hits = nudging.filter(
+          (n) =>
+            e.date === today && e.to === n.end &&
+            e.courts.includes(label.get(n.courtId) ?? "") &&
+            e.who === holderLabel(n.block) && e.session === sessionOf(n.block),
+        );
+        if (!hits.length) continue;
+        const next = hits.filter((n) => n.kind === "next");
+        const use = next.length ? next : hits;
+        e.nudge = {
+          kind: next.length ? "next" : "free",
+          endMs: clubInstant(e.to, tick),
+          ...(next.length ? { nextAt: Math.min(...next.map((n) => n.nextAt ?? Infinity)) } : {}),
+          courts: [...new Set(use.map((n) => label.get(n.courtId) ?? ""))].sort((a, b) => Number(a) - Number(b) || a.localeCompare(b)),
+        };
+      }
       const { upNext, rest } = splitUpNext(nowEntries, aheadEntries, upNextMax);
 
       return {
@@ -851,7 +1005,7 @@ export function useCourtPanels({ upcoming, upNextMax, currentOnly = false }: { u
     });
 
     return { panels, today };
-  }, [data, tick, upcoming, upNextMax, currentOnly]);
+  }, [data, tick, upcoming, upNextMax, currentOnly, nudges]);
 
   return { ...view, stale };
 }
@@ -864,7 +1018,9 @@ export default function ReceptionBoard() {
      the TV shows. A hook in here as well would beat twice a minute under two
      names. The stamp in the band still shows on a keyed screen: it reads the
      same per-load runtime the heartbeat marks keyed (screen-runtime.ts). */
-  const { panels, today, stale } = useCourtPanels({ upcoming: UPCOMING_COUNT, upNextMax: UP_NEXT_MAX });
+  /* nudges: the OFF COURT countdown (2026-10-25) — this is the TV players can see
+     from the courts (Aniket, asked that day which screen faces them). */
+  const { panels, today, stale } = useCourtPanels({ upcoming: UPCOMING_COUNT, upNextMax: UP_NEXT_MAX, nudges: true });
 
   /* 16:9, ALWAYS (2026-10-18): one 16:9 picture scaled to fit, letterboxed on the
      ground colour, with every size in --vw / --vh. BOX and why it exists are in

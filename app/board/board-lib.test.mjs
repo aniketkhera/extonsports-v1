@@ -471,3 +471,168 @@ test("/api/court-slots never forwards `lights`", async (t) => {
   assert.equal(body.courts.length, 1);
   assert.ok(!("lights" in body), "lights is never forwarded");
 });
+
+/* ── OFF COURT (2026-10-25) ───────────────────────────────────────────────────
+   Aniket: "start nudging 10 mins before the booking ends — OFF COURT in x minutes — and
+   count down using seconds the last 3 minutes or so", because a group that overruns
+   keeps the next one off the court. The three cases the brief named, then the edges
+   that decide between them, then the second-by-second face. Today is Sun 25 Oct 2026. */
+const DAY = "2026-10-25";
+const hire = (courtId, from, to, extra = {}) => ({ date: DAY, courtId, kind: "booking", from, to, ...extra });
+const nudgesAt = (blocks, nowMin) => L.courtNudges(blocks, DAY, nowMin).map((n) => [n.courtId, n.kind, n.end, n.nextAt ?? null]);
+
+test("OFF COURT case 1 — another party next: OFF COURT, with the next group's start", () => {
+  const blocks = [hire("b2", 1020, 1080), hire("b2", 1080, 1140)]; // two strangers, 5–6 and 6–7
+  assert.deepEqual(nudgesAt(blocks, 1072), [["b2", "next", 1080, 1080]]);
+});
+
+test("OFF COURT case 2 — the same party carries on: nothing at all", () => {
+  // A keyed screen: the same holder either side (the platform would normally have made it one block).
+  assert.deepEqual(nudgesAt([hire("b2", 1020, 1080, { who: "Asha Rao" }), hire("b2", 1080, 1140, { who: "Asha Rao" })], 1075), []);
+  // PBA's junior coaching into its open play: the same partner either side.
+  const pba = { kind: "programme", org: "philadelphia-badminton", who: "Philadelphia Badminton" };
+  assert.deepEqual(nudgesAt([hire("b1", 1050, 1170, { ...pba, session: "junior-coaching" }), hire("b1", 1170, 1290, { ...pba, session: "open-play" })], 1165), []);
+  // CCCA's lane hire, then CCCA's own event: a kind change, the same partner.
+  assert.deepEqual(nudgesAt([hire("c1", 1020, 1080, { org: "ccca" }), hire("c1", 1080, 1200, { kind: "programme", org: "ccca" })], 1075), []);
+  // The public feed has no names: the platform's `continues` says so instead.
+  assert.deepEqual(nudgesAt([hire("b2", 1020, 1080, { continues: true }), hire("b2", 1080, 1140)], 1075), []);
+});
+
+test("OFF COURT case 3 — the court is free after: the softer line, for a court hire only", () => {
+  assert.deepEqual(nudgesAt([hire("b3", 1020, 1080)], 1072), [["b3", "free", 1080, null]]);
+  // A partner's session ending onto a free court gets nothing: its coach runs its clock.
+  assert.deepEqual(nudgesAt([hire("b3", 1020, 1080, { kind: "programme", org: "philadelphia-badminton" })], 1072), []);
+  assert.deepEqual(nudgesAt([hire("c2", 1020, 1080, { org: "ccca" })], 1072), []);
+});
+
+test("OFF COURT: two strangers are never one party; a partner and a member are never one", () => {
+  assert.equal(L.sameParty(hire("b2", 0, 60), hire("b2", 60, 120)), false); // no names on either side
+  assert.equal(L.sameParty(hire("b2", 0, 60, { who: "Asha Rao" }), hire("b2", 60, 120, { who: "Vikram Shah" })), false);
+  assert.equal(L.sameParty(hire("b2", 0, 60, { org: "ccca" }), hire("b2", 60, 120, { who: "Chester County Cricket Academy" })), false);
+  assert.equal(L.sameParty(hire("b2", 0, 60, { org: "ccca" }), hire("b2", 60, 120, { org: "philadelphia-badminton" })), false);
+});
+
+test("OFF COURT: 'next' means starting inside 30 minutes of the end — on the TRUE times", () => {
+  // Next booking half an hour after: the court can be sold in between, so it is free after.
+  assert.deepEqual(nudgesAt([hire("b2", 1020, 1080), hire("b2", 1110, 1170)], 1072), [["b2", "free", 1080, null]]);
+  // Throwball 18:15–19:45 (the grid's 18:00–20:00) and a booking at 8: a 15-minute gap is "next",
+  // and the countdown runs to 7:45, not 8.
+  const tb = { kind: "programme", org: "throwball", exactFrom: 1095, exactTo: 1185 };
+  assert.deepEqual(nudgesAt([hire("b1", 1080, 1200, tb), hire("b1", 1200, 1260)], 1180), [["b1", "next", 1185, 1200]]);
+  // And the next group is announced at 6:15, the true start, not 6.
+  assert.deepEqual(nudgesAt([hire("b1", 1020, 1080), hire("b1", 1080, 1200, tb)], 1075), [["b1", "next", 1080, 1095]]);
+});
+
+test("OFF COURT: the window — a little before ten minutes out, to the end, TIME UP held five minutes when someone is next", () => {
+  const strangers = [hire("b2", 1020, 1080), hire("b2", 1080, 1140)];
+  assert.deepEqual(nudgesAt(strangers, 1069), []); // eleven minutes out
+  assert.equal(nudgesAt(strangers, 1069.75).length, 1); // asked early; nudgeFace decides the second
+  assert.equal(nudgesAt(strangers, 1080).length, 1); // the end: TIME UP
+  assert.equal(nudgesAt(strangers, 1084.9).length, 1);
+  assert.deepEqual(nudgesAt(strangers, 1085), []); // the five-minute hold is over
+  // Free after: nothing once it has ended, no TIME UP.
+  assert.deepEqual(nudgesAt([hire("b3", 1020, 1080)], 1080), []);
+  // Nothing counts down to the end of a booking that has not started.
+  assert.deepEqual(nudgesAt([hire("b3", 1075, 1080)], 1072), []);
+});
+
+test("OFF COURT: per court — the next party on court 2 does not nudge court 1 or 3", () => {
+  const blocks = [hire("b1", 1020, 1080), hire("b2", 1020, 1080), hire("b3", 1020, 1080), hire("b2", 1080, 1140)];
+  assert.deepEqual(nudgesAt(blocks, 1072).sort(), [["b1", "free", 1080, null], ["b2", "next", 1080, 1080], ["b3", "free", 1080, null]]);
+});
+
+test("OFF COURT: across midnight — a stranger at 12 AM is next; the same holder carrying on is not", () => {
+  const late = hire("b2", 1380, 1440);
+  const early = { date: "2026-10-26", courtId: "b2", kind: "booking", from: 0, to: 60 };
+  assert.deepEqual(nudgesAt([late, early], 1435), [["b2", "next", 1440, 1440]]);
+  assert.deepEqual(nudgesAt([{ ...late, continues: true }, early], 1435), []);
+});
+
+test("bandKey: PRIVATE is everybody without a name — each unnamed run is its own row", () => {
+  // Two strangers, different hours: never one row (they were sliced into three, 2026-10-25).
+  assert.notEqual(L.bandKey(hire("s2", 1020, 1080)), L.bandKey(hire("s4", 1050, 1110)));
+  // Two strangers back to back on one court: never stitched into one 5–7 row.
+  assert.notEqual(L.bandKey(hire("s1", 1020, 1080)), L.bandKey(hire("s1", 1080, 1140)));
+  // The very same hours on two courts still share a row, as before.
+  assert.equal(L.bandKey(hire("s1", 1020, 1080)), L.bandKey(hire("s2", 1020, 1080)));
+  // A named holder and a partner are keyed as they always were: holder and session only.
+  assert.equal(L.bandKey(hire("s1", 1020, 1080, { who: "Asha Rao" })), L.bandKey(hire("s2", 1050, 1110, { who: "Asha Rao" })));
+  const pba = { kind: "programme", org: "philadelphia-badminton", session: "junior-coaching" };
+  assert.equal(L.bandKey(hire("b1", 960, 1080, pba)), L.bandKey(hire("b2", 960, 1020, pba)));
+  assert.notEqual(L.bandKey(hire("b1", 960, 1080, pba)), L.bandKey(hire("b1", 1080, 1200, { ...pba, session: "open-play" })));
+});
+
+test("nudgeFace: OFF COURT IN n MIN, rounded up, from ten minutes; m:ss from three; then TIME UP", () => {
+  const S = 1000, M = 60_000;
+  assert.deepEqual(L.nudgeFace("next", 10 * M + 1), { kind: "none" });
+  assert.deepEqual(L.nudgeFace("next", 10 * M), { kind: "offIn", min: 10 });
+  assert.deepEqual(L.nudgeFace("next", 3 * M + 1), { kind: "offIn", min: 4 });
+  assert.deepEqual(L.nudgeFace("next", 3 * M), { kind: "offSec", clock: "3:00" });
+  assert.deepEqual(L.nudgeFace("next", 179 * S + 1), { kind: "offSec", clock: "3:00" });
+  assert.deepEqual(L.nudgeFace("next", 179 * S), { kind: "offSec", clock: "2:59" });
+  assert.deepEqual(L.nudgeFace("next", 61 * S), { kind: "offSec", clock: "1:01" });
+  assert.deepEqual(L.nudgeFace("next", 1), { kind: "offSec", clock: "0:01" });
+  assert.deepEqual(L.nudgeFace("next", 0), { kind: "timeUp" });
+  assert.deepEqual(L.nudgeFace("next", -90 * S), { kind: "timeUp" });
+});
+
+test("nudgeFace: the free court counts minutes only, and simply stops at the end", () => {
+  const M = 60_000;
+  assert.deepEqual(L.nudgeFace("free", 10 * M + 1), { kind: "none" });
+  assert.deepEqual(L.nudgeFace("free", 7 * M), { kind: "endsIn", min: 7 });
+  assert.deepEqual(L.nudgeFace("free", 2 * M + 30_000), { kind: "endsIn", min: 3 });
+  assert.deepEqual(L.nudgeFace("free", 1), { kind: "endsIn", min: 1 });
+  assert.deepEqual(L.nudgeFace("free", 0), { kind: "none" });
+});
+
+test("clubInstant: a minute of today on the TV's clock, seconds included", () => {
+  const now = Date.parse("2026-10-25T21:52:30.250Z"); // 5:52:30.25 PM EDT = minute 1072
+  assert.equal(L.clubInstant(1080, now), Date.parse("2026-10-25T22:00:00Z"));
+  assert.equal(L.clubInstant(1072, now), Date.parse("2026-10-25T21:52:00Z"));
+});
+
+test("/api/court-slots asks for the edges and forwards them only when they are sane", async (t) => {
+  const upstream = {
+    timeZone: "America/New_York",
+    days: [DAY],
+    courts: [{ id: "c1", sport: "Badminton", sportId: "s", name: "BADMINTON 1", label: "1" }],
+    blocks: [
+      { ...hire("c1", 1080, 1200), kind: "programme", org: "throwball", exactFrom: 1095, exactTo: 1185, continues: true },
+      // Outside the block's own first or last half hour, or not a number: dropped.
+      { ...hire("c1", 1200, 1260), exactFrom: 1300, exactTo: "1250", continues: "yes" },
+    ],
+  };
+  let asked = "";
+  t.mock.method(globalThis, "fetch", async (url) => {
+    asked = String(url);
+    return { ok: true, json: async () => upstream };
+  });
+  const R = await import("../api/court-slots/route.ts");
+  const body = await (await R.GET(new Request("https://extonsports.com/api/court-slots?lights=1"))).json();
+  assert.match(asked, /[?&]edges=1(&|$)/);
+  assert.deepEqual(
+    body.blocks.map((b) => [b.exactFrom ?? null, b.exactTo ?? null, b.continues ?? null]),
+    [[1095, 1185, true], [null, null, null]],
+  );
+});
+
+test("makeTicker({ align }): ticks on the wall clock's boundaries, not the page load's", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: 1_000_345 });
+  const { makeTicker } = await import("../components/ticker.ts");
+  const ticker = makeTicker(1000, { align: true });
+  const seen = [];
+  const off = ticker.subscribe(() => seen.push(ticker.get()));
+  /* Node's mock clock reads the END of each tick() inside a callback, so step to the
+     exact instants: nothing until 5 ms past the next whole second (ALIGN_SLACK_MS),
+     then every whole second after it — not every 1000 ms from 1_000_345. */
+  t.mock.timers.tick(659);
+  assert.deepEqual(seen, []);
+  t.mock.timers.tick(1);
+  t.mock.timers.tick(999);
+  assert.deepEqual(seen, [1_001_005]);
+  t.mock.timers.tick(1);
+  assert.deepEqual(seen, [1_001_005, 1_002_005]);
+  off();
+  t.mock.timers.tick(5000);
+  assert.equal(seen.length, 2, "nothing after the last subscriber leaves");
+});
