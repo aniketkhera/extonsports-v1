@@ -1,0 +1,126 @@
+/* The Phoenix Throwball panel (2026-10-26). Same rules as exit.module.css and
+   ccca.module.css, for the same weak VIZIO browsers: literal colours, sizes in the 16:9
+   box's units (--vw/--vh), and only transform and opacity animate, with no var() inside
+   @keyframes. The grid, title, motto, logo column, code card and call line are those
+   two files' classes (PhoenixHero.tsx); this file is only what the panel adds: the
+   "now home to the" line, and the phoenix itself, which moves. */
+
+/* "NOW HOME TO THE", between EXTON SPORTS CENTER (the motto line) and the team's name:
+   the headline Aniket wrote, read top to bottom. A step up from the motto, white. */
+.home {
+  margin: 0 0 calc(0.6 * var(--vh));
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 500;
+  font-size: calc(2.3 * var(--vw));
+  letter-spacing: 0.08em;
+  line-height: 1.05;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+/* ── THE PHOENIX ───────────────────────────────────────────────────────────── */
+/* Three layers on one square canvas (PhoenixHero.tsx PhoenixMark): the wings under the
+   body, each turning at its own shoulder. The shoulders, measured on the 768 px logo:
+   left (330, 330), right (480, 320) — hence the transform-origins below. Change the
+   layers, re-measure them. */
+/* ⚠️ No `display` here: the copy's inline mark must stay hidden on the exit door, where
+   ccca.module.css .crestInline sets display:none, and a display on this class would win
+   or lose by stylesheet order. Each SIZE class below says display itself. */
+.mark {
+  position: relative;
+  aspect-ratio: 1 / 1;
+}
+/* Set by width in the exit door's middle column, as CCCA's crest is (ccca .crest). */
+.logo {
+  display: block;
+  width: calc(20 * var(--vw));
+}
+/* In the vestibule's panel the phoenix heads the copy (ccca.module.css .panelLayout shows
+   .crestInline there at 13vh): larger here, the artwork being the panel's picture. The
+   doubled class out-ranks .panelLayout .crestInline whichever stylesheet loads last. */
+.panel .logoInline.logoInline {
+  height: calc(25 * var(--vh));
+  width: auto;
+}
+
+/* A warm light behind the bird, painted once; only its opacity moves, swelling as the
+   wings open. */
+.flare {
+  position: absolute;
+  inset: -12%;
+  background: radial-gradient(closest-side, rgba(255, 160, 60, 0.55) 0%, rgba(248, 108, 33, 0.18) 55%, rgba(248, 108, 33, 0) 100%);
+  opacity: 0.35;
+  animation: flare 8s ease-in-out infinite;
+}
+.bird {
+  position: absolute;
+  inset: 0;
+  animation: rise 8s ease-in-out infinite;
+}
+.bird img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.wingL {
+  transform-origin: 42.97% 42.97%;
+  animation: wing-left 8s ease-in-out infinite;
+}
+.wingR {
+  transform-origin: 62.5% 41.67%;
+  animation: wing-right 8s ease-in-out infinite;
+}
+
+/* One cycle, 8 s: the wings come down from raised and SPREAD open (with a touch of
+   overshoot), hold, beat twice, hold, and rise again for the next spread. Raised is the
+   wing turned in towards the head (left clockwise, right anticlockwise); a beat turns it
+   down, the lower feathers sliding under the banner. Angles are small on purpose: the
+   wings are cut from one flat picture, and past ~10–12° the seams would show. */
+@keyframes wing-left {
+  0% { transform: rotate(10deg); }
+  16% { transform: rotate(-2deg); }
+  22% { transform: rotate(0deg); }
+  50% { transform: rotate(0deg); }
+  56% { transform: rotate(-6deg); }
+  62% { transform: rotate(1deg); }
+  68% { transform: rotate(-5deg); }
+  74% { transform: rotate(0deg); }
+  88% { transform: rotate(0deg); }
+  100% { transform: rotate(10deg); }
+}
+@keyframes wing-right {
+  0% { transform: rotate(-10deg); }
+  16% { transform: rotate(2deg); }
+  22% { transform: rotate(0deg); }
+  50% { transform: rotate(0deg); }
+  56% { transform: rotate(6deg); }
+  62% { transform: rotate(-1deg); }
+  68% { transform: rotate(5deg); }
+  74% { transform: rotate(0deg); }
+  88% { transform: rotate(0deg); }
+  100% { transform: rotate(-10deg); }
+}
+/* The whole bird lifts a little as it opens, and dips with each beat. */
+@keyframes rise {
+  0% { transform: translateY(1.5%); }
+  18% { transform: translateY(-1.5%); }
+  40% { transform: translateY(0%); }
+  56% { transform: translateY(1%); }
+  62% { transform: translateY(-1%); }
+  68% { transform: translateY(0.8%); }
+  74% { transform: translateY(0%); }
+  100% { transform: translateY(1.5%); }
+}
+@keyframes flare {
+  0% { opacity: 0.35; }
+  18% { opacity: 1; }
+  45% { opacity: 0.55; }
+  100% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flare, .bird, .wingL, .wingR {
+    animation: none;
+  }
+}

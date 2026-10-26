@@ -5,6 +5,7 @@ import { ScreenHeader, BookingBand, BAND_GAP, BOOK_BAND, BAND_STAMP } from "../c
 import ScreenStamp from "../components/ScreenStamp";
 import { BG, INK, BOX } from "../components/tv-palette";
 import StarterHero from "./StarterHero";
+import PhoenixHero from "./PhoenixHero";
 import WorkshopHero from "./WorkshopHero";
 import CccaHero from "./CccaHero";
 import { usePromos } from "./promos";
@@ -88,11 +89,14 @@ export default function ExitScreen() {
       >
         <ScreenHeader />
 
-        {/* One cell for both panels while the workshop is on (workshop.module.css
-            swaps them every 5 s); otherwise the Starter Pack alone, as before. */}
+        {/* One cell for every panel that is up (workshop.module.css swaps them every
+            5 s). Each is drawn only while promos.ts lists it (2026-10-26): a panel
+            drawn without a slot class sits on top of the others for good, which is
+            what taking the Starter Pack off the list would otherwise have done. */}
         <div className={w.stack}>
-        <StarterHero className={slot("starter")} />
-        <CccaHero className={slot("ccca")} />
+        {up.includes("phoenix") && <PhoenixHero className={slot("phoenix")} />}
+        {up.includes("starter") && <StarterHero className={slot("starter")} />}
+        {up.includes("ccca") && <CccaHero className={slot("ccca")} />}
         {up.includes("workshop") && <WorkshopHero className={slot("workshop")} />}
         </div>
 
