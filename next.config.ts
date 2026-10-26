@@ -62,6 +62,17 @@ const nextConfig: NextConfig = {
       { source: '/5-pack', destination: '/court-packs', permanent: true },
       { source: '/5-pack/terms', destination: '/court-packs/terms', permanent: true },
 
+      // ── /packs → /court-packs (2026-10-26) ─────────────────────────────────
+      // The short address printed under the court-packs flyer's QR. Aniket, 2026-10-26: the
+      // flyer is too busy, "make a 'marketing' one, and then the QR code takes to the details
+      // on extonsports.com/packs". So the poster carries prices and a QR, and every rule lives
+      // on /court-packs. permanent: false (307), as for /pay below: this address is on paper,
+      // and a browser that cached a 308 could never be sent anywhere else. /packs/:path*
+      // reaches the sport short links (/packs/badminton) and the terms; Next passes the query
+      // through. Above the apex -> www rule, so the apex goes straight there in one hop.
+      { source: '/packs', destination: '/court-packs', permanent: false },
+      { source: '/packs/:path*', destination: '/court-packs/:path*', permanent: false },
+
       // ── /pay → the pay page in the Orangish app (2026-10-15) ───────────────
       // The address Aniket's Gmail footer prints ("Pay online: extonsports.com/pay ·
       // Zelle or card"). The page itself lives in orangish-app (/pay/exton-sports), in
