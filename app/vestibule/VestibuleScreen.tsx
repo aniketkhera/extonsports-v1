@@ -11,6 +11,7 @@ import {
 import { SESSION_TEXT, SPORT_OBJECT, span } from "../board/board-lib";
 import { usePromos } from "../exit/promos";
 import StarterHero from "../exit/StarterHero";
+import PhoenixHero from "../exit/PhoenixHero";
 import WorkshopHero from "../exit/WorkshopHero";
 import CccaHero from "../exit/CccaHero";
 import w from "../exit/workshop.module.css";
@@ -215,8 +216,10 @@ export default function VestibuleScreen() {
           <div className={v.promoFrame}>
             <div className={v.promoScale}>
               <div className={`${w.stack} ${v.promoStack}`}>
-                <StarterHero className={slot("starter")} panel />
-                <CccaHero className={slot("ccca")} panel />
+                {/* Only the panels promos.ts lists (2026-10-26) — see ExitScreen.tsx. */}
+                {up.includes("phoenix") && <PhoenixHero className={slot("phoenix")} panel />}
+                {up.includes("starter") && <StarterHero className={slot("starter")} panel />}
+                {up.includes("ccca") && <CccaHero className={slot("ccca")} panel />}
                 {up.includes("workshop") && <WorkshopHero className={slot("workshop")} panel />}
               </div>
             </div>

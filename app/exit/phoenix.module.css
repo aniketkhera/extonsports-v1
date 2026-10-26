@@ -1,0 +1,123 @@
+/* The Phoenix Throwball panel (2026-10-26). Same rules as exit.module.css and
+   ccca.module.css, for the same weak VIZIO browsers: literal colours, sizes in the 16:9
+   box's units (--vw/--vh), and only transform and opacity animate, with no var() inside
+   @keyframes. The grid, title, motto, logo column, code card and call line are those
+   two files' classes (PhoenixHero.tsx); this file is only what the panel adds. */
+
+/* "NOW HOME TO THE", between EXTON SPORTS CENTER (the motto line) and the team's name:
+   the headline Aniket wrote, read top to bottom. A step up from the motto, white. */
+.home {
+  margin: 0 0 calc(0.6 * var(--vh));
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 500;
+  font-size: calc(2.3 * var(--vw));
+  letter-spacing: 0.08em;
+  line-height: 1.05;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+/* ── THE LOGO ──────────────────────────────────────────────────────────────── */
+/* The team's artwork is square where CCCA's crest is 10:9, so it is set by width in the
+   middle column and by height at the head of the copy, as the crest is. */
+.logo {
+  width: calc(20 * var(--vw));
+}
+/* In the vestibule's panel the logo heads the copy (ccca.module.css .panelLayout shows
+   .crestInline there at 13vh): larger here, the artwork being the panel's picture. The
+   doubled class out-ranks .panelLayout .crestInline whichever stylesheet loads last. */
+.panel .logoInline.logoInline {
+  height: calc(25 * var(--vh));
+}
+
+/* ── A THROW OVER THE NET ──────────────────────────────────────────────────── */
+/* Side on: the floor, the net in the middle, and the ball thrown over it and back —
+   every 7 s, resting at each end. The mover is exactly this box, so the ball's path,
+   written in % of it, lands on the same points at any width (as CCCA's ladder). */
+.court {
+  position: relative;
+  margin: calc(3.4 * var(--vh)) 0 0;
+  height: calc(18 * var(--vh));
+  max-width: calc(44 * var(--vw));
+}
+.floor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(0.24 * var(--vw));
+  border-radius: calc(0.12 * var(--vw));
+  background: rgba(255, 255, 255, 0.45);
+}
+/* The net: a post, a white tape at the top, and the mesh drawn once as a static
+   pattern (painted, never animated). */
+.net {
+  position: absolute;
+  left: calc(50% - 1.4 * var(--vw));
+  width: calc(2.8 * var(--vw));
+  bottom: 0;
+  height: 62%;
+  border-top: calc(0.6 * var(--vh)) solid #ffffff;
+  border-left: calc(0.22 * var(--vw)) solid #ffffff;
+  border-right: calc(0.22 * var(--vw)) solid #ffffff;
+  background:
+    repeating-linear-gradient(90deg, rgba(248, 155, 114, 0.7) 0 2px, transparent 2px 25%),
+    repeating-linear-gradient(0deg, rgba(248, 155, 114, 0.7) 0 2px, transparent 2px 14%);
+}
+.mover {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform: translate(10%, 100%);
+  animation: throw 7s linear infinite;
+}
+.ball {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(3.3 * var(--vw));
+  height: calc(3.3 * var(--vw));
+  transform: translate(-50%, -100%);
+}
+.ball img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  animation: spin 1.3s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+/* Thrown from x 10% to x 90% of the box over the net (x 50%), peaking at y 2%, and back:
+   y = 2 + 98 * ((x - 50) / 40)^2, sampled every 10% of x. Constant speed across, as a
+   thrown ball goes, so straight steps between samples read as the arc. */
+@keyframes throw {
+  0% { transform: translate(10%, 100%); opacity: 0; }
+  4% { transform: translate(10%, 100%); opacity: 1; }
+  8% { transform: translate(10%, 100%); }
+  11% { transform: translate(20%, 57.13%); }
+  14% { transform: translate(30%, 26.5%); }
+  17% { transform: translate(40%, 8.13%); }
+  20% { transform: translate(50%, 2%); }
+  23% { transform: translate(60%, 8.13%); }
+  26% { transform: translate(70%, 26.5%); }
+  29% { transform: translate(80%, 57.13%); }
+  32% { transform: translate(90%, 100%); }
+  50% { transform: translate(90%, 100%); }
+  53% { transform: translate(80%, 57.13%); }
+  56% { transform: translate(70%, 26.5%); }
+  59% { transform: translate(60%, 8.13%); }
+  62% { transform: translate(50%, 2%); }
+  65% { transform: translate(40%, 8.13%); }
+  68% { transform: translate(30%, 26.5%); }
+  71% { transform: translate(20%, 57.13%); }
+  74% { transform: translate(10%, 100%); opacity: 1; }
+  94% { transform: translate(10%, 100%); opacity: 1; }
+  100% { transform: translate(10%, 100%); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mover, .ball img {
+    animation: none;
+  }
+}
