@@ -523,13 +523,13 @@ test("OFF COURT: 'next' means starting inside 30 minutes of the end — on the T
   assert.deepEqual(nudgesAt([hire("b1", 1020, 1080), hire("b1", 1080, 1200, tb)], 1075), [["b1", "next", 1080, 1095]]);
 });
 
-test("OFF COURT: the window — a little before ten minutes out, to the end, TIME UP held two minutes when someone is next", () => {
+test("OFF COURT: the window — a little before ten minutes out, to the end, TIME UP held five minutes when someone is next", () => {
   const strangers = [hire("b2", 1020, 1080), hire("b2", 1080, 1140)];
   assert.deepEqual(nudgesAt(strangers, 1069), []); // eleven minutes out
   assert.equal(nudgesAt(strangers, 1069.75).length, 1); // asked early; nudgeFace decides the second
   assert.equal(nudgesAt(strangers, 1080).length, 1); // the end: TIME UP
-  assert.equal(nudgesAt(strangers, 1081.9).length, 1);
-  assert.deepEqual(nudgesAt(strangers, 1082), []); // the hold is over
+  assert.equal(nudgesAt(strangers, 1084.9).length, 1);
+  assert.deepEqual(nudgesAt(strangers, 1085), []); // the five-minute hold is over
   // Free after: nothing once it has ended, no TIME UP.
   assert.deepEqual(nudgesAt([hire("b3", 1020, 1080)], 1080), []);
   // Nothing counts down to the end of a booking that has not started.

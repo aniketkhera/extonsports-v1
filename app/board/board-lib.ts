@@ -103,8 +103,10 @@ export function kindLabel(kind: SlotBlock["kind"]): string {
 /* ⛔ WHETHER A MEMBER IS NAMED IS NOT THIS FILE'S DECISION, 2026-10-09. The
    platform redacts per screen (board_screens.names_visible), so:
 
-     reception  — behind the desk, where staff answer "who has court 2 at
-                  eight?". The feed carries names and this prints them.
+     reception  — behind the desk. Its key named members until 2026-10-25,
+                  when Aniket turned names off on it: players can read that
+                  TV from the courts, so it is a public screen too. Which key
+                  names anyone is the board_screens row, not this comment.
      vestibule  — the airlock anybody walks through. Its feed carries the four
                   partner organisations and NOTHING else, so `who` is absent
                   and this prints PRIVATE.
@@ -590,8 +592,10 @@ export function bandKey(b: NamedBlock): string {
 export const NUDGE_LEAD_MS = 10 * MINUTE;
 /** Inside this, OFF COURT counts in m:ss. */
 export const NUDGE_SECONDS_MS = 3 * MINUTE;
-/** TIME UP stays up this long after an end that another party is waiting on. */
-export const TIME_UP_HOLD_MS = 2 * MINUTE;
+/** TIME UP stays up this long after an end that another party is waiting on. Five
+ *  minutes, Aniket's choice over two when he approved the mock-up (2026-10-25): longer
+ *  pressure on a group that is slow to leave. */
+export const TIME_UP_HOLD_MS = 5 * MINUTE;
 /** A next party starting within this many minutes of an end makes it "next". */
 export const BACK_TO_BACK_MIN = 30;
 
