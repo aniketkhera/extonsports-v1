@@ -541,10 +541,21 @@ function BigEntry({
   e, sport, labels, big, last,
 }: { e: Entry; sport: string; labels: string[]; big: boolean; last: boolean }) {
   /* No margin under the last one: in a centred column it only added height,
-     and the ON NOW / UP NEXT line above now spends it (2026-10-16). */
+     and the ON NOW / UP NEXT line above now spends it (2026-10-16).
+
+     COMPACT AT THREE, NOT ONLY THE BOXES (2026-10-26). Three entries ran 49px past
+     the NOW area at 1080p, measured on production with COMING UP full (its ten rows
+     are what a real evening has; the 2026-10-14 measurement had fewer): 477px of
+     entries in 428. The top of the panel — the ON NOW line — was what got cut,
+     because the column is centred. Rare until the OFF COURT countdown's TIME UP
+     began holding the group that is due off beside the one coming on, for five
+     minutes. So at three or more (`big` false) the lockup row loses its 3.2vw
+     floor — 1.9vw still clears a session tag — the time drops to 2.6vw, and the gap
+     between entries to 0.7vh: 152px an entry becomes ~118 for a private hire,
+     measured, and three fit. A partner's two-line lockup keeps its own height. */
   return (
-    <div style={{ marginBottom: last ? 0 : "calc(1.2 * var(--vh))" }}>
-      <div style={{ minHeight: "calc(3.2 * var(--vw))", display: "flex", alignItems: "center", gap: "calc(0.8 * var(--vw))", marginBottom: "calc(0.4 * var(--vh))" }}>
+    <div style={{ marginBottom: last ? 0 : big ? "calc(1.2 * var(--vh))" : "calc(0.7 * var(--vh))" }}>
+      <div style={{ minHeight: big ? "calc(3.2 * var(--vw))" : "calc(1.9 * var(--vw))", display: "flex", alignItems: "center", gap: "calc(0.8 * var(--vw))", marginBottom: "calc(0.4 * var(--vh))" }}>
         <Lockup brand={e.brand} who={e.who} />
         {e.session && <SessionTag session={e.session} />}
       </div>
@@ -618,7 +629,7 @@ function EntryFoot({
   const alarm = showing?.kind === "next" ? showing.courts : [];
   return (
     <>
-      <div className="text-cond" style={{ fontSize: "calc(3.1 * var(--vw))", color: ink, lineHeight: 1.03, whiteSpace: "nowrap" }}>
+      <div className="text-cond" style={{ fontSize: big ? "calc(3.1 * var(--vw))" : "calc(2.6 * var(--vw))", color: ink, lineHeight: 1.03, whiteSpace: "nowrap" }}>
         {line}
       </div>
       {/* display:flex so the row has no inherited 16px/1.5 line box under it. */}
@@ -1108,11 +1119,16 @@ export default function ReceptionBoard() {
             {/* Centred, not top-aligned. A panel holding one booking against a
                 full-height column otherwise leaves a third of the screen blank
                 above the NEXT line, which from across the lobby reads as a
-                broken screen rather than a quiet one. */}
+                broken screen rather than a quiet one.
+                SAFE centre (2026-10-26), as the vestibule's slot already is: when
+                the entries outgrow the area (four squash groups at once), plain
+                centring spilled them out of BOTH ends and the ON NOW line was the
+                first thing cut. Safe, the overflow goes off the bottom only, and
+                the earliest booking — the one in TIME UP — stays in view. */}
             <div
               style={{
                 flex: 1, minHeight: 0, overflow: "hidden",
-                display: "flex", flexDirection: "column", justifyContent: "center",
+                display: "flex", flexDirection: "column", justifyContent: "safe center",
               }}
             >
               {/* ON NOW or UP NEXT, then the bookings (2026-10-16). The line
