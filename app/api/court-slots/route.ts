@@ -78,6 +78,22 @@ export type SlotBlock = {
    * screens still refuse it without org 'ccca' (sessionOf in board-lib).
    */
   session?: 'junior-coaching' | 'open-play' | 'free-girls-class'
+  /**
+   * The block's TRUE start and end, in the same minutes, where they fall off the
+   * half hour (2026-10-25) — the platform snaps `from`/`to` outward, so Sunday's
+   * 18:15–19:45 throwball arrives as 18:00–20:00. Absent when the edge is on the grid.
+   * For the reception board's OFF COURT countdown, which has to count to 7:45, not 8.
+   * Two numbers, no identity.
+   */
+  exactFrom?: number
+  exactTo?: number
+  /**
+   * The same holder has this court straight after this block (2026-10-25): only where
+   * the platform split one holder's run — a partner's session change, or midnight. So
+   * a screen with no names can tell "the same party carries on" from two strangers
+   * back to back. A yes, never a name.
+   */
+  continues?: true
 }
 
 export type CourtRef = {
@@ -135,7 +151,9 @@ export async function GET(req: Request) {
   try {
     const res = await fetch(
       // sessions=1: ask for the partners' JUNIOR COACHING / OPEN PLAY split (2026-10-14).
-      `${API_BASE}/api/public/court-slots?club=${encodeURIComponent(CLUB_ID)}&days=${days}&sessions=1${wantLights ? '&lights=1' : ''}`,
+      // edges=1: each block's true start and end, and `continues` (2026-10-25), for the
+      // OFF COURT countdown on /reception. A platform that predates it ignores it.
+      `${API_BASE}/api/public/court-slots?club=${encodeURIComponent(CLUB_ID)}&days=${days}&sessions=1&edges=1${wantLights ? '&lights=1' : ''}`,
       /* 15 s with the lights, 60 s without (2026-10-21). The lights now carry the
          bridge's live report, and the chip trusts a report for 3 minutes on the
          viewer's clock (board-lib lightChip); the bridge reports once a minute and
@@ -181,10 +199,19 @@ export async function GET(req: Request) {
           const org = PARTNERS.find((k) => k === b.org)
           // Same rule for the session: one of three fixed words, or nothing.
           const session = SESSIONS.find((k) => k === b.session)
+          /* The true edges (2026-10-25): a number, or nothing — and only one inside
+             the block's own first or last half hour, which is all the platform ever
+             sends. Anything else is dropped rather than trusted, so a bad value can
+             only cost the countdown its precision, never move a booking. */
+          const exactFrom = typeof b.exactFrom === 'number' && b.exactFrom > b.from && b.exactFrom < b.from + 30 ? b.exactFrom : undefined
+          const exactTo = typeof b.exactTo === 'number' && b.exactTo < b.to && b.exactTo > b.to - 30 ? b.exactTo : undefined
           return {
             date: b.date, courtId: b.courtId, from: b.from, to: b.to, kind: b.kind,
             ...(org ? { org } : {}),
             ...(session ? { session } : {}),
+            ...(exactFrom !== undefined ? { exactFrom } : {}),
+            ...(exactTo !== undefined ? { exactTo } : {}),
+            ...(b.continues === true ? { continues: true as const } : {}),
           }
         }),
       ...(wantLights && publicLights(body.lights) ? { lights: publicLights(body.lights) } : {}),

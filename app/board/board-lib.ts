@@ -526,3 +526,194 @@ export function lightChip(sport: string, lights: Lights | undefined, nowMs: numb
   }
   return { kind: "off" };
 }
+
+/* ── OFF COURT (2026-10-25) ───────────────────────────────────────────────────
+   Aniket: "start nudging 10 mins before the booking ends — OFF COURT in x minutes —
+   and count down using seconds the last 3 minutes or so." The harm is back-to-back
+   bookings: a group that does not finish on time keeps the next one off the court.
+   Driven by the schedule alone; the cameras come later and are not needed for this.
+   He chose the reception TV for it, the one players can see from the courts.
+
+   WHAT FOLLOWS DECIDES THE WORDING, per court:
+     another party next     OFF COURT IN 7 MIN, then 2:59 … 0:01, then TIME UP held
+                            for TIME_UP_HOLD_MS, with "NEXT GROUP AT 7 PM" beside it.
+     the same party next    nothing at all.
+     the court free after   ENDS IN 7 MIN with "FREE AFTER · EXTEND IN THE APP" — to
+                            sell the extension, not to throw people off an idle court.
+                            Court hires only: a partner's session that ends onto a free
+                            court gets nothing (its coach runs its clock), and minutes
+                            only, no seconds, no TIME UP.
+
+   "THE SAME PARTY" (sameParty below) is mostly the platform's call already: it keys
+   its runs on the FULL holder before it strips any name, so one member's back-to-back
+   hours on a court arrive here as ONE block whose end is the real end, keyed screen or
+   not. What is left is where the platform split one holder's run anyway — a partner's
+   junior coaching becoming its open play, or midnight — which it marks `continues`,
+   plus the same partner on either side of a kind change (CCCA's lane hire then its
+   own event), which `org` says. Two strangers back to back are two blocks that share
+   neither, keyed or public, so the unkeyed page decides exactly as the TV does.
+
+   "NEXT" MEANS STARTING WITHIN BACK_TO_BACK_MIN of the end. A court is sold by the
+   half hour, so a shorter gap is not an extension anyone could book — the group is
+   in the way of the next one either way.
+
+   THE TIMES ARE THE TRUE ONES: exactFrom / exactTo where the platform sent them
+   (Sunday throwball is 18:15–19:45, which the grid calls 18:00–20:00), so the
+   countdown runs to 7:45 and the next group is announced at 6:15, not 6.
+
+   ⛔ NEVER A NAME. Nothing here prints `who`; the countdown replaces a booking's TIME,
+   never its holder, and the holder line is whatever the screen's key already allows.
+   ⛔ NEVER GREEN — green on these boards means a court is free. */
+
+/* WHICH ROW A BLOCK JOINS when /reception and /vestibule cut a sport's blocks into
+   time bands (mergeBlocks in ReceptionBoard.tsx): its holder and session — and, for a
+   holder with NO name, its own run as well (2026-10-25).
+
+   "PRIVATE" is not a holder, it is every unnamed person at once. Keyed on the label
+   alone, two strangers were one holder: two private hires 5–6 on court 2 and 5:30–6:30
+   on court 4 came out as three rows, the middle one "5:30 – 6 PM, courts 2 and 4", and
+   two strangers back to back on ONE court were stitched into a single "5 – 7 PM" row.
+   Harmless-looking until the OFF COURT countdown, which hangs off a row's end: the
+   first put "ENDS IN 8 MIN" over court 4, which runs to 6:30, and the second swallowed
+   the nudge altogether, because no row ended at 6. Seen on the mock-up, 2026-10-25.
+
+   With the run in the key, each unnamed booking is its own row unless another has the
+   very same hours (then one row with both courts, as before). A NAMED holder or a
+   partner is keyed exactly as it always was, so the slicing that keeps one holder's
+   changing court set honest (see mergeBlocks) is unchanged. */
+export function bandKey(b: NamedBlock): string {
+  const anon = !brandFor(b) && !(b.who || "").trim();
+  return `${sessionOf(b) ?? ""}|${holderLabel(b)}${anon ? `|${b.from}-${b.to}` : ""}`;
+}
+
+/** The nudge starts this long before an end. */
+export const NUDGE_LEAD_MS = 10 * MINUTE;
+/** Inside this, OFF COURT counts in m:ss. */
+export const NUDGE_SECONDS_MS = 3 * MINUTE;
+/** TIME UP stays up this long after an end that another party is waiting on. */
+export const TIME_UP_HOLD_MS = 2 * MINUTE;
+/** A next party starting within this many minutes of an end makes it "next". */
+export const BACK_TO_BACK_MIN = 30;
+
+/** A block's true start and end, in its own day's minutes — see THE TIMES above. */
+export const startOf = (b: NamedBlock): number => b.exactFrom ?? b.from;
+export const endOf = (b: NamedBlock): number => b.exactTo ?? b.to;
+
+export type Nudge = {
+  courtId: string;
+  /** "next": another party starts within BACK_TO_BACK_MIN — OFF COURT. "free": the softer line. */
+  kind: "next" | "free";
+  /** The block whose end this counts down to. */
+  block: NamedBlock;
+  /** Its true end, in minutes from TODAY's club-local midnight. */
+  end: number;
+  /** "next" only: the next party's true start, in the same minutes (past 1440 after midnight). */
+  nextAt?: number;
+};
+
+/** One holder either side? The same partner, or — on a keyed screen — the same holder
+ *  text. A partner and a non-partner, or two different partners, are never one. */
+export function sameParty(a: NamedBlock, b: NamedBlock): boolean {
+  const pa = brandFor(a), pb = brandFor(b);
+  if (pa || pb) return pa === pb;
+  const wa = (a.who || "").trim(), wb = (b.who || "").trim();
+  return wa !== "" && wa === wb;
+}
+
+/** The club-local date after a YYYY-MM-DD one, by UTC noon so no zone can shift it. */
+function nextDay(date: string): string {
+  const [y, m, d] = date.split("-").map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d + 1, 12));
+  return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, "0")}-${String(t.getUTCDate()).padStart(2, "0")}`;
+}
+
+/* Which courts are nudging right now, and how. `nowMin` is minutes from today's
+   club-local midnight WITH the seconds as a fraction (14:07:30 is 847.5).
+
+   A block is a candidate from a little before NUDGE_LEAD_MS out (the screen
+   recomputes this on a 15 s tick, so it is asked early and nudgeFace decides the
+   second it shows), until its end — or, when another party is next, until
+   TIME_UP_HOLD_MS after it. It must have started: nothing counts down to the end of
+   a booking that has not begun. */
+export function courtNudges(blocks: readonly NamedBlock[], today: string, nowMin: number): Nudge[] {
+  const tomorrow = nextDay(today);
+  /** A block's minute on the today-relative axis; NaN for any other day. */
+  const rel = (b: NamedBlock, m: number) => (b.date === today ? m : b.date === tomorrow ? m + 1440 : NaN);
+  const lead = NUDGE_LEAD_MS / MINUTE + 0.5;
+  const hold = TIME_UP_HOLD_MS / MINUTE;
+
+  const byCourt = new Map<string, NamedBlock[]>();
+  for (const b of blocks) {
+    if (b.date !== today && b.date !== tomorrow) continue;
+    const list = byCourt.get(b.courtId);
+    if (list) list.push(b);
+    else byCourt.set(b.courtId, [b]);
+  }
+
+  const out: Nudge[] = [];
+  for (const [courtId, list] of byCourt) {
+    for (const b of list) {
+      if (b.date !== today) continue;
+      const end = endOf(b);
+      if (startOf(b) > nowMin || end - nowMin > lead || nowMin >= end + hold) continue;
+      if (b.continues) continue; // the platform says this holder carries on
+
+      // The first block on this court that is still going after `end` and starts
+      // inside BACK_TO_BACK_MIN of it.
+      let next: NamedBlock | null = null;
+      let nextAt = Infinity;
+      for (const n of list) {
+        if (n === b) continue;
+        const s = rel(n, startOf(n)), e = rel(n, endOf(n));
+        if (!(e > end) || !(s < end + BACK_TO_BACK_MIN)) continue;
+        if (s < nextAt) { next = n; nextAt = s; }
+      }
+
+      if (next) {
+        if (sameParty(b, next)) continue;
+        /* Never earlier than the end: a block that overlaps this one is somebody already
+           on the court, and "NEXT GROUP AT 5 PM" at 5:55 would be nonsense. */
+        out.push({ courtId, kind: "next", block: b, end, nextAt: Math.max(nextAt, end) });
+      } else if (nowMin < end && b.kind === "booking" && !brandFor(b)) {
+        out.push({ courtId, kind: "free", block: b, end });
+      }
+    }
+  }
+  return out;
+}
+
+/** What the countdown shows this second. */
+export type NudgeFace =
+  | { kind: "none" }
+  | { kind: "offIn"; min: number }
+  | { kind: "offSec"; clock: string }
+  | { kind: "timeUp" }
+  | { kind: "endsIn"; min: number };
+
+/* The face for `remainingMs` until the end. Minutes are rounded UP, so the first
+   reading at T-10:00 is 10 MIN and nothing ever reads 0 MIN; the seconds take over AT
+   three minutes ("3:00"), so 3 MIN is never shown — 4 MIN covers 3:00–4:00 exactly.
+   Past the end "next" holds TIME UP for as long as courtNudges still returns it; the
+   hold is its decision, not this one's, so a slow tick can only lengthen TIME UP by a
+   moment, never flash the booking's time back up. "free" just stops. */
+export function nudgeFace(kind: Nudge["kind"], remainingMs: number): NudgeFace {
+  if (remainingMs > NUDGE_LEAD_MS) return { kind: "none" };
+  if (kind === "free") {
+    return remainingMs > 0 ? { kind: "endsIn", min: Math.ceil(remainingMs / MINUTE) } : { kind: "none" };
+  }
+  if (remainingMs <= 0) return { kind: "timeUp" };
+  if (remainingMs > NUDGE_SECONDS_MS) return { kind: "offIn", min: Math.ceil(remainingMs / MINUTE) };
+  const s = Math.ceil(remainingMs / 1000);
+  return { kind: "offSec", clock: `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}` };
+}
+
+/* The instant of minute `minute` of TODAY (club-local), from the instant `nowMs`. Taken
+   relative to the club's wall clock now, and the seconds from `nowMs` itself — the
+   club's offset from UTC is whole minutes. Good for the minutes around now, which is
+   all a countdown asks; across a DST change in the same night it would be an hour out,
+   at 2 AM, for one night a year. */
+export function clubInstant(minute: number, nowMs: number): number {
+  const { minutes } = clubNow(new Date(nowMs));
+  const intoMinute = ((nowMs % MINUTE) + MINUTE) % MINUTE;
+  return nowMs - intoMinute + (minute - minutes) * MINUTE;
+}
