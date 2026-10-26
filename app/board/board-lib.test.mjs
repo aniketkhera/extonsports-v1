@@ -15,6 +15,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
+import { readFileSync, statSync } from "node:fs";
 
 /* The sources import the way the Next bundler resolves, not the way Node does:
    extensionless relative paths to .ts files ("../../lib/opening"), and
@@ -635,4 +636,46 @@ test("makeTicker({ align }): ticks on the wall clock's boundaries, not the page 
   off();
   t.mock.timers.tick(5000);
   assert.equal(seen.length, 2, "nothing after the last subscriber leaves");
+});
+
+/* Phoenix Throwball's crest, 2026-10-26 — Aniket: "add this logo to the booking calendar as
+   well as show it on the TV with their booking". The marks are .tsx, which node cannot
+   load, so these read the source; the files are read too, because a missing or wrong asset
+   fails silently on a wall — a broken-image box beside their name, or a white square if the
+   team's original JPEG (opaque white background) is dropped in instead. */
+function webpCanvas(path) {
+  const buf = readFileSync(new URL(path, import.meta.url));
+  assert.equal(buf.subarray(0, 4).toString("latin1"), "RIFF", path);
+  assert.equal(buf.subarray(8, 16).toString("latin1"), "WEBPVP8X", path);
+  assert.equal(buf[20] & 0x10, 0x10, `${path}: alpha flag — the white background is cut out`);
+  return { w: buf.readUIntLE(24, 3) + 1, h: buf.readUIntLE(27, 3) + 1, size: statSync(new URL(path, import.meta.url)).size };
+}
+
+test("Phoenix's crest ships at both sizes, with transparency, kept small", () => {
+  const small = webpCanvas("../../public/partners/phoenix-128.webp");
+  const big = webpCanvas("../../public/partners/phoenix-256.webp");
+  assert.deepEqual([small.w, small.h, big.w, big.h], [128, 128, 256, 256]);
+  assert.ok(small.size < 20_000, `phoenix-128.webp is ${small.size} bytes`);
+  assert.ok(big.size < 50_000, `phoenix-256.webp is ${big.size} bytes`);
+});
+
+test("the crest is on the calendar's and the TVs' throwball marks, beside the name, and nobody else's", () => {
+  const cal = readFileSync(new URL("../components/CalPartnerMark.tsx", import.meta.url), "utf8");
+  const tv = readFileSync(new URL("../reception/ReceptionBoard.tsx", import.meta.url), "utf8");
+  const branch = (src, open) => {
+    const at = src.indexOf(open);
+    assert.ok(at > 0, open);
+    return src.slice(at, src.indexOf("\n  }\n", at));
+  };
+  const calTb = branch(cal, 'if (org === "throwball")');
+  assert.match(calTb, /src="\/partners\/phoenix-128\.webp"/);
+  assert.match(calTb, />Phoenix</, "the name stays in type under the crest");
+  const tvTb = branch(tv, 'if (brand === "throwball")');
+  assert.match(tvTb, /src="\/partners\/phoenix-256\.webp"/);
+  assert.match(tvTb, />Phoenix</);
+  assert.match(tvTb, />Throwball</);
+  /* Exactly one use per file: the crest must not leak into another partner's branch or
+     the private-hire fall-through. */
+  assert.equal(cal.match(/\/partners\/phoenix-/g).length, 1);
+  assert.equal(tv.match(/\/partners\/phoenix-/g).length, 1);
 });
