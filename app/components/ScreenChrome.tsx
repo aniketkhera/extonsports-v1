@@ -28,8 +28,11 @@ import { EMBER, INK, LABEL, ORANGE, RULE, RULE_SOFT } from "./tv-palette";
 
 /* The clock is an external store, shared with /comingsoon — see
    ticker.ts for why it is not useState + useEffect. */
-/** Visible seconds for the clock. */
-const secondTicker = makeTicker(1_000);
+/** Visible seconds for the clock — and, since 2026-10-25, for the OFF COURT
+ *  countdown on /reception, which shares it so the two always change on the same
+ *  frame. Aligned to the wall clock's seconds (ticker.ts): a countdown somebody reads
+ *  against the clock above it must not run up to a second behind it. */
+export const secondTicker = makeTicker(1_000, { align: true });
 
 /* The booking band — one line under the boxes, the bottom of the screen
    (2026-10-18, Aniket: "a lot of people look at the reception screen — instead of
