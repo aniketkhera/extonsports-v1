@@ -18,6 +18,15 @@ import { readDeviceToken } from '@/lib/my-bookings/session-server'
 //
 // Every known outcome is 200 {status, …}: the HTTP status is about this route, the
 // `status` field about the booking, and the row renders it either way.
+//
+// A SERIES PAID WITH A COURT PACK (2026-10-21, orangish-app docs/court-packs.md §7.2)
+// comes through this same route and this same call: the platform forks to the pack path
+// itself (cancelGuestSeries → cancelPackSeries → cp_return_series), returns the credit
+// instead of refunding, and never reaches Stripe. Nothing changes here. Its answer carries
+// paidWith 'pack', creditsReturned and the pack's fresh count, which toCancelView lets
+// through and refundedCents does not — so the row says "Credit is back" and no money
+// (lib/my-bookings/pack-list.test.mjs relays one end to end). The 24-hour cutoff is the
+// platform's for both; inside it the desk returns a credit, not this route.
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'

@@ -2,7 +2,7 @@ import WhatsAppButton from "./WhatsAppButton";
 import OrangishPill from "./OrangishPill";
 import CalendarFooterLink from "./CalendarFooterLink";
 import { CONTACT_EMAIL } from "../../lib/legal";
-import { BOOK_COURT_URL, PAY_URL, MY_BOOKINGS_LIVE, MY_BOOKINGS_PATH } from "../../lib/booking";
+import { BOOK_COURT_URL, PAY_URL, MY_BOOKINGS_LIVE, MY_BOOKINGS_PATH, PACKS_LIVE, PACK_PATH } from "../../lib/booking";
 import { RATE_BANDS, BAND_BLURB } from "../../lib/rates";
 
 export default function Footer() {
@@ -130,6 +130,11 @@ export default function Footer() {
                calendar's place right under "Book" is pinned by
                app/components/my-bookings-pure.test.mjs. */
             ...(MY_BOOKINGS_LIVE ? [{ label: "Manage or cancel a booking", href: MY_BOOKINGS_PATH }] : []),
+            // 2026-10-21: the court pack's buy page (orangish-app docs/court-packs.md §8.2).
+            // A relative path, so FooterCol opens it in the same tab. Gated until the owner's
+            // live test and the key-box revoke are done (lib/booking.ts PACKS_LIVE).
+            // 2026-10-22: "Court packs" — renamed from "5-pack" with the 10-pack (Aniket).
+            ...(PACKS_LIVE ? [{ label: "Court packs", href: PACK_PATH }] : []),
             { label: "Make an adhoc payment", href: PAY_URL },
             { label: "Bulk & block bookings", href: `mailto:${CONTACT_EMAIL}` },
             { label: "Academies & juniors", href: "/#top" },

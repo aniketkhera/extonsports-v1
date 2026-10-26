@@ -8,7 +8,7 @@ import type { CourtAvailability } from "../api/court-availability/route";
 import type { SchedulePayload } from "../api/schedule/route";
 import type { ProgramSchedule } from "@/lib/club-schedule";
 import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, CLASS_FEES_NOTE } from "../../lib/rates";
-import { BOLLYWOOD_CLASS_URL, SQUAD_CLASS_URL, STARTER_PACK_URL, BOOK_COURT_URL, PAY_URL, CLASS_ONLINE_BOOKING_LIVE, BOOKING_LIST_EMAIL_LIVE } from "../../lib/booking";
+import { BOLLYWOOD_CLASS_URL, SQUAD_CLASS_URL, STARTER_PACK_URL, BOOK_COURT_URL, PAY_URL, CLASS_ONLINE_BOOKING_LIVE, BOOKING_LIST_EMAIL_LIVE, PACKS_LIVE, PACK_PATH } from "../../lib/booking";
 import { SPORT_BOOKING_OPENS_LABEL, sportBookingOpen, sportShutOnDate, sportsNotYetOpen } from "../../lib/opening";
 import { pbaScheduleOn, PBA_COURTS } from "../../lib/pba-schedule";
 import { SQUAD_SCHEDULE, SQUAD_NOTE, SQUAD_TERM } from "../../lib/squad-schedule";
@@ -2038,6 +2038,25 @@ function RateCard({ open, stacked }: { open: boolean; stacked: boolean }) {
           >
             Make an adhoc payment
           </a>
+
+          {/* COURT PACKS, 2026-10-21 — one-hour credits at the off-peak price or less
+              (orangish-app docs/court-packs.md §8.2; renamed from "5-pack" and sold as a
+              5-pack and a 10-pack, badminton and cricket, since 2026-10-22 — Aniket). In
+              this row because it is the one a reader is in when they have just read "$45" —
+              the pack's whole offer is that price for less. Outlined like its neighbours,
+              same tab (this site's own page), and hidden until the owner's live test and the
+              key-box revoke are done (lib/booking.ts PACKS_LIVE). */}
+          {PACKS_LIVE && (
+            <a
+              href={PACK_PATH}
+              className={`text-mono text-[var(--color-ember)] border border-[var(--color-ember)]/50 hover:border-[var(--color-ember)] hover:text-white transition-colors ${
+                stacked ? "block w-full text-center py-[13px] px-5" : "inline-block py-[11px] px-[22px]"
+              }`}
+              style={{ fontSize: RATE_LABEL }}
+            >
+              Court packs
+            </a>
+          )}
 
           {/* ⚠️ THE THREE SPORTS DO NOT OPEN TOGETHER, so this cannot be one
               date. The doors are Mon 5 Oct but the courts come online across

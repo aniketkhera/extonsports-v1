@@ -11,12 +11,50 @@
 // fallback for answers that carry none — a timeout has no body to carry it in.
 
 import { CONTACT_PHONE } from '../legal'
-import type { CancelView } from './view'
+import { MY_BOOKINGS_PATH } from '../booking'
+import { DEVICE_MAX_AGE_S } from './session'
+import type {
+  BookView, CancelView, OfferView, PackClock, PackRefusalView, PackStatus, PackUseView, QuoteSlot,
+} from './view'
 
 export const FALLBACK_PHONE = CONTACT_PHONE
 
-/** The cutoff the owner set on 2026-10-18; the platform's GUEST_SELF_CANCEL_CUTOFF_HOURS. */
+/** The cutoff the owner set on 2026-10-18; the platform's GUEST_SELF_CANCEL_CUTOFF_HOURS, and
+ *  for a pack booking its CP_SELF_CANCEL_CUTOFF_HOURS (orangish-app lib/court-pack-rules.ts,
+ *  "the same 24 hours as a card booking"). One number here for both, as on the platform. */
 export const DEFAULT_CUTOFF_HOURS = 24
+
+/**
+ * How far ahead a CARD booking opens at Exton: the platform's locations.court_booking_window_days
+ * (30). The /court-packs "Booking and changes" box says it, beside the packs' own horizons
+ * (2026-10-22, Aniket: "let's make the pack bookings upto 60 days for 5 pack and 120 days for 10
+ * pack.."), and the pack pages offer "Pay by card" only inside it (cardOpenOn, below). The
+ * platform's offers and quote answers do not carry the club's window, so it is mirrored here
+ * as DEFAULT_CUTOFF_HOURS is; a change to the column needs this changed too. The packs' own
+ * horizons are never written here — they are each offer's windowDays.
+ */
+export const CARD_WINDOW_DAYS = 30
+
+/**
+ * Whether the app's form can book `date` (club-local YYYY-MM-DD) BY CARD, counted from the
+ * club-local `today`: the last card date is today + cardDays − 1, as the app's own
+ * lastBookableDate (orangish-app lib/guest-court-booking-rules.ts) counts it.
+ *
+ * WHY, 2026-10-22 (review of the booking horizon): a pack books up to 60 or 120 days ahead,
+ * a card only 30, and the pack pages offered "Pay by card" — and a "By card $X" price and
+ * ", or pay by card" sentences — for every date. The card link hands the app's form a date it
+ * will not take by card, and the form moved the booking to TODAY at the same start time
+ * without a word. Past this date the pack pages offer "Pick another time" instead. A
+ * malformed date is treated as inside the window (the page says what it always said);
+ * session.ts has already checked the parked one.
+ */
+export function cardOpenOn(date: string, today: string, cardDays: number = CARD_WINDOW_DAYS): boolean {
+  const t = /^(\d{4})-(\d{2})-(\d{2})$/.exec(today)
+  if (!t || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return true
+  const last = new Date(Date.UTC(Number(t[1]), Number(t[2]) - 1, Number(t[3]) + Math.max(1, cardDays) - 1))
+  if (Number.isNaN(last.getTime())) return true
+  return date <= last.toISOString().slice(0, 10)
+}
 
 const USD = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
 
@@ -42,6 +80,12 @@ export const COPY = {
   // can lock a guest out by asking for their address), and a link may live 30 minutes or 2
   // hours — so this promises neither a fresh email nor a time, and says the earlier ones work.
   sent: "If this email has bookings with us, we've sent a link. Any link or code from us that hasn't expired still works. On another device? Enter the 6‑digit code from the email.",
+  // The same, naming a court pack (court pack design §8.3; "court pack" since the rename,
+  // Aniket 2026-10-22) — RequestPanel shows it only while PACKS_LIVE is on (review R10,
+  // 2026-10-21): until then no pack is on sale online, and the platform's own email names
+  // packs only once court_packs_public is on (its A5 deviation 1). Still conditional — it
+  // says the same for everyone.
+  sentWithPack: "If this email has bookings or a court pack with us, we've sent a link and a 6‑digit code. Any link or code from us that hasn't expired still works. On another device? Enter the code from the email.",
   haveCode: 'I have a code',
   codeLead: 'Enter the email you booked with and the 6‑digit code from our email.',
   codeLabel: '6‑digit code', // U+2011, a hyphen that never breaks the line after "6"
@@ -159,6 +203,10 @@ export function phoneParts(text: string, phone: string): PhonePart[] {
 /** What a row says after its Cancel was pressed. */
 export function cancelMessage(view: CancelView, fallbackPhone: string = FALLBACK_PHONE, hours = DEFAULT_CUTOFF_HOURS): string {
   const phone = view.phone ?? fallbackPhone
+  // A court pack series (2026-10-21): no money moved, so never "refund" or "card".
+  if (view.paidWith === 'pack' && (view.status === 'cancelled' || view.status === 'already_cancelled')) {
+    return packCancelledMessage(view)
+  }
   switch (view.status) {
     case 'cancelled':
       return view.refundedCents !== undefined
@@ -186,4 +234,827 @@ export function cancelMessage(view: CancelView, fallbackPhone: string = FALLBACK
     default:
       return COPY.unknown
   }
+}
+
+/* ══ COURT PACKS (2026-10-21; renamed and two sizes, 2026-10-22) ═══════════════════════
+   Owner, 2026-10-20: "let's go with the implentation.." — orangish-app docs/court-packs.md
+   §8 (the screens, word for word where the design gives them) and §11. Every sentence the
+   pack pages show lives below, so the wording is reviewed here and the rules are testable.
+
+   Aniket, 2026-10-22: the product is "court packs" (it was "5-packs"), sold as a 5-pack and
+   a 10-pack, badminton and cricket only. The generic word is "court pack"; the offer names
+   ("Badminton 10-pack") are the platform's and arrive as data. The app form's switch is
+   "My court pack" — PACK_BUY_COPY.alreadyHave quotes it word for word.
+
+   ⛔ BEFORE SIGN-IN, NOTHING SAYS WHETHER AN ADDRESS HOLDS A PACK (owner, 2026-10-18;
+   design §1 "Never reveal whether an email has a pack"). PACK_SIGNIN is everything the
+   pack page can show before the platform answers session 'match', and every sentence in it
+   is conditional ("If this email has a court pack or bookings with us…"). "There's no court
+   pack on a•••@…" exists — refusalText 'no_pack' — but only after the inbox is proved. */
+
+/** The pack page before the platform says this device's session matches (design §8.1). */
+export const PACK_SIGNIN = {
+  emailLead: "Enter your email and we'll send you a 6‑digit code. No password needed.",
+  emailLabel: 'Your email',
+  sendCode: 'Send me a code',
+  sending: 'Sending…',
+  // ⛔ ALWAYS this after Send, whatever the platform found — the same sentence for every
+  // address, and the same 202 behind it.
+  sent: "If this email has a court pack or bookings with us, we've sent a 6‑digit code. No password needed.",
+  nothingArriving: 'Nothing arriving? Check the address, or',
+  buyLink: 'buy a court pack',
+  // The same line while there is no buy link to offer (PACKS_LIVE off: /court-packs deploys
+  // unlinked; or, since 2026-10-22, a sport with no pack on sale — squash). Its own
+  // sentence, so a change to the one above cannot silently break it.
+  nothingArrivingNoBuy: 'Nothing arriving? Check the address.',
+  codeLead: 'Enter the 6‑digit code from our email.',
+  // The pack page promises a CODE, so its resend says code (the list's COPY.sendNew says link).
+  sendNewCode: 'Send a new code',
+  // /my-bookings/open while a pack slot is parked: what the press does, nothing about a
+  // pack or bookings — it is shown before the emailed link is spent.
+  openLead: 'Tap to carry on with your booking on this device.',
+  payByCardInstead: 'Pay by card instead',
+} as const
+
+/** Every other fixed sentence and label on the pack pages and pack rows. */
+export const PACK_COPY = {
+  title: 'Book with my court pack',
+  pickFirst: 'Pick a time first.',
+  bookACourt: 'Book a court',
+  pickAnother: 'Pick another time',
+  notYou: 'Not you?',
+  termsLabel: 'I agree to the terms, disclosure and waiver for Exton Sports',
+  phoneLabel: 'Mobile (optional)',
+  booking: 'Booking…',
+  unreachable: "We couldn't reach the booking system. Try again in a moment, or pay by card.",
+  // 2026-10-22: the same, for a date past the card window (cardOpenOn) — there is no card to offer.
+  unreachableNoCard: "We couldn't reach the booking system. Try again in a moment.",
+  // The booked screen (mock panel 4).
+  bookedTitle: "You're booked",
+  rowCourt: 'Court',
+  rowCourts: 'Courts',
+  rowWhen: 'When',
+  rowPaidWith: 'Paid with',
+  rowCreditsLeft: 'Credits left',
+  rowValidUntil: 'Valid until',
+  bookAgain: 'Book again with my pack',
+  cancelThis: 'Cancel this booking',
+  // My bookings: pack cards and pack rows (design §8.3).
+  packsHeading: 'My court packs',
+  confirmNo: 'Keep my booking',
+} as const
+
+/* Review UI-4 and UI-10, 2026-10-21: the sentences below were fixed strings in PACK_COPY and
+   read in the singular on a booking that used several credits ("Cancel by … to get the
+   credit back" over "You get back 2 credits"), and "court" on a cricket pack. They count
+   now, the way packConfirmText already did. */
+
+/** "credit" or "credits". */
+function creditWord(n: number): string {
+  return n === 1 ? 'credit' : 'credits'
+}
+
+/** The pack page's fine print under Book: "…and the credit comes back." / "…the credits come back." */
+export function packFinePrint(credits: number, hours = DEFAULT_CUTOFF_HOURS): string {
+  return `Cancel up to ${hours} hours before and the ${creditWord(credits)} ${credits === 1 ? 'comes' : 'come'} back.`
+}
+
+/** The booked screen's note after "Cancel this booking": "(credit back until 24 hours before)". */
+export function cancelThisNote(credits: number, hours = DEFAULT_CUTOFF_HOURS): string {
+  return `(${creditWord(credits)} back until ${hours} hours before)`
+}
+
+/** A pack row's Yes in the cancel sheet: "Yes, cancel — return my credit(s)". */
+export function packConfirmYes(credits: number): string {
+  return `Yes, cancel — return my ${creditWord(credits)}`
+}
+
+/** A pack card's button: "Book a court with my pack", "Book a lane with my pack" for cricket. */
+export function bookWithMyPack(sport: string): string {
+  return `Book a ${unitForSport(sport)} with my pack`
+}
+
+/**
+ * A pack booking that starts inside the self-cancel cutoff (review UI-6, 2026-10-21): the
+ * pack page and the booked screen say this instead of promising the credit back, since the
+ * row they lead to can only say "Under 24 hours — call".
+ */
+export function packInsideCutoff(phone: string, credits: number, hours = DEFAULT_CUTOFF_HOURS): string {
+  return `This game is less than ${hours} hours away, so it can't be cancelled online — call ${phone} to change it. A no-show uses the ${creditWord(credits)}.`
+}
+
+/**
+ * The public buy page, /court-packs, and its terms (design §8.2). 2026-10-22: renamed from
+ * the 5-pack, and two sizes per sport (Aniket). "Peak for off-peak." still holds for both
+ * sizes: a 5-pack credit is the off-peak card price and a 10-pack credit is below it
+ * (badminton $40 / $35 against $40 off-peak, cricket $55 / $50 against $55 — lib/rates.ts),
+ * so the lead says "or less" rather than promising one price.
+ */
+export const PACK_BUY_COPY = {
+  chip: 'No account needed',
+  title: 'Court packs.',
+  titleAccent: 'Peak for off-peak.',
+  lead: "Five or ten one-hour bookings, any hour we're open — peak hours at the off-peak price, or less.",
+  // /court-packs's <meta name="description">, 2026-10-25 (site review, low). It was `lead`,
+  // which states the sizes and a price claim in a STATIC string that search results and link
+  // previews keep long after the platform's offers change (sizes, prices and windows are all
+  // court_pack_offers rows, changed with no deploy here). So it names no size and no price —
+  // only what is sold and where. The sports ARE named: which sports have packs was Aniket's
+  // call (2026-10-22, badminton and cricket, no squash), not a price that moves with a row;
+  // when that call changes, this line changes with it. `lead` stays on the page, beside the
+  // offers it describes.
+  metaDescription: 'Prepaid court and lane time at Exton Sports Center — badminton and cricket.',
+  sportLabel: 'Sport',
+  // 2026-10-22: the second choice, under the sport — 5 credits or 10.
+  sizeLabel: 'Pack',
+  // 2026-10-22: the box under "What you get" (bookingAndChanges).
+  changesTitle: 'Booking and changes',
+  // Pay, while nothing is chosen (a ?sport= the club sells no pack for: no tile is picked).
+  choose: 'Choose a pack',
+  whatYouGet: 'What you get',
+  emailLabel: 'Your email',
+  emailHelp: 'Your pack lives on this email. To book with it, we send a code here — no password. Your receipt comes here too.',
+  termsBefore: 'I agree to the',
+  termsLink: 'court pack terms',
+  paying: 'Opening payment…',
+  finePrint: 'Card payment by Stripe. Packs are non-refundable once paid.',
+  // ⚠️ Quotes the app booking form's switch label WORD FOR WORD (orangish-app
+  // app/book-court/[slug]/GuestCourtBooking.tsx, "My court pack" since 2026-10-22): the
+  // instruction must name a button that exists.
+  alreadyHave: 'Already have a pack? Book a court and choose “My court pack” when you pay.',
+  notOnSale: "Court packs aren't on sale online right now.",
+  // 2026-10-25: the box under the form (howToUsePack, below).
+  howToTitle: 'How to use your pack',
+  termsTitle: 'Court pack terms',
+  /**
+   * The line under /court-packs/terms's title, 2026-10-25 (site review, low): "Version
+   * 2026-10-22-1". The page is "the version their pack records" (its header) but never said
+   * which version it was, so a buyer — or the desk, on the phone — could not match the page
+   * to the version a purchase stored. The version is the platform's (view.ts toOffers), as
+   * text.
+   */
+  termsVersion: (version: string) => `Version ${version}`,
+  /** /court-packs/terms when the platform is off, down or unconfigured. */
+  termsUnavailable: (phone: string = FALLBACK_PHONE) =>
+    `We can't show the court pack terms right now. Try again in a minute, or call ${phone}.`,
+  // /my-bookings/pack/ready (design §8.2).
+  readyTitle: 'Your court pack is ready',
+  rowPack: 'Pack',
+  rowCredits: 'Credits',
+  rowValid: 'Valid',
+  rowPaid: 'Paid',
+  rowEmail: 'Email',
+  bookFirst: 'Book your first game',
+  receiptNote: "We've emailed your receipt with a Book with my pack button — tap it on this phone within an hour and you won't need a code here for 90 days.",
+  pendingTitle: 'Payment received — setting up your pack…',
+} as const
+
+/**
+ * The buttons and headings "How to use your pack" sends a guest to, each WORD FOR WORD from
+ * the screen it is on — checked by grep on 2026-10-25. An instruction that names a button the
+ * guest cannot find is worse than none, so a rename on any of these screens changes this too.
+ *
+ * siteBook: Aniket's wording (2026-10-25) said "choose Book a court", but every booking button
+ * on this site — the Hero's, the Nav's and the Footer's — has read "Book a court or lane" since
+ * 2026-10-13 (Hero.tsx RECREATION). The guest looks for what is on the screen.
+ */
+export const PACK_HOWTO_LABELS = {
+  // This site's booking button (Hero.tsx, Nav.tsx, Footer.tsx).
+  siteBook: 'Book a court or lane',
+  // The receipt's button: orangish-app lib/court-pack-purchase-email.ts (receiptNote names it too).
+  receiptBook: 'Book with my pack',
+  // The app booking form's pay switch, and the button it gives in pack mode: orangish-app
+  // app/book-court/[slug]/GuestCourtBooking.tsx (the switch shows while court_packs_public is
+  // on, which is also what puts a pack on sale here).
+  payWith: 'How do you want to pay?',
+  myPack: 'My court pack',
+  continueWithPack: 'Continue with my court pack',
+  // A row's button on /my-bookings, pack rows included (BookingRow.tsx).
+  cancel: COPY.cancelButton,
+} as const
+
+type HowToOffer = Pick<OfferView, 'sport' | 'name' | 'credits' | 'windowDays' | 'unusedMonths'>
+
+/** ["a", "b", "c"] → "a, b and c". */
+function andList(xs: string[]): string {
+  return xs.length <= 1 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`
+}
+
+/**
+ * "How to use your pack" on /court-packs: five steps and one line of rules, 2026-10-25. Aniket
+ * asked for it, and approved the steps in substance the same day. A buyer has never seen the
+ * booking form's pay switch, and until now the page said only "Already have a pack? Book a
+ * court…", one line for someone who already knows the way.
+ *
+ * NO NUMBER IS TYPED HERE, so the steps cannot drift from the product they describe:
+ *  - each pack's window and its unused expiry are the offers' own windowDays and unusedMonths
+ *    (court_pack_offers rows, changed on the platform with no deploy here);
+ *  - the cutoff is `hours`, DEFAULT_CUTOFF_HOURS (the platform's CP_SELF_CANCEL_CUTOFF_HOURS);
+ *  - the days a phone stays signed in are DEVICE_MAX_AGE_S, the most this site's device cookie
+ *    ever keeps (session.ts: the platform's expiry, capped at 90 days);
+ *  - the phone is the caller's — the page passes FALLBACK_PHONE, the one BuyForm defaults to.
+ *
+ * `offers` are EVERY offer on sale: the page shows this once, under the form, for all sports,
+ * not for the sport picked. So the units follow what is sold ("court or lane" while cricket
+ * is), and the rules name a window per SIZE ("A 5-pack is good for 60 days from your first game
+ * and a 10-pack for 120.") only while every sport sells that size with one window. If two
+ * sports' windows for a size ever differ, it names each offer instead, so the line is never
+ * true of one sport and false of the other.
+ */
+export function howToUsePack(
+  offers: HowToOffer[],
+  phone: string = FALLBACK_PHONE,
+  hours = DEFAULT_CUTOFF_HOURS,
+  rememberDays = Math.floor(DEVICE_MAX_AGE_S / 86_400),
+): { steps: string[]; rules: string } {
+  const L = PACK_HOWTO_LABELS
+  // "court"; "court or lane" while a cricket pack is on sale (a cricket booking is a lane).
+  const units = [...new Set(offers.map((o) => unitForSport(o.sport)))].sort()
+  const one = units.length > 0 ? units.join(' or ') : 'court'
+  const many = units.length > 0 ? units.map((u) => `${u}s`).join(' or ') : 'courts'
+  const steps = [
+    `Book: go to extonsports.com and choose “${L.siteBook}” — or tap “${L.receiptBook}” in your receipt email.`,
+    `Choose your sport, date, time, ${many} and hours (1 credit = 1 ${one} for 1 hour, whole hours only).`,
+    `Under “${L.payWith}” choose “${L.myPack}”, then “${L.continueWithPack}”.`,
+    `Confirm: the first time on a phone, we email you a 6‑digit code. After that, the phone is remembered for ${rememberDays} days.`,
+    `Need to cancel? At least ${hours} hours before, go to extonsports.com${MY_BOOKINGS_PATH} and press “${L.cancel}” — the credit goes back on your pack. Later than that, call ${phone}.`,
+  ]
+
+  const sizes = [...new Set(offers.map((o) => o.credits))].sort((a, b) => a - b)
+  const windowsOf = (c: number) => [...new Set(offers.filter((o) => o.credits === c).map((o) => o.windowDays))]
+  const perSize = sizes.every((c) => windowsOf(c).length === 1)
+  const firstGame = sizes.length === 0
+    ? []
+    : perSize
+      ? [`${andList(sizes.map((c, i) => {
+          const pack = aPack(c)
+          return i === 0
+            ? `${pack.charAt(0).toUpperCase()}${pack.slice(1)} is good for ${windowsOf(c)[0]} days from your first game`
+            : `${pack} for ${windowsOf(c)[0]}`
+        }))}.`]
+      : [`Each pack is good for its own number of days from your first game: ${offers.map((o) => `${o.name} ${o.windowDays}`).join(', ')}.`]
+  const windows = [...new Set(offers.map((o) => o.windowDays))].sort((a, b) => a - b)
+  const months = [...new Set(offers.map((o) => o.unusedMonths))].sort((a, b) => a - b)
+  const rules = [
+    ...firstGame,
+    ...(windows.length > 0 ? [`Book up to ${orList(windows)} days ahead.`] : []),
+    ...(months.length > 0
+      ? [`Unused packs expire ${orList(months)} ${months.length === 1 && months[0] === 1 ? 'month' : 'months'} after purchase.`]
+      : []),
+    'One sport per pack.',
+  ].join(' ')
+  return { steps, rules }
+}
+
+/** "1 credit", "2 credits". */
+export function creditsText(n: number): string {
+  return `${n} ${n === 1 ? 'credit' : 'credits'}`
+}
+
+/** "2 of 5". */
+export function ofLeft(left: number, total: number): string {
+  return `${left} of ${total}`
+}
+
+/** "court" or "lane" — a cricket booking is a lane (the platform's unitFor). */
+export function unitForSport(sport: string): 'court' | 'lane' {
+  return /cricket/i.test(sport) ? 'lane' : 'court'
+}
+
+function unitText(unit: 'court' | 'lane', n: number): string {
+  return n === 1 ? unit : `${unit}s`
+}
+
+const DAY = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+const DAY_YEAR = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+
+/**
+ * A club-local calendar date the platform sent as YYYY-MM-DD → "Nov 29" (or "Oct 20, 2027").
+ * Formatted at noon UTC in UTC, so no server or browser zone can move it a day. Not a date
+ * → null, and the sentence that needed it says less.
+ */
+export function dayText(ymd: string | null | undefined, withYear = false): string | null {
+  if (typeof ymd !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return null
+  const d = new Date(`${ymd}T12:00:00Z`)
+  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== ymd) return null
+  return (withYear ? DAY_YEAR : DAY).format(d)
+}
+
+const WEEKDAY = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'UTC' })
+
+/** Minutes after midnight → "6:00 PM"; 24:00 (a game ending at midnight) is "12:00 AM". */
+function clock12(minutes: number): string {
+  const m = ((minutes % 1440) + 1440) % 1440
+  const h = Math.floor(m / 60)
+  return `${h % 12 === 0 ? 12 : h % 12}:${String(m % 60).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`
+}
+
+/**
+ * The slot's time in the app booking form's own words — "6:00 PM–7:00 PM, Sun, Oct 25" —
+ * from the parked selection (club-local date, HH:MM, hours). Review UI-5, 2026-10-21: the
+ * guest read the form's wording one click earlier, and the platform's whenText
+ * ("Sun, Oct 25 · 6:00–7:00 PM") inside the summary made four '·'-separated parts in
+ * another order. Null for a selection that is not a real date, time and 1–12 hours.
+ */
+export function slotWhenText(sel: { date: string; startTime: string; hours: number }): string | null {
+  const day = dayText(sel.date)
+  const t = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(sel.startTime)
+  if (!day || !t || !Number.isInteger(sel.hours) || sel.hours < 1 || sel.hours > 12) return null
+  const start = Number(t[1]) * 60 + Number(t[2])
+  const weekday = WEEKDAY.format(new Date(`${sel.date}T12:00:00Z`))
+  return `${clock12(start)}–${clock12(start + sel.hours * 60)}, ${weekday}, ${day}`
+}
+
+/**
+ * The summary box (design §8.1): "1 badminton court, 6:00 PM–7:00 PM, Sun, Oct 18 · 1 credit ·
+ * By card $45.00". Shown before sign-in too — it describes the SLOT, never a pack. The time
+ * is built from `sel`, the slot this site parked and the platform priced (view.ts checks the
+ * answer is for its sport and credits); without one, the platform's own whenText.
+ *
+ * `card` false (2026-10-22: the date is past the card window, cardOpenOn) drops the
+ * "· By card $45.00" part — a price for something the guest cannot do on that date.
+ */
+export function slotSummary(
+  slot: QuoteSlot,
+  sel?: { date: string; startTime: string; hours: number },
+  card = true,
+): string {
+  const when = (sel && slotWhenText(sel)) ?? slot.whenText
+  const base = `${slot.courts} ${slot.sport.toLowerCase()} ${unitText(slot.unit, slot.courts)}, ${when} · ${creditsText(slot.credits)}`
+  return card ? `${base} · By card ${money(slot.cardTotalCents)}` : base
+}
+
+/** "This hour is $45.00 by card — your pack saves you $5.00." — only when it does save. */
+export function savesLine(slot: QuoteSlot): string | null {
+  if (!(slot.savesCents > 0)) return null
+  const what = slot.credits === 1 ? 'This hour' : 'This booking'
+  return `${what} is ${money(slot.cardTotalCents)} by card — your pack saves you ${money(slot.savesCents)}.`
+}
+
+/** "Book · use 1 credit". */
+export function bookButton(credits: number): string {
+  return `Book · use ${creditsText(credits)}`
+}
+
+/** "Booking as a•••@example.com on this phone" — followed by PACK_COPY.notYou. */
+export function bookingAs(masked: string): string {
+  return `Booking as ${masked} on this phone`
+}
+
+/**
+ * A pack's state in one line (design §8.1 and §8.3):
+ *   started      "3 of 5 left · valid until Dec 17 (60 days from your first game on Oct 18)"
+ *   provisional  "3 of 5 left · Your 60 days start at your first game — Oct 25 if you play as booked"
+ *   not_started  "5 of 5 left · Your 60 days start when you first play"
+ * The clock sentence is the platform's (cp_window, the one implementation of the rule), and
+ * so is its number of days: each pack's own window, 60 for a 5-pack and 120 for a 10-pack
+ * (2026-10-22) — "7 of 10 left · valid until Feb 15 (120 days from your first game on Oct
+ * 18)". Nothing here knows a window length.
+ */
+export function packLine(p: {
+  creditsLeft: number
+  creditsTotal: number
+  clock: PackClock
+  validUntilText: string | null
+  clockText: string | null
+}): string {
+  const left = `${ofLeft(p.creditsLeft, p.creditsTotal)} left`
+  if (p.clock === 'started' && p.validUntilText) {
+    return `${left} · valid until ${p.validUntilText}${p.clockText ? ` (${p.clockText})` : ''}`
+  }
+  return p.clockText ? `${left} · ${p.clockText}` : left
+}
+
+/** A pack that can no longer take a booking, said plainly — or null for a usable one. */
+export function packStatusText(p: { status: PackStatus; creditsTotal: number; validUntilText: string | null }): string | null {
+  switch (p.status) {
+    case 'expired':
+      return p.validUntilText ? `Expired on ${p.validUntilText}.` : 'Expired.'
+    case 'used_up':
+      return `All ${p.creditsTotal} credits used.`
+    case 'all_booked':
+      return `All ${p.creditsTotal} credits booked.`
+    case 'refunded':
+    case 'disputed':
+      // Aniket, 2026-10-20: a refunded or disputed pack closes; games already booked stand.
+      return "This pack is closed. Games you've already booked still stand."
+    default:
+      return null
+  }
+}
+
+/** "Played Thu, Oct 15, 7:00 PM–8:00 PM · 1 credit" — a pack card's recent use. */
+export function packUseLine(u: PackUseView): string {
+  const verb = u.use === 'upcoming' ? 'Upcoming' : u.use === 'played' ? 'Played' : 'Returned'
+  return `${verb} ${u.whenText} · ${creditsText(u.credits)}`
+}
+
+/** "Pay by card $45.00". */
+export function payByCard(cents: number): string {
+  return `Pay by card ${money(cents)}`
+}
+
+/**
+ * "Buy a badminton court pack" — the size is chosen on the buy page (2026-10-22: two sizes,
+ * so the button names the product, not one of them). Only ever shown for a sport the club
+ * sells packs for (lib/booking.ts packBuyUrl): never "Buy a squash court pack".
+ */
+export function buySportPack(sport: string): string {
+  return `Buy a ${sport.toLowerCase()} court pack`
+}
+
+/** Context a refusal sentence needs that the refusal itself does not carry. */
+export type RefusalContext = {
+  sport: string // the slot's sport, "Badminton"
+  unit: 'court' | 'lane'
+  need: number // the slot's credits
+  email: string | null // masked
+  phone: string
+  date: string // the booking's date, YYYY-MM-DD
+  today: string // club-local today, YYYY-MM-DD (lib/opening.ts clubDate)
+  // 2026-10-22: whether the page offers "Pay by card" for this date (cardOpenOn). false drops
+  // the ", or pay by card" clauses: past the card window the way on is another time, and the
+  // page shows "Pick another time" instead of the card link. Only false drops them.
+  card: boolean
+}
+
+function sportList(sports: string[]): string {
+  const s = sports.map((x) => x.toLowerCase())
+  return s.length <= 1 ? (s[0] ?? 'another sport') : `${s.slice(0, -1).join(', ')} and ${s[s.length - 1]}`
+}
+
+/**
+ * Why no pack can pay for this slot (design §8.1), AFTER sign-in. One sentence per reason;
+ * a detail that did not arrive makes the sentence shorter, never wrong.
+ *
+ * too_many_credits, 2026-10-22: with a 10-pack on sale, "a pack has 5" was no longer true of
+ * packs in general. The platform's maxCredits is the largest pack of this sport THIS guest
+ * holds (one booking draws from one pack, never two — Aniket), so the sentence says so, in
+ * that pack's real size: "…and your largest badminton pack holds 5 credits."
+ */
+export function refusalText(r: PackRefusalView, ctx: RefusalContext): string {
+  const sport = ctx.sport.toLowerCase()
+  const need = r.need ?? ctx.need
+  const units = unitText(ctx.unit, 2)
+  const on = dayText(ctx.date)
+  // 2026-10-22: no card past the card window (RefusalContext.card), so no "or pay by card".
+  const orCard = ctx.card === false ? '' : ', or pay by card'
+  switch (r.reason) {
+    case 'no_pack':
+      return `There's no court pack on ${ctx.email ?? 'this email'}.`
+    case 'wrong_sport': {
+      const many = r.sports.length > 1
+      return `Your court pack${many ? 's are' : ' is'} for ${sportList(r.sports)}, and this is a ${sport} ${ctx.unit}. A pack covers one sport.`
+    }
+    case 'too_many_credits':
+      return r.maxCredits !== null
+        ? `This booking needs ${creditsText(need)} and your largest ${sport} pack holds ${creditsText(r.maxCredits)}. Book fewer ${units} or hours${orCard}.`
+        : `This booking needs ${creditsText(need)}, more than one ${sport} pack holds. Book fewer ${units} or hours${orCard}.`
+    case 'not_enough_credits': {
+      if (r.creditsLeft === null) {
+        return `This booking needs ${creditsText(need)} and your ${sport} pack doesn't have enough left. Book fewer ${units} or hours${orCard}.`
+      }
+      const fix = r.creditsLeft === 1 ? `Book 1 ${ctx.unit} for 1 hour` : `Book fewer ${units} or hours`
+      return `This booking needs ${creditsText(need)} and your ${sport} pack has ${r.creditsLeft} left. ${fix}${orCard}.`
+    }
+    case 'too_far_ahead':
+      // 2026-10-22 (Aniket: pack bookings up to 60 days ahead for a 5-pack, 120 for a
+      // 10-pack): the slot is past the furthest any of the guest's usable packs can book.
+      // maxDays is the platform's — the largest horizon among those packs — never a guess.
+      return r.maxDays !== null
+        ? `You can book up to ${r.maxDays} days ahead with your court pack. Pick an earlier date.`
+        : "You can't book that far ahead with your court pack. Pick an earlier date."
+    case 'outside_window': {
+      const lo = dayText(r.lo)
+      const hi = dayText(r.hi)
+      const tail = on ? `, and this booking is on ${on}.` : '.'
+      if (lo && hi && r.lo && r.lo > ctx.today) return `Your ${sport} pack can be used from ${lo} to ${hi}${tail}`
+      if (hi) return `Your ${sport} pack is valid until ${hi}${tail}`
+      return `Your ${sport} pack can't be used on that date. Pick another time${orCard}.`
+    }
+    case 'expired': {
+      const hi = dayText(r.hi)
+      return hi ? `Your ${sport} court pack expired on ${hi}.` : `Your ${sport} court pack has expired.`
+    }
+    case 'used_up':
+      return `All ${r.creditsTotal ?? 'the'} credits on your ${sport} pack are used.`
+    case 'all_booked':
+      return `All ${r.creditsTotal ?? 'the'} credits on your ${sport} pack are booked.`
+    case 'closed':
+      return `This pack can't be used for new bookings. Questions? Call ${ctx.phone}.`
+  }
+}
+
+/** "We've emailed your confirmation and how to get in to a•••@example.com." */
+export function bookedLead(masked: string | null): string {
+  return masked
+    ? `We've emailed your confirmation and how to get in to ${masked}.`
+    : "We've emailed your confirmation and how to get in."
+}
+
+/** "Badminton 5-pack · 1 credit". */
+export function bookedPaidWith(packName: string, credits: number): string {
+  return `${packName} · ${creditsText(credits)}`
+}
+
+/**
+ * What the pack page says after Book, for every outcome but booked/already (which show
+ * the booked screen) and the pack refusals (refusalText). 'unknown' sends the guest to
+ * the /my-bookings page, where a booking that did land is listed; it never says "nothing
+ * changed".
+ *
+ * 'unknown', 2026-10-25 (site review, low): it said "Reload My bookings in a minute", but
+ * that page has been "Manage or cancel a booking" since the 2026-10-22 review fixes (COPY.title)
+ * and "My bookings" now names only the home page's popup button — a different thing, which
+ * emails a list. PackConfirm's button under this sentence is labelled COPY.title, so the
+ * sentence is built from COPY.title too: rename the page and both follow, never one alone.
+ *
+ * `card` false (2026-10-22: the date is past the card window, cardOpenOn) leaves out "or pay
+ * by card" / "You can still pay by card." — the page shows no card link for that date.
+ */
+export function bookMessage(v: BookView, phone: string = FALLBACK_PHONE, card = true): string {
+  switch (v.status) {
+    case 'booked':
+    case 'already':
+      return PACK_COPY.bookedTitle
+    case 'taken':
+      return 'That time was just taken — pick another time.'
+    case 'started':
+      return 'That time has already started — pick another time.'
+    case 'no_rate':
+    case 'club_closed_hours':
+      return `That time can't be booked online. Pick another time, or call ${phone}.`
+    case 'changed':
+    case 'credits_changed':
+      return 'This booking changed while you were looking. Check it and press Book again.'
+    case 'terms_required':
+      return 'Tick the box to agree to the terms first.'
+    case 'terms_changed':
+      return 'The terms have just changed. Read them and tick the box again.'
+    case 'bad_phone':
+      return 'Check the phone number, or leave it blank.'
+    case 'signed_out':
+      return "This phone is signed out. Enter your email and we'll send you a code."
+    case 'off':
+      return card
+        ? "Booking with a court pack isn't available right now. You can still pay by card."
+        : "Booking with a court pack isn't available right now."
+    case 'slow_down':
+      return COPY.tooMany
+    case 'try_again':
+      return card
+        ? "That didn't go through, and nothing has changed. Try again in a moment, or pay by card."
+        : "That didn't go through, and nothing has changed. Try again in a moment."
+    case 'unknown':
+      return `We couldn't confirm that. Open “${COPY.title}” in a minute to check.`
+    default:
+      // A pack refusal: the page renders refusalText with the slot's context instead.
+      return card ? "This pack can't pay for that booking. You can still pay by card." : "This pack can't pay for that booking."
+  }
+}
+
+/** A pack row's paid line: "Paid with Badminton 5-pack · 1 credit". */
+export function rowPaidWithPack(packName: string, credits: number): string {
+  return `Paid with ${packName} · ${creditsText(credits)}`
+}
+
+/** A pack row's cancel line, while self-cancel is open: "…to get the credit(s) back." */
+export function rowPackCancelBy(cancelByText: string, credits = 1): string {
+  return `Cancel by ${cancelByText} to get the ${creditWord(credits)} back.`
+}
+
+/** A pack row inside the cutoff (design §8.3): "Under 24 hours — call 484-252-2523". */
+export function rowPackTooLate(phone: string, hours = DEFAULT_CUTOFF_HOURS): string {
+  return `Under ${hours} hours — call ${phone}`
+}
+
+/**
+ * A cancelled pack row (design §8.3): "Cancelled · credit returned", or "Cancelled by the
+ * club — credit returned" for a desk cancel. "credits" when the booking used several.
+ */
+export function rowPackCancelled(by: 'you' | 'club' | null, creditsReturned: number | null): string {
+  const what = creditsReturned !== null && creditsReturned > 1 ? 'credits returned' : 'credit returned'
+  return by === 'club' ? `Cancelled by the club — ${what}` : `Cancelled · ${what}`
+}
+
+/**
+ * The cancel sheet for a pack row (cancel.html step 2, design §8.3). A booking of several
+ * courts (or lanes) or hours reads in the plural — "You get back 4 credits. The courts go
+ * back on sale straight away. Your credits keep your pack's date: …" — since a series is
+ * cancelled whole (owner, 2026-10-18).
+ */
+export function packConfirmText(
+  credits: number,
+  validUntilText: string | null,
+  courts = 1,
+  unit: 'court' | 'lane' = 'court',
+): string {
+  const goes = `The ${unitText(unit, courts)} ${courts === 1 ? 'goes' : 'go'} back on sale straight away.`
+  const keeps = validUntilText
+    ? ` Your ${credits === 1 ? 'credit keeps' : 'credits keep'} your pack's date: valid until ${validUntilText}.`
+    : ''
+  return `Cancel this booking? You get back ${creditsText(credits)}. ${goes}${keeps}`
+}
+
+/**
+ * A pack cancel's outcome: "Cancelled. Credit is back. Badminton 5-pack 3 of 5 left · valid until Nov 29."
+ *
+ * 2026-10-21 (orangish-app review F5 / R8, the platform's pack.closed and pack.firstGameByText):
+ *  - a CLOSED pack (refunded or disputed) gets its own sentence and never "Credit is back" —
+ *    the booking is cancelled but nothing can be booked from that pack again:
+ *    "Cancelled. Your Badminton 5-pack is closed, so there's no credit to use.";
+ *  - a pack whose 60 days (120 for a 10-pack, 2026-10-22) have not started says when to play a first game by, never "valid
+ *    until" — its date is a year out and read as a year to use the credits:
+ *    "… Badminton 5-pack 5 of 5 left · play your first game by Oct 21, 2027."
+ */
+export function packCancelledMessage(view: CancelView): string {
+  const p = view.pack
+  if (p?.closed) {
+    const lead = view.status === 'already_cancelled' ? 'Already cancelled.' : 'Cancelled.'
+    return `${lead} Your ${p.name} is closed, so there's no credit to use.`
+  }
+  const when = p?.validUntilText
+    ? ` · valid until ${p.validUntilText}`
+    : p?.firstGameByText ? ` · play your first game by ${p.firstGameByText}` : ''
+  const line = p ? ` ${p.name} ${ofLeft(p.creditsLeft, p.creditsTotal)} left${when}.` : ''
+  const many = view.creditsReturned !== undefined && view.creditsReturned > 1
+  if (view.status === 'already_cancelled') {
+    return `Already cancelled. The ${many ? 'credits are' : 'credit is'} back on your pack.${line}`
+  }
+  return `Cancelled. ${many ? 'Credits are back.' : 'Credit is back.'}${line}`
+}
+
+/* ── buying (design §8.2) ─────────────────────────────────────────────────────────── */
+
+/** "Per hour $40.00 — peak hours are $45.00 by card" (the card part only when it is dearer). */
+export function perHourLine(o: Pick<OfferView, 'perHourCents' | 'cardPeakCents'>): string {
+  const base = `Per hour ${money(o.perHourCents)}`
+  return o.cardPeakCents !== null && o.cardPeakCents > o.perHourCents
+    ? `${base} — peak hours are ${money(o.cardPeakCents)} by card`
+    : base
+}
+
+/**
+ * "What you get", in order (design §8.2) — for ONE offer, from its own numbers. 2026-10-22:
+ * the window and the unused expiry are the offer's (a 5-pack's 60 days, a 10-pack's 120),
+ * no longer one page-wide number that would have told a 10-pack buyer "60 days".
+ */
+export function whatYouGet(o: Pick<OfferView, 'credits' | 'sport' | 'windowDays' | 'unusedMonths'>): string[] {
+  const unit = unitForSport(o.sport)
+  return [
+    `${o.credits} bookings of one ${unit} for one hour. Two ${unit}s, or two hours, use two.`,
+    "Any hour we're open — peak included.",
+    `Use within ${o.windowDays} days of your first game. The clock doesn't start until you play.`,
+    `Unused, a pack expires ${o.unusedMonths} months after purchase.`,
+    `Cancel up to ${DEFAULT_CUTOFF_HOURS} hours before and the credit comes back.`,
+    'No password: book with your email and a code we send you.',
+  ]
+}
+
+/**
+ * A sport tile's price (2026-10-22): the one price when the sport has one size, "from
+ * $200.00" when it has several — the sizes and their prices are the row below it.
+ */
+export function sportTilePrice(prices: number[]): string {
+  if (prices.length === 0) return ''
+  const low = Math.min(...prices)
+  return prices.length === 1 ? money(low) : `from ${money(low)}`
+}
+
+/**
+ * A size tile, top to bottom: "10 credits", "$350.00", "$35.00 an hour" (2026-10-22), and how
+ * far ahead that pack books, "Books 120 days ahead" — the offer's own windowDays (Aniket,
+ * 2026-10-22: "let's make the pack bookings upto 60 days for 5 pack and 120 days for 10
+ * pack.."), so a size whose window changes on the platform says so with no deploy here. Kept to
+ * one short line: two tiles share a 375 px phone's row.
+ */
+export function sizeTile(
+  o: Pick<OfferView, 'credits' | 'priceCents' | 'perHourCents' | 'windowDays'>,
+): [string, string, string, string] {
+  return [creditsText(o.credits), money(o.priceCents), `${money(o.perHourCents)} an hour`, `Books ${o.windowDays} days ahead`]
+}
+
+/** "a 5-pack", "an 8-pack", "an 11-pack", "an 18-pack". */
+function aPack(credits: number): string {
+  return `${/^(8|11|18)$/.test(String(credits)) ? 'an' : 'a'} ${credits}-pack`
+}
+
+/** [60, 120] → "60 or 120"; [60, 90, 120] → "60, 90 or 120". */
+function orList(xs: (string | number)[]): string {
+  const s = xs.map(String)
+  return s.length <= 1 ? (s[0] ?? '') : `${s.slice(0, -1).join(', ')} or ${s[s.length - 1]}`
+}
+
+/**
+ * The "Booking and changes" box on /court-packs (2026-10-22). Aniket: "let's make the pack
+ * bookings upto 60 days for 5 pack and 120 days for 10 pack.. cancel and re-booking is fine."
+ * In order:
+ *   Book up to 60 days ahead with a 5-pack, or 120 with a 10-pack (card bookings open 30 days ahead).
+ *   Every game must fall within your pack's 60 or 120 days from your first game.
+ *   To change a booking, cancel it and book again.
+ *   Cancel online up to 24 hours before and the credit goes back on your pack.
+ *   Inside 24 hours, the desk can help: call 484-252-2523.
+ *   A no-show uses the credit.
+ *   A credit that comes back keeps your pack's dates.
+ *
+ * `sizes` are ONE sport's offers, smallest first (BuyForm passes the chosen sport's), so every
+ * number in the first two lines is an offer's own windowDays — a size the platform switches
+ * off, or a window it changes, changes the box with no deploy. Sizes that share one window say
+ * it once ("…with a court pack"). There is no "change" button: a change is a cancel and a new
+ * booking (Aniket, 2026-10-22). The last line is the approved terms' own rule (2026-10-22-1:
+ * "A credit returned to the pack keeps the pack's dates"), in the box's words.
+ */
+export function bookingAndChanges(
+  sizes: Pick<OfferView, 'credits' | 'windowDays'>[],
+  phone: string = FALLBACK_PHONE,
+  cardDays = CARD_WINDOW_DAYS,
+  hours = DEFAULT_CUTOFF_HOURS,
+): string[] {
+  const windows = [...new Set(sizes.map((o) => o.windowDays))].sort((a, b) => a - b)
+  // One window for every size: say it once. Otherwise each size with its own, in order:
+  // "60 days ahead with a 5-pack, or 120 with a 10-pack".
+  const parts = windows.length === 1
+    ? [`${windows[0]} days ahead with ${sizes.length === 1 ? aPack(sizes[0].credits) : 'a court pack'}`]
+    : sizes.map((o, i) => `${o.windowDays}${i === 0 ? ' days ahead' : ''} with ${aPack(o.credits)}`)
+  const listed = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(', ')}, or ${parts[parts.length - 1]}`
+  const ahead = `Book up to ${listed} (card bookings open ${cardDays} days ahead).`
+  return [
+    ...(windows.length > 0
+      ? [ahead, `Every game must fall within your pack's ${orList(windows)} days from your first game.`]
+      : []),
+    'To change a booking, cancel it and book again.',
+    `Cancel online up to ${hours} hours before and the credit goes back on your pack.`,
+    `Inside ${hours} hours, the desk can help: call ${phone}.`,
+    'A no-show uses the credit.',
+    "A credit that comes back keeps your pack's dates.",
+  ]
+}
+
+/**
+ * The buy page reached with a ?sport= the club sells no pack for (2026-10-22: squash, since
+ * Aniket stopped squash packs): no tile is picked for the guest — quietly switching them to
+ * another sport could sell a badminton pack to a squash player — and this says what IS
+ * sold, from the offers themselves: "Court packs are for badminton and cricket."
+ */
+export function packSportsLine(sports: string[]): string {
+  return `Court packs are for ${sportList(sports)}.`
+}
+
+/** "Pay $200.00". */
+export function payButton(cents: number): string {
+  return `Pay ${money(cents)}`
+}
+
+/** Why Pay did not open Stripe. Nothing was charged in any of these. */
+export function checkoutMessage(
+  error:
+    | 'bad_email' | 'terms_required' | 'terms_changed' | 'bad_sport' | 'bad_size' | 'club_not_payable' | 'off'
+    | 'slow_down' | 'try_again',
+  phone: string = FALLBACK_PHONE,
+): string {
+  switch (error) {
+    case 'bad_email':
+      return COPY.badEmail
+    case 'terms_required':
+      return 'Tick the box to agree to the court pack terms.'
+    case 'terms_changed':
+      // 2026-10-25 (site review, low): it said "Read them and tick the box again", but the
+      // form sends the terms version the PAGE loaded, so a re-tick re-sends the old version
+      // and is refused again, for ever. Only a reload fetches the new terms and their
+      // version; BuyForm shows a Reload button in place of Pay and clears the tick.
+      return 'The court pack terms have just changed. Reload the page to read the new terms, then tick the box again.'
+    case 'bad_sport':
+      return 'Choose a sport.'
+    case 'bad_size':
+      // 2026-10-22: the platform's 400 bad_size — the size sent is not an active offer of
+      // that sport (one switched off since the page loaded, most likely). Nothing charged.
+      return "That pack isn't on sale right now. Reload the page and choose again."
+    case 'club_not_payable':
+    case 'off':
+      return `Court packs can't be bought online right now. Please call ${phone}.`
+    case 'slow_down':
+      return COPY.tooMany
+    default:
+      return `That didn't go through, and you haven't been charged. Try again in a minute, or call ${phone}.`
+  }
+}
+
+/** "60 days from your first game" — the ready screen's Valid row; "120 days…" for a 10-pack. */
+export function validWindowText(windowDays: number): string {
+  return `${windowDays} days from your first game`
+}
+
+/** "$200.00 by card". */
+export function paidByCard(cents: number): string {
+  return `${money(cents)} by card`
+}
+
+/** The ready page after 30 seconds of "setting up" (design §8.2). */
+export function purchasePendingLate(masked: string | null, phone: string = FALLBACK_PHONE): string {
+  return `Your receipt is on its way${masked ? ` to ${masked}` : ''}. Not there in 10 minutes? Call ${phone}.`
+}
+
+/** The ready page when the platform cannot match the Checkout (state 'unknown', or a bad ?cs=). */
+export function purchaseUnknown(phone: string = FALLBACK_PHONE): string {
+  return `We can't find that payment yet. If you paid, your receipt is on its way. Questions? Call ${phone}.`
 }

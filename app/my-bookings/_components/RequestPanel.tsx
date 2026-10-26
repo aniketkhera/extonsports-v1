@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { COPY, FALLBACK_PHONE, otherBookings, platformDown } from "@/lib/my-bookings/copy";
-import { BOOKING_LIST_EMAIL_LIVE } from "@/lib/booking";
+import Link from "next/link";
+import { COPY, FALLBACK_PHONE, PACK_SIGNIN, otherBookings, platformDown } from "@/lib/my-bookings/copy";
+import { BOOKING_LIST_EMAIL_LIVE, PACKS_LIVE } from "@/lib/booking";
+import type { NextPath } from "@/lib/my-bookings/session";
 import CodeForm from "./CodeForm";
 import PhoneText from "./PhoneText";
 import { BTN_PRIMARY, BTN_TEXT, ERROR, INPUT, LABEL, postJson } from "./ui";
@@ -28,13 +30,40 @@ import { BTN_PRIMARY, BTN_TEXT, ERROR, INPUT, LABEL, postJson } from "./ui";
    change or remove it. Its link goes to the home page's rates and booking panel, where
    that button is, in the same tab, like the empty list's "Book a court or lane": a plain
    link. The popup is never mounted here, so this path still makes no browser call to the
-   platform. */
+   platform.
+
+   The pack variant, 2026-10-21 (court pack, orangish-app docs/court-packs.md §8.1): on
+   /my-bookings/pack the same panel asks for the email with PACK_SIGNIN's words ("Send me
+   a code"), and after Send says PACK_SIGNIN.sent — still ONE sentence for every address,
+   on the same /api/my-bookings/request and the same 202 behind it — then "Nothing
+   arriving? Check the address, or buy a court pack." The buy link comes in as `buyHref`,
+   which the page sets only while PACKS_LIVE is on (the buy page deploys unlinked) and, since
+   2026-10-22, only for a sport with a pack on sale (no squash); without it the sentence
+   stops at "Check the address." `next` is handed on to CodeForm, which checks it against
+   the allow-list where it navigates. Merged onto master's `step` structure 2026-10-25: the
+   members line at the foot shows in the pack variant too, as in every state.
+
+   The list's sentence names a court pack (COPY.sentWithPack) only while PACKS_LIVE is on
+   (review R10, 2026-10-21): the site deploys with no pack on sale, and the platform's own
+   sign-in email names packs only once court_packs_public is on. */
 const HOME_PANEL = "/#top";
 
-export default function RequestPanel({ note }: { note?: string }) {
+export default function RequestPanel({
+  note,
+  next,
+  variant = "list",
+  buyHref = null,
+}: {
+  note?: string;
+  next?: NextPath;
+  variant?: "list" | "pack";
+  buyHref?: string | null;
+}) {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "sent" | "code">("idle");
   const [error, setError] = useState("");
+  const pack = variant === "pack";
+  const sendNew = pack ? PACK_SIGNIN.sendNewCode : COPY.sendNew;
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -68,10 +97,26 @@ export default function RequestPanel({ note }: { note?: string }) {
     step = (
       <>
         <p className="text-white/80 text-[1rem] leading-relaxed" role="status">
-          {COPY.sent}
+          {pack ? PACK_SIGNIN.sent : PACKS_LIVE ? COPY.sentWithPack : COPY.sent}
         </p>
+        {pack && (
+          <p className="text-white/65 text-[0.95rem] leading-relaxed mt-2">
+            {buyHref ? (
+              <>
+                {PACK_SIGNIN.nothingArriving}{" "}
+                <Link href={buyHref} className="underline underline-offset-4 text-[var(--ember-ink)]">
+                  {PACK_SIGNIN.buyLink}
+                </Link>
+                .
+              </>
+            ) : (
+              PACK_SIGNIN.nothingArrivingNoBuy
+            )}
+          </p>
+        )}
         <div className="mt-6">
-          <CodeForm email={email} />
+          {pack && <p className="text-white/65 text-[0.98rem] leading-relaxed mb-4">{PACK_SIGNIN.codeLead}</p>}
+          <CodeForm email={email} next={next} variant={variant} />
         </div>
         <button
           type="button"
@@ -81,17 +126,17 @@ export default function RequestPanel({ note }: { note?: string }) {
             setError("");
           }}
         >
-          {COPY.sendNew}
+          {sendNew}
         </button>
       </>
     );
   } else if (state === "code") {
     step = (
       <>
-        <p className="text-white/65 text-[0.98rem] leading-relaxed mb-6">{COPY.codeLead}</p>
-        <CodeForm />
+        <p className="text-white/65 text-[0.98rem] leading-relaxed mb-6">{pack ? PACK_SIGNIN.codeLead : COPY.codeLead}</p>
+        <CodeForm next={next} variant={variant} />
         <button type="button" className={`${BTN_TEXT} mt-6`} onClick={() => setState("idle")}>
-          {COPY.sendNew}
+          {sendNew}
         </button>
       </>
     );
@@ -103,14 +148,16 @@ export default function RequestPanel({ note }: { note?: string }) {
             {note}
           </p>
         )}
-        {!note && <p className="text-white/65 text-[0.98rem] leading-relaxed mb-6">{COPY.lead}</p>}
+        {!note && (
+          <p className="text-white/65 text-[0.98rem] leading-relaxed mb-6">{pack ? PACK_SIGNIN.emailLead : COPY.lead}</p>
+        )}
 
         <form onSubmit={submit} noValidate className={note ? "mt-6" : undefined}>
           {/* Honeypot — hidden from people, filled by bots (the BadmintonEnquiry pattern). */}
           <input type="text" name="company" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
 
           <label htmlFor="mb-email" className={LABEL}>
-            {COPY.emailLabel}
+            {pack ? PACK_SIGNIN.emailLabel : COPY.emailLabel}
           </label>
           <input
             id="mb-email"
@@ -134,7 +181,13 @@ export default function RequestPanel({ note }: { note?: string }) {
 
           <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-4">
             <button type="submit" className={BTN_PRIMARY} disabled={state === "sending"}>
-              {state === "sending" ? COPY.sending : COPY.sendButton}
+              {state === "sending"
+                ? pack
+                  ? PACK_SIGNIN.sending
+                  : COPY.sending
+                : pack
+                  ? PACK_SIGNIN.sendCode
+                  : COPY.sendButton}
             </button>
             <button
               type="button"

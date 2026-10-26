@@ -31,9 +31,19 @@
 //     Vercel with a trailing newline would otherwise never match).
 //
 // cache:'no-store' everywhere, never `revalidate` — every answer here is one person's.
+//
+// THE COURT PACK (2026-10-21, orangish-app docs/court-packs.md §4, §6.2) adds five
+// relays at the end of this file — packOffers, packCheckout, packPurchase, packQuote,
+// packBook — under the same rules: the relay secret and the visitor's IP on every call,
+// no call at all without the secret, the device token only as a bearer and only where a
+// device acts (quote, when there is one, and book), and every answer through ./view.ts.
 
-import { TOKEN_RE } from './session'
-import { toCancelView, toView, type CancelView, type ListView, type RedeemRefusal } from './view'
+import { CHECKOUT_SESSION_RE, REQUEST_KEY_RE, TOKEN_RE, parsePackSelection, type PackSelection } from './session'
+import {
+  toBooked, toCancelView, toOffers, toPurchase, toQuote, toView,
+  type BookView, type CancelView, type ListView, type OffersView, type PurchaseView, type QuoteView,
+  type RedeemRefusal,
+} from './view'
 
 const API_BASE = (process.env.ORANGISH_API_BASE || 'https://app.orangish.io').replace(/\/$/, '')
 // The platform's locations.slug for Exton — NOT a town name (exton-sports). A wrong slug
@@ -219,5 +229,222 @@ export async function signOut(token: string, ip: string): Promise<void> {
     await post(secret, ip, '/api/public/guest-access/sign-out', {}, 5_000, token)
   } catch {
     /* the cookie is already gone; an unrevoked row expires on its own */
+  }
+}
+
+/* ══ THE COURT PACK (2026-10-21) ═════════════════════════════════════════════════════
+   Five relays, one per platform endpoint. Each one: no secret → no call and the "platform
+   down" answer; anything that is not a clean, allow-listed answer → that same answer,
+   except packBook, whose doubt is 'unknown' (./view.ts toBooked). Inputs are re-checked
+   here even though the calling route checked them: this module is the last place a
+   malformed value could still be kept off the wire. */
+
+/** The 'off' answer is the platform's 404 not_available: its flag is off for this club. */
+export type OffersResult = { kind: 'ok'; view: OffersView } | { kind: 'off' } | { kind: 'unavailable' }
+
+/**
+ * What each court pack costs — per sport AND size since 2026-10-22, each offer with its own
+ * window — and the court pack terms (design §4). The public variant answers 404 unless
+ * court_packs_public is on; `desk: true` asks for the variant that needs only court_packs —
+ * for /court-packs/terms, which a DESK sale's Checkout links to ("By paying you agree to the
+ * court pack terms: www.extonsports.com/court-packs/terms") before any public sale exists.
+ * 5 s, like the list: a page waits on it.
+ */
+export async function packOffers(ip: string, opts: { desk?: boolean } = {}): Promise<OffersResult> {
+  const secret = relaySecret()
+  if (!secret) return { kind: 'unavailable' }
+  const q = new URLSearchParams({ club: CLUB })
+  if (opts.desk) q.set('desk', '1')
+  try {
+    const res = await fetch(`${API_BASE}/api/public/court-packs/offers?${q}`, {
+      headers: headersFor(secret, ip),
+      cache: 'no-store',
+      signal: AbortSignal.timeout(5_000),
+    })
+    if (res.status === 404) return { kind: 'off' }
+    if (res.status !== 200) return { kind: 'unavailable' }
+    const view = toOffers(await jsonOf(res))
+    return view ? { kind: 'ok', view } : { kind: 'unavailable' }
+  } catch {
+    return { kind: 'unavailable' }
+  }
+}
+
+// bad_size, 2026-10-22: the platform's 400 for a size that is not an active offer of the
+// sport (orangish-app app/api/public/court-packs/checkout, "credits must be 5 or 10 and
+// must match an active offer"), and this site's own for a size that is not a whole number.
+export type CheckoutError =
+  | 'bad_email' | 'terms_required' | 'terms_changed' | 'bad_sport' | 'bad_size' | 'club_not_payable'
+  | 'off' | 'slow_down' | 'try_again'
+export type CheckoutResult = { ok: true; url: string } | { ok: false; error: CheckoutError }
+
+/**
+ * ⛔ THE ONLY PLACE THIS SITE FOLLOWS A URL THE PLATFORM SENT, so it is checked: https on
+ * checkout.stripe.com exactly, no credentials, no port. A Checkout the platform created and
+ * this site refuses to follow costs nothing — the pending pack is abandoned by the
+ * platform's reconciler once its session expires (design §4).
+ */
+function stripeCheckoutUrl(v: unknown): string | null {
+  if (typeof v !== 'string' || v.length > 4096) return null
+  try {
+    const u = new URL(v)
+    return u.protocol === 'https:' && u.hostname === 'checkout.stripe.com' && !u.username && !u.password && !u.port
+      ? u.href
+      : null
+  } catch {
+    return null
+  }
+}
+
+const CHECKOUT_ERRORS: readonly CheckoutError[] = [
+  'bad_email', 'terms_required', 'terms_changed', 'bad_sport', 'bad_size', 'club_not_payable',
+]
+
+/**
+ * Start buying a pack: the platform makes a pending pack and a Stripe Checkout for it,
+ * priced from ITS row, never from this call (design §4). The tick is passed through as it
+ * arrived — the platform refuses terms_required itself. 25 s: the platform calls Stripe
+ * inside this request. A timeout is 'try_again': nothing is charged until the guest pays
+ * on Stripe's page, which they never reached.
+ *
+ * 2026-10-22, two sizes: `credits` names the size (5 or 10 at Exton) alongside the sport —
+ * the pair the platform looks its offer up by (court_pack_offers unique on location, sport,
+ * credits; cp_create_pending's p_credits). Still no price: a size is a choice, not an amount.
+ * Re-checked here as a whole 1–20 (the platform's own bound) and never sent otherwise.
+ */
+export async function packCheckout(
+  input: { sportId: string; credits: number; email: string; agreeTerms: boolean; termsVersion: string },
+  ip: string,
+): Promise<CheckoutResult> {
+  const secret = relaySecret()
+  if (!secret) return { ok: false, error: 'try_again' }
+  if (!Number.isInteger(input.credits) || input.credits < 1 || input.credits > 20) return { ok: false, error: 'bad_size' }
+  try {
+    const res = await post(secret, ip, '/api/public/court-packs/checkout', {
+      club: CLUB,
+      sportId: input.sportId,
+      credits: input.credits,
+      email: input.email,
+      agreeTerms: input.agreeTerms === true,
+      termsVersion: input.termsVersion,
+    }, 25_000)
+    const j = await jsonOf(res)
+    if (res.status === 200) {
+      const url = stripeCheckoutUrl(j && typeof j === 'object' ? (j as { url?: unknown }).url : undefined)
+      return url ? { ok: true, url } : { ok: false, error: 'try_again' }
+    }
+    if (res.status === 404) return { ok: false, error: 'off' }
+    if (res.status === 429) return { ok: false, error: 'slow_down' }
+    if (res.status === 400 || res.status === 409) {
+      const e = CHECKOUT_ERRORS.find((x) => x === errorOf(j))
+      return { ok: false, error: e ?? 'try_again' }
+    }
+    return { ok: false, error: 'try_again' }
+  } catch {
+    return { ok: false, error: 'try_again' }
+  }
+}
+
+export type PurchaseResult = { kind: 'ok'; view: PurchaseView } | { kind: 'unavailable' }
+
+/**
+ * After Stripe: is the pack for this Checkout ready (design §4, /my-bookings/pack/ready?cs=).
+ * A session id that is not the cs_ shape is never sent — the page checks it first
+ * (./session.ts CHECKOUT_SESSION_RE) and shows its "can't find that payment" state; here it
+ * is simply 'unavailable'. A 404 (the flag switched off since the guest paid) is
+ * 'unavailable' too: a paid purchase settles regardless (the webhook does not check the
+ * flag) and the receipt says so.
+ */
+export async function packPurchase(sessionId: string, ip: string): Promise<PurchaseResult> {
+  const secret = relaySecret()
+  if (!secret || typeof sessionId !== 'string' || !CHECKOUT_SESSION_RE.test(sessionId)) return { kind: 'unavailable' }
+  try {
+    const res = await post(secret, ip, '/api/public/court-packs/purchase', { club: CLUB, sessionId }, 10_000)
+    if (res.status !== 200) return { kind: 'unavailable' }
+    const view = toPurchase(await jsonOf(res))
+    return view ? { kind: 'ok', view } : { kind: 'unavailable' }
+  } catch {
+    return { kind: 'unavailable' }
+  }
+}
+
+/** A slot this module would send: the same rules as the cookie it came from. */
+function sendableSel(sel: PackSelection): PackSelection | null {
+  if (!sel || typeof sel !== 'object') return null
+  const q = new URLSearchParams({
+    s: String(sel.sportId), d: String(sel.date), t: String(sel.startTime), h: String(sel.hours), n: String(sel.courts),
+  })
+  if (sel.preferCourtId) q.set('c', String(sel.preferCourtId))
+  return parsePackSelection(q)
+}
+
+export type QuoteResult = { kind: 'ok'; view: QuoteView } | { kind: 'off' } | { kind: 'unavailable' }
+
+/**
+ * What the parked slot costs in credits, and — only when this device's session matches —
+ * which pack would pay (design §6.2). The device token goes as a bearer when there is a
+ * well-formed one; without it the platform answers session 'none' and no pack facts. A
+ * stale token is not a 401 here (the platform reads it as 'none'), so the page simply asks
+ * for the code. 10 s.
+ */
+export async function packQuote(sel: PackSelection, ip: string, token?: string | null): Promise<QuoteResult> {
+  const secret = relaySecret()
+  const slot = sendableSel(sel)
+  if (!secret || !slot) return { kind: 'unavailable' }
+  const bearer = typeof token === 'string' && TOKEN_RE.test(token) ? token : undefined
+  try {
+    const res = await post(secret, ip, '/api/public/guest-packs/quote', { club: CLUB, scope: SCOPE, sel: slot }, 10_000, bearer)
+    if (res.status === 404) return { kind: 'off' }
+    if (res.status !== 200) return { kind: 'unavailable' }
+    const view = toQuote(await jsonOf(res), slot)
+    return view ? { kind: 'ok', view } : { kind: 'unavailable' }
+  } catch {
+    return { kind: 'unavailable' }
+  }
+}
+
+export type PackBookInput = {
+  sel: PackSelection
+  requestKey: string // ./session.ts mintRequestKey, minted by the page
+  agreeTerms: boolean
+  termsVersion: string // the BOOKING terms' version the page showed
+  expectCredits: number // what the page said "Book · use N credits" for
+  phone?: string | null
+}
+
+/**
+ * Book the parked slot with a pack: the platform creates the courts AND spends the credit
+ * in one transaction (cp_book_with_pack, design §6.3), keyed by requestKey so a retry
+ * books once. Malformed input is never sent ('try_again': nothing has changed); a token
+ * this site would not present is 'signed_out'. 25 s — the calling route needs a
+ * maxDuration of at least 30: no Stripe call is made, but the transaction waits on the
+ * club's booking lock. A timeout is 'unknown' (./view.ts toBooked), never "try again".
+ */
+export async function packBook(input: PackBookInput, token: string, ip: string): Promise<BookView> {
+  const secret = relaySecret()
+  if (!secret) return { status: 'try_again' }
+  if (typeof token !== 'string' || !TOKEN_RE.test(token)) return { status: 'signed_out' }
+  const slot = sendableSel(input.sel)
+  const termsVersion = typeof input.termsVersion === 'string' && input.termsVersion.length > 0
+    && input.termsVersion.length <= 40 ? input.termsVersion : null
+  if (!slot || typeof input.requestKey !== 'string' || !REQUEST_KEY_RE.test(input.requestKey) || !termsVersion
+    || !Number.isInteger(input.expectCredits) || input.expectCredits < 1 || input.expectCredits > 20) {
+    return { status: 'try_again' }
+  }
+  const body: Record<string, unknown> = {
+    club: CLUB,
+    scope: SCOPE,
+    sel: slot,
+    requestKey: input.requestKey,
+    agreeTerms: input.agreeTerms === true,
+    termsVersion,
+    expectCredits: input.expectCredits,
+  }
+  if (typeof input.phone === 'string' && input.phone.trim()) body.phone = input.phone.trim()
+  try {
+    const res = await post(secret, ip, '/api/public/guest-packs/book', body, 25_000, token)
+    return toBooked(res.status, await jsonOf(res))
+  } catch {
+    return toBooked(0, null)
   }
 }
