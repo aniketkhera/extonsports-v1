@@ -8,7 +8,9 @@ import p from "./phoenix.module.css";
    'Exton Sports Center - now home to the Phoenix Throwball Team!' - with their logo, for
    enquiries, contact Lima at +1 (610) 202-5346", then "same look and feel as other slides
    on the vestibule display", then "and also on the 'outside' screen too". It takes the
-   Starter Pack's place in promos.ts, so both walls change together.
+   Starter Pack's place in promos.ts, so both walls change together. The headline since
+   2026-10-26 (after it shipped): "New Home of the Phoenix Throwball Team", his words —
+   "of", not "to", and no exclamation mark.
 
    THE WORDS ARE HIS, and only his: the headline, the team, the contact. Nothing else is
    claimed — no times, no "join", no price. The team plays Sundays on BADMINTON 1–3 (the
@@ -57,15 +59,15 @@ export default function PhoenixHero({ className, panel = false }: { className?: 
   return (
     <section
       className={[s.hero, panel && c.panelLayout, panel && p.panel, className].filter(Boolean).join(" ")}
-      aria-label="Exton Sports Center, now home to the Phoenix Throwball Team"
+      aria-label="Exton Sports Center, new home of the Phoenix Throwball Team"
     >
       <div className={s.copy}>
         <PhoenixMark className={`${c.crestInline} ${p.logoInline}`} />
         <p className={c.motto}>Exton Sports Center</p>
-        <p className={p.home}>Now home to the</p>
+        <p className={p.home}>New home of the</p>
         <h2 className={s.title}>
           <span className={`${s.name} ${c.big}`}>Phoenix</span>
-          <span className={`${s.kicker} ${c.big}`}>Throwball Team!</span>
+          <span className={`${s.kicker} ${c.big}`}>Throwball Team</span>
         </h2>
       </div>
 
