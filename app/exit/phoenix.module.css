@@ -2,7 +2,8 @@
    ccca.module.css, for the same weak VIZIO browsers: literal colours, sizes in the 16:9
    box's units (--vw/--vh), and only transform and opacity animate, with no var() inside
    @keyframes. The grid, title, motto, logo column, code card and call line are those
-   two files' classes (PhoenixHero.tsx); this file is only what the panel adds. */
+   two files' classes (PhoenixHero.tsx); this file is only what the panel adds: the
+   "now home to the" line, and the phoenix itself, which moves. */
 
 /* "NOW HOME TO THE", between EXTON SPORTS CENTER (the motto line) and the team's name:
    the headline Aniket wrote, read top to bottom. A step up from the motto, white. */
@@ -17,107 +18,109 @@
   color: #ffffff;
 }
 
-/* ── THE LOGO ──────────────────────────────────────────────────────────────── */
-/* The team's artwork is square where CCCA's crest is 10:9, so it is set by width in the
-   middle column and by height at the head of the copy, as the crest is. */
+/* ── THE PHOENIX ───────────────────────────────────────────────────────────── */
+/* Three layers on one square canvas (PhoenixHero.tsx PhoenixMark): the wings under the
+   body, each turning at its own shoulder. The shoulders, measured on the 768 px logo:
+   left (330, 330), right (480, 320) — hence the transform-origins below. Change the
+   layers, re-measure them. */
+/* ⚠️ No `display` here: the copy's inline mark must stay hidden on the exit door, where
+   ccca.module.css .crestInline sets display:none, and a display on this class would win
+   or lose by stylesheet order. Each SIZE class below says display itself. */
+.mark {
+  position: relative;
+  aspect-ratio: 1 / 1;
+}
+/* Set by width in the exit door's middle column, as CCCA's crest is (ccca .crest). */
 .logo {
+  display: block;
   width: calc(20 * var(--vw));
 }
-/* In the vestibule's panel the logo heads the copy (ccca.module.css .panelLayout shows
+/* In the vestibule's panel the phoenix heads the copy (ccca.module.css .panelLayout shows
    .crestInline there at 13vh): larger here, the artwork being the panel's picture. The
    doubled class out-ranks .panelLayout .crestInline whichever stylesheet loads last. */
 .panel .logoInline.logoInline {
   height: calc(25 * var(--vh));
+  width: auto;
 }
 
-/* ── A THROW OVER THE NET ──────────────────────────────────────────────────── */
-/* Side on: the floor, the net in the middle, and the ball thrown over it and back —
-   every 7 s, resting at each end. The mover is exactly this box, so the ball's path,
-   written in % of it, lands on the same points at any width (as CCCA's ladder). */
-.court {
-  position: relative;
-  margin: calc(3.4 * var(--vh)) 0 0;
-  height: calc(18 * var(--vh));
-  max-width: calc(44 * var(--vw));
-}
-.floor {
+/* A warm light behind the bird, painted once; only its opacity moves, swelling as the
+   wings open. */
+.flare {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: calc(0.24 * var(--vw));
-  border-radius: calc(0.12 * var(--vw));
-  background: rgba(255, 255, 255, 0.45);
+  inset: -12%;
+  background: radial-gradient(closest-side, rgba(255, 160, 60, 0.55) 0%, rgba(248, 108, 33, 0.18) 55%, rgba(248, 108, 33, 0) 100%);
+  opacity: 0.35;
+  animation: flare 8s ease-in-out infinite;
 }
-/* The net: a post, a white tape at the top, and the mesh drawn once as a static
-   pattern (painted, never animated). */
-.net {
-  position: absolute;
-  left: calc(50% - 1.4 * var(--vw));
-  width: calc(2.8 * var(--vw));
-  bottom: 0;
-  height: 62%;
-  border-top: calc(0.6 * var(--vh)) solid #ffffff;
-  border-left: calc(0.22 * var(--vw)) solid #ffffff;
-  border-right: calc(0.22 * var(--vw)) solid #ffffff;
-  background:
-    repeating-linear-gradient(90deg, rgba(248, 155, 114, 0.7) 0 2px, transparent 2px 25%),
-    repeating-linear-gradient(0deg, rgba(248, 155, 114, 0.7) 0 2px, transparent 2px 14%);
-}
-.mover {
+.bird {
   position: absolute;
   inset: 0;
-  pointer-events: none;
-  transform: translate(10%, 100%);
-  animation: throw 7s linear infinite;
+  animation: rise 8s ease-in-out infinite;
 }
-.ball {
+.bird img {
   position: absolute;
-  left: 0;
-  top: 0;
-  width: calc(3.3 * var(--vw));
-  height: calc(3.3 * var(--vw));
-  transform: translate(-50%, -100%);
-}
-.ball img {
-  display: block;
+  inset: 0;
   width: 100%;
   height: 100%;
-  animation: spin 1.3s linear infinite;
 }
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.wingL {
+  transform-origin: 42.97% 42.97%;
+  animation: wing-left 8s ease-in-out infinite;
 }
-/* Thrown from x 10% to x 90% of the box over the net (x 50%), peaking at y 2%, and back:
-   y = 2 + 98 * ((x - 50) / 40)^2, sampled every 10% of x. Constant speed across, as a
-   thrown ball goes, so straight steps between samples read as the arc. */
-@keyframes throw {
-  0% { transform: translate(10%, 100%); opacity: 0; }
-  4% { transform: translate(10%, 100%); opacity: 1; }
-  8% { transform: translate(10%, 100%); }
-  11% { transform: translate(20%, 57.13%); }
-  14% { transform: translate(30%, 26.5%); }
-  17% { transform: translate(40%, 8.13%); }
-  20% { transform: translate(50%, 2%); }
-  23% { transform: translate(60%, 8.13%); }
-  26% { transform: translate(70%, 26.5%); }
-  29% { transform: translate(80%, 57.13%); }
-  32% { transform: translate(90%, 100%); }
-  50% { transform: translate(90%, 100%); }
-  53% { transform: translate(80%, 57.13%); }
-  56% { transform: translate(70%, 26.5%); }
-  59% { transform: translate(60%, 8.13%); }
-  62% { transform: translate(50%, 2%); }
-  65% { transform: translate(40%, 8.13%); }
-  68% { transform: translate(30%, 26.5%); }
-  71% { transform: translate(20%, 57.13%); }
-  74% { transform: translate(10%, 100%); opacity: 1; }
-  94% { transform: translate(10%, 100%); opacity: 1; }
-  100% { transform: translate(10%, 100%); opacity: 0; }
+.wingR {
+  transform-origin: 62.5% 41.67%;
+  animation: wing-right 8s ease-in-out infinite;
+}
+
+/* One cycle, 8 s: the wings come down from raised and SPREAD open (with a touch of
+   overshoot), hold, beat twice, hold, and rise again for the next spread. Raised is the
+   wing turned in towards the head (left clockwise, right anticlockwise); a beat turns it
+   down, the lower feathers sliding under the banner. Angles are small on purpose: the
+   wings are cut from one flat picture, and past ~10–12° the seams would show. */
+@keyframes wing-left {
+  0% { transform: rotate(10deg); }
+  16% { transform: rotate(-2deg); }
+  22% { transform: rotate(0deg); }
+  50% { transform: rotate(0deg); }
+  56% { transform: rotate(-6deg); }
+  62% { transform: rotate(1deg); }
+  68% { transform: rotate(-5deg); }
+  74% { transform: rotate(0deg); }
+  88% { transform: rotate(0deg); }
+  100% { transform: rotate(10deg); }
+}
+@keyframes wing-right {
+  0% { transform: rotate(-10deg); }
+  16% { transform: rotate(2deg); }
+  22% { transform: rotate(0deg); }
+  50% { transform: rotate(0deg); }
+  56% { transform: rotate(6deg); }
+  62% { transform: rotate(-1deg); }
+  68% { transform: rotate(5deg); }
+  74% { transform: rotate(0deg); }
+  88% { transform: rotate(0deg); }
+  100% { transform: rotate(-10deg); }
+}
+/* The whole bird lifts a little as it opens, and dips with each beat. */
+@keyframes rise {
+  0% { transform: translateY(1.5%); }
+  18% { transform: translateY(-1.5%); }
+  40% { transform: translateY(0%); }
+  56% { transform: translateY(1%); }
+  62% { transform: translateY(-1%); }
+  68% { transform: translateY(0.8%); }
+  74% { transform: translateY(0%); }
+  100% { transform: translateY(1.5%); }
+}
+@keyframes flare {
+  0% { opacity: 0.35; }
+  18% { opacity: 1; }
+  45% { opacity: 0.55; }
+  100% { opacity: 0.35; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mover, .ball img {
+  .flare, .bird, .wingL, .wingR {
     animation: none;
   }
 }
