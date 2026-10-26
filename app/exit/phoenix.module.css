@@ -3,9 +3,9 @@
    box's units (--vw/--vh), and only transform and opacity animate, with no var() inside
    @keyframes. The grid, title, motto, logo column, code card and call line are those
    two files' classes (PhoenixHero.tsx); this file is only what the panel adds: the
-   "now home to the" line, and the phoenix itself, which moves. */
+   "new home of the" line, and the phoenix itself, which moves. */
 
-/* "NOW HOME TO THE", between EXTON SPORTS CENTER (the motto line) and the team's name:
+/* "NEW HOME OF THE", between EXTON SPORTS CENTER (the motto line) and the team's name:
    the headline Aniket wrote, read top to bottom. A step up from the motto, white. */
 .home {
   margin: 0 0 calc(0.6 * var(--vh));
