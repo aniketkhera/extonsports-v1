@@ -1,9 +1,23 @@
 /* The Phoenix Throwball panel (2026-10-26). Same rules as exit.module.css and
    ccca.module.css, for the same weak VIZIO browsers: literal colours, sizes in the 16:9
    box's units (--vw/--vh), and only transform and opacity animate, with no var() inside
-   @keyframes. The grid, title, motto, logo column, code card and call line are those
-   two files' classes (PhoenixHero.tsx); this file is only what the panel adds: the
-   "new home of the" line, and the phoenix itself, which moves. */
+   @keyframes. The hero box, title and motto are those two files' classes
+   (PhoenixHero.tsx); this file is only what the panel adds: its two
+   columns, the "new home of the" line, and the phoenix itself, which moves. */
+
+/* COPY | PHOENIX, on both walls (2026-10-27). The panel had a third column, the code
+   that dialled the team's captain; with it gone (PhoenixHero.tsx, NO CONTACT) the bird
+   takes that column, ending on the same right edge the code did. Doubled to out-rank
+   exit.module.css .hero's three columns whichever stylesheet loads last; in the
+   vestibule, ccca.module.css .panelLayout already says the same two. */
+.grid.grid {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.art {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+}
 
 /* "NEW HOME OF THE", between EXTON SPORTS CENTER (the motto line) and the team's name:
    the headline Aniket wrote, read top to bottom. A step up from the motto, white. */
@@ -23,24 +37,26 @@
    body, each turning at its own shoulder. The shoulders, measured on the 768 px logo:
    left (330, 330), right (480, 320) — hence the transform-origins below. Change the
    layers, re-measure them. */
-/* ⚠️ No `display` here: the copy's inline mark must stay hidden on the exit door, where
-   ccca.module.css .crestInline sets display:none, and a display on this class would win
-   or lose by stylesheet order. Each SIZE class below says display itself. */
 .mark {
   position: relative;
   aspect-ratio: 1 / 1;
 }
-/* Set by width in the exit door's middle column, as CCCA's crest is (ccca .crest). */
+/* Set by height, a square: the code card it replaces was 44vh (exit.module.css .card)
+   with its tab above and the call line below, so the bird is drawn a little larger to
+   fill the same column. Width AND height, not one and .mark's aspect-ratio: the mark is
+   a flex item whose children are all absolute, so a TV browser without aspect-ratio
+   would draw it 0 wide. */
 .logo {
   display: block;
-  width: calc(20 * var(--vw));
+  width: calc(52 * var(--vh));
+  height: calc(52 * var(--vh));
 }
-/* In the vestibule's panel the phoenix heads the copy (ccca.module.css .panelLayout shows
-   .crestInline there at 13vh): larger here, the artwork being the panel's picture. The
-   doubled class out-ranks .panelLayout .crestInline whichever stylesheet loads last. */
-.panel .logoInline.logoInline {
-  height: calc(25 * var(--vh));
-  width: auto;
+/* In the vestibule's narrower panel, the code card's own 44vh: at 52 "THROWBALL TEAM"
+   broke onto two lines; 44 leaves the copy column about a tenth to spare (measured
+   2026-10-27 in a 1600 × 900 frame). */
+.panel .logo.logo {
+  width: calc(44 * var(--vh));
+  height: calc(44 * var(--vh));
 }
 
 /* A warm light behind the bird, painted once; only its opacity moves, swelling as the
