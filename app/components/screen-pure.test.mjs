@@ -201,7 +201,7 @@ test("SCREEN_PAGES is exactly the platform's list, in its order", () => {
   // orangish-app lib/screen-watch.ts SCREEN_PAGES (feat/screen-watchdog 490cdcdd, PR #660)
   // and the board_screen_beats.page CHECK in supabase/migrate_board_screen_watch.sql.
   // Change one, change all three — the platform deployed first.
-  assert.deepEqual([...P.SCREEN_PAGES], ["reception", "vestibule", "outside", "exit", "board", "comingsoon"]);
+  assert.deepEqual([...P.SCREEN_PAGES], ["reception", "vestibule", "outside", "exit", "board", "comingsoon", "badminton", "cricket"]);
 });
 
 test("every screen address has a page name: SCREEN_PAGES is SCREEN_PATHS without the slash", async () => {

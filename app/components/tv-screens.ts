@@ -121,6 +121,10 @@ export const TV_CONTENT = {
    *  app/vestibule/VestibuleScreen.tsx. Made for the vestibule; no preview address of
    *  its own, because /vestibule is it. */
   "board-and-promos": { viewport: { themeColor: "#0B1623", colorScheme: "dark" } },
+  /** One sport's box from the court board, full width and larger (2026-10-28):
+   *  app/reception/SportBoard.tsx. For the sets beside the courts and lanes. */
+  "badminton-board": { viewport: {} },
+  "cricket-board": { viewport: {} },
 } as const satisfies Record<string, { viewport: Viewport }>;
 
 export type TvContent = keyof typeof TV_CONTENT;
@@ -171,6 +175,27 @@ export const TV_SCREENS = [
     location: "Exit door (keeper name 'outside')",
     set: 'VIZIO WHD32M, 32"',
     shows: "starter-pack",
+  },
+  {
+    /* Added 2026-10-28 (10.1.10.15 on that day; DHCP, so not a fact). Aniket: "show
+       only the badminton schedule", "for now". */
+    id: "badminton",
+    route: "/badminton",
+    title: "Badminton screen",
+    location: "Badminton courts",
+    set: 'VIZIO M55Q6-L4, 55"',
+    shows: "badminton-board",
+  },
+  {
+    /* Added 2026-10-28 (10.1.10.65 on that day). An Amazon Fire TV, NOT a VIZIO, so
+       tv-keeper cannot pair or relaunch it: whatever opens this address on it, and
+       keeps it open, is set up on the TV itself. */
+    id: "cricket",
+    route: "/cricket",
+    title: "Cricket screen",
+    location: "Cricket lanes",
+    set: "Amazon Fire TV (model AFTDCT31)",
+    shows: "cricket-board",
   },
 ] as const satisfies readonly Tv[];
 
