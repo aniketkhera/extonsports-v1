@@ -70,8 +70,11 @@ export function versionFromScripts(srcs: string[], base: string): string | null 
    name is a 400 "bad page", which the platform cannot tell from a silent TV. A new TV
    goes in all three, the platform deployed FIRST. screen-pure.test.mjs pins this list
    and checks every TV in tv-screens.ts is on it; TvScreen.tsx passing tv.id where a
-   ScreenPage is due is the same check for tsc. */
-export const SCREEN_PAGES = ["reception", "vestibule", "outside", "exit", "board", "comingsoon"] as const;
+   ScreenPage is due is the same check for tsc.
+   ⚠️ "badminton" and "cricket" (2026-10-28) went in HERE FIRST, against that order:
+   both sets were put up unkeyed, and an unkeyed page sends no beat, so nothing is
+   refused yet. The platform's list and CHECK must gain them before either gets a key. */
+export const SCREEN_PAGES = ["reception", "vestibule", "outside", "exit", "board", "comingsoon", "badminton", "cricket"] as const;
 
 export type ScreenPage = (typeof SCREEN_PAGES)[number];
 

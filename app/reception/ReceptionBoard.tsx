@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { makeTicker, useTick } from "../components/ticker";
 import Image from "next/image";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
@@ -1047,6 +1047,208 @@ export function useCourtPanels({ upcoming, upNextMax, currentOnly = false, nudge
   return { ...view, stale };
 }
 
+/* ONE SPORT'S BOX, in parts (2026-10-28), so the single-sport screens
+   (SportBoard.tsx: the badminton and cricket TVs) can lay out the same title, NOW
+   area and COMING UP list side by side. Moved here unchanged from the board below,
+   which still stacks them in that order, so reception draws the same pixels. */
+export const PANEL_BOX: CSSProperties = {
+  display: "flex", flexDirection: "column", minWidth: 0,
+  /* Two layers: the ember wash sits over the vertical shading, so
+     the top of the box is warm and the foot falls away. PANEL
+     stays underneath as the flat base for anything that cannot
+     paint a gradient. */
+  background: `${PANEL_GLOW}, ${PANEL_LIT}, ${PANEL}`,
+  /* 0.09vw read as a hairline from the desk — roughly 1.7px on the
+     55". 0.22vw is ~4px there and ~8px on the 75", which is the
+     same line to the eye at both distances. */
+  border: `calc(0.22 * var(--vw)) solid ${PANEL_BORDER}`,
+  boxShadow: PANEL_SHADOW,
+  borderRadius: "calc(0.6 * var(--vw))", padding: "calc(1.4 * var(--vh)) calc(1 * var(--vw))",
+};
+
+/* The title row: the sport, its object, and the lights chip. */
+export function PanelTitle({ p }: { p: Panel }) {
+  return (
+    <div className="text-cond" style={{ position: "relative", fontSize: "calc(1.5 * var(--vw))", letterSpacing: "0.15em", color: LABEL, marginBottom: "calc(0.9 * var(--vh))" }}>
+      <span style={{ position: "relative" }}>
+        {p.sport.toUpperCase()}
+        {SPORT_OBJECT[p.sport] && (
+          /* A plain <img>: next/image serves an .svg unoptimised anyway,
+             so here it would add nothing but required width/height props
+             on an image sized in em. maxWidth none overrides the reset's
+             100%, which here would mean 100% of the WORD and squash it. */
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={SPORT_OBJECT[p.sport]}
+            alt=""
+            aria-hidden
+            style={{
+              position: "absolute", left: "calc(100% + 0.6em)", top: "-0.015em",
+              height: "1.575em", width: "auto", maxWidth: "none", pointerEvents: "none",
+            }}
+          />
+        )}
+      </span>
+      {/* The lights chip (2026-10-18), RIGHT-JUSTIFIED flush with the box's
+          inner right edge — where the court-number column ends below — as
+          approved in the second mock-up. Absolute and centred on the title's
+          line for the same reason the sport's object is: the chip is taller
+          than the type, and in flow it would take its height from the NOW
+          area, which has single pixels to spare when every court is busy. */}
+      {p.light && (
+        <span
+          style={{
+            position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)",
+            lineHeight: 1, pointerEvents: "none",
+          }}
+        >
+          <LightStatus chip={p.light} />
+        </span>
+      )}
+    </div>
+  );
+}
+
+/* Centred, not top-aligned. A panel holding one booking against a
+   full-height column otherwise leaves a third of the screen blank
+   above the NEXT line, which from across the lobby reads as a
+   broken screen rather than a quiet one.
+   SAFE centre (2026-10-26), as the vestibule's slot already is: when
+   the entries outgrow the area (four squash groups at once), plain
+   centring spilled them out of BOTH ends and the ON NOW line was the
+   first thing cut. Safe, the overflow goes off the bottom only, and
+   the earliest booking — the one in TIME UP — stays in view. */
+export function NowArea({ p, today }: { p: Panel; today: string }) {
+  return (
+    <div
+      style={{
+        flex: 1, minHeight: 0, overflow: "hidden",
+        display: "flex", flexDirection: "column", justifyContent: "safe center",
+      }}
+    >
+      {/* ON NOW or UP NEXT, then the bookings (2026-10-16). The line
+          that sat here, "N OF 3 FREE NOW", came off the same day —
+          Aniket: "we don't need 3 of 3 free now - not neccessary.. just
+          what's next, and what's upcoming" — and the label above the big
+          entries took its height: "change up next to on now when the
+          timing of the event matches the current time". Measured with
+          three groups on court in every panel, the tightest case. */}
+      {/* Compact boxes once three are on court — measured (review,
+          2026-10-14): three entries with the big boxes ran past the NOW
+          area; compact, they fit with room. UP NEXT shows at most two
+          (UP_NEXT_MAX), so it always gets the big ones. */}
+      {p.now.length > 0 ? (
+        <>
+          <SlotLine text="ON NOW" day="" />
+          {p.now.map((e, n) => (
+            <BigEntry
+              key={`${e.who}-${e.session ?? ""}-${e.from}-${e.to}`}
+              e={e} sport={p.sport} labels={p.labels} big={p.now.length < 3}
+              last={n === p.now.length - 1}
+            />
+          ))}
+        </>
+      ) : p.upNext.length > 0 ? (
+        <>
+          <SlotLine text="UP NEXT" day={dayLabel(p.upNext[0].date, today)} />
+          {p.upNext.map((e, n) => (
+            <BigEntry
+              key={`${e.date}-${e.who}-${e.session ?? ""}-${e.from}-${e.to}`}
+              e={e} sport={p.sport} labels={p.labels} big
+              last={n === p.upNext.length - 1}
+            />
+          ))}
+        </>
+      ) : (
+        /* Only when nothing at all is booked ahead in the feed's window —
+           since 2026-10-16 an idle sport shows its UP NEXT instead. */
+        <div className="text-cond" style={{ fontSize: "calc(3.1 * var(--vw))", color: GREEN, lineHeight: 1.03 }}>
+          ALL OPEN
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* COMING UP — the next UPCOMING_COUNT, each with its court.
+   ────────────────────────────────────────────────────────────
+   Three columns on one line per booking: time, holder, court.
+   A single wrapped line per booking would cost ten lines for
+   five bookings and there is not room, so each row is clipped
+   to one line and the HOLDER is the only part allowed to
+   truncate. The time and the court are fixed-width at the two
+   ends because they are what somebody at the desk is actually
+   answering questions about ("who's got court 2 at eight?").
+
+   The day prefix appears only when it is not today, so a list
+   that stays inside today carries no repeated noise.
+
+   Headed AFTER THAT, not COMING UP, while the big area is showing
+   an UP NEXT (2026-10-16, Aniket's words for it) — the list then
+   starts from the booking after that one, so neither is shown twice. */
+export function ComingUp({ p, today, style }: { p: Panel; today: string; style?: CSSProperties }) {
+  return (
+    <div style={{ borderTop: `1px solid ${RULE_SOFT}`, paddingTop: "calc(0.6 * var(--vh))", ...style }}>
+      <div
+        className="text-cond"
+        style={{
+          display: "grid", gridTemplateColumns: "auto minmax(0,1fr) auto", gap: "0 calc(0.5 * var(--vw))",
+          alignItems: "baseline", fontSize: "calc(1 * var(--vw))", letterSpacing: "0.16em", color: NEXT_LBL,
+        }}
+      >
+        <span>{p.upNext.length ? "AFTER THAT" : "COMING UP"}</span>
+        <span />
+        <CourtNumbers labels={p.labels} />
+      </div>
+      {p.upcoming.length === 0 ? (
+        <div className="text-cond" style={{ fontSize: "calc(1.2 * var(--vw))", color: NEXT_VAL, lineHeight: 1.35 }}>
+          {p.upNext.length ? "Nothing else booked" : "Nothing booked"}
+        </div>
+      ) : (
+        p.upcoming.map((e) => {
+          const day = dayLabel(e.date, today);
+          return (
+            <div
+              key={`${e.date}-${e.from}-${e.session ?? ""}-${e.who}`}
+              className="text-cond"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "auto minmax(0,1fr) auto",
+                gap: "0 calc(0.5 * var(--vw))", alignItems: "center",
+                fontSize: "calc(1.12 * var(--vw))", lineHeight: 1.34, color: NEXT_VAL,
+                whiteSpace: "nowrap",
+              }}
+            >
+              <span style={{ color: INK }}>
+                {day ? `${day} ` : ""}{span(e.from, e.to)}
+              </span>
+              {/* The session word FIRST and never truncated; the holder after
+                  it is what gives way. Only partners carry a session —
+                  PBA, CCCA and SquashTigers, one per column — so a cut-off
+                  "CHESTER COUNTY CRICKET…" still says who it is. The free
+                  girls' words keep their own case, as on the tag above. */}
+              <span style={{ display: "flex", gap: "calc(0.45 * var(--vw))", minWidth: 0, overflow: "hidden" }}>
+                {e.session && (
+                  <span
+                    style={{
+                      flex: "none", color: sessionInk(e.session),
+                      ...(e.session === "free-girls-class" ? { textTransform: "none" as const } : {}),
+                    }}
+                  >
+                    {SESSION_TEXT[e.session]}
+                  </span>
+                )}
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{e.who}</span>
+              </span>
+              <CourtBoxes sport={p.sport} labels={p.labels} taken={e.courts} />
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+}
+
 export default function ReceptionBoard() {
   useReloadOnDeploy();
   /* NO HEARTBEAT HERE, on purpose (2026-10-20). The alive-and-drawing beat goes in
@@ -1087,192 +1289,10 @@ export default function ReceptionBoard() {
           area's own overflow:hidden is what gives. */}
       <div style={{ flex: 1, display: "grid", gridTemplateColumns: `repeat(${Math.max(panels.length, 1)}, 1fr)`, gridTemplateRows: "minmax(0, 1fr)", gap: "calc(1.4 * var(--vw))", minHeight: 0 }}>
         {panels.map((p) => (
-          <div
-            key={p.sport}
-            style={{
-              display: "flex", flexDirection: "column", minWidth: 0,
-              /* Two layers: the ember wash sits over the vertical shading, so
-                 the top of the box is warm and the foot falls away. PANEL
-                 stays underneath as the flat base for anything that cannot
-                 paint a gradient. */
-              background: `${PANEL_GLOW}, ${PANEL_LIT}, ${PANEL}`,
-              /* 0.09vw read as a hairline from the desk — roughly 1.7px on the
-                 55". 0.22vw is ~4px there and ~8px on the 75", which is the
-                 same line to the eye at both distances. */
-              border: `calc(0.22 * var(--vw)) solid ${PANEL_BORDER}`,
-              boxShadow: PANEL_SHADOW,
-              borderRadius: "calc(0.6 * var(--vw))", padding: "calc(1.4 * var(--vh)) calc(1 * var(--vw))",
-            }}
-          >
-            <div className="text-cond" style={{ position: "relative", fontSize: "calc(1.5 * var(--vw))", letterSpacing: "0.15em", color: LABEL, marginBottom: "calc(0.9 * var(--vh))" }}>
-              <span style={{ position: "relative" }}>
-                {p.sport.toUpperCase()}
-                {SPORT_OBJECT[p.sport] && (
-                  /* A plain <img>: next/image serves an .svg unoptimised anyway,
-                     so here it would add nothing but required width/height props
-                     on an image sized in em. maxWidth none overrides the reset's
-                     100%, which here would mean 100% of the WORD and squash it. */
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={SPORT_OBJECT[p.sport]}
-                    alt=""
-                    aria-hidden
-                    style={{
-                      position: "absolute", left: "calc(100% + 0.6em)", top: "-0.015em",
-                      height: "1.575em", width: "auto", maxWidth: "none", pointerEvents: "none",
-                    }}
-                  />
-                )}
-              </span>
-              {/* The lights chip (2026-10-18), RIGHT-JUSTIFIED flush with the box's
-                  inner right edge — where the court-number column ends below — as
-                  approved in the second mock-up. Absolute and centred on the title's
-                  line for the same reason the sport's object is: the chip is taller
-                  than the type, and in flow it would take its height from the NOW
-                  area, which has single pixels to spare when every court is busy. */}
-              {p.light && (
-                <span
-                  style={{
-                    position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)",
-                    lineHeight: 1, pointerEvents: "none",
-                  }}
-                >
-                  <LightStatus chip={p.light} />
-                </span>
-              )}
-            </div>
-
-            {/* Centred, not top-aligned. A panel holding one booking against a
-                full-height column otherwise leaves a third of the screen blank
-                above the NEXT line, which from across the lobby reads as a
-                broken screen rather than a quiet one.
-                SAFE centre (2026-10-26), as the vestibule's slot already is: when
-                the entries outgrow the area (four squash groups at once), plain
-                centring spilled them out of BOTH ends and the ON NOW line was the
-                first thing cut. Safe, the overflow goes off the bottom only, and
-                the earliest booking — the one in TIME UP — stays in view. */}
-            <div
-              style={{
-                flex: 1, minHeight: 0, overflow: "hidden",
-                display: "flex", flexDirection: "column", justifyContent: "safe center",
-              }}
-            >
-              {/* ON NOW or UP NEXT, then the bookings (2026-10-16). The line
-                  that sat here, "N OF 3 FREE NOW", came off the same day —
-                  Aniket: "we don't need 3 of 3 free now - not neccessary.. just
-                  what's next, and what's upcoming" — and the label above the big
-                  entries took its height: "change up next to on now when the
-                  timing of the event matches the current time". Measured with
-                  three groups on court in every panel, the tightest case. */}
-              {/* Compact boxes once three are on court — measured (review,
-                  2026-10-14): three entries with the big boxes ran past the NOW
-                  area; compact, they fit with room. UP NEXT shows at most two
-                  (UP_NEXT_MAX), so it always gets the big ones. */}
-              {p.now.length > 0 ? (
-                <>
-                  <SlotLine text="ON NOW" day="" />
-                  {p.now.map((e, n) => (
-                    <BigEntry
-                      key={`${e.who}-${e.session ?? ""}-${e.from}-${e.to}`}
-                      e={e} sport={p.sport} labels={p.labels} big={p.now.length < 3}
-                      last={n === p.now.length - 1}
-                    />
-                  ))}
-                </>
-              ) : p.upNext.length > 0 ? (
-                <>
-                  <SlotLine text="UP NEXT" day={dayLabel(p.upNext[0].date, today)} />
-                  {p.upNext.map((e, n) => (
-                    <BigEntry
-                      key={`${e.date}-${e.who}-${e.session ?? ""}-${e.from}-${e.to}`}
-                      e={e} sport={p.sport} labels={p.labels} big
-                      last={n === p.upNext.length - 1}
-                    />
-                  ))}
-                </>
-              ) : (
-                /* Only when nothing at all is booked ahead in the feed's window —
-                   since 2026-10-16 an idle sport shows its UP NEXT instead. */
-                <div className="text-cond" style={{ fontSize: "calc(3.1 * var(--vw))", color: GREEN, lineHeight: 1.03 }}>
-                  ALL OPEN
-                </div>
-              )}
-            </div>
-
-            {/* COMING UP — the next UPCOMING_COUNT, each with its court.
-                ────────────────────────────────────────────────────────────
-                Three columns on one line per booking: time, holder, court.
-                A single wrapped line per booking would cost ten lines for
-                five bookings and there is not room, so each row is clipped
-                to one line and the HOLDER is the only part allowed to
-                truncate. The time and the court are fixed-width at the two
-                ends because they are what somebody at the desk is actually
-                answering questions about ("who's got court 2 at eight?").
-
-                The day prefix appears only when it is not today, so a list
-                that stays inside today carries no repeated noise.
-
-                Headed AFTER THAT, not COMING UP, while the big area is showing
-                an UP NEXT (2026-10-16, Aniket's words for it) — the list then
-                starts from the booking after that one, so neither is shown twice. */}
-            <div style={{ borderTop: `1px solid ${RULE_SOFT}`, paddingTop: "calc(0.6 * var(--vh))" }}>
-              <div
-                className="text-cond"
-                style={{
-                  display: "grid", gridTemplateColumns: "auto minmax(0,1fr) auto", gap: "0 calc(0.5 * var(--vw))",
-                  alignItems: "baseline", fontSize: "calc(1 * var(--vw))", letterSpacing: "0.16em", color: NEXT_LBL,
-                }}
-              >
-                <span>{p.upNext.length ? "AFTER THAT" : "COMING UP"}</span>
-                <span />
-                <CourtNumbers labels={p.labels} />
-              </div>
-              {p.upcoming.length === 0 ? (
-                <div className="text-cond" style={{ fontSize: "calc(1.2 * var(--vw))", color: NEXT_VAL, lineHeight: 1.35 }}>
-                  {p.upNext.length ? "Nothing else booked" : "Nothing booked"}
-                </div>
-              ) : (
-                p.upcoming.map((e) => {
-                  const day = dayLabel(e.date, today);
-                  return (
-                    <div
-                      key={`${e.date}-${e.from}-${e.session ?? ""}-${e.who}`}
-                      className="text-cond"
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "auto minmax(0,1fr) auto",
-                        gap: "0 calc(0.5 * var(--vw))", alignItems: "center",
-                        fontSize: "calc(1.12 * var(--vw))", lineHeight: 1.34, color: NEXT_VAL,
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      <span style={{ color: INK }}>
-                        {day ? `${day} ` : ""}{span(e.from, e.to)}
-                      </span>
-                      {/* The session word FIRST and never truncated; the holder after
-                          it is what gives way. Only partners carry a session —
-                          PBA, CCCA and SquashTigers, one per column — so a cut-off
-                          "CHESTER COUNTY CRICKET…" still says who it is. The free
-                          girls' words keep their own case, as on the tag above. */}
-                      <span style={{ display: "flex", gap: "calc(0.45 * var(--vw))", minWidth: 0, overflow: "hidden" }}>
-                        {e.session && (
-                          <span
-                            style={{
-                              flex: "none", color: sessionInk(e.session),
-                              ...(e.session === "free-girls-class" ? { textTransform: "none" as const } : {}),
-                            }}
-                          >
-                            {SESSION_TEXT[e.session]}
-                          </span>
-                        )}
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{e.who}</span>
-                      </span>
-                      <CourtBoxes sport={p.sport} labels={p.labels} taken={e.courts} />
-                    </div>
-                  );
-                })
-              )}
-            </div>
+          <div key={p.sport} style={PANEL_BOX}>
+            <PanelTitle p={p} />
+            <NowArea p={p} today={today} />
+            <ComingUp p={p} today={today} />
           </div>
         ))}
       </div>
