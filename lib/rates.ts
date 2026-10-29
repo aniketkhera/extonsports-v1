@@ -221,6 +221,9 @@ export const COURT_RATES: SportRate[] = [
   { sport: 'Cricket', feature: '100-foot lanes', offPeak: 55, peak: 65 },
   { sport: 'Badminton', feature: 'Wood-sprung floors', offPeak: 40, peak: 45 },
   { sport: 'Squash', feature: 'All-glass squash courts', offPeak: 40, peak: 45 },
+  // 2026-10-29 MOCKUP: Aniket, "On price, same as peak and off peak. I am thinking $100 per
+  // hour for peak and $90 per hour for off-peak" — for the whole badminton hall as one court.
+  { sport: 'Throwball', feature: 'All three badminton courts', offPeak: 90, peak: 100 },
 ]
 
 /** One order for every sport list on the site. */

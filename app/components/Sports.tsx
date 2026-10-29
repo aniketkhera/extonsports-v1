@@ -10,7 +10,7 @@ type Sport = {
   spec: string;
   body: string;
   // SVG line decoration drawn faintly on the card
-  decoration: "cricket" | "squash" | "badminton" | "turf" | "fitness";
+  decoration: "cricket" | "squash" | "badminton" | "throwball" | "turf" | "fitness";
   prefix?: string; // orange headline shown when count is "—"
 };
 
@@ -43,7 +43,19 @@ const sports: Sport[] = [
     decoration: "badminton",
   },
   {
+    // 2026-10-29: the three badminton courts become one throwball court (Aniket: "add
+    // throwball as another sport we offer alongwith badmointon, cricket, squash and turf").
+    // The court is the USA Throwball 36 x 60 ft painted on the badminton floor (2026-10-27).
     n: "04",
+    name: "Throwball",
+    count: "1",
+    unit: "court",
+    spec: "36 × 60 ft · the whole badminton hall",
+    body: "All three badminton courts become one full-size throwball court. Bring your team's net and book the hall by the hour.",
+    decoration: "throwball",
+  },
+  {
+    n: "05",
     name: "Turf",
     count: "—",
     unit: "",
@@ -243,6 +255,23 @@ function SportDeco({ kind }: { kind: Sport["decoration"] }) {
           {/* Centre service line (top + bottom halves only, not through net) */}
           <line x1="100" y1="52" x2="100" y2="100" stroke={line} strokeWidth={sw} />
           <line x1="100" y1="180" x2="100" y2="228" stroke={line} strokeWidth={sw} />
+        </>
+      )}
+
+      {kind === "throwball" && (
+        <>
+          {/* Top-down throwball court, 36 x 60 ft, long axis vertical: net across the middle,
+              the neutral zone either side of it, service ticks on the end lines. */}
+          <rect x="46" y="20" width="108" height="240" stroke={line} strokeWidth={sw} fill="none" />
+          {/* Net, poles just outside the sidelines */}
+          <line x1="34" y1="140" x2="166" y2="140" stroke={tin} strokeWidth={sw + 1.3} />
+          <circle cx="34" cy="140" r="2.4" fill={tin} />
+          <circle cx="166" cy="140" r="2.4" fill={tin} />
+          {/* Neutral zone, 3.3 ft each side of the centre line */}
+          <rect x="46" y="127" width="108" height="26" stroke={lineSoft} strokeWidth={sw} fill={fillSoft} />
+          {/* Service zone: the right-hand 18 ft of each end line */}
+          <line x1="100" y1="20" x2="100" y2="12" stroke={line} strokeWidth={sw} />
+          <line x1="100" y1="260" x2="100" y2="268" stroke={line} strokeWidth={sw} />
         </>
       )}
 
