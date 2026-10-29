@@ -572,6 +572,21 @@ export default function BuyForm({
           <PhoneText text={couponNote} phone={phone} />
         </p>
       )}
+      {/* How to get a code, 2026-10-29 (Aniket: "Want a coupon code for additional discount?
+          Email info@extonsports.com to claim yours. - the goes under the coupon code"). Only
+          while nothing is applied: with a coupon on, the line would offer what is already there. */}
+      {!coupon && (
+        <p className="text-white/60 text-[0.85rem] leading-relaxed mt-2">
+          {PACK_BUY_COPY.couponClaimBefore}{" "}
+          <a
+            href={`mailto:${PACK_BUY_COPY.couponClaimEmail}?subject=${encodeURIComponent(PACK_BUY_COPY.couponClaimSubject)}`}
+            className="text-[var(--color-ember)] underline underline-offset-2"
+          >
+            {PACK_BUY_COPY.couponClaimEmail}
+          </a>{" "}
+          {PACK_BUY_COPY.couponClaimAfter}
+        </p>
+      )}
       {/* The coupon's one live region (see the header): ALWAYS mounted, empty until an Apply
           or a Remove writes its sentence, so that sentence is a change a screen reader reads. */}
       <p className="sr-only" role="status" aria-live="polite">
