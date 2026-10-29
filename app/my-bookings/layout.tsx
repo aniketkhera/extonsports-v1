@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import OrangishPill from "../components/OrangishPill";
+import ThemeToggle from "../components/ThemeToggle";
 
 // The shell for extonsports.com/my-bookings, 2026-10-20 — the LegalPage look
-// (app/components/LegalPage.tsx): a quiet single column, the club's name as the way home,
-// and the orangish.io pill as the one credit the owner allows on this path (2026-10-18:
+// (app/components/LegalPage.tsx): a quiet single column, the light/dark switch at the top
+// (2026-10-29, Aniket — it replaced the "← EXTON SPORTS CENTER" link home; see
+// app/court-packs/page.tsx), and the orangish.io pill as the one credit the owner allows on this path (2026-10-18:
 // guests see extonsports.com only; "beyond the small orangish.io credit pill").
 //
 // 640px rather than LegalPage's 760: this is a form and a short list, read on a phone
@@ -27,12 +28,12 @@ export default function MyBookingsLayout({ children }: { children: React.ReactNo
   return (
     <div className="bg-[var(--legal-bg)] min-h-screen text-white">
       <div className="mx-auto max-w-[640px]" style={{ padding: "64px clamp(16px,5vw,48px) 80px" }}>
-        <Link
-          href="/"
-          className="text-mono text-[0.7rem] tracking-widest text-white/45 hover:text-white/80 transition"
-        >
-          ← EXTON SPORTS CENTER
-        </Link>
+        {/* No "← EXTON SPORTS CENTER" link (Aniket, 2026-10-29: "the arrow to go back to
+           extonsports.com, remove that pls"); the theme switch in its place, as the nav has —
+           these pages have no nav. See app/court-packs/page.tsx. */}
+        <div className="flex justify-end">
+          <ThemeToggle />
+        </div>
 
         <main className="mt-6">{children}</main>
 

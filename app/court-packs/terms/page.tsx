@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { headers } from "next/headers";
 import { clientIpOf } from "@/lib/my-bookings/guard";
 import { packOffers } from "@/lib/my-bookings/platform";
@@ -7,6 +6,7 @@ import { FALLBACK_PHONE, PACK_BUY_COPY } from "@/lib/my-bookings/copy";
 import { PACKS_LIVE, PACK_TERMS_PATH } from "@/lib/booking";
 import PhoneText from "../../my-bookings/_components/PhoneText";
 import OrangishPill from "../../components/OrangishPill";
+import ThemeToggle from "../../components/ThemeToggle";
 
 // www.extonsports.com/court-packs/terms — the court pack terms, 2026-10-21 (orangish-app
 // docs/court-packs.md §8.2). The wording is the PLATFORM's (lib/court-pack-terms.ts, with
@@ -39,12 +39,12 @@ export default async function PackTermsPage() {
   return (
     <div className="bg-[var(--legal-bg)] min-h-screen text-white">
       <div className="mx-auto max-w-[760px]" style={{ padding: "64px clamp(16px,5vw,48px) 80px" }}>
-        <Link
-          href="/"
-          className="text-mono text-[0.7rem] tracking-widest text-white/45 hover:text-white/80 transition"
-        >
-          ← EXTON SPORTS CENTER
-        </Link>
+        {/* No "← EXTON SPORTS CENTER" link (Aniket, 2026-10-29: "the arrow to go back to
+           extonsports.com, remove that pls"); the theme switch in its place, as the nav has —
+           these pages have no nav. See app/court-packs/page.tsx. */}
+        <div className="flex justify-end">
+          <ThemeToggle />
+        </div>
 
         <main className="mt-6">
           <h1
