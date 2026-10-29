@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { clientIpOf } from "@/lib/my-bookings/guard";
 import { packOffers } from "@/lib/my-bookings/platform";
+import { couponFromQuery } from "@/lib/my-bookings/coupon";
 import { FALLBACK_PHONE, PACK_BUY_COPY, howToUsePack } from "@/lib/my-bookings/copy";
 import type { OfferView } from "@/lib/my-bookings/view";
 import { PACKS_LIVE, PACK_PATH } from "@/lib/booking";
@@ -37,6 +38,12 @@ import BuyForm from "./BuyForm";
 // "← EXTON SPORTS CENTER" link home. The pack path — this page, its terms and
 // /my-bookings — share the change. The theme itself was already the visitor's choice
 // (layout.tsx's script stamps <html data-theme>); there was just no button to change it here.
+//
+// ?code=<coupon>, 2026-10-29 (Aniket: "let's add a textbox that accepts a COUPON CODE"):
+// upper-cased and the coupon shape or nothing (lib/my-bookings/coupon.ts couponFromQuery);
+// the form fills its coupon field with it and applies it once. Stripe's cancel_url brings it
+// back beside sport and credits, so a guest who backs out of Stripe's page still has their
+// coupon. The page renders the same for any code — it is not looked up here; Apply asks.
 
 export const dynamic = "force-dynamic";
 
@@ -107,6 +114,7 @@ export default async function PackPage({
   // A size is a whole number or nothing; whether it is on sale is the form's to check
   // against the offers (an unknown one picks the sport's smallest).
   const credits = typeof sp.credits === "string" && /^[1-9]\d?$/.test(sp.credits) ? Number(sp.credits) : null;
+  const code = couponFromQuery(sp.code);
   const r = await packOffers(clientIpOf(await headers()));
   const onSale = r.kind === "ok" && r.view.offers.length > 0 ? r.view : null;
 
@@ -138,6 +146,7 @@ export default async function PackPage({
             termsVersion={onSale.terms.version}
             initialSportId={sport}
             initialCredits={credits}
+            initialCode={code}
           />
           <HowToUse offers={onSale.offers} phone={FALLBACK_PHONE} />
         </>

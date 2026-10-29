@@ -1,8 +1,10 @@
 import { UUID_RE, clientIp, hit, isEmailShape, readJsonBody } from '@/lib/my-bookings/guard'
 import { json, refuseCrossSite } from '@/lib/my-bookings/http'
 import { packCheckout } from '@/lib/my-bookings/platform'
+import { normaliseCouponCode } from '@/lib/my-bookings/coupon'
 
-// POST /api/court-packs/checkout {sportId, credits, email, agreeTerms, termsVersion} — start
+// POST /api/court-packs/checkout {sportId, credits, email, agreeTerms, termsVersion,
+// couponCode?} — start
 // buying a court pack, 2026-10-21 (owner, 2026-10-20: "let's go with the implentation.." —
 // orangish-app docs/court-packs.md §4 and §8.2).
 //
@@ -33,6 +35,15 @@ import { packCheckout } from '@/lib/my-bookings/platform'
 // stripeHref). Never reveals whether the address has a pack or an account: the platform
 // answers every address alike, and so does this.
 //
+// COUPONS, 2026-10-29 (Aniket: "let's add a textbox that accepts a COUPON CODE"; DIWALI2026,
+// 5%, through Sun 8 Nov). `couponCode` is optional and is a CODE, never a price: absent, null
+// or blank is a sale at the list price, exactly as before; not the coupon shape is 400
+// coupon_invalid with no call (lib/my-bookings/coupon.ts normaliseCouponCode — the platform's
+// own reading); otherwise it goes through, and the platform checks it before it makes an
+// account and prices the pack from its own rows. A code it will not take comes back as ITS
+// coupon_invalid, which the form shows as "That code isn't valid or has expired. Nothing was
+// charged." and drops the applied coupon.
+//
 // Answers: 200 {url} | 200 {error} for every platform outcome; 400 {error} for this
 // route's own refusals (nothing sent); 403 cross-site; 429 slow_down.
 
@@ -62,7 +73,10 @@ export async function POST(req: Request) {
     && body.termsVersion.length <= 40 ? body.termsVersion : null
   if (!termsVersion) return json({ error: 'bad_request' }, 400)
   if (body.agreeTerms !== true) return json({ error: 'terms_required' }, 400)
+  const coupon = normaliseCouponCode(body.couponCode)
+  if (coupon.kind === 'bad') return json({ error: 'coupon_invalid' }, 400)
+  const couponCode = coupon.kind === 'ok' ? coupon.code : null
 
-  const r = await packCheckout({ sportId, credits, email, agreeTerms: true, termsVersion }, ip)
+  const r = await packCheckout({ sportId, credits, email, agreeTerms: true, termsVersion, couponCode }, ip)
   return r.ok ? json({ url: r.url }) : json({ error: r.error })
 }

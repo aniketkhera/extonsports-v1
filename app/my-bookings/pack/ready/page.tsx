@@ -5,7 +5,7 @@ import { packOffers, packPurchase } from "@/lib/my-bookings/platform";
 import { CHECKOUT_SESSION_RE } from "@/lib/my-bookings/session";
 import type { OfferView, PurchaseView } from "@/lib/my-bookings/view";
 import {
-  FALLBACK_PHONE, PACK_BUY_COPY, ofLeft, paidByCard, purchaseUnknown, validWindowText,
+  FALLBACK_PHONE, PACK_BUY_COPY, couponPaidLine, ofLeft, paidByCard, purchaseUnknown, validWindowText,
 } from "@/lib/my-bookings/copy";
 import { bookWithPackUrl } from "@/lib/booking";
 import PhoneText from "../../_components/PhoneText";
@@ -38,6 +38,11 @@ import PurchaseStatus from "./PurchaseStatus";
 //
 // ⚠️ PAYING REMEMBERS NOTHING (design §0): typing an email at checkout does not prove the
 // inbox. The receipt's "Book with my pack" button does that; this page says so.
+//
+// A COUPON, 2026-10-29 (Aniket: "let's add a textbox that accepts a COUPON CODE"): when the
+// purchase answer says the pack was bought with one — its code AND a list price above what
+// was paid (view.ts toPurchase keeps both or neither) — a Coupon row sits right under Paid:
+// "DIWALI2026 — you saved $17.50". Paid stays the amount charged.
 
 export const dynamic = "force-dynamic";
 
@@ -108,6 +113,9 @@ export default async function PackReadyPage({
   if (v.credits !== null) rows.push([PACK_BUY_COPY.rowCredits, ofLeft(v.credits, v.credits)]);
   if (windowDays !== null) rows.push([PACK_BUY_COPY.rowValid, validWindowText(windowDays)]);
   if (v.priceCents !== null) rows.push([PACK_BUY_COPY.rowPaid, paidByCard(v.priceCents)]);
+  if (v.priceCents !== null && v.couponCode !== null && v.listPriceCents !== null) {
+    rows.push([PACK_BUY_COPY.rowCoupon, couponPaidLine(v.couponCode, v.listPriceCents, v.priceCents)]);
+  }
   if (v.maskedEmail) rows.push([PACK_BUY_COPY.rowEmail, v.maskedEmail]);
 
   return (
