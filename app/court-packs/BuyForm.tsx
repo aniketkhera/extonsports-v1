@@ -1,14 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import type { OfferView } from "@/lib/my-bookings/view";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import {
-  COPY, FALLBACK_PHONE, PACK_BUY_COPY, bookingAndChanges, checkoutMessage, money, packSportsLine, payButton, perHourLine,
-  sizeTile, sportTilePrice, whatYouGet,
+  fromSiteCouponQuote, type CouponAnswer, type CouponQuoteView, type OfferView,
+} from "@/lib/my-bookings/view";
+import {
+  COPY, FALLBACK_PHONE, PACK_BUY_COPY, bookingAndChanges, checkoutMessage, couponApplied, couponAppliedNotice,
+  couponMessage, money,
+  packSportsLine, payButton, perHourLine, sizeTile, sportTilePrice, whatYouGet, youSave,
 } from "@/lib/my-bookings/copy";
+import { couponCoversAny, couponTyped, normaliseCouponCode, pricedOffer } from "@/lib/my-bookings/coupon";
 import { isEmailShape } from "@/lib/my-bookings/guard";
 import { PACK_TERMS_PATH, bookWithPackUrl } from "@/lib/booking";
-import { BTN_PRIMARY, ERROR, INPUT, LABEL, postJson } from "../my-bookings/_components/ui";
+import { BTN_PRIMARY, BTN_SECONDARY, BTN_TEXT, ERROR, INPUT, LABEL, postJson } from "../my-bookings/_components/ui";
 import PhoneText from "../my-bookings/_components/PhoneText";
 
 /* The court pack buy form on /court-packs, 2026-10-21 (orangish-app docs/court-packs.md
@@ -45,11 +49,45 @@ import PhoneText from "../my-bookings/_components/PhoneText";
    The address stays in the form — not in the URL, not in storage — and the answer is the
    same whatever address is typed (owner, 2026-10-18: never reveal whether an email has
    an account or a pack). Every message below says nothing was charged, because nothing
-   is until the guest pays on Stripe's page. */
+   is until the guest pays on Stripe's page.
+
+   A COUPON CODE, 2026-10-29. Aniket: "on this, let's add a textbox that accepts a COUPON
+   CODE", then "change the coupon code to DIWALI2026 - and change the expiration date to Sun
+   Nov 8th midnight.", then "make the discount 5% pls..". An optional field under the email,
+   with Apply. Apply asks THIS site's /api/court-packs/quote, which relays to the platform; the
+   platform answers what every pack costs under the code, and from then on every price on the
+   form is that answer's — each size tile's (the list price struck through), the Pack | per
+   hour card's, the Pay box's (with "You save $17.50"), and Pay's own "Pay $332.50" — and
+   changing sport or size reads the same answer again, with no second call. Pay sends the
+   CODE beside the sport and size, never a price; the platform checks the code again and
+   charges its own row. A size the answer does not price shows its list price, and Pay then
+   sends no code for it (coupon.ts couponPriceFor), so the button always reads what Stripe will.
+   ?code= (Stripe's cancel_url brings it back) fills the field and applies it once on load.
+   Every refusal of a code is one sentence — "That code isn't valid or has expired." — and the
+   platform's refusal at Pay drops the applied coupon, so the prices go back to the list
+   before the guest presses Pay again. Pay with a code typed but not applied applies it
+   instead of paying (never the list price for a code the guest thinks they used), once per
+   code: when that code has failed, the next Pay buys at the price the button shows — so the
+   form still sells with the quote endpoint unreachable. Nothing about a coupon is written in
+   this file.
+
+   KEYBOARD AND SCREEN READERS, 2026-10-29 (site review, minor). Applying swaps the field and
+   Apply for the applied code and Remove, and Remove swaps them back, so the element that had
+   focus is gone and focus fell to <body>; and the applied block was itself the only
+   role="status", mounted already holding its sentence, which most screen readers do not
+   announce (a live region must exist before its content changes). So: ONE live region,
+   mounted from the first render and empty, says "Coupon applied…" / "Coupon removed…"; focus
+   moves to Remove after an Apply from the field, and back to the field after Remove or a
+   refused Apply; after an Apply that Pay started it goes back to Pay only if it was lost
+   (Pay is disabled while the code is checked); after the ?code= on load it is not moved at
+   all. The field names the refusal line (aria-describedby) and is aria-invalid while that
+   line is the refusal sentence, and the "Coupon code" heading labels the applied block when
+   there is no field for it to label. */
 
 type BuyError = Parameters<typeof checkoutMessage>[0];
 const BUY_ERRORS: readonly BuyError[] = [
-  "bad_email", "terms_required", "terms_changed", "bad_sport", "bad_size", "club_not_payable", "off", "slow_down", "try_again",
+  "bad_email", "terms_required", "terms_changed", "bad_sport", "bad_size", "club_not_payable", "coupon_invalid", "off",
+  "slow_down", "try_again",
 ];
 
 /**
@@ -98,14 +136,26 @@ const ALREADY_LINK = "Book a court";
 const TILE = "cursor-pointer border text-center py-3 px-2 transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--color-ember)]";
 const TILE_ON = "bg-[var(--color-ember)] border-[var(--color-ember)] text-black";
 const TILE_OFF = "border-[var(--color-line-2)] text-white/80 hover:border-[var(--color-ember)]";
+/* The struck-through list price, 2026-10-29. Legible in both themes: off a picked tile it is
+   text-white/60, a step globals.css remaps under [data-theme="light"] (ui.ts's note — /85 is
+   not one); on the picked tile it is the tile's own black, dimmed by opacity, which reads the
+   same on the ember ground in either theme. */
+const STRUCK = "line-through decoration-1";
 /** Up to three tiles a row, as before — two sports and two sizes each fit a phone. */
 const cols = (n: number) => ({ gridTemplateColumns: `repeat(${Math.max(1, Math.min(n, 3))}, minmax(0, 1fr))` });
+
+/** Ask THIS site's quote route about a code already in the coupon shape. Never throws. */
+async function quoteCoupon(code: string): Promise<CouponAnswer> {
+  const r = await postJson("/api/court-packs/quote", { code });
+  return fromSiteCouponQuote(r.status, r.json, code);
+}
 
 export default function BuyForm({
   offers,
   termsVersion,
   initialSportId,
   initialCredits = null,
+  initialCode = null,
   phone = FALLBACK_PHONE,
 }: {
   offers: OfferView[];
@@ -114,12 +164,37 @@ export default function BuyForm({
   initialSportId: string | null;
   /** ?credits= — the size, 2026-10-22 (Stripe's cancel_url carries it). */
   initialCredits?: number | null;
+  /** ?code= — a coupon code, 2026-10-29: upper-cased and the coupon shape already
+   *  (coupon.ts couponFromQuery), or null. Pre-fills the field and is applied once on load. */
+  initialCode?: string | null;
   phone?: string;
 }) {
   const [choice, setChoice] = useState(() => initialChoice(offers, initialSportId, initialCredits));
   const [agree, setAgree] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // The coupon (2026-10-29): what is typed, the platform's quote once Apply took the code, and
+  // the line under the field when it did not. Busy from the first render when ?code= came in,
+  // so the field reads "Checking…" and Pay waits until the answer is back — a guest who came
+  // back from Stripe's page with their code must never be sold the list price by a fast tap.
+  const [code, setCode] = useState(initialCode ?? "");
+  const [coupon, setCoupon] = useState<CouponQuoteView | null>(null);
+  const [couponBusy, setCouponBusy] = useState(initialCode !== null);
+  const [couponNote, setCouponNote] = useState("");
+  // The code (as typed, trimmed, in capitals) whose last Apply did NOT apply — refused, or the
+  // platform out of reach. Pay applies a typed code first (pay(), below); without this, a code
+  // that failed once would bounce every Pay back to the same sentence and the guest could never
+  // buy at the price on the button without knowing to empty the field. One try per code.
+  const [tried, setTried] = useState("");
+  const loadApplied = useRef(false);
+  // What the live region says (see the header): empty at first, so its first sentence is a
+  // CHANGE and is announced. Written only by an Apply, a Remove, or the checkout's refusal.
+  const [couponLive, setCouponLive] = useState("");
+  // Where focus goes after the next commit that mounts it. "pay" only if focus was lost.
+  const focusNext = useRef<"input" | "remove" | "pay" | null>(null);
+  const couponInputRef = useRef<HTMLInputElement>(null);
+  const couponRemoveRef = useRef<HTMLButtonElement>(null);
+  const payRef = useRef<HTMLButtonElement>(null);
   // The platform answered terms_changed (2026-10-25, site review, low): the terms this page
   // loaded, and the termsVersion prop Pay sends, are out of date. A re-tick would send the
   // same old version and be refused again, for ever, so from here only a reload can go on —
@@ -134,26 +209,121 @@ export default function BuyForm({
   const offer = sizes.find((o) => o.credits === choice.credits) ?? null;
   // Arrived with a ?sport= that is not on sale (squash): nothing picked yet, and why.
   const notSold = initialSportId !== null && !offers.some((o) => o.sportId === initialSportId) && !choice.sportId;
+  // The chosen offer as it will be charged: the coupon's price and per-hour in place of its
+  // own when the applied quote prices it, else itself (coupon.ts pricedOffer). `saving` is
+  // null without a coupon for THIS offer — and then Pay sends no code.
+  const { offer: shown, coupon: saving } = offer ? pricedOffer(offer, coupon) : { offer: null, coupon: null };
 
   function pickSport(sportId: string) {
     setChoice((c) => ({ sportId, credits: pickSize(offers, sportId, c.credits) }));
   }
 
+  /** The quote's answer for `asked`, from Apply (the field's or Pay's) or from ?code= on load.
+   *  One sentence for every refusal. `from` decides only where focus goes (see the header). */
+  function settleCoupon(a: CouponAnswer, asked: string, from: "field" | "pay" | "load") {
+    setCouponBusy(false);
+    // A valid code that prices none of THESE offers (they changed since the page loaded)
+    // would show "5% off" and take nothing off anything: a reload is what fixes it.
+    if (a.ok && couponCoversAny(offers, a.view)) {
+      setCoupon(a.view);
+      setCode(a.view.code);
+      setTried("");
+      setCouponLive(couponAppliedNotice(a.view.code, a.view.percentOff));
+      focusNext.current = from === "field" ? "remove" : from === "pay" ? "pay" : null;
+      return;
+    }
+    setCoupon(null);
+    setTried(asked);
+    setCouponNote(couponMessage(a.ok ? "try_again" : a.error, phone));
+    // The note is role="alert" and says why; the live region must not still say "applied".
+    setCouponLive("");
+    focusNext.current = from === "field" ? "input" : from === "pay" ? "pay" : null;
+  }
+
+  function applyCoupon(from: "field" | "pay") {
+    if (couponBusy || busy) return;
+    const n = normaliseCouponCode(code);
+    if (n.kind === "none") return;
+    setCouponNote("");
+    if (n.kind === "bad") {
+      // Not even the coupon shape: no call, and the same sentence as the platform's refusal.
+      // `tried` is the field as it reads (trimmed), not upper-cased again: since 2026-10-29
+      // the field upper-cases ASCII only (coupon.ts couponTyped), and a whole-string
+      // toUpperCase here would make a refused 'DıWALı2026' match a corrected 'DIWALI2026', so
+      // that Pay would buy at the list price instead of applying the code the guest fixed.
+      setTried(code.trim());
+      setCouponNote(couponMessage("coupon_invalid", phone));
+      setCouponLive("");
+      if (from === "field") focusNext.current = "input";
+      return;
+    }
+    setCouponBusy(true);
+    void quoteCoupon(n.code).then((a) => settleCoupon(a, n.code, from));
+  }
+
+  function removeCoupon() {
+    if (busy) return;
+    setCoupon(null);
+    setCode("");
+    setCouponNote("");
+    setTried("");
+    setCouponLive(PACK_BUY_COPY.couponRemoved);
+    focusNext.current = "input";
+  }
+
+  // ?code= is applied ONCE, on load (the ref survives React's dev double-mount, so the
+  // platform is asked once). An effect event, so the answer is read with the offers and phone
+  // of the render it lands in, and the effect itself depends on the code alone. Focus is not
+  // moved for it: the guest has not touched the form yet.
+  const applyLoadCode = useEffectEvent((c: string) => {
+    void quoteCoupon(c).then((a) => settleCoupon(a, c, "load"));
+  });
+  useEffect(() => {
+    if (loadApplied.current || initialCode === null) return;
+    loadApplied.current = true;
+    applyLoadCode(initialCode);
+  }, [initialCode]);
+
+  // Focus after a swap (see the header). Runs after every commit, and waits for the commit
+  // that mounts its target: Remove exists only once the coupon is in state, the field only
+  // once it is not. "pay" is a return, never a grab: only when focus was lost to <body>
+  // while Pay was disabled — Enter in the email field leaves the guest where they were.
+  useEffect(() => {
+    const want = focusNext.current;
+    if (!want) return;
+    const el = want === "remove" ? couponRemoveRef.current : want === "input" ? couponInputRef.current : payRef.current;
+    if (!el) return;
+    focusNext.current = null;
+    const lost = !document.activeElement || document.activeElement === document.body;
+    if (want !== "pay" || lost) el.focus();
+  });
+
   async function pay(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (busy || termsStale) return;
+    if (busy || termsStale || couponBusy) return;
     setError("");
+    // A code typed but never applied: apply it, and do not pay. The guest sees the coupon's
+    // prices (or why it was refused) and presses Pay again — never charged the list price for
+    // a code they thought they had used. A code that has already failed once (`tried`) is not
+    // retried here: that Pay goes on at the price the button shows, with no code, the reason
+    // in plain sight under the field. A blank field is no coupon, as before.
+    const typed = code.trim();
+    if (!coupon && typed !== "" && typed !== tried) return applyCoupon("pay");
     const email = String(new FormData(e.currentTarget).get("email") || "").trim();
     if (!offer) return setError(checkoutMessage(choice.sportId ? "bad_size" : "bad_sport", phone));
     if (!isEmailShape(email)) return setError(checkoutMessage("bad_email", phone));
     if (!agree) return setError(checkoutMessage("terms_required", phone));
     setBusy(true);
+    // The CODE only while it is applied AND prices this offer — the price on the button is
+    // then the price the platform charges. Never a price: the platform prices from its rows.
+    const couponCode = coupon && saving ? coupon.code : null;
     const r = await postJson("/api/court-packs/checkout", {
       sportId: offer.sportId,
       credits: offer.credits,
       email,
       agreeTerms: true,
       termsVersion,
+      ...(couponCode ? { couponCode } : {}),
     });
     const j = (r.json ?? {}) as { url?: unknown; error?: unknown };
     const url = r.status === 200 ? stripeHref(j.url) : null;
@@ -168,6 +338,17 @@ export default function BuyForm({
     if (why === "terms_changed") {
       setTermsStale(true);
       setAgree(false);
+    }
+    if (why === "coupon_invalid" && coupon) {
+      // The code ended, or was switched off, after Apply: drop it, so every price on the form
+      // is the list price again before the guest presses Pay once more. The field keeps the
+      // code, so they can see which one was refused, and it counts as tried, so that next Pay
+      // buys at the list price the button now shows instead of asking about it again.
+      setCoupon(null);
+      setCouponNote("");
+      setTried(coupon.code);
+      // The refusal is said by the Pay box's role="alert"; the live region stops saying "applied".
+      setCouponLive("");
     }
     setError(checkoutMessage(why, phone));
   }
@@ -198,7 +379,8 @@ export default function BuyForm({
                 />
                 <span className="text-mono text-[0.72rem] tracking-[0.08em] uppercase">{s.sport}</span>
                 <small className={`block text-[0.85rem] mt-0.5 ${on ? "" : "text-white/60"}`}>
-                  {sportTilePrice(sizesOf(offers, s.sportId).map((o) => o.priceCents))}
+                  {/* "from $190.00" under a coupon: the sport's sizes as they will be charged. */}
+                  {sportTilePrice(sizesOf(offers, s.sportId).map((o) => pricedOffer(o, coupon).offer.priceCents))}
                 </small>
               </label>
             );
@@ -212,7 +394,10 @@ export default function BuyForm({
           <div className="grid gap-2" style={cols(sizes.length)}>
             {sizes.map((o) => {
               const on = o.credits === choice.credits;
-              const [credits, price, perHour, ahead] = sizeTile(o);
+              // Under a coupon the tile's price and per-hour are the coupon's, and the list
+              // price sits before it, struck through (2026-10-29).
+              const p = pricedOffer(o, coupon);
+              const [credits, price, perHour, ahead] = sizeTile(p.offer);
               return (
                 <label key={`${o.sportId}:${o.credits}`} className={`${TILE} ${on ? TILE_ON : TILE_OFF}`}>
                   <input
@@ -224,7 +409,15 @@ export default function BuyForm({
                     className="sr-only"
                   />
                   <span className="text-mono text-[0.72rem] tracking-[0.08em] uppercase">{credits}</span>
-                  <small className={`block text-[0.85rem] mt-0.5 ${on ? "" : "text-white/80"}`}>{price}</small>
+                  <small className={`block text-[0.85rem] mt-0.5 ${on ? "" : "text-white/80"}`}>
+                    {p.coupon && (
+                      <>
+                        <span className="sr-only">{PACK_BUY_COPY.wasPrice} </span>
+                        <s className={`${STRUCK} ${on ? "opacity-70" : "text-white/60"}`}>{money(p.coupon.listPriceCents)}</s>{" "}
+                      </>
+                    )}
+                    {price}
+                  </small>
                   <small className={`block text-[0.78rem] ${on ? "" : "text-white/60"}`}>{perHour}</small>
                   <small className={`block text-[0.78rem] ${on ? "" : "text-white/60"}`}>{ahead}</small>
                 </label>
@@ -234,19 +427,26 @@ export default function BuyForm({
         </fieldset>
       )}
 
-      {offer && (
+      {offer && shown && (
         <>
-          {/* Pack | per hour — buy.html's two-cell card. */}
+          {/* Pack | per hour — buy.html's two-cell card. Under a coupon (2026-10-29): the list
+              price struck above the coupon price, and the coupon's per hour. */}
           <div className="grid grid-cols-2 border border-[var(--color-line-2)] mt-5">
             <div className="p-3.5">
               <p className={LABEL}>{PACK_BUY_COPY.rowPack}</p>
+              {saving && (
+                <p className="text-white/60 text-[0.9rem] leading-none mb-1">
+                  <span className="sr-only">{PACK_BUY_COPY.wasPrice} </span>
+                  <s className={STRUCK}>{money(saving.listPriceCents)}</s>
+                </p>
+              )}
               <p className="text-cond text-white leading-none" style={{ fontSize: "clamp(1.7rem,6vw,2.1rem)" }}>
-                {money(offer.priceCents)}
+                {money(shown.priceCents)}
               </p>
               <p className="text-white/60 text-[0.82rem] mt-1.5">{offer.name}</p>
             </div>
             <div className="p-3.5 border-l border-[var(--color-line-2)] flex items-center">
-              <p className="text-[var(--color-ember)] text-[0.98rem] leading-snug font-semibold">{perHourLine(offer)}</p>
+              <p className="text-[var(--color-ember)] text-[0.98rem] leading-snug font-semibold">{perHourLine(shown)}</p>
             </div>
           </div>
 
@@ -302,13 +502,101 @@ export default function BuyForm({
       />
       <p className="text-white/60 text-[0.85rem] leading-relaxed mt-2">{PACK_BUY_COPY.emailHelp}</p>
 
+      {/* COUPON CODE, 2026-10-29 (Aniket: "let's add a textbox that accepts a COUPON CODE").
+          After the email, before the terms tick. Typed in capitals; Apply (or Enter here —
+          never Pay) asks the platform. Applied, the field gives way to the code and its
+          percent with Remove. The line under it is the one refusal sentence, or try again.
+          Applied, "Coupon code" is a heading that labels the applied block (a <label> with no
+          field to point at labels nothing); the announcements are the live region's, below. */}
+      {coupon ? (
+        <p id="buy-coupon-label" className={`${LABEL} mt-6`}>
+          {PACK_BUY_COPY.couponLabel}
+        </p>
+      ) : (
+        <label id="buy-coupon-label" htmlFor="buy-coupon" className={`${LABEL} mt-6`}>
+          {PACK_BUY_COPY.couponLabel}
+        </label>
+      )}
+      {coupon ? (
+        <div
+          className="flex items-center justify-between gap-3 border border-[var(--color-ember)] bg-[var(--color-ink-2)] px-3.5 py-2.5"
+          role="group"
+          aria-labelledby="buy-coupon-label"
+        >
+          <span className="text-white text-[0.95rem] font-semibold">{couponApplied(coupon.code, coupon.percentOff)}</span>
+          <button ref={couponRemoveRef} type="button" className={BTN_TEXT} onClick={removeCoupon} disabled={busy}>
+            {PACK_BUY_COPY.couponRemove}
+          </button>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <input
+            ref={couponInputRef}
+            id="buy-coupon"
+            name="couponCode"
+            type="text"
+            autoComplete="off"
+            autoCapitalize="characters"
+            autoCorrect="off"
+            spellCheck={false}
+            maxLength={40}
+            placeholder={PACK_BUY_COPY.couponPlaceholder}
+            value={code}
+            // The line under the field is its description; invalid only while that line is
+            // the refusal sentence (a network failure says nothing about the code itself).
+            aria-describedby={couponNote ? "buy-coupon-note" : undefined}
+            aria-invalid={couponNote === PACK_BUY_COPY.couponInvalid ? true : undefined}
+            onChange={(e) => {
+              setCode(couponTyped(e.target.value));
+              setCouponNote("");
+            }}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter") return;
+              e.preventDefault();
+              applyCoupon("field");
+            }}
+            className={`${INPUT} flex-1 min-w-0`}
+          />
+          <button
+            type="button"
+            className={`${BTN_SECONDARY} shrink-0`}
+            onClick={() => applyCoupon("field")}
+            disabled={couponBusy || busy || normaliseCouponCode(code).kind === "none"}
+          >
+            {couponBusy ? PACK_BUY_COPY.couponChecking : PACK_BUY_COPY.couponApply}
+          </button>
+        </div>
+      )}
+      {couponNote && (
+        <p id="buy-coupon-note" className={ERROR} role="alert">
+          <PhoneText text={couponNote} phone={phone} />
+        </p>
+      )}
+      {/* The coupon's one live region (see the header): ALWAYS mounted, empty until an Apply
+          or a Remove writes its sentence, so that sentence is a change a screen reader reads. */}
+      <p className="sr-only" role="status" aria-live="polite">
+        {couponLive}
+      </p>
+
       <div className="mt-5 border border-[var(--legal-line)] bg-[var(--legal-surface)] p-4">
-        {offer && (
+        {offer && shown && (
           <>
             <p className="text-white/80 text-[0.95rem] font-semibold">{offer.name}</p>
-            <p className="text-cond text-white leading-none mt-1 mb-4" style={{ fontSize: "clamp(1.9rem,7vw,2.4rem)" }}>
-              {money(offer.priceCents)}
+            {saving && (
+              <p className="text-white/60 text-[1rem] leading-none mt-1.5">
+                <span className="sr-only">{PACK_BUY_COPY.wasPrice} </span>
+                <s className={STRUCK}>{money(saving.listPriceCents)}</s>
+              </p>
+            )}
+            <p
+              className={`text-cond text-white leading-none mt-1 ${saving ? "mb-1.5" : "mb-4"}`}
+              style={{ fontSize: "clamp(1.9rem,7vw,2.4rem)" }}
+            >
+              {money(shown.priceCents)}
             </p>
+            {saving && (
+              <p className="text-[var(--color-ember)] text-[0.92rem] font-semibold mb-4">{youSave(saving.savesCents)}</p>
+            )}
           </>
         )}
         <label className="flex items-start gap-3 text-white/80 text-[0.95rem] leading-snug cursor-pointer">
@@ -340,8 +628,8 @@ export default function BuyForm({
             {COPY.reload}
           </button>
         ) : (
-          <button type="submit" className={`${BTN_PRIMARY} w-full mt-4`} disabled={busy || !offer}>
-            {busy ? PACK_BUY_COPY.paying : offer ? payButton(offer.priceCents) : PACK_BUY_COPY.choose}
+          <button type="submit" ref={payRef} className={`${BTN_PRIMARY} w-full mt-4`} disabled={busy || couponBusy || !shown}>
+            {busy ? PACK_BUY_COPY.paying : shown ? payButton(shown.priceCents) : PACK_BUY_COPY.choose}
           </button>
         )}
         <p className="text-white/60 text-[0.82rem] leading-relaxed mt-3">{PACK_BUY_COPY.finePrint}</p>

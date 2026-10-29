@@ -22,6 +22,7 @@
 
 import { UUID_RE } from './guard'
 import { appHref, bookByCardUrl, bookWithPackUrl, type BookingSlot } from '../booking'
+import { COUPON_CODE_RE } from './coupon'
 
 export type BookingStatus = 'active' | 'cancelling' | 'needs_staff' | 'cancelled'
 export type BlockedReason = 'within_cutoff' | 'call_club' | null
@@ -938,6 +939,13 @@ export type PurchaseView = {
   // from the offers. Optional on the wire: null when not sent, and the page then takes the
   // window of the offer matching this purchase's sport AND size.
   windowDays: number | null
+  // 2026-10-29, coupons (Aniket: "let's add a textbox that accepts a COUPON CODE"): the code
+  // this pack was bought with and its list price, so the ready page can say what was taken
+  // off. BOTH or NEITHER (toPurchase): a code without a list price above the price paid, or
+  // a list price without a code, says nothing true, so it shows no coupon at all. Nothing
+  // about the holder comes with them.
+  couponCode: string | null
+  listPriceCents: number | null
 }
 
 export function toPurchase(json: unknown): PurchaseView | null {
@@ -945,14 +953,109 @@ export function toPurchase(json: unknown): PurchaseView | null {
   if (!j) return null
   const state = j.state === 'active' || j.state === 'pending' || j.state === 'unknown' ? j.state : null
   if (!state) return null
+  const priceCents = cents(j.priceCents)
+  const couponCode = typeof j.couponCode === 'string' && COUPON_CODE_RE.test(j.couponCode) ? j.couponCode : null
+  const list = cents(j.listPriceCents)
+  const coupon = couponCode !== null && list !== null && priceCents !== null && list > priceCents
   return {
     state,
     sport: text(j.sport, 60),
     credits: count(j.credits, 1, 20),
-    priceCents: cents(j.priceCents),
+    priceCents,
     maskedEmail: masked(j.maskedEmail),
     sportId: typeof j.sportId === 'string' && UUID_RE.test(j.sportId) ? j.sportId : null,
     name: text(j.name, 60),
     windowDays: count(j.windowDays, 7, 366),
+    couponCode: coupon ? couponCode : null,
+    listPriceCents: coupon ? list : null,
   }
+}
+
+/* ── a coupon's quote (POST /api/public/court-packs/quote, 2026-10-29) ──────────────────
+   Aniket, 2026-10-29: "let's add a textbox that accepts a COUPON CODE", then DIWALI2026,
+   through Sun 8 Nov, at "5% pls..". The platform answers what each offer costs under the code
+   (cp_coupon_quote → cp_coupon_unit, the SAME arithmetic cp_create_pending charges with), and
+   this is the only way that answer reaches a page. */
+
+/** One offer's price under the coupon. (sportId, credits) names the offer, as at checkout. */
+export type CouponPriceView = { sportId: string; credits: number; listPriceCents: number; priceCents: number }
+export type CouponQuoteView = {
+  code: string // the code as the platform holds it — always the one asked about
+  percentOff: number // 1–50, the platform's CHECK
+  validUntil: string // ISO; exclusive (the platform's valid_until)
+  prices: CouponPriceView[]
+}
+
+const MAX_COUPON_PRICES = 40
+
+function toCouponPrice(raw: unknown, percentOff: number): CouponPriceView | null {
+  const p = obj(raw)
+  if (!p) return null
+  const sportId = typeof p.sportId === 'string' && UUID_RE.test(p.sportId) ? p.sportId : null
+  const credits = count(p.credits, 1, 20)
+  const listPriceCents = cents(p.listPriceCents)
+  const priceCents = cents(p.priceCents)
+  if (!sportId || credits === null || !listPriceCents || !priceCents) return null
+  // A credit is whole cents at both prices — the platform's own CHECKs (court_packs:
+  // price_cents % credits_total = 0 and list_price_cents % credits_total = 0) — and the coupon
+  // price is BELOW the list price, or there is no coupon to show.
+  if (listPriceCents % credits !== 0 || priceCents % credits !== 0 || priceCents >= listPriceCents) return null
+  // The page prints "5% off" beside these numbers, so they must BE 5% off. The platform rounds
+  // each credit down to a whole cent (cp_coupon_unit, in the buyer's favour), so a pack may be
+  // up to one cent a credit under the exact percent — never over it, and never further off.
+  // The rule is a bound, not the formula: a rounding change on the platform still passes,
+  // and a price that disagrees with its own percent never reaches a page.
+  const exact = (listPriceCents * (100 - percentOff)) / 100
+  if (priceCents > exact || exact - priceCents >= credits) return null
+  return { sportId, credits, listPriceCents, priceCents }
+}
+
+/**
+ * The platform's coupon quote, or null — which the form says as "try again", never as "that
+ * code isn't valid": a bad answer is not the platform's refusal (that is its 400
+ * coupon_invalid, platform.ts packCouponQuote). `asked` is the code this site sent: the answer
+ * must be about THAT code. ONE bad price row rejects the whole answer — a coupon the site
+ * cannot read for every size is not applied to some of them — and so does a repeated
+ * (sport, size), as offerList refuses one, since the site could not tell which is real.
+ */
+export function toCouponQuote(json: unknown, asked: string): CouponQuoteView | null {
+  const j = obj(json)
+  if (!j || typeof asked !== 'string' || !COUPON_CODE_RE.test(asked)) return null
+  const code = typeof j.code === 'string' && j.code === asked ? j.code : null
+  const percentOff = count(j.percentOff, 1, 50)
+  const validUntil = iso(j.validUntil)
+  if (!code || percentOff === null || !validUntil) return null
+  if (!Array.isArray(j.prices) || j.prices.length === 0 || j.prices.length > MAX_COUPON_PRICES) return null
+  const prices = j.prices.map((p) => toCouponPrice(p, percentOff))
+  if (prices.some((p) => p === null)) return null
+  const rows = prices as CouponPriceView[]
+  if (new Set(rows.map((p) => `${p.sportId}:${p.credits}`)).size !== rows.length) return null
+  return { code, percentOff, validUntil, prices: rows }
+}
+
+export type CouponRefusal = 'coupon_invalid' | 'off' | 'slow_down' | 'try_again'
+export type CouponAnswer = { ok: true; view: CouponQuoteView } | { ok: false; error: CouponRefusal }
+const COUPON_REFUSALS: readonly CouponRefusal[] = ['coupon_invalid', 'off', 'slow_down', 'try_again']
+
+/**
+ * The BROWSER's reading of this site's own POST /api/court-packs/quote (2026-10-29), as
+ * fromSiteCancel and fromSiteBook read theirs. The route answers 200 with the quote, or 200
+ * {error} for every platform outcome; 400 {error:'coupon_invalid'} for a code it never sent
+ * on (not the coupon shape). The quote is re-checked by the same allow-list, for the code the
+ * form asked about. Anything else — 403 cross-site, 429, no answer, a body we do not
+ * recognise — is 'slow_down' for a 429 and 'try_again' otherwise: never "not valid", which
+ * only the platform (or the shape check) may say.
+ */
+export function fromSiteCouponQuote(httpStatus: number, json: unknown, asked: string): CouponAnswer {
+  const j = obj(json) ?? {}
+  if (httpStatus === 200) {
+    if (j.error === undefined) {
+      const view = toCouponQuote(json, asked)
+      return view ? { ok: true, view } : { ok: false, error: 'try_again' }
+    }
+    return { ok: false, error: COUPON_REFUSALS.find((x) => x === j.error) ?? 'try_again' }
+  }
+  if (httpStatus === 400 && j.error === 'coupon_invalid') return { ok: false, error: 'coupon_invalid' }
+  if (httpStatus === 429) return { ok: false, error: 'slow_down' }
+  return { ok: false, error: 'try_again' }
 }

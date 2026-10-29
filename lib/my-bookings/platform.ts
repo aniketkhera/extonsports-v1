@@ -37,13 +37,19 @@
 // packBook — under the same rules: the relay secret and the visitor's IP on every call,
 // no call at all without the secret, the device token only as a bearer and only where a
 // device acts (quote, when there is one, and book), and every answer through ./view.ts.
+//
+// COUPONS (2026-10-29, Aniket: "let's add a textbox that accepts a COUPON CODE") add a sixth,
+// packCouponQuote, and an optional couponCode on packCheckout — same rules, no device token
+// (buying needs no sign-in). NOT named packQuote: that name is the pack BOOKING's quote (what
+// a slot costs in credits), above, and has been since 2026-10-21.
 
 import { CHECKOUT_SESSION_RE, REQUEST_KEY_RE, TOKEN_RE, parsePackSelection, type PackSelection } from './session'
 import {
-  toBooked, toCancelView, toOffers, toPurchase, toQuote, toView,
-  type BookView, type CancelView, type ListView, type OffersView, type PurchaseView, type QuoteView,
-  type RedeemRefusal,
+  toBooked, toCancelView, toCouponQuote, toOffers, toPurchase, toQuote, toView,
+  type BookView, type CancelView, type CouponQuoteView, type ListView, type OffersView, type PurchaseView,
+  type QuoteView, type RedeemRefusal,
 } from './view'
+import { COUPON_CODE_RE } from './coupon'
 
 const API_BASE = (process.env.ORANGISH_API_BASE || 'https://app.orangish.io').replace(/\/$/, '')
 // The platform's locations.slug for Exton — NOT a town name (exton-sports). A wrong slug
@@ -233,7 +239,8 @@ export async function signOut(token: string, ip: string): Promise<void> {
 }
 
 /* ══ THE COURT PACK (2026-10-21) ═════════════════════════════════════════════════════
-   Five relays, one per platform endpoint. Each one: no secret → no call and the "platform
+   Six relays, one per platform endpoint (the coupon quote joined them on 2026-10-29). Each
+   one: no secret → no call and the "platform
    down" answer; anything that is not a clean, allow-listed answer → that same answer,
    except packBook, whose doubt is 'unknown' (./view.ts toBooked). Inputs are re-checked
    here even though the calling route checked them: this module is the last place a
@@ -273,9 +280,14 @@ export async function packOffers(ip: string, opts: { desk?: boolean } = {}): Pro
 // bad_size, 2026-10-22: the platform's 400 for a size that is not an active offer of the
 // sport (orangish-app app/api/public/court-packs/checkout, "credits must be 5 or 10 and
 // must match an active offer"), and this site's own for a size that is not a whole number.
+//
+// coupon_invalid, 2026-10-29: the platform's ONE answer for a code it will not take —
+// unknown, switched off, not started, expired, or (its 45072) asked of the desk — so nobody
+// can tell which by trying (orangish-app cp_create_pending); and this site's own for a code
+// that is not the coupon shape (./coupon.ts). Nothing was charged in either.
 export type CheckoutError =
   | 'bad_email' | 'terms_required' | 'terms_changed' | 'bad_sport' | 'bad_size' | 'club_not_payable'
-  | 'off' | 'slow_down' | 'try_again'
+  | 'coupon_invalid' | 'off' | 'slow_down' | 'try_again'
 export type CheckoutResult = { ok: true; url: string } | { ok: false; error: CheckoutError }
 
 /**
@@ -297,7 +309,7 @@ function stripeCheckoutUrl(v: unknown): string | null {
 }
 
 const CHECKOUT_ERRORS: readonly CheckoutError[] = [
-  'bad_email', 'terms_required', 'terms_changed', 'bad_sport', 'bad_size', 'club_not_payable',
+  'bad_email', 'terms_required', 'terms_changed', 'bad_sport', 'bad_size', 'club_not_payable', 'coupon_invalid',
 ]
 
 /**
@@ -311,14 +323,29 @@ const CHECKOUT_ERRORS: readonly CheckoutError[] = [
  * the pair the platform looks its offer up by (court_pack_offers unique on location, sport,
  * credits; cp_create_pending's p_credits). Still no price: a size is a choice, not an amount.
  * Re-checked here as a whole 1–20 (the platform's own bound) and never sent otherwise.
+ *
+ * 2026-10-29, coupons: `couponCode`, when there is one, is a CODE — never a price. The
+ * platform checks it before it makes an account and again under its lock, and prices the
+ * pack from its own rows (cp_coupon_unit). Not the coupon shape → coupon_invalid with no
+ * call; absent, null or blank → the key is not sent at all, so a sale without a coupon is
+ * byte for byte the call it was before coupons.
  */
 export async function packCheckout(
-  input: { sportId: string; credits: number; email: string; agreeTerms: boolean; termsVersion: string },
+  input: {
+    sportId: string; credits: number; email: string; agreeTerms: boolean; termsVersion: string
+    couponCode?: string | null
+  },
   ip: string,
 ): Promise<CheckoutResult> {
   const secret = relaySecret()
   if (!secret) return { ok: false, error: 'try_again' }
   if (!Number.isInteger(input.credits) || input.credits < 1 || input.credits > 20) return { ok: false, error: 'bad_size' }
+  const coupon = input.couponCode === undefined || input.couponCode === null || input.couponCode === ''
+    ? null
+    : input.couponCode
+  if (coupon !== null && (typeof coupon !== 'string' || !COUPON_CODE_RE.test(coupon))) {
+    return { ok: false, error: 'coupon_invalid' }
+  }
   try {
     const res = await post(secret, ip, '/api/public/court-packs/checkout', {
       club: CLUB,
@@ -327,6 +354,7 @@ export async function packCheckout(
       email: input.email,
       agreeTerms: input.agreeTerms === true,
       termsVersion: input.termsVersion,
+      ...(coupon !== null ? { couponCode: coupon } : {}),
     }, 25_000)
     const j = await jsonOf(res)
     if (res.status === 200) {
@@ -339,6 +367,47 @@ export async function packCheckout(
       const e = CHECKOUT_ERRORS.find((x) => x === errorOf(j))
       return { ok: false, error: e ?? 'try_again' }
     }
+    return { ok: false, error: 'try_again' }
+  } catch {
+    return { ok: false, error: 'try_again' }
+  }
+}
+
+export type CouponQuoteError = 'coupon_invalid' | 'off' | 'slow_down' | 'try_again'
+export type CouponQuoteResult = { ok: true; view: CouponQuoteView } | { ok: false; error: CouponQuoteError }
+
+/**
+ * What every pack on sale costs under a coupon code (2026-10-29; orangish-app POST
+ * /api/public/court-packs/quote → cp_coupon_quote). Aniket: "let's add a textbox that accepts
+ * a COUPON CODE" — this is what its Apply button asks. Read-only: the platform writes
+ * nothing, and the price it answers is the one its checkout will charge (both go through
+ * cp_coupon_unit), so the page can show it before Pay.
+ *
+ * The answers, mapped as packCheckout maps its own:
+ *   200 → the allow-listed quote (./view.ts toCouponQuote), or 'try_again' when it does not
+ *         check out — a bad answer is not a refusal, so it never says "not valid";
+ *   400 {error:'coupon_invalid'} → 'coupon_invalid', the platform's ONE answer for unknown,
+ *         off, not started and expired alike (no enumeration); any other 400 is the two
+ *         sides disagreeing on the call's shape → 'try_again';
+ *   404 → 'off' (court_packs_public is off: the same 404 the offers answer);
+ *   429 → 'slow_down'; anything else, a timeout, or no relay secret → 'try_again'.
+ * A code that is not the coupon shape is 'coupon_invalid' with no call: this module is the
+ * last place it could be kept off the wire. 10 s: a guest is waiting on the button.
+ */
+export async function packCouponQuote(code: string, ip: string): Promise<CouponQuoteResult> {
+  const secret = relaySecret()
+  if (!secret) return { ok: false, error: 'try_again' }
+  if (typeof code !== 'string' || !COUPON_CODE_RE.test(code)) return { ok: false, error: 'coupon_invalid' }
+  try {
+    const res = await post(secret, ip, '/api/public/court-packs/quote', { club: CLUB, code }, 10_000)
+    const j = await jsonOf(res)
+    if (res.status === 200) {
+      const view = toCouponQuote(j, code)
+      return view ? { ok: true, view } : { ok: false, error: 'try_again' }
+    }
+    if (res.status === 400) return { ok: false, error: errorOf(j) === 'coupon_invalid' ? 'coupon_invalid' : 'try_again' }
+    if (res.status === 404) return { ok: false, error: 'off' }
+    if (res.status === 429) return { ok: false, error: 'slow_down' }
     return { ok: false, error: 'try_again' }
   } catch {
     return { ok: false, error: 'try_again' }

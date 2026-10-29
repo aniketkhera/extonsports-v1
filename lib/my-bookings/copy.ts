@@ -374,6 +374,25 @@ export const PACK_BUY_COPY = {
   whatYouGet: 'What you get',
   emailLabel: 'Your email',
   emailHelp: 'Your pack lives on this email. To book with it, we send a code here — no password. Your receipt comes here too.',
+  // The coupon field, 2026-10-29 (Aniket: "let's add a textbox that accepts a COUPON CODE").
+  // Under the email, above the terms box (BuyForm.tsx). Optional, and says so. No code, no
+  // percent and no date is written here: they are the platform's rows (couponApplied takes
+  // them from its quote), so the next coupon needs no deploy.
+  couponLabel: 'Coupon code',
+  couponPlaceholder: 'Optional',
+  couponApply: 'Apply',
+  couponChecking: 'Checking…',
+  couponRemove: 'Remove',
+  // Said (not shown) by the form's always-mounted live region when Remove drops the coupon,
+  // 2026-10-29 (site review, minor): every price on the form changes back at once, and a
+  // screen-reader user would otherwise hear nothing of it (couponAppliedNotice is the other half).
+  couponRemoved: 'Coupon removed. The prices shown are the full prices again.',
+  // ONE sentence for every code the platform will not take — unknown, switched off, not yet
+  // started, expired — as the platform gives one answer for them all: no guest, and no script,
+  // learns which codes exist by trying. Apply says this; Pay says it with "Nothing was charged."
+  couponInvalid: "That code isn't valid or has expired.",
+  // Read out before the struck-through list price (line-through is not spoken).
+  wasPrice: 'Was',
   termsBefore: 'I agree to the',
   termsLink: 'court pack terms',
   paying: 'Opening payment…',
@@ -403,6 +422,8 @@ export const PACK_BUY_COPY = {
   rowCredits: 'Credits',
   rowValid: 'Valid',
   rowPaid: 'Paid',
+  // 2026-10-29: the row under Paid when the pack was bought with a coupon (couponPaidLine).
+  rowCoupon: 'Coupon',
   rowEmail: 'Email',
   bookFirst: 'Book your first game',
   receiptNote: "We've emailed your receipt with a Book with my pack button — tap it on this phone within an hour and you won't need a code here for 90 days.",
@@ -1005,16 +1026,64 @@ export function payButton(cents: number): string {
   return `Pay ${money(cents)}`
 }
 
+/* ── coupons (2026-10-29) ─────────────────────────────────────────────────────────────
+   Aniket, 2026-10-29: "let's add a textbox that accepts a COUPON CODE", then DIWALI2026
+   through "Sun Nov 8th midnight", then "make the discount 5% pls..". Every number below is
+   the platform's — the code and its percent from the quote, the prices from its rows — and
+   money() prints the cents it sent, so "exactly" stays exact ($261.25, never $261). */
+
+/** The applied coupon, beside its Remove button: "DIWALI2026 — 5% off". */
+export function couponApplied(code: string, percentOff: number): string {
+  return `${code} — ${percentOff}% off`
+}
+
+/**
+ * Said by the buy form's live region when a code applies, 2026-10-29 (site review, minor):
+ * "Coupon applied: DIWALI2026 — 5% off. The prices shown now include it." Every price on the
+ * form changes at once and, when Pay applied a typed code instead of paying, the only visible
+ * cue was Pay's own label — so it is said, not only shown.
+ */
+export function couponAppliedNotice(code: string, percentOff: number): string {
+  return `Coupon applied: ${couponApplied(code, percentOff)}. The prices shown now include it.`
+}
+
+/** Under the coupon price in the Pay box: "You save $17.50". */
+export function youSave(cents: number): string {
+  return `You save ${money(cents)}`
+}
+
+/** The ready page's Coupon row, under Paid: "DIWALI2026 — you saved $17.50". */
+export function couponPaidLine(code: string, listPriceCents: number, paidCents: number): string {
+  return `${code} — you saved ${money(listPriceCents - paidCents)}`
+}
+
+/**
+ * Why Apply did not apply the code. Nothing is charged by Apply in any case — it only asks
+ * what the packs would cost — so the try-again sentence is checkoutMessage's own, as the form's
+ * other failures are, and 'off' is the same "can't be bought online right now".
+ */
+export function couponMessage(
+  error: 'coupon_invalid' | 'off' | 'slow_down' | 'try_again',
+  phone: string = FALLBACK_PHONE,
+): string {
+  return error === 'coupon_invalid' ? PACK_BUY_COPY.couponInvalid : checkoutMessage(error, phone)
+}
+
 /** Why Pay did not open Stripe. Nothing was charged in any of these. */
 export function checkoutMessage(
   error:
     | 'bad_email' | 'terms_required' | 'terms_changed' | 'bad_sport' | 'bad_size' | 'club_not_payable' | 'off'
-    | 'slow_down' | 'try_again',
+    | 'coupon_invalid' | 'slow_down' | 'try_again',
   phone: string = FALLBACK_PHONE,
 ): string {
   switch (error) {
     case 'bad_email':
       return COPY.badEmail
+    case 'coupon_invalid':
+      // 2026-10-29: the platform would not take the applied code at Pay (it ended, or was
+      // switched off, after Apply). The form drops the coupon, so the prices on screen go back
+      // to the list prices before the guest presses Pay again.
+      return `${PACK_BUY_COPY.couponInvalid} Nothing was charged.`
     case 'terms_required':
       return 'Tick the box to agree to the court pack terms.'
     case 'terms_changed':
