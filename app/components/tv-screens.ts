@@ -187,14 +187,14 @@ export const TV_SCREENS = [
     shows: "badminton-board",
   },
   {
-    /* Added 2026-10-28 (10.1.10.65 on that day). An Amazon Fire TV, NOT a VIZIO, so
-       tv-keeper cannot pair or relaunch it: whatever opens this address on it, and
-       keeps it open, is set up on the TV itself. */
+    /* Added 2026-10-28 (10.1.10.65 on that day). A Fire TV, NOT a VIZIO, so tv-keeper
+       cannot pair or relaunch it. Since 2026-10-29 the N95 drives it over ADB instead,
+       opening this address in Amazon Silk; SilkFullscreen.tsx hides Silk's toolbar. */
     id: "cricket",
     route: "/cricket",
     title: "Cricket screen",
     location: "Cricket lanes",
-    set: "Amazon Fire TV (model AFTDCT31)",
+    set: 'Insignia NS-50F301NA24, 50" Fire TV (model AFTDCT31)',
     shows: "cricket-board",
   },
 ] as const satisfies readonly Tv[];

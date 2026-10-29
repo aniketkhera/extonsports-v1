@@ -4,6 +4,7 @@ import ExitScreen from "../exit/ExitScreen";
 import VestibuleScreen from "../vestibule/VestibuleScreen";
 import SportBoard from "../reception/SportBoard";
 import ScreenHeartbeat from "./ScreenHeartbeat";
+import SilkFullscreen from "./SilkFullscreen";
 import { tvScreen, type TvContent, type TvEntry, type TvId } from "./tv-screens";
 
 /* One TV's page: whatever its entry in tv-screens.ts says it shows (2026-10-20).
@@ -41,7 +42,11 @@ import { tvScreen, type TvContent, type TvEntry, type TvId } from "./tv-screens"
    /vestibule beat as "reception" and /outside as "exit". tv.id is typed TvId and
    the prop ScreenPage, so a TV missing from the platform's page list
    (screen-pure.ts SCREEN_PAGES) fails tsc here. Keyed screens only; without a key
-   it sends nothing and the page is exactly what it was. */
+   it sends nothing and the page is exactly what it was.
+
+   <SilkFullscreen /> (2026-10-29) is the same kind of component: it draws nothing,
+   and does nothing outside Amazon Silk, where it turns an OK press into full
+   screen. See that file. */
 
 const RENDER: Record<TvContent, (tv: TvEntry) => ReactNode> = {
   "court-board": () => <ReceptionBoard />,
@@ -55,6 +60,7 @@ export default function TvScreen({ id }: { id: TvId }) {
   const tv = tvScreen(id);
   return (
     <>
+      <SilkFullscreen />
       <ScreenHeartbeat page={tv.id} />
       {RENDER[tv.shows](tv)}
     </>
