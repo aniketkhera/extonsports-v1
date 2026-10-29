@@ -1,6 +1,7 @@
 import { clientIp, hit } from '@/lib/my-bookings/guard'
 import { packOffers } from '@/lib/my-bookings/platform'
-import { PACK_LINK_SLUG_RE, packLinkCredits, packLinkTarget } from '@/lib/my-bookings/pack-links'
+import { PACK_LINK_SLUG_RE, packLinkCredits, packLinkTarget, withPackLinkCode } from '@/lib/my-bookings/pack-links'
+import { couponFromQuery } from '@/lib/my-bookings/coupon'
 import { PACK_PATH } from '@/lib/booking'
 
 // GET /court-packs/<sport> — the short links for flyers and QR codes, 2026-10-25 (Aniket
@@ -34,14 +35,20 @@ import { PACK_PATH } from '@/lib/booking'
 //
 // 307, not 308, and no-store: the target depends on the platform's rows and on whether it
 // answered, so neither a browser nor a CDN may remember it (the /pay rule in next.config.ts).
+//
+// ?code= IS CARRIED, 2026-10-29 (Aniket: "Fix short links first", for the DIWALI2026 coupon):
+// read with couponFromQuery, as /court-packs reads its own, and put on EVERY redirect below —
+// the fallbacks too, so /court-packs/Badminton?code=DIWALI2026 still lands with the code.
+// Nothing else on the link is carried (an email, a stray sport).
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 function go(req: Request, path: string): Response {
+  const code = couponFromQuery(new URL(req.url).searchParams.get('code'))
   return new Response(null, {
     status: 307,
-    headers: { Location: new URL(path, req.url).href, 'Cache-Control': 'no-store' },
+    headers: { Location: new URL(withPackLinkCode(path, code), req.url).href, 'Cache-Control': 'no-store' },
   })
 }
 

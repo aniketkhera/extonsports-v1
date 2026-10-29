@@ -14,6 +14,12 @@
 // FAILS TO THE PLAIN PAGE, NEVER TO AN ERROR: a slug of the wrong shape, one that names no
 // sport on sale, two sports that would both answer to it, or no offers at all — every one
 // is PACK_PATH. A printed QR code can only ever land somewhere that works.
+//
+// A COUPON CODE RIDES ALONG, 2026-10-29 (Aniket: "Fix short links first", before testing
+// DIWALI2026): /court-packs/badminton?code=DIWALI2026 used to land on the page without the
+// code, so a flyer or a message carrying one lost it. withPackLinkCode puts it back on every
+// target, the plain-page fallbacks included — a code is worth keeping even when the sport
+// is not.
 
 import { PACK_PATH, packBuyUrl } from '../booking'
 
@@ -66,4 +72,17 @@ export function packLinkTarget(
 ): string {
   const sportId = packSportForSlug(slug, offers)
   return (sportId && packBuyUrl(sportId, offers, credits)) || PACK_PATH
+}
+
+/**
+ * A short link's coupon code on its target (2026-10-29): "?code=<CODE>", or "&code=<CODE>"
+ * after a query, or the path untouched without one. The code arrives already read by the
+ * route through lib/my-bookings/coupon.ts couponFromQuery — the very reading /court-packs
+ * gives its own ?code= — so only A–Z and 0–9 ever reach here, and a code of any other shape
+ * is dropped, never passed on. It is NOT looked up: the page's Apply asks the platform, so a
+ * link whose code has since expired still lands, and the page says so when it tries.
+ */
+export function withPackLinkCode(path: string, code: string | null): string {
+  if (!code) return path
+  return `${path}${path.includes('?') ? '&' : '?'}code=${encodeURIComponent(code)}`
 }
