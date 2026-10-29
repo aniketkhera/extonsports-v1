@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { headers } from "next/headers";
 import { clientIpOf } from "@/lib/my-bookings/guard";
 import { packOffers } from "@/lib/my-bookings/platform";
@@ -7,6 +6,7 @@ import { FALLBACK_PHONE, PACK_BUY_COPY, howToUsePack } from "@/lib/my-bookings/c
 import type { OfferView } from "@/lib/my-bookings/view";
 import { PACKS_LIVE, PACK_PATH } from "@/lib/booking";
 import OrangishPill from "../components/OrangishPill";
+import ThemeToggle from "../components/ThemeToggle";
 import { LABEL } from "../my-bookings/_components/ui";
 import PhoneText from "../my-bookings/_components/PhoneText";
 import BuyForm from "./BuyForm";
@@ -31,8 +31,12 @@ import BuyForm from "./BuyForm";
 // The visitor's IP goes with the call (lib/my-bookings/platform.ts — the platform's
 // per-IP limits trust it only alongside the relay secret). ?sport=<id> picks the sport and
 // ?credits=<n> the size (2026-10-22): the app form's promo box and Stripe's cancel_url
-// both come back with them. Shell: the my-bookings / legal-page look — one quiet column,
-// the club's name as the way home.
+// both come back with them. Shell: the my-bookings / legal-page look — one quiet column.
+//
+// 2026-10-29 (Aniket, on the live page): the light/dark switch at the top, and no
+// "← EXTON SPORTS CENTER" link home. The pack path — this page, its terms and
+// /my-bookings — share the change. The theme itself was already the visitor's choice
+// (layout.tsx's script stamps <html data-theme>); there was just no button to change it here.
 
 export const dynamic = "force-dynamic";
 
@@ -49,12 +53,12 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="bg-[var(--legal-bg)] min-h-screen text-white">
       <div className="mx-auto max-w-[640px]" style={{ padding: "64px clamp(16px,5vw,48px) 80px" }}>
-        <Link
-          href="/"
-          className="text-mono text-[0.7rem] tracking-widest text-white/45 hover:text-white/80 transition"
-        >
-          ← EXTON SPORTS CENTER
-        </Link>
+        {/* No "← EXTON SPORTS CENTER" link (Aniket, 2026-10-29: "the arrow to go back to
+           extonsports.com, remove that pls"); the theme switch in its place, as the nav has —
+           these pages have no nav. See the header. */}
+        <div className="flex justify-end">
+          <ThemeToggle />
+        </div>
         <main className="mt-6">{children}</main>
         <div className="border-t border-[var(--legal-surface-2)] pt-6 mt-14">
           <p className="text-[0.72rem]">
