@@ -10,7 +10,7 @@
 // change there reaches this page with no deploy. CONTACT_PHONE (lib/legal.ts) is only the
 // fallback for answers that carry none — a timeout has no body to carry it in.
 
-import { CONTACT_PHONE } from '../legal'
+import { CONTACT_EMAIL, CONTACT_PHONE } from '../legal'
 import { MY_BOOKINGS_PATH } from '../booking'
 import { DEVICE_MAX_AGE_S } from './session'
 import type {
@@ -383,6 +383,14 @@ export const PACK_BUY_COPY = {
   couponApply: 'Apply',
   couponChecking: 'Checking…',
   couponRemove: 'Remove',
+  // The line under the field while no coupon is applied, 2026-10-29, Aniket's words: "Add - Want a
+  // coupon code for additional discount? Email info@extonsports.com to claim yours. - the goes
+  // under the coupon code." The address is lib/legal.ts CONTACT_EMAIL, a mailto link in the form;
+  // the subject only sorts the request in the club's inbox.
+  couponClaimBefore: 'Want a coupon code for additional discount? Email',
+  couponClaimEmail: CONTACT_EMAIL,
+  couponClaimAfter: 'to claim yours.',
+  couponClaimSubject: 'Court pack coupon code',
   // Said (not shown) by the form's always-mounted live region when Remove drops the coupon,
   // 2026-10-29 (site review, minor): every price on the form changes back at once, and a
   // screen-reader user would otherwise hear nothing of it (couponAppliedNotice is the other half).
