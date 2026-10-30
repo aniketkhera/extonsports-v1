@@ -90,6 +90,19 @@ const nextConfig: NextConfig = {
       // booking page does. Not in app/sitemap.ts: it is a redirect, not a page.
       { source: '/pay', destination: 'https://app.orangish.io/pay/exton-sports', permanent: false },
 
+      // ── /music → the hall speakers' control page (2026-10-29) ──────────────
+      // Aniket, 2026-10-29: "put it up on extonsports.com/music ... keep it open, its ok for
+      // now. just trying it out." The page runs on the camera box at the club (speaker-control,
+      // published with Tailscale Funnel on :8443) and drives the Sonos speakers over the club
+      // LAN; there is no copy of it here. It is OPEN — anyone with the address can change the
+      // music — so the box rate-limits and logs every command, caps volume, and can switch all
+      // control off (PUBLIC_CONTROL=false) while the page still shows what is playing.
+      // A redirect, not a rewrite: the page calls its API by relative paths, which a rewrite at
+      // /music would send to this site's own /api. permanent: false (307), like /pay, because
+      // this is a trial and the target will move (the plan is a staff-only page in the app).
+      // Above the apex rule so both hosts take one hop. Not in app/sitemap.ts.
+      { source: '/music', destination: 'https://exton-sports.taildf9e01.ts.net:8443/', permanent: false },
+
       // ── ONE CANONICAL HOST: www ────────────────────────────────────────────
       // Until 2026-09-30 the apex and www BOTH served 200 with no redirect
       // between them, while the site declared the APEX canonical (metadataBase,
