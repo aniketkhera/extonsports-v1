@@ -221,6 +221,14 @@ export const COURT_RATES: SportRate[] = [
   { sport: 'Cricket', feature: '100-foot lanes', offPeak: 55, peak: 65 },
   { sport: 'Badminton', feature: 'Wood-sprung floors', offPeak: 40, peak: 45 },
   { sport: 'Squash', feature: 'All-glass squash courts', offPeak: 40, peak: 45 },
+  // ── WHOLE HALLS FROM 2026-10-31 ── each one booking of every court of a sport, for one
+  // price (orangish-app court_halls, which is what charges; docs/whole-hall-booking.md there).
+  // Aniket, 2026-10-29: "I am thinking $100 per hour for peak and $90 per hour for off-peak"
+  // for throwball on the whole badminton hall; 2026-10-31: "we can rent out the field at $150
+  // peak and $130 offpeak, per hour" for the three cricket lanes together. Same bands as the
+  // sports. ⚠️ A price change here must match court_halls, which ships FIRST on a cut.
+  { sport: 'Throwball', feature: 'All three badminton courts', offPeak: 90, peak: 100 },
+  { sport: 'Field', feature: 'All three cricket lanes', offPeak: 130, peak: 150 },
 ]
 
 /** One order for every sport list on the site. */

@@ -12,7 +12,10 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
  * translucent side walls and glass front + back walls (door on the back
  * facing the cricket lanes), 3 badminton courts with standing nets and
  * regulation court markings, 3 cricket pitches with stumps + bails, and
- * a small locker counter cluster.
+ * a small locker counter cluster. Since 2026-10-29 both halls also show
+ * what they become when hired whole: every 3 s the badminton floor
+ * cross-fades to its one throwball court and, in step, the cricket hall
+ * to its one field.
  *
  * The canvas is transparent so the parent container's salmon + green
  * gradient backdrop reads through the floor.
@@ -27,8 +30,16 @@ export default function Facility3D({
   // FOV changes the framing without changing a single occlusion. /comingsoon uses it to fill
   // a larger stage (2026-09-19); the homepage keeps the default.
   fov = 38,
-}: { fov?: number } = {}) {
+  // Told which way the two halls are showing each time they switch, for a caption beside the
+  // canvas: "split" = 3 badminton courts + 3 cricket lanes, "whole" = 1 throwball court + 1
+  // field (2026-10-29/31). Read through a ref, so a new function each render does not rebuild
+  // the scene.
+  onFloorChange,
+}: { fov?: number; onFloorChange?: (floor: "split" | "whole") => void } = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const onFloorRef = useRef(onFloorChange);
+  // Kept current from an effect, not during render (react-hooks/refs).
+  useEffect(() => { onFloorRef.current = onFloorChange; }, [onFloorChange]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -77,6 +88,9 @@ export default function Facility3D({
       doorFrame: 0x2a3142, doorGlass: 0x6a8aa8, handle: 0xc7cdd6,
       slopeEdge: 0x3a4252,
       bdLine: 0x27500a,
+      tbLine: 0x0b6b6b,
+      fdLine: 0x283c8c,
+      laneLine: 0xc9876a,
       stump: 0x5a3a1f,
     };
 
@@ -251,65 +265,128 @@ export default function Facility3D({
       scene.add(topRail); meshes.push(topRail);
     });
 
-    // ── BADMINTON ── 3 courts, right-hand zone (x 306..572) by the entrance.
-    // Dark green lines, complete doubles markings, 3D nets.
-    const BD_X = [322, 406, 490];
-    BD_X.forEach((bx) => {
-      addStripe(bx, 32, 64, 2.0, C.bdLine);
-      addStripe(bx, 180, 64, 2.0, C.bdLine);
-      addStripe(bx, 32, 2.0, 150, C.bdLine);
-      addStripe(bx + 62, 32, 2.0, 150, C.bdLine);
-      addStripe(bx + 5, 32, 1.4, 150, C.bdLine);
-      addStripe(bx + 57.6, 32, 1.4, 150, C.bdLine);
-      addStripe(bx, 85, 64, 1.6, C.bdLine);
-      addStripe(bx, 129, 64, 1.6, C.bdLine);
-      addStripe(bx, 40, 64, 1.4, C.bdLine);
-      addStripe(bx, 174, 64, 1.4, C.bdLine);
-      addStripe(bx + 32, 40, 1.4, 45, C.bdLine);
-      addStripe(bx + 32, 129, 1.4, 45, C.bdLine);
-      const postH = 18;
-      [bx + 4, bx + 58].forEach((px) => {
-        const post = new THREE.Mesh(
-          new THREE.BoxGeometry(2, postH, 2),
-          new THREE.MeshLambertMaterial({ color: C.netPost }),
-        );
-        post.position.set(px, postH / 2, 107);
-        scene.add(post); meshes.push(post);
-      });
-      const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(54, 12, 0.4),
-        new THREE.MeshLambertMaterial({ color: C.netMesh, transparent: true, opacity: 0.55 }),
-      );
-      mesh.position.set(bx + 32, 8, 107);
-      scene.add(mesh); meshes.push(mesh);
-      const tape = new THREE.Mesh(
-        new THREE.BoxGeometry(54, 1.2, 0.6),
-        new THREE.MeshBasicMaterial({ color: C.line }),
-      );
-      tape.position.set(bx + 32, 14, 107);
-      scene.add(tape); meshes.push(tape);
-    });
+    // ── BADMINTON ⇄ THROWBALL (2026-10-29), CRICKET ⇄ FIELD (2026-10-31) ── two halls, each
+    // shown both ways. The field is the cricket hall hired whole — Aniket, 2026-10-31: "field
+    // (all three cricket lanes together) ... for cricket (match), soccer, baseball, etc. even
+    // birthday parties". The two halls swap in step, so the caption has one state to show.
+    //
+    // Aniket: "change the rotating floor plan to replace the 3 badminton courts with one
+    // throwball court (3 sec rotation between badminton and throwball)". The three
+    // badminton courts and the one throwball court are the SAME 72 x 44 ft of floor (the
+    // throwball team takes the badminton nets down and puts its own up), so the zone keeps
+    // its floor and the markings and nets cross-fade: badminton for 3 s, throwball for 3 s.
+    //
+    // Each sport's pieces live in their own group, OUT of `meshes`, so the batching below
+    // never merges them into the static scene: a merged line could not fade. Their lines are
+    // pre-merged into one mesh per sport here instead, so the swap costs a few draw calls,
+    // not dozens. The traverse after batching still finds them, so unmount disposes them.
+    type Fade = { mat: THREE.Material; base: number; sport: "badminton" | "throwball" | "cricket" | "field" };
+    const fades: Fade[] = [];
+    const sportGroup = {
+      badminton: new THREE.Group(), throwball: new THREE.Group(),
+      cricket: new THREE.Group(), field: new THREE.Group(),
+    };
+    scene.add(sportGroup.badminton, sportGroup.throwball, sportGroup.cricket, sportGroup.field);
+    // The split side (courts and lanes) shows while the swap's weight is 1, the whole side at 0.
+    const SPLIT = new Set<Fade["sport"]>(["badminton", "cricket"]);
+    function stripeGeom(x: number, z: number, w: number, d: number) {
+      const g = new THREE.PlaneGeometry(w, d);
+      g.rotateX(-Math.PI / 2);
+      g.translate(x + w / 2, 1.2, z + d / 2);
+      return g;
+    }
+    function addSportLines(sport: Fade["sport"], geoms: THREE.BufferGeometry[], color: number) {
+      const geometry = mergeGeometries(geoms, false);
+      geoms.forEach((g) => g.dispose());
+      if (!geometry) return;
+      const mat = new THREE.MeshBasicMaterial({ color, transparent: true, depthWrite: false });
+      const mesh = new THREE.Mesh(geometry, mat);
+      // Coplanar with depth writes off, so drawn in the order added: a crease lies on its matting.
+      mesh.renderOrder = fades.length;
+      sportGroup[sport].add(mesh);
+      fades.push({ mat, base: 1, sport });
+    }
+    // Many small solid boxes of one colour (the stumps and bails) as ONE mesh, for the same
+    // draw-call reason as the lines.
+    function addSportSolids(sport: Fade["sport"], boxes: { size: [number, number, number]; at: [number, number, number] }[], color: number) {
+      const geoms = boxes.map(({ size, at }) => new THREE.BoxGeometry(...size).translate(...at));
+      const geometry = mergeGeometries(geoms, false);
+      geoms.forEach((g) => g.dispose());
+      if (!geometry) return;
+      const mat = new THREE.MeshLambertMaterial({ color, transparent: true });
+      sportGroup[sport].add(new THREE.Mesh(geometry, mat));
+      fades.push({ mat, base: 1, sport });
+    }
+    function addSportBox(sport: Fade["sport"], size: [number, number, number], at: [number, number, number], color: number, opacity = 1, lit = true) {
+      const mat = lit
+        ? new THREE.MeshLambertMaterial({ color, transparent: true, opacity })
+        : new THREE.MeshBasicMaterial({ color, transparent: true, opacity });
+      const m = new THREE.Mesh(new THREE.BoxGeometry(...size), mat);
+      m.position.set(...at);
+      sportGroup[sport].add(m);
+      fades.push({ mat, base: opacity, sport });
+    }
 
-    // ── CRICKET ── lane outlines + pitch + creases + 3D wickets (stumps + bails)
-    const stumpMat = new THREE.MeshLambertMaterial({ color: C.stump });
+    // BADMINTON: 3 courts, right-hand zone (x 306..572) by the entrance. Dark green lines,
+    // complete doubles markings, 3D nets — as before 2026-10-29, now in their own group.
+    const BD_X = [322, 406, 490];
+    const bdLines: THREE.BufferGeometry[] = [];
+    BD_X.forEach((bx) => {
+      const s = (x: number, z: number, w: number, d: number) => bdLines.push(stripeGeom(x, z, w, d));
+      s(bx, 32, 64, 2.0);
+      s(bx, 180, 64, 2.0);
+      s(bx, 32, 2.0, 150);
+      s(bx + 62, 32, 2.0, 150);
+      s(bx + 5, 32, 1.4, 150);
+      s(bx + 57.6, 32, 1.4, 150);
+      s(bx, 85, 64, 1.6);
+      s(bx, 129, 64, 1.6);
+      s(bx, 40, 64, 1.4);
+      s(bx, 174, 64, 1.4);
+      s(bx + 32, 40, 1.4, 45);
+      s(bx + 32, 129, 1.4, 45);
+      const postH = 18;
+      [bx + 4, bx + 58].forEach((px) => addSportBox("badminton", [2, postH, 2], [px, postH / 2, 107], C.netPost));
+      addSportBox("badminton", [54, 12, 0.4], [bx + 32, 8, 107], C.netMesh, 0.55);
+      addSportBox("badminton", [54, 1.2, 0.6], [bx + 32, 14, 107], C.line, 1, false);
+    });
+    addSportLines("badminton", bdLines, C.bdLine);
+
+    // THROWBALL: one USA Throwball court, 60 x 36 ft (the size Aniket chose for the painter,
+    // 2026-10-27), centred on the three badminton courts. The zone's 72 ft run along x and
+    // 44 ft along z, so 60 ft is ~193 units and 36 ft ~123. The net crosses the middle of
+    // the 60 ft, with the neutral zone 3.3 ft (~11 units) either side, and stands higher
+    // than a badminton net. Lines in deep teal, the colour throwball has on the calendar.
+    const TB = { x0: 341.5, x1: 534.5, z0: 45.5, z1: 168.5, mid: 438, neutral: 10.6 };
+    const tbLines: THREE.BufferGeometry[] = [];
+    const t = (x: number, z: number, w: number, d: number) => tbLines.push(stripeGeom(x, z, w, d));
+    t(TB.x0, TB.z0, TB.x1 - TB.x0, 2.2);                                // sidelines
+    t(TB.x0, TB.z1 - 2.2, TB.x1 - TB.x0, 2.2);
+    t(TB.x0, TB.z0, 2.2, TB.z1 - TB.z0);                                // end lines
+    t(TB.x1 - 2.2, TB.z0, 2.2, TB.z1 - TB.z0);
+    t(TB.mid - 0.8, TB.z0, 1.6, TB.z1 - TB.z0);                         // centre line, under the net
+    t(TB.mid - TB.neutral, TB.z0, 1.6, TB.z1 - TB.z0);                  // neutral zone
+    t(TB.mid + TB.neutral - 1.6, TB.z0, 1.6, TB.z1 - TB.z0);
+    // Service zone: the right-hand 18 ft (~61 units) of each end line, marked by ticks.
+    t(TB.x0 - 4, TB.z1 - 61, 4, 1.6);
+    t(TB.x1, TB.z0 + 61, 4, 1.6);
+    addSportLines("throwball", tbLines, C.tbLine);
+    const tbPostH = 26;
+    [TB.z0 - 6, TB.z1 + 6].forEach((pz) => addSportBox("throwball", [2.4, tbPostH, 2.4], [TB.mid, tbPostH / 2, pz], C.netPost));
+    addSportBox("throwball", [0.4, 12, TB.z1 - TB.z0 + 12], [TB.mid, 17, (TB.z0 + TB.z1) / 2], C.netMesh, 0.55);
+    addSportBox("throwball", [0.6, 1.4, TB.z1 - TB.z0 + 12], [TB.mid, 23.2, (TB.z0 + TB.z1) / 2], C.line, 1, false);
+
+    // ── CRICKET ── lane outlines + pitch + creases + 3D wickets (stumps + bails). Since
+    // 2026-10-31 all of it is the cricket side of the hall's swap, so it lives in its group.
+    const stumps: { size: [number, number, number]; at: [number, number, number] }[] = [];
     function addWicketSet(x: number, zCenter: number) {
       const stumpH = 8, stumpW = 1.0, stumpSpacing = 2.2;
       for (let i = -1; i <= 1; i++) {
-        const stump = new THREE.Mesh(
-          new THREE.BoxGeometry(stumpW, stumpH, stumpW),
-          stumpMat,
-        );
-        stump.position.set(x, stumpH / 2, zCenter + i * stumpSpacing);
-        scene.add(stump); meshes.push(stump);
+        stumps.push({ size: [stumpW, stumpH, stumpW], at: [x, stumpH / 2, zCenter + i * stumpSpacing] });
       }
       const bailLen = stumpSpacing * 0.95, bailH = 0.7, bailW = 0.8;
       for (let i = 0; i < 2; i++) {
-        const bail = new THREE.Mesh(
-          new THREE.BoxGeometry(bailW, bailH, bailLen),
-          stumpMat,
-        );
-        bail.position.set(x, stumpH + bailH / 2, zCenter + (i - 0.5) * stumpSpacing);
-        scene.add(bail); meshes.push(bail);
+        stumps.push({ size: [bailW, bailH, bailLen], at: [x, stumpH + bailH / 2, zCenter + (i - 0.5) * stumpSpacing] });
       }
     }
 
@@ -333,18 +410,50 @@ export default function Facility3D({
     // cannot all be whole at every angle. A 48-unit pitch from z 206 keeps lanes
     // 1 and 2 clear through the entire orbit and starts lane 3 at 302, so all
     // three read at the hero angle and lane 3 is never *entirely* gone.
-    [206, 254, 302].forEach((lz) => {
-      addStripe(8, lz, 290, 1.2, 0xc9876a);
-      addStripe(8, lz + LANE_W - 1, 290, 1.2, 0xc9876a);
-      addStripe(8, lz, 1.2, LANE_W, 0xc9876a);
-      addStripe(297, lz, 1.2, LANE_W, 0xc9876a);
-      addStripe(24, lz + (LANE_W - PITCH_W) / 2, 162, PITCH_W, C.tin);
-      addStripe(40, lz + (LANE_W - CREASE_L) / 2, 1.6, CREASE_L, C.line);
-      addStripe(184, lz + (LANE_W - CREASE_L) / 2, 1.6, CREASE_L, C.line);
+    const LANES_Z = [206, 254, 302];
+    const laneLines: THREE.BufferGeometry[] = [], matting: THREE.BufferGeometry[] = [], creases: THREE.BufferGeometry[] = [];
+    LANES_Z.forEach((lz) => {
+      laneLines.push(
+        stripeGeom(8, lz, 290, 1.2),
+        stripeGeom(8, lz + LANE_W - 1, 290, 1.2),
+        stripeGeom(8, lz, 1.2, LANE_W),
+        stripeGeom(297, lz, 1.2, LANE_W),
+      );
+      matting.push(stripeGeom(24, lz + (LANE_W - PITCH_W) / 2, 162, PITCH_W));
+      creases.push(
+        stripeGeom(40, lz + (LANE_W - CREASE_L) / 2, 1.6, CREASE_L),
+        stripeGeom(184, lz + (LANE_W - CREASE_L) / 2, 1.6, CREASE_L),
+      );
       const pitchZ = lz + LANE_W / 2;
       addWicketSet(40, pitchZ);
       addWicketSet(184, pitchZ);
     });
+    addSportLines("cricket", laneLines, C.laneLine);
+    addSportLines("cricket", matting, C.tin);
+    addSportLines("cricket", creases, C.line);
+    addSportSolids("cricket", stumps, C.stump);
+
+    // FIELD: the three lanes as one open floor. No sport's markings are painted there, so this
+    // draws a generic field (boundary, halfway line, centre circle) in indigo: enough to read as
+    // one big space against the three lanes it replaces. Same outer edge as the lanes.
+    const FD = { x0: 8, x1: 298, z0: LANES_Z[0], z1: LANES_Z[2] + LANE_W };
+    const fdMidX = (FD.x0 + FD.x1) / 2, fdMidZ = (FD.z0 + FD.z1) / 2;
+    const fdLines: THREE.BufferGeometry[] = [
+      stripeGeom(FD.x0, FD.z0, FD.x1 - FD.x0, 2.2),
+      stripeGeom(FD.x0, FD.z1 - 2.2, FD.x1 - FD.x0, 2.2),
+      stripeGeom(FD.x0, FD.z0, 2.2, FD.z1 - FD.z0),
+      stripeGeom(FD.x1 - 2.2, FD.z0, 2.2, FD.z1 - FD.z0),
+      stripeGeom(fdMidX - 0.8, FD.z0, 1.6, FD.z1 - FD.z0),
+    ];
+    const ring = new THREE.RingGeometry(26, 28, 48);
+    ring.rotateX(-Math.PI / 2);
+    ring.translate(fdMidX, 1.2, fdMidZ);
+    const spot = new THREE.CircleGeometry(2.4, 16);
+    spot.rotateX(-Math.PI / 2);
+    spot.translate(fdMidX, 1.2, fdMidZ);
+    fdLines.push(ring, spot);
+    addSportLines("field", fdLines, C.fdLine);
+
 
     // ── Batching ── one draw call per look, not per piece
     //
@@ -386,7 +495,7 @@ export default function Facility3D({
       for (const m of group) {
         scene.remove(m);
         m.geometry.dispose();
-        if (m.material !== material && m.material !== stumpMat) (m.material as THREE.Material).dispose();
+        if (m.material !== material) (m.material as THREE.Material).dispose();
         merged.add(m);
       }
     }
@@ -405,6 +514,29 @@ export default function Facility3D({
     // fast and slow — judder on top of the dropped frames. Seen on the reception TV,
     // 2026-09-19. 0.198 rad/s is the old speed at 60 fps.
     const RAD_PER_SEC = 0.0033 * 60;
+    // The halls' swap: HOLD seconds of each way, the last FADE of each a cross-fade into the
+    // other. On the same paused clock as the orbit.
+    const HOLD = 3, FADE = 0.5;
+    let swapClock = 0;
+    let shown: "split" | "whole" | null = null;
+    function splitWeight(s: number) {
+      const p = s % (2 * HOLD);
+      if (p < HOLD - FADE) return 1;
+      if (p < HOLD) return 1 - (p - (HOLD - FADE)) / FADE;
+      if (p < 2 * HOLD - FADE) return 0;
+      return (p - (2 * HOLD - FADE)) / FADE;
+    }
+    function applySwap() {
+      const w = splitWeight(swapClock);
+      for (const f of fades) {
+        (f.mat as THREE.Material & { opacity: number }).opacity = f.base * (SPLIT.has(f.sport) ? w : 1 - w);
+      }
+      sportGroup.badminton.visible = sportGroup.cricket.visible = w > 0.001;
+      sportGroup.throwball.visible = sportGroup.field.visible = w < 0.999;
+      const now: "split" | "whole" = w >= 0.5 ? "split" : "whole";
+      if (now !== shown) { shown = now; onFloorRef.current?.(now); }
+    }
+    applySwap();
     let rafId = 0;
     let visible = true;
     let last = 0;
@@ -415,6 +547,8 @@ export default function Facility3D({
       const dt = last ? Math.min((now - last) / 1000, 0.1) : 0;
       last = now;
       angle += RAD_PER_SEC * dt;
+      swapClock += dt;
+      applySwap();
       updateCamera();
       renderer.render(scene, camera);
     }
@@ -450,7 +584,6 @@ export default function Facility3D({
         l.geometry.dispose();
         (l.material as THREE.Material).dispose();
       });
-      stumpMat.dispose();
       renderer.dispose();
       if (renderer.domElement.parentNode === container) {
         container.removeChild(renderer.domElement);

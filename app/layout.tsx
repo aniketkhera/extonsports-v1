@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     template: "%s · Exton Sports Center",
   },
   description:
-    "Cricket, squash, badminton and indoor turf — under one roof in Exton, PA. Book a court by the hour, no membership required. Open 24/7. Coaching delivered through Orangish.",
+    "Cricket, squash, badminton, throwball and indoor turf — under one roof in Exton, PA, and the whole cricket hall as a field. Book a court by the hour, no membership required. Open 24/7. Coaching delivered through Orangish.",
   alternates: { canonical: "/" },
   keywords: [
     "Exton Sports Center",
@@ -68,7 +68,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Exton Sports Center — pay-to-play multi-sport club · open 24/7",
     description:
-      "Cricket, squash, badminton and indoor turf in Exton, PA. Pay by the hour, no membership. Open 24/7.",
+      "Cricket, squash, badminton, throwball, field hire and indoor turf in Exton, PA. Pay by the hour, no membership. Open 24/7.",
     url: "https://www.extonsports.com",
     siteName: "Exton Sports Center",
     type: "website",
@@ -86,7 +86,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Exton Sports Center — pay-to-play multi-sport club · open 24/7",
     description:
-      "Cricket, squash, badminton and indoor turf in Exton, PA. Pay by the hour, no membership. Open 24/7.",
+      "Cricket, squash, badminton, throwball, field hire and indoor turf in Exton, PA. Pay by the hour, no membership. Open 24/7.",
     images: ["/logo.png"],
   },
   robots: {
@@ -119,7 +119,7 @@ const sportsClubLd = {
   email: "info@extonsports.com",
   telephone: "+1-484-252-2523",
   description:
-    "Pay-to-play multi-sport club in Exton, PA with squash, badminton, cricket, indoor turf, fitness and a pro shop. Book courts by the hour, no membership required. Open 24/7.",
+    "Pay-to-play multi-sport club in Exton, PA with squash, badminton, cricket, throwball, field hire, indoor turf, fitness and a pro shop. Book courts by the hour, no membership required. Open 24/7.",
   address: {
     "@type": "PostalAddress",
     streetAddress: "4 Tabas Lane, Building 2",

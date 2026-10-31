@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Facility3D from "./Facility3D";
@@ -7,6 +8,8 @@ import WhatsAppButton from "./WhatsAppButton";
 import { LEGAL_NAME, CONTACT_PHONE, CONTACT_PHONE_E164 } from "@/lib/legal";
 
 export default function About() {
+  // Which way the 3D model's two halls are showing (2026-10-29/31), for its caption.
+  const [floor, setFloor] = useState<"split" | "whole">("split");
   return (
     <section
       id="about"
@@ -33,8 +36,9 @@ export default function About() {
           </h2>
           <p className="text-white/60 text-[0.94rem] leading-[1.7] mb-3 max-w-[48ch]">
             Exton Sports Center is a multi-sport facility in
-            Chester County — cricket, squash, badminton and indoor turf under
-            one roof, open round the clock.
+            Chester County — cricket, squash, badminton, throwball and indoor
+            turf under one roof, open round the clock. Hire the whole cricket
+            hall as one field for a match, soccer, baseball or a party.
           </p>
 
           <dl className="mt-6 pt-5 border-t border-[var(--color-line-2)] grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5">
@@ -132,7 +136,21 @@ export default function About() {
             background: "var(--scene-bg)",
           }}
         >
-          <Facility3D />
+          <Facility3D onFloorChange={setFloor} />
+          {/* Each hall's two uses (2026-10-29/31): the one showing is lit. Two rows, so it fits
+              a phone-width canvas. */}
+          <div
+            aria-hidden
+            className="absolute left-3 bottom-3 grid grid-cols-[auto_auto_auto] items-center gap-x-2 gap-y-0.5 text-cond-md text-[0.72rem] tracking-[0.12em] uppercase px-3 py-1.5 bg-black/55 border border-[var(--color-line-2)]"
+          >
+            {([["Badminton", "Throwball"], ["Cricket", "Field"]] as const).map(([split, whole]) => (
+              <Fragment key={split}>
+                <span className={floor === "split" ? "text-[var(--color-ember)]" : "text-white/40"}>{split}</span>
+                <span className="text-white/40">⇄</span>
+                <span className={floor === "whole" ? "text-[var(--color-ember)]" : "text-white/40"}>{whole}</span>
+              </Fragment>
+            ))}
+          </div>
         </motion.div>
       </div>
     </section>
