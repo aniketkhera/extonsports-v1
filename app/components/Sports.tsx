@@ -10,7 +10,7 @@ type Sport = {
   spec: string;
   body: string;
   // SVG line decoration drawn faintly on the card
-  decoration: "cricket" | "squash" | "badminton" | "throwball" | "turf" | "fitness";
+  decoration: "cricket" | "squash" | "badminton" | "throwball" | "field" | "turf" | "fitness";
   prefix?: string; // orange headline shown when count is "—"
 };
 
@@ -55,7 +55,19 @@ const sports: Sport[] = [
     decoration: "throwball",
   },
   {
+    // 2026-10-31: the three cricket lanes hired as one open floor. Aniket: "field (all three
+    // cricket lanes together) ... for cricket (match), soccer, baseball, etc. even birthday
+    // parties". No markings of its own, so the card says what it is for, not its lines.
     n: "05",
+    name: "Field",
+    count: "1",
+    unit: "field",
+    spec: "All three cricket lanes · matches, soccer, baseball, parties",
+    body: "All three cricket lanes open up into one indoor field — a cricket match, soccer, baseball, even a birthday party. Book it by the hour.",
+    decoration: "field",
+  },
+  {
+    n: "06",
     name: "Turf",
     count: "—",
     unit: "",
@@ -82,7 +94,7 @@ export default function Sports() {
             <div className="flex items-center gap-3 mb-5">
               <span className="w-7 h-px bg-[var(--color-ember)]" />
               <span className="text-mono text-[0.7rem] text-[var(--color-ember)]">
-                Five sports · one club
+                Six ways to play · one club
               </span>
             </div>
             <h2
@@ -103,7 +115,7 @@ export default function Sports() {
         </motion.div>
 
         {/* Sport cards */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {sports.map((s, i) => (
             <motion.article
               key={s.n}
@@ -272,6 +284,20 @@ function SportDeco({ kind }: { kind: Sport["decoration"] }) {
           {/* Service zone: the right-hand 18 ft of each end line */}
           <line x1="100" y1="20" x2="100" y2="12" stroke={line} strokeWidth={sw} />
           <line x1="100" y1="260" x2="100" y2="268" stroke={line} strokeWidth={sw} />
+        </>
+      )}
+
+      {kind === "field" && (
+        <>
+          {/* Top-down open field: boundary, halfway line, centre circle and spot. Generic on
+              purpose: the floor carries no one sport's lines. */}
+          <rect x="22" y="20" width="156" height="240" stroke={line} strokeWidth={sw} fill="none" />
+          <line x1="22" y1="140" x2="178" y2="140" stroke={line} strokeWidth={sw} />
+          <circle cx="100" cy="140" r="30" stroke={line} strokeWidth={sw} fill="none" />
+          <circle cx="100" cy="140" r="2" fill={tin} />
+          {/* End boxes, soft */}
+          <rect x="62" y="20" width="76" height="30" stroke={lineSoft} strokeWidth={sw} fill={fillSoft} />
+          <rect x="62" y="230" width="76" height="30" stroke={lineSoft} strokeWidth={sw} fill={fillSoft} />
         </>
       )}
 

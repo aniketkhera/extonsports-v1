@@ -2386,7 +2386,7 @@ const RECREATION = {
   // already says "Book a court or lane". The NO-BREAK space keeps "or lane." together, so
   // where the line wraps it reads BOOK A COURT / OR LANE., never BOOK A COURT OR / LANE.
   headline: { line1: "Book a court or lane.", line2: "Pay by the hour." },
-  body: "Squash, badminton, cricket and throwball. Open 24×7. Anyone can book.",
+  body: "Squash, badminton, cricket and throwball, or hire the whole field. Open 24×7. Anyone can book.",
   cta: "Book a court",
 };
 

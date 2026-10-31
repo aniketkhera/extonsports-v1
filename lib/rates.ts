@@ -224,6 +224,9 @@ export const COURT_RATES: SportRate[] = [
   // 2026-10-29 MOCKUP: Aniket, "On price, same as peak and off peak. I am thinking $100 per
   // hour for peak and $90 per hour for off-peak" — for the whole badminton hall as one court.
   { sport: 'Throwball', feature: 'All three badminton courts', offPeak: 90, peak: 100 },
+  // 2026-10-31 MOCKUP: Aniket, "field (all three cricket lanes together) ... we can rent out the
+  // field at $150 peak and $130 offpeak, per hour".
+  { sport: 'Field', feature: 'All three cricket lanes', offPeak: 130, peak: 150 },
 ]
 
 /** One order for every sport list on the site. */
