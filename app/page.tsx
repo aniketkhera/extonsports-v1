@@ -13,7 +13,7 @@ export const metadata: Metadata = {
       "Exton Sports Center — pay-to-play multi-sport club · open 24/7",
   },
   description:
-    "Cricket, squash, badminton and indoor turf — under one roof in Exton, PA. Book a court by the hour, no membership required. Open 24/7. Coaching delivered through Orangish.",
+    "Cricket, squash, badminton, throwball and indoor turf — under one roof in Exton, PA, and the whole cricket hall as a field. Book a court by the hour, no membership required. Open 24/7. Coaching delivered through Orangish.",
   alternates: { canonical: "/" },
 };
 

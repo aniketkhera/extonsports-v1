@@ -38,7 +38,8 @@ export default function Facility3D({
 }: { fov?: number; onFloorChange?: (floor: "split" | "whole") => void } = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const onFloorRef = useRef(onFloorChange);
-  onFloorRef.current = onFloorChange;
+  // Kept current from an effect, not during render (react-hooks/refs).
+  useEffect(() => { onFloorRef.current = onFloorChange; }, [onFloorChange]);
 
   useEffect(() => {
     const container = containerRef.current;

@@ -22,7 +22,7 @@ const SECTIONS: Section[] = [
   },
   {
     title: 'Sport carries risk',
-    body: 'Squash, badminton, cricket, indoor turf and fitness training all carry a risk of injury. Nothing on this website reduces that risk or implies that any activity is suitable for you.\n\nIf you have a medical condition, an injury, or you are returning to sport after time away, speak to a doctor before playing. If you are unsure whether a session or programme suits your level, ask us and we will tell you honestly.',
+    body: 'Squash, badminton, cricket, throwball, games on the field, indoor turf and fitness training all carry a risk of injury. Nothing on this website reduces that risk or implies that any activity is suitable for you.\n\nIf you have a medical condition, an injury, or you are returning to sport after time away, speak to a doctor before playing. If you are unsure whether a session or programme suits your level, ask us and we will tell you honestly.',
   },
   {
     title: 'The waiver governs, not this page',
