@@ -24,8 +24,9 @@
    §3.9(a) blacks out 25 Dec – 1 Jan every year. Not shown: a visitor reading this
    in October does not need it, and a stale holiday notice is worse than none.
 
-   Only Committed Hours are published. The extra hours PBA takes on BADMINTON 1
-   (Fridays 5–6pm to 20 Nov, Saturdays 6–7pm to 19 Dec) are not on this table. */
+   Only Committed Hours are published — with ONE exception, below: November's
+   Tue/Thu/Fri open-play nights. The extra hours PBA takes on BADMINTON 1 (Fridays
+   5–6pm to 20 Nov, Saturdays 6–7pm to 19 Dec) are still not on this table. */
 
 import { clubDate } from './opening'
 
@@ -70,6 +71,26 @@ const SAT: PbaSlot = { day: 'Sat', coaching: '4–6pm', openPlay: '9–11am' }
 const SUN: PbaSlot = { day: 'Sun', coaching: '4–6pm', openPlay: '7–9am' }
 const DECEMBER = 'From 30 November it runs Monday to Friday: coaching 5:30–7:30pm, open play 7:30–9:30pm.'
 
+/* ── NOVEMBER'S TUE/THU/FRI OPEN PLAY, 6–9pm — NOT A COMMITTED HOUR ─────────────
+   2026-11-02, Aniket: "we added more open play sessions for badminton starting
+   this week. pls check the calendar and add those too." Booked 2026-10-29 as a
+   stopgap until PBA's committed Mon–Fri hours start on 30 November: PBA runs these
+   nights and collects for them on its own system, outside the licence and its
+   weekly invoice — so they are the one thing on this table that §3.1 does not
+   make a contract term. Read from the platform's `events` (name 'Philadelphia
+   Badminton', descriptions starting "OPEN PLAY run by PBA"): Tue/Thu/Fri 3–27 Nov,
+   18:00–21:00 on all three courts, eleven nights — Thanksgiving, Thu 26 Nov, is NOT
+   booked, and the note says so.
+
+   The same calendar moved Saturday 21 November's morning block to Sunday 22
+   November 9–11am (also open play, orangish-app #694), so the note says that too:
+   the table would otherwise promise a Saturday morning that is not on the courts.
+
+   The weekly table carries no dates, so this lives in the November phase only and
+   leaves with it on 30 November, when the December rows take over at 7:30pm. */
+const novemberOpenPlay = (day: string): PbaSlot => ({ day, coaching: null, openPlay: '6–9pm' })
+const NOVEMBER = 'Tue, Thu & Fri open play runs to 27 November — none on Thanksgiving (26 Nov). Saturday 21 November’s morning session moves to Sunday 22 November, 9–11am.'
+
 const PBA_PHASES: ReadonlyArray<{ from: string; slots: PbaSlot[]; note: string | null }> = [
   {
     from: '2026-10-05',
@@ -78,8 +99,11 @@ const PBA_PHASES: ReadonlyArray<{ from: string; slots: PbaSlot[]; note: string |
   },
   {
     from: '2026-11-02',
-    slots: [weekdayEvening('Mon'), weekdayEvening('Wed'), SAT, SUN],
-    note: DECEMBER,
+    slots: [
+      weekdayEvening('Mon'), novemberOpenPlay('Tue'), weekdayEvening('Wed'),
+      novemberOpenPlay('Thu'), novemberOpenPlay('Fri'), SAT, SUN,
+    ],
+    note: `${NOVEMBER} ${DECEMBER}`,
   },
   {
     from: '2026-11-30',
