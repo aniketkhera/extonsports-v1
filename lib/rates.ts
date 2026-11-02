@@ -336,3 +336,31 @@ export const BAND_BLURB: Record<BandKey, string> = {
      cheap hour worth naming. It still covers the small hours. */
   offPeak: 'Weekday daytime until 5pm, and every night from 9pm.',
 }
+
+/**
+ * "$5 discount on packs for EMA, Kadavu & POWER members" — one line under a
+ * programme's pack list on the class card. 2026-11-02.
+ *
+ * Aniket: "add the discount to extonsports.com too … a small note is ok saying
+ * '$5 discount on packs for...'". The discount itself lives on the platform
+ * (orangish-app lib/community-discount.ts, PR #697): a self-declared checkbox on
+ * app.orangish.io/c/bollywood and /packs takes $5 off any Bollywood Fitness pack.
+ * The drop-in is never discounted ("Keep that as $25 only"), so this sits under
+ * the PACKS and never beside the $25.
+ *
+ * Copy, not a price. The pack prices above it come live from the platform, and
+ * "$5 off" is the stable fact — nothing here goes stale when a pack price moves.
+ * Keyed by the platform programme NAME (squad_programs.name, which is what
+ * ProgramSchedule.program carries), normalised the way programSlug does it; a
+ * rename on the platform simply drops the note rather than misplacing it. If the
+ * platform entry is ever removed, delete this one too.
+ */
+const PACK_DISCOUNT_NOTES: Readonly<Record<string, string>> = {
+  'bollywood-fitness': '$5 discount on packs for EMA, Kadavu & POWER members — tick the box when you buy online.',
+}
+
+export function packDiscountNote(programName: string | null | undefined): string | null {
+  if (!programName) return null
+  const key = programName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+  return Object.prototype.hasOwnProperty.call(PACK_DISCOUNT_NOTES, key) ? PACK_DISCOUNT_NOTES[key] : null
+}

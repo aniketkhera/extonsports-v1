@@ -7,7 +7,7 @@ import type { AvailabilityPayload } from "../api/availability/route";
 import type { CourtAvailability } from "../api/court-availability/route";
 import type { SchedulePayload } from "../api/schedule/route";
 import type { ProgramSchedule } from "@/lib/club-schedule";
-import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, CLASS_FEES_NOTE } from "../../lib/rates";
+import { COURT_RATES, RATE_BANDS, RATE_FOOTNOTE, CLASS_FEES_NOTE, packDiscountNote } from "../../lib/rates";
 import { BOLLYWOOD_CLASS_URL, SQUAD_CLASS_URL, STARTER_PACK_URL, BOOK_COURT_URL, PAY_URL, CLASS_ONLINE_BOOKING_LIVE, BOOKING_LIST_EMAIL_LIVE, PACKS_LIVE, PACK_PATH } from "../../lib/booking";
 import { SPORT_BOOKING_OPENS_LABEL, sportBookingOpen, sportShutOnDate, sportsNotYetOpen } from "../../lib/opening";
 import { pbaScheduleOn, PBA_COURTS } from "../../lib/pba-schedule";
@@ -860,6 +860,14 @@ function ScheduleLine({ schedule, registerHref }: { schedule: DetailSchedule | n
               </div>
             );
           })()}
+          {/* The pack discount, where a programme has one — under the packs it
+              applies to, never beside the drop-in, which is $25 to everyone.
+              See packDiscountNote in lib/rates.ts. */}
+          {packDiscountNote(schedule.program) && (
+            <div className="text-[var(--color-ember)] text-[0.8rem] mt-1">
+              {packDiscountNote(schedule.program)}
+            </div>
+          )}
           <div className="text-white/35 text-[0.75rem] mt-1">{CLASS_FEES_NOTE}</div>
         </div>
       )}
