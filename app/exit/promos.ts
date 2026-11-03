@@ -37,9 +37,9 @@ import w from "./workshop.module.css";
    pack - remove others (like that Phoenix throwball and CCCA notice)", then, on the
    DIWALI2026 coupon, "push it to vestibule". So the vestibule's list is the court packs
    alone (PacksHero.tsx); one panel takes no slot class and the screen draws no dots. The
-   exit door (the outside set) keeps Phoenix and CCCA for now: a message of its own for
-   that wall is being drafted separately. Nothing is deleted: put a key back in a list to
-   bring a panel back. */
+   exit door's list keeps Phoenix and CCCA, but since the same day the outside set shows
+   a message of its own ("our-club", tv-screens.ts), so only the /exit preview address
+   draws it. Nothing is deleted: put a key back in a list to bring a panel back. */
 const promoTicker = makeTicker(30_000);
 
 export type PromoKey = "phoenix" | "starter" | "ccca" | "workshop" | "packs";
