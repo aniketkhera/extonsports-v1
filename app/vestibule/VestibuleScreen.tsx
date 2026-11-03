@@ -14,6 +14,7 @@ import StarterHero from "../exit/StarterHero";
 import PhoenixHero from "../exit/PhoenixHero";
 import WorkshopHero from "../exit/WorkshopHero";
 import CccaHero from "../exit/CccaHero";
+import PacksHero from "../exit/PacksHero";
 import w from "../exit/workshop.module.css";
 import v from "./vestibule.module.css";
 
@@ -185,7 +186,7 @@ export default function VestibuleScreen() {
      one row of it, and looks two further for a booking starting at the same moment.
      `currentOnly`: ON NOW lists only what is on court this minute (see the hook). */
   const { panels, today, stale } = useCourtPanels({ upcoming: 3, upNextMax: UP_NEXT_MAX, currentOnly: true });
-  const { up, slot } = usePromos();
+  const { up, slot } = usePromos("vestibule");
 
   return (
     <div style={{ position: "absolute", inset: 0, background: BG }}>
@@ -221,6 +222,9 @@ export default function VestibuleScreen() {
                 {up.includes("starter") && <StarterHero className={slot("starter")} panel />}
                 {up.includes("ccca") && <CccaHero className={slot("ccca")} panel />}
                 {up.includes("workshop") && <WorkshopHero className={slot("workshop")} panel />}
+                {/* The court packs, alone here since 2026-11-03 (promos.ts). Made for this
+                    panel only, so it takes no `panel` flag. */}
+                {up.includes("packs") && <PacksHero className={slot("packs")} />}
               </div>
             </div>
             {/* Which of the N panels is up: a dot each, the lit one on the same

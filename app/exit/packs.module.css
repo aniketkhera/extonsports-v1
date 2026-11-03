@@ -1,0 +1,252 @@
+/* The court packs panel (2026-11-03): the printed court-packs poster in the wall
+   screens' look, for the vestibule's right half. Same rules as exit.module.css, for the
+   same weak VIZIO browsers: literal colours, sizes in the 16:9 box's units (--vw/--vh,
+   which the vestibule's .promoScale redefines at 0.8), and only transform and opacity
+   animate. The code card, its ring and the entrances are exit.module.css's own classes
+   (PacksHero.tsx), so this panel moves like the ones before it. */
+
+/* Head, then the two sports with the code beside them, then the one rule and the
+   coupon. The rows take what they need and the cards' row the rest, so nothing is
+   pushed off the bottom of the frame. */
+.hero {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  row-gap: calc(3 * var(--vh));
+  padding: calc(4.4 * var(--vh)) calc(3 * var(--vw)) calc(4.4 * var(--vh));
+  position: relative;
+  /* A warm light behind the title, painted once, as the poster's top-left bloom. */
+  background:
+    radial-gradient(46% 40% at 18% 12%, rgba(248, 155, 114, 0.16) 0%, rgba(248, 155, 114, 0) 100%),
+    radial-gradient(40% 40% at 92% 96%, rgba(66, 181, 77, 0.12) 0%, rgba(66, 181, 77, 0) 100%);
+}
+
+/* ── THE HEAD ───────────────────────────────────────────────────────────────── */
+.head {
+  display: grid;
+  justify-items: start;
+}
+.chips {
+  display: flex;
+  gap: calc(0.7 * var(--vw));
+}
+.chip {
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 700;
+  font-size: calc(1.15 * var(--vw));
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #0b1623;
+  background: #f89b72;
+  padding: 0.38em 0.7em 0.4em 0.94em;
+}
+/* The coupon's chip: the festival's gold, so it never reads as one of the prices. */
+.chipGold {
+  background: #ffc43d;
+}
+.title {
+  margin: calc(1.8 * var(--vh)) 0 0;
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 700;
+  font-size: calc(7 * var(--vw));
+  line-height: 0.92;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: #ffffff;
+  white-space: nowrap;
+}
+.accent {
+  color: #f89b72;
+}
+.pitch {
+  margin: calc(1.6 * var(--vh)) 0 0;
+  font-size: calc(1.95 * var(--vw));
+  font-weight: 500;
+  line-height: 1.25;
+  color: rgba(255, 255, 255, 0.78);
+}
+.pitch b {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* ── THE PRICES, AND THE CODE ───────────────────────────────────────────────── */
+/* Badminton | Cricket | code. The code sits level with the prices, so whoever has read
+   a price has the thing to scan right beside it. */
+.cards {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  column-gap: calc(1.4 * var(--vw));
+  align-items: stretch;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.045);
+  border: calc(0.08 * var(--vw)) solid rgba(255, 255, 255, 0.13);
+  border-top: calc(0.36 * var(--vw)) solid #f89b72;
+  padding: calc(2 * var(--vh)) calc(1.3 * var(--vw)) calc(1 * var(--vh));
+}
+.sport {
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: calc(2.9 * var(--vw));
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #f89b72;
+  margin-bottom: calc(0.6 * var(--vh));
+}
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(1.2 * var(--vh)) 0 calc(1 * var(--vh));
+  border-top: calc(0.08 * var(--vw)) solid rgba(255, 255, 255, 0.13);
+}
+/* The number and its unit stacked: the panel's columns are too narrow for the poster's
+   "10 COURT-HOURS $350" on one line at a size the vestibule can read. */
+.qty {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+.qty b {
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: calc(3.5 * var(--vw));
+  line-height: 0.95;
+}
+.qty i {
+  margin-top: calc(0.5 * var(--vh));
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: calc(0.95 * var(--vw));
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
+}
+.price {
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 700;
+  font-size: calc(5.6 * var(--vw));
+  line-height: 1;
+  color: #ffffff;
+}
+.price small {
+  font-size: 0.55em;
+  vertical-align: 0.62em;
+  margin-right: 0.04em;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* The code, then the address under it: the address is for whoever reads rather than
+   scans, and sits where the eye lands after the code. */
+.cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+/* SCAN TO BUY is shorter than the Starter Pack's ENROLL tab, so it can be a touch larger. */
+.scan {
+  font-size: calc(1.5 * var(--vw));
+  letter-spacing: 0.12em;
+}
+/* Smaller than the exit door's 44vh: it shares the row with two price cards. At 1080p
+   on the 75" set it is still about 20 cm across. */
+.qrCard {
+  width: calc(30 * var(--vh));
+  height: calc(30 * var(--vh));
+}
+
+/* ── THE RULE, THE COUPON, THE ADDRESS ──────────────────────────────────────── */
+.foot {
+  display: grid;
+  row-gap: calc(1.8 * var(--vh));
+}
+/* "From your first game" is the words the honesty rule needs, so it is the brightest
+   part of the line (the poster's own rule, 2026-10-26). */
+.rule {
+  margin: 0;
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 500;
+  font-size: calc(1.45 * var(--vw));
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+}
+.rule b {
+  color: #f89b72;
+  font-weight: 600;
+}
+.rule em {
+  font-style: normal;
+  color: #ffffff;
+  font-weight: 600;
+}
+.dot {
+  color: rgba(255, 255, 255, 0.45);
+  margin: 0 0.5em;
+}
+/* The Diwali band: a lit strip in gold across the panel's foot, its lead-in set like
+   the chip. */
+.coupon {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  padding: calc(1.3 * var(--vh)) calc(1.2 * var(--vw));
+  background: linear-gradient(90deg, rgba(255, 196, 61, 0.16) 0%, rgba(255, 196, 61, 0.05) 100%);
+  border: calc(0.1 * var(--vw)) solid rgba(255, 196, 61, 0.55);
+  border-radius: calc(0.4 * var(--vw));
+  font-size: calc(1.55 * var(--vw));
+  font-weight: 500;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+}
+.couponLead {
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 700;
+  font-size: 0.9em;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #0b1623;
+  background: #ffc43d;
+  padding: 0.22em 0.5em 0.24em 0.66em;
+  border-radius: calc(0.25 * var(--vw));
+}
+.coupon b {
+  color: #ffffff;
+  font-weight: 700;
+}
+/* The code as something you type: dashed edge, tracked caps, in the festival's gold. */
+.code {
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: #ffc43d;
+  border: calc(0.12 * var(--vw)) dashed rgba(255, 196, 61, 0.8);
+  border-radius: calc(0.3 * var(--vw));
+  padding: 0.12em 0.5em 0.14em 0.64em;
+}
+.url {
+  margin-top: calc(1.4 * var(--vh));
+  font-family: var(--font-cond), "Arial Narrow", sans-serif;
+  font-weight: 600;
+  font-size: calc(1.8 * var(--vw));
+  line-height: 1;
+  color: #ffffff;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.url span {
+  color: #f89b72;
+}
