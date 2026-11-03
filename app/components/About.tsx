@@ -16,13 +16,17 @@ export default function About() {
       id="about"
       className="relative px-4 sm:px-6 md:px-12 py-16 md:py-24"
     >
-      <div className="mx-auto max-w-[1280px] grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+      {/* Two panels, one hairline each and stretched to one height (2026-11-03, Aniket: "put
+          light borders around these sections, same size"). The line is the 3D frame's own
+          --color-line-2; the copy sits centred in its panel, as it sat centred in the row. */}
+      <div className="mx-auto max-w-[1280px] grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
         {/* Copy column */}
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-15% 0px" }}
           transition={{ duration: 0.6 }}
+          className="flex flex-col justify-center border border-[var(--color-line-2)] p-5 sm:p-8 md:p-10"
         >
           <div className="text-cond-md text-[0.74rem] text-[var(--color-ember)] mb-3.5">
             Exton, PA · open 24/7
@@ -128,7 +132,7 @@ export default function About() {
         {/* Visual column — rotating 3D facility rendering, and under it the players' message
             (2026-11-03, OurClubNote: "add those messages on teh website too - somewhere below
             the graphic perhaps"). */}
-        <div>
+        <div className="border border-[var(--color-line-2)] p-5 sm:p-8 md:p-10">
         <motion.div
           initial={{ opacity: 0, scale: 0.97 }}
           whileInView={{ opacity: 1, scale: 1 }}
