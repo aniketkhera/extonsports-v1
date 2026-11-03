@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import ReceptionBoard from "../reception/ReceptionBoard";
 import ExitScreen from "../exit/ExitScreen";
 import VestibuleScreen from "../vestibule/VestibuleScreen";
+import OurClubScreen from "../our-club/OurClubScreen";
 import SportBoard from "../reception/SportBoard";
 import ScreenHeartbeat from "./ScreenHeartbeat";
 import SilkFullscreen from "./SilkFullscreen";
@@ -56,6 +57,7 @@ const RENDER: Record<TvContent, (tv: TvEntry) => ReactNode> = {
      SportBoard.tsx). Cricket is later, after its own audio test and key. */
   "badminton-board": () => <SportBoard sport="Badminton" extend />,
   "cricket-board": () => <SportBoard sport="Cricket" />,
+  "our-club": () => <OurClubScreen />,
 };
 
 export default function TvScreen({ id }: { id: TvId }) {

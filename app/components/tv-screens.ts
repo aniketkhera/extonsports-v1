@@ -125,6 +125,10 @@ export const TV_CONTENT = {
    *  app/reception/SportBoard.tsx. For the sets beside the courts and lanes. */
   "badminton-board": { viewport: {} },
   "cricket-board": { viewport: {} },
+  /** The players' message (2026-11-03): app/our-club/OurClubScreen.tsx, five headlines
+   *  in turn over four fixed asks. Made for the exit door, read on the way out. No
+   *  preview address: /outside is it. */
+  "our-club": { viewport: { themeColor: "#0B1623", colorScheme: "dark" } },
 } as const satisfies Record<string, { viewport: Viewport }>;
 
 export type TvContent = keyof typeof TV_CONTENT;
@@ -174,7 +178,10 @@ export const TV_SCREENS = [
     title: "Outside screen",
     location: "Exit door (keeper name 'outside')",
     set: 'VIZIO WHD32M, 32"',
-    shows: "starter-pack",
+    /* The players' message from 2026-11-03 (Aniket: "on the outside TV - I want a
+       message", then "push it to the outside TV"), in place of the promotions.
+       "starter-pack" puts the promotions back (Phoenix and CCCA, promos.ts's exit list). */
+    shows: "our-club",
   },
   {
     /* Added 2026-10-28 (10.1.10.15 on that day; DHCP, so not a fact). Aniket: "show
