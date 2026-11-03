@@ -105,7 +105,6 @@ test("a malformed offer is dropped — and only that one", () => {
     { courts: [] },
     { courts: ["not-a-court"] },                      // labelled from the payload's courts only
     { courts: [B2, B3] },                             // 'one' is one court
-    { lengths: { m30: len(2250, 1), m60: { ...len(4500, 1), available: false, maxCourts: 0, perCourt: null, totals: [], qr: null } } },
     { lengths: { m30: len(2250, 1), m60: { ...len(4500, 1), perCourt: 4400 } } },          // totals[0] is not perCourt
     { lengths: { m30: len(2250, 1), m60: { ...len(4500, 1), totals: [4500, 9000] } } },    // length is not maxCourts
     { lengths: { m30: len(2250, 1), m60: { ...len(4500, 1), maxCourts: 2, totals: [4500, 9000] } } }, // more than its courts
@@ -134,6 +133,44 @@ test("'cards-one-code' carries one code per offer, and none per length", () => {
   const o = offer({ layout: "cards-one-code", qr, lengths: { m30: len(2250, 1, { qr: null }), m60: len(4500, 1, { qr: null }) } });
   assert.equal(one(o).length, 1);
   assert.deepEqual(one({ ...o, qr: null }), [], "no offer-level code: nothing to scan");
+});
+
+/** A length that is not for sale, EXACTLY as the platform's lengthFeed writes it (orangish-app
+ *  lib/court-extend-offers.ts): available false, maxCourts 0, perCourt null, totals [],
+ *  moves from no plan, the plan's reason, and no code. */
+const gone = (why = "Court 1 booked at 2:30 PM") => ({ available: false, maxCourts: 0, perCourt: null, totals: [], moves: [], why, qr: null });
+
+test("a committed offer left with one length is kept, so the second scan and the open Checkout stay (Q15, Q8)", () => {
+  // The approved mock-up's case: B2 + B3 paid for the hour; B1 is booked at 2:30, so only its 30 min is left.
+  for (const state of ["open", "paying"]) {
+    const o1 = offer({ state, courts: [B1], lengths: { m30: len(2250, 1), m60: gone() } });
+    const [o] = one(o1);
+    assert.ok(o, state);
+    assert.deepEqual(o.lengths.m60, { available: false, maxCourts: 0, perCourt: null, totals: [], moves: [], why: "Court 1 booked at 2:30 PM", qr: null });
+    assert.equal(X.drawnOffers(parse(feed([o1])), T - 7 * MIN, false).length, 1, `${state}: drawn`);
+  }
+  // Either length may be the one left.
+  assert.equal(one(offer({ lengths: { m30: gone("Court 2 booked at 2:00 PM"), m60: len(4500, 1) } })).length, 1);
+  // In 'cards-one-code' too, where the lengths never carry a code.
+  assert.equal(one(offer({ layout: "cards-one-code", qr, lengths: { m30: len(2250, 1, { qr: null }), m60: gone() } })).length, 1);
+});
+
+test("…but only in exactly that shape, and never with nothing left for sale", () => {
+  const bad = [
+    { ...gone(), maxCourts: 1 },
+    { ...gone(), perCourt: 4500 },
+    { ...gone(), perCourt: 0 },
+    { ...gone(), totals: [4500] },
+    { ...gone(), qr },                                // a code for a length nobody can buy
+    { ...gone(), moves: [{ from: B2, to: B3 }] },
+    { ...gone(), why: null },
+    { ...gone(), why: "" },
+    { ...gone(), why: "x".repeat(61) },
+    { ...gone(), available: "false" },
+    { ...gone(), available: undefined },
+  ];
+  for (const m60 of bad) assert.deepEqual(one(offer({ lengths: { m30: len(2250, 1), m60 } })), [], JSON.stringify(m60).slice(0, 90));
+  assert.deepEqual(one(offer({ lengths: { m30: gone(), m60: gone() } })), [], "both unavailable: no offer");
 });
 
 test("offers that disagree on layout, or more than the layout was measured for, draw no panel", () => {
@@ -194,6 +231,36 @@ test("drawn only inside opensAt..closesAt, and only from a fresh, unskewed answe
   assert.equal(skew(60_001), 0);
   assert.equal(skew(-60_001), 0);
   assert.deepEqual(X.drawnOffers(null, T, false), []);
+});
+
+test("the badminton TV's poll goes on after a request that never answers (review of PR #171)", async () => {
+  // A fetch that settles only by being aborted — what a stalled request looks like.
+  let calls = 0, failures = 0;
+  const load = async (signal) => {
+    calls++;
+    try {
+      await new Promise((_, reject) => signal.addEventListener("abort", () => reject(signal.reason), { once: true }));
+    } catch { failures++; } // load's own catch: the hook sets stale here
+  };
+  const stop = X.pollLoop({ load, delay: () => 5, timeoutMs: 30 });
+  await new Promise((r) => setTimeout(r, 400));
+  stop();
+  const after = calls;
+  assert.ok(calls >= 4, `polled ${calls} times`);
+  assert.ok(failures >= calls - 1, "every stalled poll ended in load's catch");
+  await new Promise((r) => setTimeout(r, 120));
+  assert.ok(calls <= after + 1, "and it stops when told");
+  // A load that throws does not end the chain either.
+  let n = 0;
+  const stop2 = X.pollLoop({ load: async () => { n++; throw new Error("boom"); }, delay: () => 5, timeoutMs: 30 });
+  await new Promise((r) => setTimeout(r, 100));
+  stop2();
+  assert.ok(n >= 3, `threw ${n} times and went on`);
+  // The hook's chain is this one, with the limit, and its fetch takes the signal.
+  const src = readFileSync(new URL("../reception/ReceptionBoard.tsx", import.meta.url), "utf8");
+  assert.match(src, /const stop = pollLoop\(\{ load, delay: \(\) => \(fast \? EXTEND_FAST_POLL_MS : 60_000\) \}\);/);
+  assert.match(src, /await fetch\(url, signal \? \{ \.\.\.init, signal \} : init\)/);
+  assert.ok(X.EXTEND_POLL_TIMEOUT_MS < 60_000, "under the 60 s pace");
 });
 
 test("an offer is matched to its ON NOW entry by date, end and a court — never by holder", () => {
@@ -323,6 +390,35 @@ test("the move face (Q20): the own court is taken from the end, another is free"
   assert.equal(face([card], T - 7 * MIN).cards[0].name, "COURT 2 → 3");
 });
 
+test("one length left: drawn as its reason, with no code and no price, in every layout", () => {
+  const why = "Court 1 booked at 2:30 PM";
+  for (const state of ["open", "paying"]) {
+    const f = face([offer({ state, courts: [B1], lengths: { m30: len(2250, 1), m60: gone(why) } })], T - 7 * MIN);
+    assert.deepEqual(f.tiles.map((t) => [t.what, !!t.qr, t.price, t.why]), [["EXTEND 30 MIN", true, "$22.50", null], ["EXTEND 1 HOUR", false, "", why]]);
+    assert.equal(f.h2.text, state === "paying" ? "PAYMENT IN PROGRESS" : "Do you wish to extend?");
+  }
+  const m = face([offer({ layout: "multi", courts: [B1, B2], lengths: { m30: len(2250, 2), m60: gone(why) } })], T - 7 * MIN);
+  assert.deepEqual(m.rows.map((r) => r.cells.map((c) => c.price ?? c.why)), [["$22.50", why], ["$45", "—"]]);
+  assert.deepEqual(m.codes.map((c) => [c.what, !!c.qr, ...c.lines]), [["30 MIN", true, "up to 2 courts", "pick on phone"], ["1 HOUR", false, why]]);
+  const c = face([offer({ key: "aaaaaaaaaaaa", layout: "cards", courts: [B1], lengths: { m30: len(2250, 1), m60: gone(why) } }), offer({ key: "bbbbbbbbbbbb", layout: "cards", courts: [B2] })], T - 7 * MIN);
+  assert.deepEqual(c.cards[0].opts.map((o) => [o.what, !!o.qr, o.price, o.why]), [["30 MIN", true, "$22.50", null], ["1 HOUR", false, "", why]]);
+  const k = (key, court, lengths, over = {}) => offer({ key, layout: "cards-one-code", courts: [court], qr, lengths, ...over });
+  const cc = face([
+    k("aaaaaaaaaaaa", B1, { m30: len(2250, 1, { qr: null }), m60: gone(why) }),
+    k("bbbbbbbbbbbb", B2, { m30: len(2250, 1, { qr: null }), m60: len(4500, 1, { qr: null }) }),
+    k("cccccccccccc", B3, { m30: gone("Court 3 booked at 2:00 PM"), m60: len(4500, 1, { qr: null }) }, { basis: "contract" }),
+  ], T - 7 * MIN);
+  assert.deepEqual(cc.cards.map((x) => [x.prices, x.line]), [
+    [[{ what: "30 MIN", price: "$22.50" }], "scan, then extend 30 min"],
+    [[{ what: "30 MIN", price: "$22.50" }, { what: "1 HOUR", price: "$45" }], "scan, then pick 30 min or 1 hour"],
+    [null, "scan to see it, then extend 1 hour"],
+  ]);
+  // Nothing draws a price or a code for the length that is gone.
+  const t = face([offer({ courts: [B1], lengths: { m30: len(2250, 1), m60: gone(why) } })], T - 7 * MIN).tiles[1];
+  assert.equal(t.qr, null);
+  assert.ok(!t.price && !t.when);
+});
+
 test("two bookings: a card each; red and paying are said on the card", () => {
   const a = offer({ key: "aaaaaaaaaaaa", layout: "cards", courts: [B1] });
   const b = offer({ key: "bbbbbbbbbbbb", layout: "cards", courts: [B2, B3], lengths: { m30: len(2250, 2), m60: len(4500, 2) } });
@@ -379,6 +475,10 @@ test("the badminton TV alone reads `extend`; the line is FREE AFTER everywhere e
   assert.match(board, /const sportExt = extend && ext \? forSport\(ext, ids\) : null;/);
   assert.equal(board.match(/\.scan = true/g)?.length, 1);
   assert.equal(board.match(/\.move = /g)?.length, 1);
+  // Q20's words, with the time (§9e E4).
+  assert.ok(board.includes('line = `MOVE TO ${noun}${to.length > 1 ? "S" : ""} ${to.join(", ")} AT ${hm(at)}`'), "MOVE TO COURT 3 AT 2:00");
+  // …at the compact entry size even in a big entry: the big one ran 45 px past the column (tv-fit movedPaidBig).
+  assert.ok(board.includes("tight = true; break;") && board.includes("fontSize: big && !tight ?"), "the move line is drawn compact");
 });
 
 test("never green, never a holder: the panel's words carry no name and no colour", () => {

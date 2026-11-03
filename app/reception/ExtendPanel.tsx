@@ -24,7 +24,9 @@ import styles from "./ExtendPanel.module.css";
    unticked on the phone — decision 1); `cards` (two bookings, a card each); and
    `cards-one-code` (three bookings, one code each and the length picked on the phone —
    decision 3, because six codes shrink to ~7 cm and stop scanning from the court). The
-   words are extend-feed.ts panelFace's; this file only lays them out.
+   words are extend-feed.ts panelFace's; this file only lays them out. A length that is
+   no longer for sale on a committed offer (Q15's second scan, Q8's joinable Checkout)
+   is drawn as its reason, with no code and no price.
 
    EVERY SIZE IS THE APPROVED MOCK-UP'S (inject-b.js), in this box's units: the panel
    sits inside PANEL_BOX at SportBoard's SCALE 1.6, where one --vw is 30.72px at 1080p,
@@ -133,10 +135,17 @@ function Body({ face }: { face: PanelFace }) {
                   gap: vw(0.2), textAlign: "center", padding: vw(0.46),
                 }}
               >
-                <QrCode qr={t.qr} side={QR_SIDE.one} />
+                {t.qr && <QrCode qr={t.qr} side={QR_SIDE.one} />}
                 <div style={{ ...nowrap, fontSize: vw(1.17), lineHeight: 1, letterSpacing: "0.03em", marginTop: vw(0.26) }}>{t.what}</div>
-                <div style={{ ...nowrap, fontSize: vw(0.85), lineHeight: 1.1, color: QUIET }}>{t.when}</div>
-                <div style={{ ...nowrap, fontSize: vw(t.agreed ? 1.43 : 1.89), lineHeight: 1, color: ACCENT }}>{t.price}</div>
+                {t.qr ? (
+                  <>
+                    <div style={{ ...nowrap, fontSize: vw(0.85), lineHeight: 1.1, color: QUIET }}>{t.when}</div>
+                    <div style={{ ...nowrap, fontSize: vw(t.agreed ? 1.43 : 1.89), lineHeight: 1, color: ACCENT }}>{t.price}</div>
+                  </>
+                ) : (
+                  /* Not for sale: the reason, no code and no price. */
+                  <div style={{ ...nowrap, fontSize: vw(1.04), lineHeight: 1.1, color: QUIET }}>{t.why}</div>
+                )}
               </div>
             ))}
           </div>
@@ -186,7 +195,7 @@ function Body({ face }: { face: PanelFace }) {
           <div style={{ display: "flex", gap: vw(0.72) }}>
             {face.codes.map((c) => (
               <div key={c.key} style={{ ...tile, flex: 1, display: "flex", gap: vw(0.52), alignItems: "center", padding: `${vw(0.33)} ${vw(0.46)}` }}>
-                <QrCode qr={c.qr} side={QR_SIDE.multi} />
+                {c.qr && <QrCode qr={c.qr} side={QR_SIDE.multi} />}
                 <div style={{ display: "flex", flexDirection: "column", gap: vw(0.1), minWidth: 0 }}>
                   <div style={{ ...nowrap, fontSize: vw(1.01), lineHeight: 1, letterSpacing: "0.03em" }}>{c.what}</div>
                   {c.lines.map((l) => (
@@ -213,11 +222,17 @@ function Body({ face }: { face: PanelFace }) {
               <div style={{ display: "flex", gap: vw(1.3) }}>
                 {c.opts.map((o) => (
                   <div key={o.key} style={{ display: "flex", gap: vw(0.46), alignItems: "center", minWidth: 0 }}>
-                    <QrCode qr={o.qr} side={QR_SIDE.cards} />
+                    {o.qr && <QrCode qr={o.qr} side={QR_SIDE.cards} />}
                     <div style={{ display: "flex", flexDirection: "column", gap: vw(0.1), minWidth: 0 }}>
                       <div style={{ ...nowrap, fontSize: vw(0.91), lineHeight: 1, letterSpacing: "0.03em" }}>{o.what}</div>
-                      <div style={{ ...nowrap, fontSize: vw(o.agreed ? 0.91 : 1.43), lineHeight: 1, color: ACCENT }}>{o.price}</div>
-                      <div style={{ ...nowrap, fontSize: vw(0.68), lineHeight: 1.1, color: QUIET }}>{o.when}</div>
+                      {o.qr ? (
+                        <>
+                          <div style={{ ...nowrap, fontSize: vw(o.agreed ? 0.91 : 1.43), lineHeight: 1, color: ACCENT }}>{o.price}</div>
+                          <div style={{ ...nowrap, fontSize: vw(0.68), lineHeight: 1.1, color: QUIET }}>{o.when}</div>
+                        </>
+                      ) : (
+                        <div style={{ ...nowrap, fontSize: vw(0.68), lineHeight: 1.1, color: QUIET }}>{o.why}</div>
+                      )}
                     </div>
                   </div>
                 ))}

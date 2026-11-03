@@ -25,21 +25,24 @@ python scripts/tv-fit/decode.py <dir>              # every code read back from t
 
 ## What a face must do
 
-`scenarios.mjs` holds 28 scenarios: the six measured on 2026-11-02 (`one`, `three`, `edge`,
+`scenarios.mjs` holds 38 scenarios: the six measured on 2026-11-02 (`one`, `three`, `edge`,
 `late`, `twoGroups`, `threeGroups`) and every face §10.9 listed as never measured:
 
 - red from the end to the close;
 - PAYMENT IN PROGRESS;
 - the move face before payment;
-- MOVE TO COURT 3 after it;
-- AGREED RATE.
+- MOVE TO COURT 3 AT 2:00 after it (and AT 10:30, the longest);
+- AGREED RATE;
+- one length left on a committed offer, the other drawn as its reason (`*Half`, open and
+  paying, in every layout; review of PR #171).
 
 A face fails if:
 
 - anything inside the panel lies outside its padding;
 - any text is cut;
 - the panel leaves its cell;
-- anything in the NOW column runs past the column;
+- anything in the NOW column runs past the column, or its text spills past the column's edge
+  (the first run missed this and passed a cut "MOVE TO COURT 3 AT 2:0");
 - the band still shows its booking QR beside the panel.
 
 Every code must decode to exactly the URL its feed carried.
@@ -50,9 +53,14 @@ EXTEND, and each keeps its band as before.
 
 ## Results, 2026-11-03 (branch `feat/court-extend-tv-panel`)
 
-Run against `next start` of this branch in headless Chromium (Playwright 1.60).
+Run against `next start` of this branch in headless Chromium (Playwright 1.60), after the
+review fixes.
 
-- **All 56 faces fit:** 28 scenarios × 2 sizes. **Every code decodes**, and all four gates pass.
+- **All 76 faces fit:** 38 scenarios × 2 sizes. **Every code decodes** (70 faces carry
+  codes), and all four gates pass.
+- **MOVE TO COURT 3 AT 2:00** ran 30 CSS px (1280×720) and 45 px (1920×1080) past the NOW
+  column at the big entry size, so the line is drawn at the compact size; it now fits, "AT
+  10:30" included.
 - **Panel size:** 575 × 465 CSS px at 1280×720 @1.5, and 863 × 698 at 1920×1080. The mock-up
   measured 864 × 700.
 

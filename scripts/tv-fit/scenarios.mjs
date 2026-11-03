@@ -28,6 +28,8 @@ const pbaSun = [B1, B2, B3].map((c) => pba(SUN, c, m(16), m(18)))
 
 /** A length as the platform sends it: totals[i] = per × (i + 1), every court costing the same. */
 const len = (per, max, extra = {}) => ({ per, max, ...extra })
+/** A length no longer for sale on a committed offer, with the platform's reason. */
+const gone = (why) => ({ gone: why })
 /** One offer: its courts, end, lengths and anything else that differs. */
 const off = (courts, end, m30, m60, extra = {}) => ({ courts, end, m30, m60, ...extra })
 
@@ -50,6 +52,13 @@ const threeGBlocks = [bk(SUN, B1, m(13), m(14)), bk(SUN, B2, m(12), m(14)), bk(S
 const moveBlocks = [bk(SUN, B1, m(12, 30), m(15)), bk(SUN, B2, m(13), m(14)), bk(SUN, B2, m(14), m(15)), ...pbaSun]
 const move60Blocks = [bk(SUN, B1, m(12, 30), m(15)), bk(SUN, B2, m(13), m(14)), bk(SUN, B2, m(14, 30), m(15, 30)), ...pbaSun]
 const twoMoveBlocks = [bk(SUN, B1, m(13), m(14)), bk(SUN, B2, m(13), m(14)), bk(SUN, B2, m(14), m(15)), ...pbaSun]
+
+// The approved mock-up's 'three' after its first scan: the hour paid on Courts 2 + 3 (the
+// extensions on the left), Court 1 booked by others at 2:30, so Court 1 has 30 min left.
+const halfBlocks = [...threeBlocks, bk(SUN, B2, m(14), m(15)), bk(SUN, B3, m(14), m(15))]
+const twoHalfBlocks = [...twoBlocks, bk(SUN, B1, m(14, 30), m(15, 30))]
+const threeGHalfBlocks = [...threeGBlocks, bk(SUN, B1, m(14, 30), m(15, 30))]
+const c1 = 'Court 1 booked at 2:30 PM'
 
 const T7 = [13, 53], T2 = [14, 2]
 
@@ -91,6 +100,8 @@ export const SCENARIOS = {
   movedPaid: { day: SUN, clock: T2, blocks: [bk(SUN, B1, m(12, 30), m(15)), bk(SUN, B2, m(13), m(14)), bk(SUN, B2, m(14), m(15)), bk(SUN, B3, m(14), m(15)), ...pbaSun], offers: [], moves: [{ date: SUN, at: m(14), from: B2, to: B3 }] },
   // The same with nothing else on, so the entries are drawn big.
   movedPaidBig: { day: SUN, clock: T2, blocks: [bk(SUN, B2, m(13), m(14)), bk(SUN, B2, m(14), m(15)), ...pbaSun], offers: [], moves: [{ date: SUN, at: m(14), from: B2, to: B3 }] },
+  // The longest time in the line: MOVE TO COURT 3 AT 10:30.
+  movedPaidBigLate: { day: FRI, clock: [22, 32], blocks: [bk(FRI, B2, m(21, 30), m(22, 30)), bk(FRI, B2, m(22, 30), m(23, 30))], offers: [], moves: [{ date: FRI, at: m(22, 30), from: B2, to: B3 }] },
 
   // ── A contract (Q4): AGREED RATE ───────────────────────────────────────────
   oneContract: { day: SUN, clock: T7, blocks: oneBlocks, offers: [one({ ...contract, m30: len(1500, 1), m60: len(3000, 1) })] },
@@ -98,6 +109,19 @@ export const SCENARIOS = {
   threeContract: { day: SUN, clock: T7, blocks: threeBlocks, offers: [three(contract)] },
   twoGroupsContract: { day: SUN, clock: T7, blocks: twoBlocks, offers: two([contract, {}]) },
   threeGroupsContract: { day: SUN, clock: T7, blocks: threeGBlocks, offers: threeG([{}, {}, contract]) },
+
+  // ── One length left on a committed offer (Q15's second scan, Q8's open Checkout) ──
+  // Review of #171: the platform keeps a committed offer with one length; the other is drawn
+  // as its reason, with no code and no price. Open and paying, in every layout.
+  oneHalf: { day: SUN, clock: T7, blocks: halfBlocks, offers: [off([B1], m(14), len(2250, 1), gone(c1))] },
+  oneHalfPaying: { day: SUN, clock: T7, blocks: halfBlocks, offers: [off([B1], m(14), len(2250, 1), gone(c1), paying)] },
+  oneHalfRed: { day: SUN, clock: T2, blocks: halfBlocks, offers: [off([B1], m(14), len(2250, 1), gone(c1))] },
+  threeHalf: { day: SUN, clock: T7, blocks: threeBlocks, offers: [off([B1, B2, B3], m(14), len(2250, 3), gone(c1))] },
+  threeHalfPaying: { day: SUN, clock: T7, blocks: threeBlocks, offers: [off([B1, B2, B3], m(14), len(2250, 3), gone(c1), paying)] },
+  twoGroupsHalf: { day: SUN, clock: T7, blocks: twoHalfBlocks, offers: [off([B1], m(14), len(2250, 1), gone(c1)), off([B2, B3], m(14), len(2250, 2), len(4500, 2))] },
+  twoGroupsHalfPaying: { day: SUN, clock: T7, blocks: twoHalfBlocks, offers: [off([B1], m(14), len(2250, 1), gone(c1), paying), off([B2, B3], m(14), len(2250, 2), len(4500, 2))] },
+  threeGroupsHalf: { day: SUN, clock: T7, blocks: threeGHalfBlocks, offers: [off([B1], m(14), len(2250, 1), gone(c1)), ...threeG().slice(1)] },
+  threeGroupsHalfPaying: { day: SUN, clock: T7, blocks: threeGHalfBlocks, offers: [off([B1], m(14), len(2250, 1), gone(c1), paying), ...threeG().slice(1)] },
 }
 
 /** The instant a scenario's clock reads. */
@@ -129,6 +153,8 @@ export function payload(name, s, qrFor) {
     const url = (L) => `https://app.orangish.io/x/${c}${L ? `/${L}` : ''}`
     const endsAt = at(s.day, o.end)
     const length = (l, L) => {
+      // Not for sale: exactly the platform's lengthFeed for an unavailable length, and no code.
+      if (l.gone) return { available: false, maxCourts: 0, perCourt: null, totals: [], moves: [], why: l.gone, qr: null }
       const q = layout === 'cards-one-code' ? null : qrFor(url(L))
       if (q) texts.push(url(L))
       return {

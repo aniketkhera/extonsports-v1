@@ -41,7 +41,9 @@ export type Qr = { size: number; d: string };
 export type ExtendLayout = "one" | "multi" | "cards" | "cards-one-code";
 
 export type ExtendLength = {
-  /** Offered: priced, with at least one court free for the length and a code. */
+  /** Offered: priced, with at least one court free for the length and a code. When false
+   *  (a committed offer whose other length is still on), everything below is empty but
+   *  `why`, which says why. */
   available: boolean;
   /** How many of the offer's courts can take this length. */
   maxCourts: number;
@@ -100,6 +102,8 @@ export const EXTEND_FRESH_MS = 90_000;
 export const EXTEND_SKEW_MS = 60_000;
 /** The poll while the last answer carried an offer; 60 s otherwise (§10.8). */
 export const EXTEND_FAST_POLL_MS = 15_000;
+/** How long one poll of the badminton TV may take before it is abandoned (pollLoop). */
+export const EXTEND_POLL_TIMEOUT_MS = 20_000;
 /** The only QR geometry anyone measured: 29 modules + 2 × 2 quiet zone (§7.6). */
 export const EXTEND_QR_SIZE = 33;
 /** Exactly what the platform's path walker writes: M{x} {y}h{run}v1h-{run}z. */
@@ -123,10 +127,23 @@ export function parseQr(v: unknown): Qr | null {
   return { size: v.size, d: v.d };
 }
 
-/** One length, or null when it cannot be drawn. `oneCode` is the 'cards-one-code'
- *  layout, where the codes are per offer and a length carries none. */
+/** One length, or null when it is not a shape the platform writes. `oneCode` is the
+ *  'cards-one-code' layout, where the codes are per offer and a length carries none. */
 function parseLength(v: unknown, courts: readonly string[], known: ReadonlySet<string>, oneCode: boolean): ExtendLength | null {
-  if (!isObj(v) || v.available !== true) return null;
+  if (!isObj(v)) return null;
+  /* A length that is NOT for sale, in exactly the shape lib/court-extend-offers.ts
+     lengthFeed writes it — and only that one. It reaches the TV once an offer is COMMITTED
+     (a court paid for under it, or held): from then on each length stands on its own
+     until end + 5 (the platform's allocation, after the reviews of PR #703), so the
+     mixed lengths in two scans (Q15) and a Checkout another phone can join (Q8) survive
+     the other length selling out. It is drawn as its reason, with no code and no price. */
+  if (v.available === false) {
+    const ok = v.maxCourts === 0 && v.perCourt === null && Array.isArray(v.totals) && v.totals.length === 0
+      && v.qr === null && Array.isArray(v.moves) && v.moves.length === 0
+      && typeof v.why === "string" && v.why.length > 0 && v.why.length <= MAX_WHY;
+    return ok ? { available: false, maxCourts: 0, perCourt: null, totals: [], moves: [], why: v.why as string, qr: null } : null;
+  }
+  if (v.available !== true) return null;
   const max = v.maxCourts;
   if (!Number.isInteger(max) || (max as number) < 1 || (max as number) > courts.length) return null;
   if (!cents(v.perCourt)) return null;
@@ -176,10 +193,10 @@ export function parseOffer(v: unknown, known: ReadonlySet<string>): ExtendOffer 
   if (!isObj(v.lengths)) return null;
   const m30 = parseLength(v.lengths.m30, courts, known, oneCode);
   const m60 = parseLength(v.lengths.m60, courts, known, oneCode);
-  /* Both lengths, always. An offer exists only when a court is free for the full hour,
-     and then 30 min is offered too (Q2) — so a missing length is a fault, and a face
-     with one code beside a reason was never measured (§10.9). */
-  if (!m30 || !m60) return null;
+  /* Both lengths are always sent, and at least one must be for sale. A new offer has both
+     (Q2: a court free for the hour, and then 30 min too); a committed one may be left with
+     one (see parseLength), drawn beside the other's reason — measured by scripts/tv-fit. */
+  if (!m30 || !m60 || (!m30.available && !m60.available)) return null;
   return {
     key: v.key, layout, state: v.state, date: v.date, end: end as number,
     endsAt, opensAt, closesAt, basis: v.basis, courts: [...courts] as string[], qr, lengths: { m30, m60 },
@@ -217,6 +234,32 @@ export function parseExtend(raw: unknown, courts: ReadonlyArray<{ id: string }>,
   offers.sort((a, b) => a.endsAt - b.endsAt);
   const moves = raw.moves.map((m) => parseMove(m, known)).filter((m): m is ExtendMove => m !== null);
   return { offers, moves, serverNow, receivedAt };
+}
+
+/**
+ * The badminton TV's poll (useCourtPanels with `extend`): each poll starts when the last one
+ * is done, `delay()` after it — 15 s while offers are up, 60 s otherwise — so the pace can
+ * follow the last answer. Returns the stop function.
+ *
+ * ⚠️ EVERY POLL IS GIVEN `timeoutMs` (review of PR #171). A chain waits for each poll, so
+ * one request that never settles would stop it for good: no later poll, no stale dot, the
+ * last answer on the wall indefinitely — where the 60 s interval every other screen keeps
+ * simply fires again. `load` passes the signal to its fetch; a stalled request is aborted,
+ * lands in load's own catch (which sets stale), and the chain goes on.
+ */
+export function pollLoop({ load, delay, timeoutMs = EXTEND_POLL_TIMEOUT_MS }: {
+  load: (signal: AbortSignal) => Promise<unknown>;
+  delay: () => number;
+  timeoutMs?: number;
+}): () => void {
+  let alive = true;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const run = async () => {
+    try { await load(AbortSignal.timeout(timeoutMs)); } catch { /* load records its own failures */ }
+    if (alive) timer = setTimeout(run, delay());
+  };
+  run();
+  return () => { alive = false; clearTimeout(timer); };
 }
 
 /** One sport's share of an answer: offers whose courts are all this sport's, and moves
@@ -294,10 +337,12 @@ const byNumber = (a: string, b: string) => Number(a) - Number(b) || a.localeComp
 
 export type Tone = "orange" | "red";
 export type Line = { text: string; accent?: string; tail?: string };
-export type Tile = { key: string; qr: Qr; what: string; when: string; price: string; agreed: boolean };
+/* A tile, code tile or card option for a length that is not for sale (a committed offer
+   whose other length is still on): `qr` null, no price, and `why` says why. */
+export type Tile = { key: string; qr: Qr | null; what: string; when: string; price: string; agreed: boolean; why: string | null };
 export type TableCell = { price: string } | { why: string };
-export type CodeTile = { key: string; qr: Qr; what: string; lines: string[] };
-export type CardOpt = { key: string; qr: Qr; what: string; price: string; agreed: boolean; when: string };
+export type CodeTile = { key: string; qr: Qr | null; what: string; lines: string[] };
+export type CardOpt = { key: string; qr: Qr | null; what: string; price: string; agreed: boolean; when: string; why: string | null };
 export type Card = { key: string; name: string; small: string; paying: boolean; opts: CardOpt[] };
 export type OneCodeCard = { key: string; qr: Qr; name: string; small: string; prices: Array<{ what: string; price: string }> | null; line: string; paying: boolean };
 
@@ -336,7 +381,10 @@ export function panelFace(
   const scanNow = (o: ExtendOffer): Line => ({ text: `Scan now to keep playing · open until ${closes(o)}` });
   const payingLine: Line = { text: "PAYMENT IN PROGRESS" };
   const agreed = (o: ExtendOffer) => o.basis === "contract";
-  /** Where a length continues, as labels: "3", or "" when it stays put. */
+  /** The lengths still for sale, in order. */
+  const forSale = (o: ExtendOffer) => lens.filter(([k]) => o.lengths[k].available);
+  /** Where a length continues, as labels: "3", or "" when it stays put (or is not for sale:
+   *  an unavailable length carries no moves). */
   const target = (l: ExtendLength) => [...new Set(l.moves.map((m) => labelOf(m.to)))].sort(byNumber).join(", ");
   /** "COURT 2 → 3" for a card or a code tile; "" when nothing moves. */
   const moveNote = (l: ExtendLength) =>
@@ -361,21 +409,25 @@ export function panelFace(
     const tiles: Tile[] = lens.map(([k, L, w]) => {
       const l = o.lengths[k];
       const to = target(l);
+      if (!l.available) return { key: `${o.key}-${L}`, qr: null, what: `EXTEND ${w}`, when: "", price: "", agreed: false, why: l.why };
       return {
-        key: `${o.key}-${L}`, qr: l.qr as Qr,
+        key: `${o.key}-${L}`, qr: l.qr,
         what: to ? `${w} · ${noun} ${to}` : `EXTEND ${w}`,
         when: spanA(o.end, o.end + L),
         price: agreed(o) ? "AGREED RATE" : money(l.totals[0]),
-        agreed: agreed(o),
+        agreed: agreed(o), why: null,
       };
     });
+    /** One length alone moves (the other stays, or is not for sale): its tile names the
+     *  court, and the foot says it. */
+    const lone = forSale(o).filter(([k]) => target(o.lengths[k]));
     const foot = move
       ? ended(o) && same ? `The extension starts at ${hm(o.end)} on ${Noun} ${t30}, so the next players can start on ${Noun} ${own}`
         : same ? `Move to ${Noun} ${t30} at ${hm(o.end)} so the next players can start on ${Noun} ${own}`
         : `Move at ${hm(o.end)} so the next players can start on ${Noun} ${own}`
       : ended(o) ? `The extension starts at ${hm(o.end)}, when your booking ended`
       : agreed(o) ? `Scan to see your agreed rate · pay by card · stay on ${Noun} ${own}`
-      : t60 ? `Scan with your phone camera · pay by card · 1 hour is on ${Noun} ${t60}`
+      : lone.length === 1 ? `Scan with your phone camera · pay by card · ${lone[0][2].toLowerCase()} is on ${Noun} ${target(o.lengths[lone[0][0]])}`
       : `Scan with your phone camera · pay by card · stay on ${Noun} ${own}`;
     return {
       layout: "one", tone, chip: `${noun} ${own}`,
@@ -409,9 +461,10 @@ export function panelFace(
       agreed: agreed(o) ? "AGREED RATE · scan to see" : null,
       codes: lens.map(([k, L, w]) => {
         const l = o.lengths[k];
+        if (!l.available) return { key: `${o.key}-${L}`, qr: null, what: w, lines: [l.why ?? ""] };
         const note = moveNote(l);
         return {
-          key: `${o.key}-${L}`, qr: l.qr as Qr, what: w,
+          key: `${o.key}-${L}`, qr: l.qr, what: w,
           lines: [l.maxCourts === 1 ? "1 court" : `up to ${courtsWord(l.maxCourts)}`, "pick on phone", ...(note ? [note] : [])],
         };
       }),
@@ -443,16 +496,17 @@ export function panelFace(
       return {
         key: o.key, name: cardName(o), paying: o.state === "paying",
         small: small(o, n > 1 && full ? ` · price for ${n} courts, pick on phone` : n > 1 ? " · pick courts on phone" : "", o.state === "paying"),
-        opts: lens.map(([k, L, w]) => {
+        opts: lens.map(([k, L, w]): CardOpt => {
           const l = o.lengths[k];
+          if (!l.available) return { key: `${o.key}-${L}`, qr: null, what: w, price: "", agreed: false, when: "", why: l.why };
           const to = target(l);
           const bits = [spanTight(o.end, o.end + L)];
           if (n > 1 && l.maxCourts < n) bits.push(courtsWord(l.maxCourts));
           if (to && a !== b) bits.push(`${noun} ${to}`);
           return {
-            key: `${o.key}-${L}`, qr: l.qr as Qr, what: w,
+            key: `${o.key}-${L}`, qr: l.qr, what: w,
             price: agreed(o) ? "AGREED RATE" : money(l.totals[l.maxCourts - 1]), agreed: agreed(o),
-            when: bits.join(" · "),
+            when: bits.join(" · "), why: null,
           };
         }),
       };
@@ -467,12 +521,17 @@ export function panelFace(
   // 'cards-one-code' (decision 3): one code per booking, the length picked on the phone.
   return {
     layout: "cards-one-code", tone, h1,
-    cards: drawn.map((o) => ({
-      key: o.key, qr: o.qr as Qr, name: cardName(o), paying: o.state === "paying",
-      small: small(o, "", false),
-      // A contract's card says AGREED RATE where the prices go, as every other layout does.
-      prices: agreed(o) ? null : lens.map(([k, , w]) => ({ what: w, price: money(o.lengths[k].totals[o.lengths[k].maxCourts - 1]) })),
-      line: o.state === "paying" ? "PAYMENT IN PROGRESS" : agreed(o) ? "scan to see it, then pick 30 min or 1 hour" : "scan, then pick 30 min or 1 hour",
-    })),
+    cards: drawn.map((o) => {
+      // Only the lengths still for sale: the phone says why the other is not.
+      const sale = forSale(o);
+      const pick = sale.length === 2 ? "pick 30 min or 1 hour" : `extend ${sale[0][2].toLowerCase()}`;
+      return {
+        key: o.key, qr: o.qr as Qr, name: cardName(o), paying: o.state === "paying",
+        small: small(o, "", false),
+        // A contract's card says AGREED RATE where the prices go, as every other layout does.
+        prices: agreed(o) ? null : sale.map(([k, , w]) => ({ what: w, price: money(o.lengths[k].totals[o.lengths[k].maxCourts - 1]) })),
+        line: o.state === "paying" ? "PAYMENT IN PROGRESS" : agreed(o) ? `scan to see it, then ${pick}` : `scan, then ${pick}`,
+      };
+    }),
   };
 }

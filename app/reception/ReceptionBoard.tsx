@@ -13,7 +13,7 @@ import {
   type BrandKey, type LightChip, type Lights, type NamedBlock, type NamedSlots, type SessionKey, type NudgeFace,
 } from "../board/board-lib";
 import {
-  parseExtend, forSport, drawnOffers, liveMoves, offerForEntry, EXTEND_FAST_POLL_MS, type ExtendView,
+  parseExtend, forSport, drawnOffers, liveMoves, offerForEntry, pollLoop, hm, EXTEND_FAST_POLL_MS, type ExtendView,
 } from "../board/extend-feed";
 
 /* The clock is an external store, shared with /comingsoon — see
@@ -165,8 +165,9 @@ export type EntryNudge = {
    *  in the panel beside it, so the note says SCAN TO EXTEND →. */
   scan?: true;
   /** "next" only, on the badminton TV: the group paid to carry on on these courts
-   *  (labels), so its TIME UP becomes MOVE TO COURT 3 (§9e E4). */
-  move?: string[];
+   *  (labels) from `at` (club-local minutes, its old end), so its TIME UP becomes
+   *  MOVE TO COURT 3 AT 2:00 (§9e E4). */
+  move?: { to: string[]; at: number };
 };
 
 export type Panel = {
@@ -639,9 +640,12 @@ function NudgedFoot({
    TV, while its panel offers this very booking an extension, adds "· SCAN TO EXTEND →",
    pointing across at the codes (`scan`, set by useCourtPanels' `extend`).
 
-   MOVE TO COURT 3 (2026-11-03, §9e E4, Q20): a group whose court is taken next that paid
-   to carry on on another court is not told TIME UP — the line names where to go, in
-   ember, and the note still says who is waiting. Badminton TV only (`move`). */
+   MOVE TO COURT 3 AT 2:00 (2026-11-03, §9e E4, Q20's words): a group whose court is taken
+   next that paid to carry on on another court is not told TIME UP — the line names where
+   to go and from when, in ember, and the note still says who is waiting. Badminton TV
+   only (`move`). Always at the compact entry size: at the big one the line ran 45 px past
+   the 862 px NOW column at 1080p (scripts/tv-fit movedPaidBig, 2026-11-03); at the compact
+   size it fits, "AT 10:30" included (movedPaidBigLate). The entry only gets shorter for it. */
 function EntryFoot({
   e, sport, labels, big, face, nudge,
 }: { e: Entry; sport: string; labels: string[]; big: boolean; face: NudgeFace; nudge?: EntryNudge }) {
@@ -652,6 +656,8 @@ function EntryFoot({
     ? `${noun}${nudge.courts.length > 1 ? "S" : ""} ${nudge.courts.join(", ")}` : "";
   let line: ReactNode = span(e.from, e.to);
   let ink = INK;
+  /** The line at the compact size even in a big entry: MOVE TO COURT 3 AT 2:00 only. */
+  let tight = false;
   let note = "";
   if (showing) {
     switch (face.kind) {
@@ -660,8 +666,9 @@ function EntryFoot({
       case "offSec":
         line = <>OFF {noun} IN <span style={{ fontVariantNumeric: "tabular-nums" }}>{face.clock}</span></>; ink = OFF_COURT; break;
       case "timeUp":
-        if (showing.move?.length) {
-          line = `MOVE TO ${noun}${showing.move.length > 1 ? "S" : ""} ${showing.move.join(", ")}`; ink = EMBER; break;
+        if (showing.move) {
+          const { to, at } = showing.move;
+          line = `MOVE TO ${noun}${to.length > 1 ? "S" : ""} ${to.join(", ")} AT ${hm(at)}`; ink = EMBER; tight = true; break;
         }
         line = (
           /* inline-block at the line's own height: an inline span's background is the
@@ -682,7 +689,7 @@ function EntryFoot({
   const alarm = showing?.kind === "next" ? showing.courts : [];
   return (
     <>
-      <div className="text-cond" style={{ fontSize: big ? "calc(3.1 * var(--vw))" : "calc(2.6 * var(--vw))", color: ink, lineHeight: 1.03, whiteSpace: "nowrap" }}>
+      <div className="text-cond" style={{ fontSize: big && !tight ? "calc(3.1 * var(--vw))" : "calc(2.6 * var(--vw))", color: ink, lineHeight: 1.03, whiteSpace: "nowrap" }}>
         {line}
       </div>
       {/* display:flex so the row has no inherited 16px/1.5 line box under it. */}
@@ -953,9 +960,11 @@ export function useCourtPanels({ upcoming, upNextMax, currentOnly = false, nudge
     /** `extend` only: did the last answer carry an offer? Sets the next poll's pace. */
     let fast = false;
 
-    const load = async () => {
+    /** `signal`: the badminton TV's chain bounds each poll (pollLoop); the interval below
+     *  passes none, so every other screen fetches exactly as it did. */
+    const load = async (signal?: AbortSignal) => {
       try {
-        const res = await fetch(url, init);
+        const res = await fetch(url, signal ? { ...init, signal } : init);
         if (!res.ok) throw new Error(String(res.status));
         const body = (await res.json()) as NamedSlots;
         if (!mounted.current) return;
@@ -1000,15 +1009,11 @@ export function useCourtPanels({ upcoming, upNextMax, currentOnly = false, nudge
     }
     /* The badminton TV: each poll scheduled when the last one is done, 15 s after an
        answer that carried an offer, 60 s otherwise. A failed poll keeps the pace of the
-       last answer. `alive` is this effect's own, so a remount cannot leave two loops. */
-    let alive = true;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const run = async () => {
-      await load();
-      if (alive) timer = setTimeout(run, fast ? EXTEND_FAST_POLL_MS : 60_000);
-    };
-    run();
-    return () => { alive = false; mounted.current = false; clearTimeout(timer); };
+       last answer. Every poll is time-limited (pollLoop), so one request that never
+       settles cannot stop the chain; the stop function is this effect's own, so a
+       remount cannot leave two loops. */
+    const stop = pollLoop({ load, delay: () => (fast ? EXTEND_FAST_POLL_MS : 60_000) });
+    return () => { stop(); mounted.current = false; };
   }, [extend]);
 
   const view = useMemo((): { panels: Panel[]; today: string } => {
@@ -1101,7 +1106,8 @@ export function useCourtPanels({ upcoming, upNextMax, currentOnly = false, nudge
             const to = moves
               .filter((m) => m.date === e.date && m.at === e.to && n.courts.includes(labelOf(m.from)))
               .map((m) => labelOf(m.to));
-            if (to.length) n.move = [...new Set(to)].sort((a, b) => Number(a) - Number(b) || a.localeCompare(b));
+            // Every match ends at e.to, which is where the extension starts.
+            if (to.length) n.move = { to: [...new Set(to)].sort((a, b) => Number(a) - Number(b) || a.localeCompare(b)), at: e.to };
           }
         }
       }

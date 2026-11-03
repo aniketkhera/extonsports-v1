@@ -66,8 +66,12 @@ function measure() {
   const bad = []
   const short = (el) => `${el.tagName.toLowerCase()} "${(el.textContent || '').trim().slice(0, 48)}"`
   const wrap = document.querySelector('[data-extend-panel]')
-  const grid = wrap?.parentElement
-  const now = grid?.firstElementChild
+  /* The NOW column is the board grid's first cell, found from its ON NOW / UP NEXT line, so it
+     is measured with no panel up too (the MOVE TO COURT 3 face comes after the offer is gone). */
+  const slot = [...document.querySelectorAll('div')].find((d) => /^(ON NOW|UP NEXT)/.test(d.textContent.trim()) && d.children.length === 0 || (d.childNodes[0]?.nodeType === 3 && /^(ON NOW|UP NEXT)/.test(d.childNodes[0].textContent)))
+  let now = slot
+  while (now && now.parentElement && getComputedStyle(now.parentElement).display !== 'grid') now = now.parentElement
+  const grid = wrap?.parentElement ?? now?.parentElement
   const res = { viewport: `${innerWidth}x${innerHeight}@${devicePixelRatio}`, layout: wrap?.dataset.extendPanel ?? null }
   if (wrap) {
     const panel = wrap.firstElementChild
@@ -113,6 +117,10 @@ function measure() {
       const e = r(el)
       if (!e.width && !e.height) continue
       if (e.right > c.right + 0.5) bad.push(`${short(el)} runs past the NOW column`)
+      /* Text that spills out of its own box is clipped by the column (NowArea hides its
+         overflow) even though the box itself fits: so measure the text's own right edge.
+         Missed on the first run of 2026-11-03, which passed a cut "MOVE TO COURT 3 AT 2:0". */
+      else if (el.children.length === 0 && el.scrollWidth > el.clientWidth + 1 && e.left + el.scrollWidth > c.right + 0.5) bad.push(`${short(el)} CUT by the NOW column (${Math.round(e.left + el.scrollWidth - c.right)} px over)`)
       if (el.scrollWidth > el.clientWidth + 1 && el.children.length === 0 && getComputedStyle(el).overflow !== 'visible') bad.push(`${short(el)} CUT in the NOW column`)
     }
     res.nowText = [...now.querySelectorAll('div')].filter((d) => d.children.length === 0 && d.textContent.trim()).map((d) => d.textContent.trim())
