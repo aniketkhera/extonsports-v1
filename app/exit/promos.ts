@@ -31,20 +31,31 @@ import w from "./workshop.module.css";
    Each panel 5 s. Two panels swap on a 10 s clock, three on a 15 s one; `slot(key)`
    is the class that gives that panel its turn (workshop.module.css, THE SWAP).
    ⚠️ There are keyframes for two and three panels only. A fourth needs its own
-   set there first: until then it would sit on top of the others for good. */
+   set there first: until then it would sit on top of the others for good.
+
+   THE TWO WALLS PART (2026-11-03). Aniket: "we have that vestibule tv - have this 5/10
+   pack - remove others (like that Phoenix throwball and CCCA notice)", then, on the
+   DIWALI2026 coupon, "push it to vestibule". So the vestibule's list is the court packs
+   alone (PacksHero.tsx); one panel takes no slot class and the screen draws no dots. The
+   exit door (the outside set) keeps Phoenix and CCCA for now: a message of its own for
+   that wall is being drafted separately. Nothing is deleted: put a key back in a list to
+   bring a panel back. */
 const promoTicker = makeTicker(30_000);
 
-export type PromoKey = "phoenix" | "starter" | "ccca" | "workshop";
+export type PromoKey = "phoenix" | "starter" | "ccca" | "workshop" | "packs";
 
-export function usePromos(): {
+/** Which wall is asking: the vestibule's right half, or the exit-door screen. */
+export type PromoWall = "vestibule" | "exit";
+
+export function usePromos(wall: PromoWall): {
   /** The panels up now, in the order they take their turns. */
   up: PromoKey[];
   /** The swap class for that panel ("" when it is not up, or alone). */
   slot: (key: PromoKey) => string;
 } {
   const now = useTick(promoTicker);
-  const up: PromoKey[] = ["phoenix", "ccca"];
-  if (now > 0 && now < Date.parse(WORKSHOP.endsAt)) up.push("workshop");
+  const up: PromoKey[] = wall === "vestibule" ? ["packs"] : ["phoenix", "ccca"];
+  if (wall === "exit" && now > 0 && now < Date.parse(WORKSHOP.endsAt)) up.push("workshop");
   const classes = up.length === 2 ? [w.slideA, w.slideB] : up.length === 3 ? [w.slide3a, w.slide3b, w.slide3c] : [];
   const slot = (key: PromoKey): string => classes[up.indexOf(key)] ?? "";
   return { up, slot };

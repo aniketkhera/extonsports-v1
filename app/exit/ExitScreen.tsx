@@ -59,7 +59,7 @@ export default function ExitScreen() {
   /* Which promotions are up and which slot each holds: promos.ts, shared with the
      vestibule since 2026-10-21 so both walls change panels at the same moment.
      The Starter Pack's own panel is StarterHero.tsx since the same day. */
-  const { up, slot } = usePromos();
+  const { up, slot } = usePromos("exit");
   /* NO HEARTBEAT IN HERE, on purpose (2026-10-20). The freeze watchdog's beat is
      sent ONCE per page by whoever renders this, named by the ADDRESS: TvScreen.tsx
      as "outside" on /outside (the TV's own address), and app/exit/page.tsx as
