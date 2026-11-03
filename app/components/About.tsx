@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import Facility3D from "./Facility3D";
 import WhatsAppButton from "./WhatsAppButton";
+import OurClubNote from "./OurClubNote";
 import { LEGAL_NAME, CONTACT_PHONE, CONTACT_PHONE_E164 } from "@/lib/legal";
 
 export default function About() {
@@ -124,7 +125,10 @@ export default function About() {
 
         </motion.div>
 
-        {/* Visual column — rotating 3D facility rendering */}
+        {/* Visual column — rotating 3D facility rendering, and under it the players' message
+            (2026-11-03, OurClubNote: "add those messages on teh website too - somewhere below
+            the graphic perhaps"). */}
+        <div>
         <motion.div
           initial={{ opacity: 0, scale: 0.97 }}
           whileInView={{ opacity: 1, scale: 1 }}
@@ -152,6 +156,8 @@ export default function About() {
             ))}
           </div>
         </motion.div>
+        <OurClubNote />
+        </div>
       </div>
     </section>
   );
