@@ -52,7 +52,9 @@ const RENDER: Record<TvContent, (tv: TvEntry) => ReactNode> = {
   "court-board": () => <ReceptionBoard />,
   "starter-pack": () => <ExitScreen />,
   "board-and-promos": () => <VestibuleScreen />,
-  "badminton-board": () => <SportBoard sport="Badminton" />,
+  /* `extend`: the badminton TV alone draws the offers to extend a booking (2026-11-03,
+     SportBoard.tsx). Cricket is later, after its own audio test and key. */
+  "badminton-board": () => <SportBoard sport="Badminton" extend />,
   "cricket-board": () => <SportBoard sport="Cricket" />,
 };
 
