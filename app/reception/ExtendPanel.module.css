@@ -1,0 +1,16 @@
+/* The extend panel's border, pulsing (2026-11-03; Aniket's "flashing", answered as Q18 of
+   orangish-app docs/court-extend.md: a slow pulse of the border, the codes held still).
+
+   Only an overlay's OPACITY moves, at 0.5 Hz — one slow swell every two seconds, far under
+   three flashes a second, and composited, so a television's browser redraws nothing else.
+   The overlay is a sibling of the panel, not a parent of anything: a code is never inside
+   a transform or an animation, because a moving code does not scan. Its outer shadow is
+   all it paints; nothing is drawn over the panel itself. */
+.pulse {
+  animation: extend-pulse 2s ease-in-out infinite;
+}
+
+@keyframes extend-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}

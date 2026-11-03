@@ -12,6 +12,9 @@ import {
   courtNudges, nudgeFace, clubInstant, startOf, endOf, bandKey,
   type BrandKey, type LightChip, type Lights, type NamedBlock, type NamedSlots, type SessionKey, type NudgeFace,
 } from "../board/board-lib";
+import {
+  parseExtend, forSport, drawnOffers, liveMoves, offerForEntry, EXTEND_FAST_POLL_MS, type ExtendView,
+} from "../board/extend-feed";
 
 /* The clock is an external store, shared with /comingsoon — see
    app/components/ticker.ts for why it is not useState + useEffect. The visible
@@ -158,6 +161,12 @@ export type EntryNudge = {
   nextAt?: number;
   /** The courts the line is about: those another party is waiting for, or those free after. */
   courts: string[];
+  /** "free" only, on the badminton TV (2026-11-03): an extend offer for this entry is up
+   *  in the panel beside it, so the note says SCAN TO EXTEND →. */
+  scan?: true;
+  /** "next" only, on the badminton TV: the group paid to carry on on these courts
+   *  (labels), so its TIME UP becomes MOVE TO COURT 3 (§9e E4). */
+  move?: string[];
 };
 
 export type Panel = {
@@ -171,6 +180,11 @@ export type Panel = {
   /** The lights chip, or null for a sport whose lights are not automated — and
    *  for every sport on the unkeyed page, whose feed has no `lights`. */
   light: LightChip | null;
+  /** This sport's extend offers and paid moves (2026-11-03), only for a screen that asked
+   *  (useCourtPanels' `extend`): the last answer's, checked, whether or not any is drawn
+   *  this second — ExtendPanel.tsx decides that on its own clock. `label` names a
+   *  courtId. Absent everywhere else. */
+  extend?: { view: ExtendView; label: Record<string, string> };
 };
 
 /* How many bookings to list under the live one. Five on 8 Oct 2026, then ten
@@ -615,9 +629,19 @@ function NudgedFoot({
      OFF COURT IN 7 MIN   then   OFF COURT IN 2:59   then   [TIME UP]
                           NEXT GROUP AT 7 PM (with COURT 2 · first, when only some
                           of the entry's courts have someone waiting)
-     ENDS IN 7 MIN        FREE AFTER · EXTEND IN THE APP, ember, no seconds
+     ENDS IN 7 MIN        FREE AFTER, ember, no seconds
 
-   The seconds are tabular so the line does not shuffle sideways every second. */
+   The seconds are tabular so the line does not shuffle sideways every second.
+
+   "FREE AFTER", NOT "FREE AFTER · EXTEND IN THE APP" (2026-11-03, Aniket's answer to
+   Q19 of orangish-app docs/court-extend.md): there never was a way to extend in the app,
+   and this line shows on reception and the cricket TV too. Only the badminton
+   TV, while its panel offers this very booking an extension, adds "· SCAN TO EXTEND →",
+   pointing across at the codes (`scan`, set by useCourtPanels' `extend`).
+
+   MOVE TO COURT 3 (2026-11-03, §9e E4, Q20): a group whose court is taken next that paid
+   to carry on on another court is not told TIME UP — the line names where to go, in
+   ember, and the note still says who is waiting. Badminton TV only (`move`). */
 function EntryFoot({
   e, sport, labels, big, face, nudge,
 }: { e: Entry; sport: string; labels: string[]; big: boolean; face: NudgeFace; nudge?: EntryNudge }) {
@@ -636,6 +660,9 @@ function EntryFoot({
       case "offSec":
         line = <>OFF {noun} IN <span style={{ fontVariantNumeric: "tabular-nums" }}>{face.clock}</span></>; ink = OFF_COURT; break;
       case "timeUp":
+        if (showing.move?.length) {
+          line = `MOVE TO ${noun}${showing.move.length > 1 ? "S" : ""} ${showing.move.join(", ")}`; ink = EMBER; break;
+        }
         line = (
           /* inline-block at the line's own height: an inline span's background is the
              font's whole ascent-to-descent, taller than this 1.03 line, and on the
@@ -650,7 +677,7 @@ function EntryFoot({
     }
     note = showing.kind === "next"
       ? `${which ? `${which} · ` : ""}NEXT GROUP AT ${clock(showing.nextAt ?? 0)}`
-      : `${which ? `${which} ` : ""}FREE AFTER · EXTEND IN THE APP`;
+      : `${which ? `${which} ` : ""}FREE AFTER${showing.scan ? " · SCAN TO EXTEND →" : ""}`;
   }
   const alarm = showing?.kind === "next" ? showing.courts : [];
   return (
@@ -884,11 +911,22 @@ const LIGHTS_CARRY_MS = 3 * 60_000;
      · a booking another party is waiting on STAYS under ON NOW through its TIME UP
        hold, beside the group that is now due on, instead of vanishing at its end.
    The vestibule does not pass it and is unchanged. */
-export function useCourtPanels({ upcoming, upNextMax, currentOnly = false, nudges = false }: { upcoming: number; upNextMax: number; currentOnly?: boolean; nudges?: boolean }): {
+/* `extend` (the badminton TV only, 2026-11-03; orangish-app docs/court-extend.md §10):
+   read the keyed feed's `extend` — the offers to extend a booking that is ending — into
+   each panel (Panel.extend), and mark the entries they belong to (EntryNudge scan and
+   move). Without it the payload's `extend` is never read, whatever it carries, so
+   reception, the vestibule and cricket are exactly as they were. With it:
+     · `extend` is NEVER carried across a response that lacks it (extend-feed.ts);
+     · the poll is every 15 s while the last answer carried an offer, so a payment
+       shows within 15 s, and every 60 s otherwise, as before (§10.8);
+     · only the keyed feed is read for it — the site's relay never forwards it. */
+export function useCourtPanels({ upcoming, upNextMax, currentOnly = false, nudges = false, extend = false }: { upcoming: number; upNextMax: number; currentOnly?: boolean; nudges?: boolean; extend?: boolean }): {
   panels: Panel[]; today: string; stale: boolean;
 } {
   const [data, setData] = useState<NamedSlots | null>(null);
   const [stale, setStale] = useState(false);
+  /** The last answer's `extend`, checked; null when it had none. Only with `extend`. */
+  const [ext, setExt] = useState<ExtendView | null>(null);
   const mounted = useRef(true);
   /** The last `lights` a response carried, and when (this TV's clock). */
   const lastLights = useRef<{ at: number; lights: Lights } | null>(null);
@@ -912,6 +950,8 @@ export function useCourtPanels({ upcoming, upNextMax, currentOnly = false, nudge
     const init: RequestInit = key
       ? { cache: "no-store", headers: { Authorization: `Bearer ${key}` } }
       : { cache: "no-store" };
+    /** `extend` only: did the last answer carry an offer? Sets the next poll's pace. */
+    let fast = false;
 
     const load = async () => {
       try {
@@ -940,16 +980,36 @@ export function useCourtPanels({ upcoming, upNextMax, currentOnly = false, nudge
         else if (lastLights.current && at - lastLights.current.at <= LIGHTS_CARRY_MS) {
           next = { ...body, lights: lastLights.current.lights };
         } else lastLights.current = null;
+        if (extend) {
+          /* Read from THIS answer or not at all — no carry, unlike the lights above.
+             Keyed only: the relay drops `extend`, and an unkeyed page has no offers. */
+          const view = key ? parseExtend(body.extend, body.courts, at) : null;
+          fast = !!view?.offers.length;
+          setExt(view);
+        }
         setData(next);
         setStale(false);
       } catch {
         if (mounted.current) setStale(true);
       }
     };
-    load();
-    const t = setInterval(load, 60_000);
-    return () => { mounted.current = false; clearInterval(t); };
-  }, []);
+    if (!extend) {
+      load();
+      const t = setInterval(load, 60_000);
+      return () => { mounted.current = false; clearInterval(t); };
+    }
+    /* The badminton TV: each poll scheduled when the last one is done, 15 s after an
+       answer that carried an offer, 60 s otherwise. A failed poll keeps the pace of the
+       last answer. `alive` is this effect's own, so a remount cannot leave two loops. */
+    let alive = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const run = async () => {
+      await load();
+      if (alive) timer = setTimeout(run, fast ? EXTEND_FAST_POLL_MS : 60_000);
+    };
+    run();
+    return () => { alive = false; mounted.current = false; clearTimeout(timer); };
+  }, [extend]);
 
   const view = useMemo((): { panels: Panel[]; today: string } => {
     /* `tick` is 0 until the ticker subscribes on mount, which is also what the
@@ -1024,6 +1084,27 @@ export function useCourtPanels({ upcoming, upNextMax, currentOnly = false, nudge
           courts: [...new Set(use.map((n) => label.get(n.courtId) ?? ""))].sort((a, b) => Number(a) - Number(b) || a.localeCompare(b)),
         };
       }
+      /* The badminton TV's offers, on the same entries (2026-11-03): SCAN TO EXTEND → on a
+         'free' entry whose offer the panel is drawing, MOVE TO COURT 3 on a 'next' entry
+         whose group paid to carry on on another court. Decided on this 15 s tick; the
+         panel decides on its own second tick, from the same drawnOffers — and an offer
+         opens on a whole minute, which both ticks land on. */
+      const sportExt = extend && ext ? forSport(ext, ids) : null;
+      if (sportExt) {
+        const labelOf = (id: string) => label.get(id) ?? "";
+        const drawn = drawnOffers(sportExt, tick, stale);
+        const moves = liveMoves(sportExt, tick, stale);
+        for (const e of nowEntries) {
+          const n = e.nudge;
+          if (n?.kind === "free" && offerForEntry(drawn, e, labelOf)) n.scan = true;
+          if (n?.kind === "next") {
+            const to = moves
+              .filter((m) => m.date === e.date && m.at === e.to && n.courts.includes(labelOf(m.from)))
+              .map((m) => labelOf(m.to));
+            if (to.length) n.move = [...new Set(to)].sort((a, b) => Number(a) - Number(b) || a.localeCompare(b));
+          }
+        }
+      }
       const { upNext, rest } = splitUpNext(nowEntries, aheadEntries, upNextMax);
 
       return {
@@ -1038,11 +1119,12 @@ export function useCourtPanels({ upcoming, upNextMax, currentOnly = false, nudge
            minute high — and the windows run 24 h ahead, so a failed poll keeps
            the count honest from the last good payload. */
         light: lightChip(sport, data.lights, tick),
+        ...(sportExt ? { extend: { view: sportExt, label: Object.fromEntries(label) } } : {}),
       };
     });
 
     return { panels, today };
-  }, [data, tick, upcoming, upNextMax, currentOnly, nudges]);
+  }, [data, tick, upcoming, upNextMax, currentOnly, nudges, extend, ext, stale]);
 
   return { ...view, stale };
 }

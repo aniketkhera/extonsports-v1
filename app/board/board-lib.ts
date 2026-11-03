@@ -17,8 +17,10 @@ import { CLUB_TZ } from "../../lib/opening";
  *  partner's hours — which kind of session it is (2026-10-14). */
 export type NamedBlock = SlotBlock & { who?: string; org?: BrandKey; session?: SessionKey };
 /** `lights` is keyed-feed only, and only for a club whose lights are automated
- *  (2026-10-18) — see lightChip below. The public proxy never forwards it. */
-export type NamedSlots = Omit<CourtSlots, "blocks" | "lights"> & { blocks: NamedBlock[]; lights?: Lights };
+ *  (2026-10-18) — see lightChip below. The public proxy never forwards it.
+ *  `extend` (2026-11-03) is the keyed feed's offers to extend a booking, only for a
+ *  screen opted in to them; unchecked here — extend-feed.ts parseExtend reads it. */
+export type NamedSlots = Omit<CourtSlots, "blocks" | "lights"> & { blocks: NamedBlock[]; lights?: Lights; extend?: unknown };
 
 /** One court's row on /board — see courtRow. */
 export type Row = {
@@ -540,8 +542,11 @@ export function lightChip(sport: string, lights: Lights | undefined, nowMs: numb
      another party next     OFF COURT IN 7 MIN, then 2:59 … 0:01, then TIME UP held
                             for TIME_UP_HOLD_MS, with "NEXT GROUP AT 7 PM" beside it.
      the same party next    nothing at all.
-     the court free after   ENDS IN 7 MIN with "FREE AFTER · EXTEND IN THE APP" — to
-                            sell the extension, not to throw people off an idle court.
+     the court free after   ENDS IN 7 MIN with "FREE AFTER" — to sell the extension,
+                            not to throw people off an idle court. ("· EXTEND IN THE
+                            APP" until 2026-11-03, when Q19 took it off: there was no
+                            such path. The badminton TV adds "· SCAN TO EXTEND →" while
+                            its panel offers that booking an extension.)
                             Court hires only: a partner's session that ends onto a free
                             court gets nothing (its coach runs its clock), and minutes
                             only, no seconds, no TIME UP.

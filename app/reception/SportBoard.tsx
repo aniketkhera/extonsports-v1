@@ -6,6 +6,7 @@ import { ScreenHeader, BookingBand, BAND_GAP, BOOK_BAND, BAND_STAMP } from "../c
 import ScreenStamp from "../components/ScreenStamp";
 import { BG, INK, RULE_SOFT, BOX } from "../components/tv-palette";
 import { useCourtPanels, PANEL_BOX, PanelTitle, NowArea, ComingUp } from "./ReceptionBoard";
+import { ExtendCell, ExtendBand } from "./ExtendPanel";
 
 /* ONE SPORT'S SCREEN — the badminton and cricket TVs (2026-10-28).
    ──────────────────────────────────────────────────────────────────────────
@@ -45,10 +46,22 @@ const UP_NEXT_MAX = 2;
 
 export type BoardSport = "Badminton" | "Cricket";
 
-export default function SportBoard({ sport }: { sport: BoardSport }) {
+/* The rule moves from above the list to beside it. */
+const COMING_UP_STYLE: CSSProperties = {
+  borderTop: "none", borderLeft: `1px solid ${RULE_SOFT}`, paddingTop: 0, paddingLeft: "calc(1.2 * var(--vw))", minHeight: 0, overflow: "hidden",
+};
+
+/* `extend` (2026-11-03): the offers to extend a booking that is ending, drawn in the
+   COMING UP cell (ExtendPanel.tsx; orangish-app docs/court-extend.md §10). ONLY
+   RENDER["badminton-board"] in TvScreen.tsx passes it — the badminton TV is the one the
+   platform opts in (board_screens.extend_offers_sport_id), and the one whose speaker is
+   being tested. Without it this screen does not read the feed's `extend` at all, so the
+   cricket TV draws exactly what it did, whatever a payload carries. And the offers ride
+   the KEYED feed only: unkeyed, this page shows today's board and no code. */
+export default function SportBoard({ sport, extend = false }: { sport: BoardSport; extend?: boolean }) {
   useReloadOnDeploy();
   /* No heartbeat here: TvScreen.tsx beats once per page, named by the TV. */
-  const { panels, today, stale } = useCourtPanels({ upcoming: UPCOMING_COUNT, upNextMax: UP_NEXT_MAX, nudges: true });
+  const { panels, today, stale } = useCourtPanels({ upcoming: UPCOMING_COUNT, upNextMax: UP_NEXT_MAX, nudges: true, extend });
   const p = panels.find((x) => x.sport === sport);
 
   return (
@@ -85,17 +98,17 @@ export default function SportBoard({ sport }: { sport: BoardSport }) {
               <div style={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
                 <NowArea p={p} today={today} />
               </div>
-              {/* The rule moves from above the list to beside it. */}
-              <ComingUp
-                p={p} today={today}
-                style={{ borderTop: "none", borderLeft: `1px solid ${RULE_SOFT}`, paddingTop: 0, paddingLeft: "calc(1.2 * var(--vw))", minHeight: 0, overflow: "hidden" }}
-              />
+              {extend
+                ? <ExtendCell p={p} today={today} stale={stale} style={COMING_UP_STYLE} />
+                : <ComingUp p={p} today={today} style={COMING_UP_STYLE} />}
             </div>
           </div>
         )}
       </div>
 
-      <BookingBand stamp={<ScreenStamp style={BAND_STAMP} />} />
+      {extend
+        ? <ExtendBand p={p} stale={stale} stamp={<ScreenStamp style={BAND_STAMP} />} />
+        : <BookingBand stamp={<ScreenStamp style={BAND_STAMP} />} />}
     </div>
     </div>
   );
