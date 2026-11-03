@@ -103,6 +103,27 @@ const nextConfig: NextConfig = {
       // Above the apex rule so both hosts take one hop. Not in app/sitemap.ts.
       { source: '/music', destination: 'https://exton-sports.taildf9e01.ts.net:8443/', permanent: false },
 
+      // ── /field → the whole-field booking page (2026-11-03) ─────────────────
+      // One short address to put in an email to a baseball coach, where the real target is
+      // seventy characters of query string. The Field hall is all three cricket lanes with
+      // the dividers pulled back — 100 × 30 ft of turf, court_halls key 'field', $150 peak
+      // / $130 off-peak, up to 20 players.
+      //
+      // ⚠️ THE COLON IS PERCENT-ENCODED ON PURPOSE, AND MUST STAY THAT WAY. The hall's
+      // sport id is literally "hall:field" (orangish-app lib/court-hall-rules.ts,
+      // HALL_ID_PREFIX), and Next parses a bare ":field" in a DESTINATION as a path
+      // parameter — it is not captured by this source, so it would be substituted with
+      // nothing and the booking page would open with no sport chosen at all. The Next docs
+      // warn about exactly this. %3A is the same character to the page, which reads it back
+      // as "hall:field" once the query is decoded; checked against the live page before
+      // shipping.
+      //
+      // permanent: false (307), like /pay and /music: this address is going into cold email
+      // and onto paper, and the club front-doors plan may move the app's URL. A browser that
+      // cached a 308 could never be sent anywhere else. Above the apex rule so both hosts
+      // take one hop. Not in app/sitemap.ts: it is a redirect, not a page.
+      { source: '/field', destination: 'https://app.orangish.io/book-court/exton-sports?sport_id=hall%3Afield', permanent: false },
+
       // ── ONE CANONICAL HOST: www ────────────────────────────────────────────
       // Until 2026-09-30 the apex and www BOTH served 200 with no redirect
       // between them, while the site declared the APEX canonical (metadataBase,
