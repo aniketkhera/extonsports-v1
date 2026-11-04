@@ -6,6 +6,7 @@ import OurClubScreen from "../our-club/OurClubScreen";
 import SportBoard from "../reception/SportBoard";
 import ScreenHeartbeat from "./ScreenHeartbeat";
 import SilkFullscreen from "./SilkFullscreen";
+import ReplayHandoff from "./ReplayHandoff";
 import { tvScreen, type TvContent, type TvEntry, type TvId } from "./tv-screens";
 
 /* One TV's page: whatever its entry in tv-screens.ts says it shows (2026-10-20).
@@ -65,6 +66,10 @@ export default function TvScreen({ id }: { id: TvId }) {
   return (
     <>
       <SilkFullscreen />
+      {/* 2026-11-04: these two sets go to the N95's court-replay screen during their sport's
+          junior academy (ReplayHandoff.tsx). By TV, not by `shows:`, because it is the set in
+          front of those courts that matters, whatever its board shows the rest of the day. */}
+      {(tv.id === "badminton" || tv.id === "cricket") && <ReplayHandoff sport={tv.id} />}
       <ScreenHeartbeat page={tv.id} />
       {RENDER[tv.shows](tv)}
     </>
