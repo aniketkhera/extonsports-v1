@@ -124,6 +124,12 @@ const nextConfig: NextConfig = {
       // take one hop. Not in app/sitemap.ts: it is a redirect, not a page.
       { source: '/field', destination: 'https://app.orangish.io/book-court/exton-sports?sport_id=hall%3Afield', permanent: false },
 
+      // The POWER x SeRa workshop page is gone (2026-11-03: it ran Fri 30 Oct, and the page
+      // still said sign-ups had started and carried the organiser's phone number). Its flyer
+      // and QR are still out there, so the address lands on SeRa's ongoing class rather than
+      // a 404. 307, like /field: a cached 308 could never be pointed anywhere else.
+      { source: '/fitnessworkshop', destination: 'https://app.orangish.io/c/bollywood', permanent: false },
+
       // ── ONE CANONICAL HOST: www ────────────────────────────────────────────
       // Until 2026-09-30 the apex and www BOTH served 200 with no redirect
       // between them, while the site declared the APEX canonical (metadataBase,

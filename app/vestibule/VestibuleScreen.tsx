@@ -12,7 +12,6 @@ import { SESSION_TEXT, SPORT_OBJECT, span } from "../board/board-lib";
 import { usePromos } from "../exit/promos";
 import StarterHero from "../exit/StarterHero";
 import PhoenixHero from "../exit/PhoenixHero";
-import WorkshopHero from "../exit/WorkshopHero";
 import CccaHero from "../exit/CccaHero";
 import PacksHero from "../exit/PacksHero";
 import w from "../exit/workshop.module.css";
@@ -221,7 +220,6 @@ export default function VestibuleScreen() {
                 {up.includes("phoenix") && <PhoenixHero className={slot("phoenix")} panel />}
                 {up.includes("starter") && <StarterHero className={slot("starter")} panel />}
                 {up.includes("ccca") && <CccaHero className={slot("ccca")} panel />}
-                {up.includes("workshop") && <WorkshopHero className={slot("workshop")} panel />}
                 {/* The court packs, alone here since 2026-11-03 (promos.ts). Made for this
                     panel only, so it takes no `panel` flag. */}
                 {up.includes("packs") && <PacksHero className={slot("packs")} />}

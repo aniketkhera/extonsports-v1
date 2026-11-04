@@ -32,10 +32,11 @@ export const SQUAD_SCHEDULE: SquadSlot[] = [
   { day: 'Sun', time: '10–11am' },
 ]
 
-/* Said on the face of the card because all three change what a parent decides:
-   the cap is small enough to sell out, the price is per session rather than a
-   term fee, and three courts is why twelve players is not a crowd. */
-export const SQUAD_NOTE = 'Max 12 players across three courts · $35 a session.'
+/* Said on the face of the card because it changes what a parent decides: the price is
+   per session rather than a term fee. It also said "Max 12 players across three courts"
+   until 2026-11-03, which published a cap (the owner's rule: never outside the app, see
+   orangish-app docs and the 11-03 publishable-features audit). */
+export const SQUAD_NOTE = '$35 a session.'
 
 /* The breaks are listed rather than implied. A parent who turns up on
    Thanksgiving to a locked door remembers it; one who reads it here does not.
