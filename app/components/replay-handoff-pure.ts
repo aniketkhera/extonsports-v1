@@ -3,14 +3,15 @@
    Aniket: "when we have PBA and CCCA junior academies going on, and only then (for now)",
    the sport's TV shows its three court cameras live with a QR code to a replay remote. The
    video never leaves the building, so that screen is served by the club's N95 on the LAN
-   (orangish-cameras court-replay), not by this site. This file is only the decision, shared
-   with the N95's own copy of it (court_replay.py Feed.session) — keep the two the same:
+   (orangish-cameras court-replay), not by this site.
 
-     a block TODAY (club time) on one of the sport's courts, held by the sport's partner
-     (org), whose session is junior-coaching, with now inside [from, to). True edges
-     (exactFrom/exactTo) win over the half-hour grid when the feed sends them.
-
-   Open play does not count. A Squash block never counts. Nothing names a person.
+   THE N95 DECIDES, NOT THIS SITE. It reads the public court feed (a PBA / CCCA junior-coaching
+   block on the sport's courts, now) and reports to the platform at least every 30 s while its
+   screen is up and its grid is running. This site only asks the platform whether that report
+   is fresh (app.orangish.io/api/public/replay-status). So a box that is down, or a grid that
+   is not running, never gets a TV sent to it — a TV sent to a dead address would sit on a
+   browser error page for the whole session — and there is one copy of the rule, not two that
+   can disagree at a session's edge.
 
    Pure, and run directly by node --test (replay-handoff.test.mjs). */
 
@@ -19,29 +20,20 @@ export type ReplaySport = "badminton" | "cricket";
 /** The N95's court-replay screen, on the club LAN. Only a paired TV is ever sent here. */
 export const REPLAY_BOX = "http://10.1.10.124:8090";
 
-/** After the N95 sends a TV back (?replay=back), do not send it again for this long: the two
-    feeds can disagree for up to a minute at a session's edge, and a TV must not bounce. */
+/** Exton Sports in the platform's locations table. */
+export const EXTON_LOCATION = "f9d70a9d-ca32-4dc3-877e-83815a45bb5f";
+
+/** After the N95 sends a TV back (?replay=back), do not send it again for this long: if the
+    box sent it back because its grid failed, it must not be pulled straight back to it. */
 export const BACK_HOLD_MS = 3 * 60_000;
 
-const PARTNER: Record<ReplaySport, { feed: string; org: string }> = {
-  badminton: { feed: "Badminton", org: "philadelphia-badminton" },
-  cricket: { feed: "Cricket", org: "ccca" },
-};
+export function statusUrl(platform: string, sport: ReplaySport): string {
+  return `${platform}/api/public/replay-status?location=${EXTON_LOCATION}&sport=${sport}`;
+}
 
-type Feed = {
-  courts?: { id: string; sport: string }[];
-  blocks?: { date: string; courtId: string; from: number; to: number; org?: string; session?: string; exactFrom?: number; exactTo?: number }[];
-};
-
-export function academyOn(feed: Feed | null | undefined, sport: ReplaySport, date: string, minutes: number): boolean {
-  if (!feed?.courts || !feed.blocks) return false;
-  const p = PARTNER[sport];
-  const courts = new Set(feed.courts.filter((c) => c.sport === p.feed).map((c) => c.id));
-  return feed.blocks.some((b) => {
-    if (b.date !== date || !courts.has(b.courtId) || b.org !== p.org || b.session !== "junior-coaching") return false;
-    const from = b.exactFrom ?? b.from, to = b.exactTo ?? b.to;
-    return from <= minutes && minutes < to;
-  });
+/** Only an explicit `{ on: true }` is a yes. */
+export function isOn(body: unknown): boolean {
+  return !!body && typeof body === "object" && (body as { on?: unknown }).on === true;
 }
 
 /** Where to send the TV: the box's page for the sport, carrying the launch tag (?k=, so

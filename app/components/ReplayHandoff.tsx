@@ -1,9 +1,8 @@
 "use client";
 import { useEffect } from "react";
-import { clubNow } from "../board/board-lib";
 import { launchTagFrom } from "./screen-pure";
-import { readKey } from "./screen-key";
-import { academyOn, BACK_HOLD_MS, handoffUrl, type ReplaySport } from "./replay-handoff-pure";
+import { PLATFORM, readKey } from "./screen-key";
+import { BACK_HOLD_MS, handoffUrl, isOn, statusUrl, type ReplaySport } from "./replay-handoff-pure";
 
 /* Sends the badminton or cricket TV to the N95's replay screen while that sport's junior
    academy is on (2026-11-04; the rule and why the screen lives on the N95 are in
@@ -19,9 +18,11 @@ import { academyOn, BACK_HOLD_MS, handoffUrl, type ReplaySport } from "./replay-
    where the page went), so it does not fight this, and its hourly reload just brings the TV
    back here for a moment before this sends it on again.
 
-   THE BOX SENDS IT BACK with ?replay=back when the session ends; for BACK_HOLD_MS after that
-   this does nothing, so a minute's disagreement between the two copies of the feed at a
-   session's edge cannot bounce the TV. */
+   ONLY WHEN THE BOX SAYS ITS SCREEN IS UP (replay-handoff-pure.ts): the platform answers
+   from the N95's own report of the last 90 s, so a box that is down never gets a TV.
+
+   THE BOX SENDS IT BACK with ?replay=back when the session ends, or when it cannot show a
+   picture; for BACK_HOLD_MS after that this does nothing, so the TV cannot bounce. */
 
 const CHECK_EVERY_MS = 60_000;
 const HOLD_KEY = "exton-replay-back-at";
@@ -45,11 +46,10 @@ export default function ReplayHandoff({ sport }: { sport: ReplaySport }) {
     const check = async () => {
       if (gone || held()) return;
       try {
-        // The same public feed the N95 reads, same-origin, cached 60 s on this site.
-        const r = await fetch("/api/court-slots?days=1", { cache: "no-store" });
+        // The N95's own fresh report, through the platform: is its replay screen up?
+        const r = await fetch(statusUrl(PLATFORM, sport), { cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer" });
         if (!r.ok) return;
-        const { date, minutes } = clubNow(new Date());
-        if (academyOn(await r.json(), sport, date, minutes) && !held() && !gone) {
+        if (isOn(await r.json()) && !held() && !gone) {
           gone = true;
           location.replace(handoffUrl(sport, key, launchTagFrom(location.search)));
         }
