@@ -1,0 +1,298 @@
+<!doctype html>
+<!-- extonsports.com/orangish (2026-11-04). Aniket: "can we put up this page on extonsports.com/orangish".
+     The Orangish pitch for other clubs, the same page as the claude.ai artifact "Orangish for Clubs",
+     with Exton's own live screenshots (taken 2026-11-04) in /orangish/img. A static page on purpose:
+     it is a sales sheet, not part of the club site, so it carries none of the site's layout. Served at
+     /orangish by a rewrite in next.config.ts; not in the sitemap. Image paths are absolute because
+     /orangish has no trailing slash, so a relative "img/" would resolve to /img/. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Orangish runs Exton Sports Center: booking, payments, packs, classes, the club phone and the TVs on the wall. A tour with live screenshots.">
+<meta property="og:title" content="Orangish for Clubs">
+<meta property="og:description" content="The system that runs Exton Sports Center, for your club.">
+<meta property="og:image" content="https://www.extonsports.com/orangish/img/tv-reception.jpg">
+<meta property="og:url" content="https://www.extonsports.com/orangish">
+<link rel="icon" href="/favicon.png">
+<title>Orangish for Clubs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a club's own wall-TV look (night navy, ember orange, condensed caps) carried onto a long
+   pitch page — each feature group is a band with Exton's live screens beside the list. */
+:root {
+  --bg: #0A1019;          /* the club TVs' navy */
+  --panel: #111A26;
+  --line: #24344A;
+  --fg: #F4F6F8;
+  --muted: #A7B2C0;
+  --accent: #F89B72;      /* Exton / Orangish ember */
+  --accent-ink: #0A1019;
+  --soon: #F8C25C;
+  --frame: #000000;
+  --display: "Oswald", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --body: "Barlow", "Segoe UI", Helvetica, Arial, sans-serif;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #F6F4F1; --panel: #FFFFFF; --line: #E1DBD3; --fg: #0F1720; --muted: #5A6472;
+    --accent: #D9663A; --accent-ink: #FFFFFF; --soon: #9A6A00; --frame: #0F1720; color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #F6F4F1; --panel: #FFFFFF; --line: #E1DBD3; --fg: #0F1720; --muted: #5A6472;
+  --accent: #D9663A; --accent-ink: #FFFFFF; --soon: #9A6A00; --frame: #0F1720; color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 17px; line-height: 1.55; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+a { color: var(--accent); }
+img { display: block; max-width: 100%; height: auto; }
+
+/* top bar */
+.top { padding-block: 22px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--line); }
+.mark { font-family: var(--display); font-weight: 600; font-size: 26px; letter-spacing: .02em; }
+.mark span { color: var(--accent); }
+.top .where { font-family: var(--display); font-weight: 500; font-size: 14px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); text-align: right; }
+
+/* hero */
+.hero { padding-block: 64px 40px; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 48px; align-items: center; }
+.kicker { font-family: var(--display); font-weight: 500; font-size: 15px; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); margin: 0 0 14px; }
+h1 { font-family: var(--display); font-weight: 700; text-transform: uppercase; font-size: clamp(44px, 6.4vw, 78px); line-height: .95; margin: 0 0 20px; text-wrap: balance; letter-spacing: -.005em; }
+h1 em { font-style: normal; color: var(--accent); }
+.lede { font-size: 19px; color: var(--muted); max-width: 34em; margin: 0 0 26px; }
+.lede b { color: var(--fg); font-weight: 600; }
+.facts { display: flex; flex-wrap: wrap; gap: 10px; padding: 0; margin: 0; list-style: none; }
+.facts li { font-family: var(--display); font-weight: 500; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; border: 1px solid var(--line); padding: 7px 12px; color: var(--fg); }
+
+/* screenshot frames */
+.tv { background: var(--frame); padding: 10px; border-radius: 10px; box-shadow: 0 18px 50px rgba(0,0,0,.35); }
+.tv img { border-radius: 3px; }
+.phone { background: var(--frame); padding: 9px; border-radius: 30px; box-shadow: 0 14px 40px rgba(0,0,0,.3); max-width: 300px; }
+.phone img { border-radius: 22px; }
+.mail { background: #FFFFFF; padding: 8px; border-radius: 6px; border: 1px solid var(--line); box-shadow: 0 14px 40px rgba(0,0,0,.25); max-width: 320px; }
+figure { margin: 0; }
+figcaption { font-size: 14px; color: var(--muted); margin-top: 12px; line-height: 1.4; }
+figcaption b { color: var(--fg); font-weight: 600; }
+
+/* bands */
+.band { border-top: 1px solid var(--line); padding-block: 64px; }
+.band h2 { font-family: var(--display); font-weight: 600; text-transform: uppercase; font-size: clamp(30px, 3.6vw, 42px); line-height: 1.02; margin: 0 0 10px; text-wrap: balance; }
+.band h2 span { color: var(--accent); }
+.band .intro { color: var(--muted); max-width: 40em; margin: 0 0 28px; }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: start; }
+.split.flip > :first-child { order: 2; }
+.list { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+.list li { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 14px; }
+.list li::before { content: ""; width: 8px; height: 8px; margin-top: 10px; background: var(--accent); }
+.list b { font-weight: 600; }
+.list .opt { font-family: var(--display); font-weight: 500; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); padding: 1px 6px; margin-left: 6px; white-space: nowrap; }
+.shots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; margin-top: 36px; justify-items: center; }
+.wide { margin-top: 36px; }
+.stack { display: grid; gap: 28px; }
+
+/* coming soon */
+.soon-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 32px; }
+.soon-list li { border-left: 3px solid var(--soon); padding: 4px 0 4px 14px; }
+.soon-list b { display: block; font-family: var(--display); font-weight: 600; font-size: 19px; text-transform: uppercase; letter-spacing: .02em; }
+.soon-list span { color: var(--muted); font-size: 15px; }
+
+/* cta */
+.cta { border-top: 1px solid var(--line); padding-block: 72px; }
+.cta-box { background: var(--panel); border: 1px solid var(--line); border-top: 5px solid var(--accent); padding: 36px; display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 32px; align-items: center; }
+.cta h2 { font-family: var(--display); font-weight: 700; text-transform: uppercase; font-size: clamp(32px, 4vw, 48px); line-height: 1; margin: 0 0 12px; }
+.cta p { color: var(--muted); margin: 0; }
+.contact { display: grid; gap: 10px; }
+.contact div { font-size: 15px; color: var(--muted); }
+.contact strong { display: block; font-size: 20px; color: var(--fg); font-weight: 600; user-select: all; word-break: break-word; }
+.foot { padding-block: 26px 40px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); }
+
+@media (max-width: 860px) {
+  .hero, .split, .cta-box { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .split.flip > :first-child { order: 0; }
+  .shots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .soon-list { grid-template-columns: minmax(0, 1fr); }
+  .hero { padding-block: 40px 24px; }
+  .band { padding-block: 48px; }
+}
+@media (max-width: 520px) {
+  .shots { grid-template-columns: minmax(0, 1fr); }
+  .top .where { display: none; }
+  .cta-box { padding: 24px; }
+}
+</style>
+<style>
+  body { -webkit-font-smoothing: antialiased; }
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="mark">orang<span>ish</span></div>
+    <div class="where">Running Exton Sports Center · Exton, PA</div>
+  </header>
+
+  <section class="hero">
+    <div>
+      <p class="kicker">For sports clubs and facilities</p>
+      <h1>Your whole club on <em>one system.</em></h1>
+      <p class="lede">Orangish runs <b>Exton Sports Center</b>, a 24/7 multi-sport club in Chester County: courts and lanes, payments, packs and classes, the club phone, and the screens on the wall. It also runs two squash clubs in New Jersey and Connecticut. Every screen on this page is live at Exton.</p>
+      <ul class="facts">
+        <li>Badminton · Cricket · Squash</li>
+        <li>Throwball · Field · Fitness</li>
+        <li>Open 24/7</li>
+      </ul>
+    </div>
+    <figure>
+      <div class="tv"><img src="/orangish/img/tv-reception.jpg" alt="Exton's reception TV: badminton, cricket and squash columns showing who is up next and the rest of the day's bookings" width="1600" height="900"></div>
+      <figcaption><b>The reception TV at Exton.</b> Who's on each court next, and the rest of the day, straight from the booking system.</figcaption>
+    </figure>
+  </section>
+</div>
+
+<section class="band">
+  <div class="wrap">
+    <h2>Booking that <span>fills courts</span></h2>
+    <p class="intro">Members book from their phone in seconds. Visitors book and pay without making an account. You set the prices, the hours and the rules.</p>
+    <div class="split">
+      <ul class="list">
+        <li><div><b>Courts, lanes and whole halls.</b> One court, several courts, or a whole hall for a team game or a party.</div></li>
+        <li><div><b>1 to 3 hours, in half-hour steps,</b> with peak and off-peak prices shown before anyone pays.</div></li>
+        <li><div><b>No account needed for visitors.</b> They pick a sport and a time, answer your questions, and pay by card.</div></li>
+        <li><div><b>Season bookings for academies and teams,</b> held every week and billed to their account.</div></li>
+        <li><div><b>Players manage their own bookings:</b> move or cancel within your policy, and invite friends with one link.</div></li>
+        <li><div><b>Confirmations and reminders</b> by email and text, the day before and two hours before.</div></li>
+        <li><div><b>Online waivers</b> signed on the phone before players arrive.</div></li>
+      </ul>
+      <figure style="justify-self:center">
+        <div class="phone"><img src="/orangish/img/book.jpg" alt="Exton's no-account booking page on a phone: sport, date, hours and courts, with the price per player" width="640" height="1387"></div>
+        <figcaption><b>No-account booking.</b> Sport, date, length and courts, with the price per player shown as they choose.</figcaption>
+      </figure>
+    </div>
+    <figure class="wide">
+      <div class="tv"><img src="/orangish/img/calendar.jpg" alt="Exton's public calendar of bookings: cricket, badminton and squash courts by hour, with academies named and private hires marked" width="1400" height="481"></div>
+      <figcaption><b>A live calendar on your website.</b> Every court by the hour, with your academies named and private bookings kept private. Tap a free slot to book it.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <h2>Packs, classes <span>and juniors</span></h2>
+    <p class="intro">Sell more than single bookings: prepaid hours, class bundles and beginner programmes, each with its own simple page.</p>
+    <ul class="list" style="max-width:44em">
+      <li><div><b>Court packs.</b> Prepaid court hours at a saving, with promo codes when you want to run an offer.</div></li>
+      <li><div><b>Classes and squads</b> with online sign-up, drop-in payment, share links and class lists for the instructor.</div></li>
+      <li><div><b>Class and lesson packs,</b> with automatic discounts for partner groups.</div></li>
+      <li><div><b>A beginner Starter Pack</b> parents can buy in minutes.</div></li>
+      <li><div><b>Family accounts and junior safety.</b> Parents act for their children, and children's names never show in public.</div></li>
+    </ul>
+    <div class="shots">
+      <figure>
+        <div class="phone"><img src="/orangish/img/packs.jpg" alt="Exton's court packs page: badminton 5 and 10 credit packs with prices" width="640" height="1223"></div>
+        <figcaption><b>Court packs.</b> Five or ten hours, bought online.</figcaption>
+      </figure>
+      <figure>
+        <div class="phone"><img src="/orangish/img/class.jpg" alt="A class page for Bollywood Fitness with next dates, drop-in price and class packs" width="640" height="1387"></div>
+        <figcaption><b>A class page.</b> Next dates, drop-in price and packs, with a group discount.</figcaption>
+      </figure>
+      <figure>
+        <div class="phone"><img src="/orangish/img/starter.jpg" alt="The squash Starter Pack page: five private lessons for juniors" width="640" height="1385"></div>
+        <figcaption><b>Starter Pack.</b> Five private lessons for a junior, bought by a parent.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <h2>Payments, <span>straight to your bank</span></h2>
+    <p class="intro">Your club is the merchant. Money lands in your own bank account through Stripe, and the books keep themselves.</p>
+    <div class="split">
+      <ul class="list">
+        <li><div><b>Card, Apple Pay and Google Pay.</b> You choose whether the club or the player covers card fees.</div></li>
+        <li><div><b>Memberships that renew themselves,</b> monthly or annual. Members update their own card.</div></li>
+        <li><div><b>A "pay the club" page</b> and payment links for anything that isn't a booking.</div></li>
+      </ul>
+      <ul class="list">
+        <li><div><b>One ledger</b> for every sale, refund and tax amount, with revenue reports.</div></li>
+        <li><div><b>Checked against Stripe every night,</b> so nothing goes missing.</div></li>
+        <li><div><b>A pro shop till</b> at the desk, and scan-to-pay for members.</div></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <h2>Talk to your <span>members</span></h2>
+    <p class="intro">Reminders, newsletters and your own club phone line, all in one place.</p>
+    <div class="split flip">
+      <ul class="list">
+        <li><div><b>Newsletters and a mailing list.</b> Collect sign-ups on your website, import past members, and send branded emails like this one.</div></li>
+        <li><div><b>Your own club phone line</b> with a short call menu that rings your staff and screens robocalls. Calls are recorded and summarised.</div></li>
+        <li><div><b>One inbox for calls and texts,</b> with instant alerts. Reply or call back from the club number.</div></li>
+        <li><div><b>In-app chat and announcements</b> for members.</div></li>
+      </ul>
+      <figure style="justify-self:center">
+        <div class="mail"><img src="/orangish/img/email.jpg" alt="Exton's November newsletter email" width="640" height="893"></div>
+        <figcaption><b>Exton's November newsletter,</b> sent to the club's mailing list.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <h2>A club that <span>runs itself</span></h2>
+    <p class="intro">Optional equipment, installed at your club, that works from the bookings. A small computer on site keeps it all running and restarts a screen that freezes.</p>
+    <div class="split">
+      <ul class="list">
+        <li><div><b>Court and lobby TVs:</b> who's on now and next, a countdown when time is up, and your offers.<span class="opt">On site</span></div></li>
+        <li><div><b>Court lights</b> that come on before each booking and go off after the last one.<span class="opt">On site</span></div></li>
+        <li><div><b>Self-serve entry</b> with a code sent before each booking.<span class="opt">On site</span></div></li>
+        <li><div><b>Court cameras</b> with two weeks of footage.<span class="opt">On site</span></div></li>
+        <li><div><b>Staff logins and permissions,</b> one dashboard and reports across all your locations, and your club's name and colours on every page and email.</div></li>
+      </ul>
+      <figure>
+        <div class="tv"><img src="/orangish/img/tv-vestibule.jpg" alt="Exton's entrance TV: bookings on the left and a court packs offer with a scan-to-buy code on the right" width="1600" height="900"></div>
+        <figcaption><b>The entrance TV.</b> Bookings on the left, and an offer with a scan-to-buy code on the right.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <h2>Coming <span>soon</span></h2>
+    <ul class="soon-list">
+      <li><b>Extend from the court</b><span>As a booking ends, the court TV offers more time if the court is free.</span></li>
+      <li><b>Your game on video</b><span>Recordings, highlights and reels from each booking.</span></li>
+      <li><b>Shopify pro shop</b><span>Gear sold online and at the desk from one stock list.</span></li>
+      <li><b>Listing on booking apps</b><span>Show your free courts in partner apps and take their bookings.</span></li>
+    </ul>
+  </div>
+</section>
+
+<div class="wrap">
+  <section class="cta">
+    <div class="cta-box">
+      <div>
+        <h2>See it running at Exton</h2>
+        <p>Come by 4 Tabas Lane, Building 2, Exton, PA and we'll walk you through it in about 30 minutes: the booking pages, the TVs, the lights and the back office.</p>
+      </div>
+      <div class="contact">
+        <div>Email<strong><a href="mailto:aniket@orangish.io">aniket@orangish.io</a></strong></div>
+        <div>Web<strong><a href="https://orangish.io">orangish.io</a></strong></div>
+      </div>
+    </div>
+  </section>
+  <footer class="foot">Screenshots are from Exton Sports Center's live pages and screens, 4 November 2026. Orangish is built by STAR SQUASH, LLC.</footer>
+</div>
+</body>
+</html>
