@@ -62,7 +62,10 @@ export const MESSAGES: Message[] = [
 /* His four asks, in his order. Each title is two lines, set by hand: "Lock up before you
    leave" is too long for one line of a quarter-width tile at a size the door can read,
    and four titles of one height keep the four lines under them level. */
-export const ASKS: Array<{ key: string; title: [string, string]; line: string; icon: ReactNode }> = [
+/** `web`, where set, is what extonsports.com prints instead of `line` (2026-11-03): the wall by the
+ *  door tells players the door does not lock by itself, as the key-box emails do; the public site
+ *  does not tell the world. Found by the 11-03 publishable-features audit. */
+export const ASKS: Array<{ key: string; title: [string, string]; line: string; web?: string; icon: ReactNode }> = [
   {
     key: "shoes",
     title: ["Clean", "shoes"],
@@ -92,6 +95,7 @@ export const ASKS: Array<{ key: string; title: [string, string]; line: string; i
     key: "lock",
     title: ["Lock up before", "you leave"],
     line: "Last ones out lock the front door. It doesn’t lock by itself.",
+    web: "Last ones out, please lock the front door.",
     icon: (
       <svg viewBox="0 0 48 48" aria-hidden>
         <rect x="10" y="21" width="28" height="21" rx="3.5" />

@@ -6,7 +6,6 @@ import ScreenStamp from "../components/ScreenStamp";
 import { BG, INK, BOX } from "../components/tv-palette";
 import StarterHero from "./StarterHero";
 import PhoenixHero from "./PhoenixHero";
-import WorkshopHero from "./WorkshopHero";
 import CccaHero from "./CccaHero";
 import { usePromos } from "./promos";
 import w from "./workshop.module.css";
@@ -97,7 +96,6 @@ export default function ExitScreen() {
         {up.includes("phoenix") && <PhoenixHero className={slot("phoenix")} />}
         {up.includes("starter") && <StarterHero className={slot("starter")} />}
         {up.includes("ccca") && <CccaHero className={slot("ccca")} />}
-        {up.includes("workshop") && <WorkshopHero className={slot("workshop")} />}
         </div>
 
         {/* The version stamp (2026-10-20): keyed screens or ?diag only, in the

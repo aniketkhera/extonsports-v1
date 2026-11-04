@@ -86,7 +86,8 @@ export type ProgramSchedule = {
   /** Upcoming sessions counted, so the UI can say "14 upcoming". */
   upcoming: number
   /**
-   * "Sep 15" — the first session, but ONLY while the programme has not begun.
+   * "Sep 15" — the first session, but ONLY while the programme has not begun. Always null
+   * from this feed since 2026-11-03 (it carries no past sessions; see the ⛔ note below).
    *
    * Derived, not typed, and deliberately self-expiring: set only when NO
    * session has already happened. Once the first passes, the earliest remaining
@@ -299,7 +300,6 @@ export async function fetchProgramSchedules(): Promise<ProgramSchedule[]> {
       .filter(([, e]) => e.dates.length > 0)
       .map(([program, e]) => {
         e.dates.sort((a, b) => a.getTime() - b.getTime())
-        const first = e.dates[0]
         return {
           program,
           when: formatWhen(e.dates, tz),
@@ -311,10 +311,14 @@ export async function fetchProgramSchedules(): Promise<ProgramSchedule[]> {
           // string both endpoints return — no second mapping to keep in step.
           // Absent is the normal case and renders nothing.
           packs: packsByProgram.get(program) ?? [],
-          startsOn:
-            !e.hasPast && first
-              ? first.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: tz })
-              : null,
+          // ⛔ NEVER FROM THIS FEED (2026-11-03). `hasPast` cannot come true: the platform's
+          // public /api/squads filters scheduled_at >= now (orangish-app app/api/squads/route.ts,
+          // `query.gte`), so no past session ever arrives and "the first upcoming one" was always
+          // printed as the start. The homepage said "Starts Nov 3" on Bollywood Fitness, which
+          // has run since 15 Sep — and would have said "Starts Nov 5" two days later. Found by
+          // the 11-03 publishable-features audit. A programme that genuinely has not begun says
+          // so through the Hero's local `schedule.startsOn`, typed by hand for its launch.
+          startsOn: null,
         }
       })
   } catch {

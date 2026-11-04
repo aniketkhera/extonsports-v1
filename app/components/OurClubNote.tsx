@@ -43,7 +43,7 @@ export default function OurClubNote() {
             </span>
             <span>
               <span className="block text-cond-md text-white text-[0.95rem]">{a.title.join(" ")}</span>
-              <span className="block text-white/55 text-[0.82rem] leading-[1.5] mt-0.5">{a.line}</span>
+              <span className="block text-white/55 text-[0.82rem] leading-[1.5] mt-0.5">{a.web ?? a.line}</span>
             </span>
           </li>
         ))}
