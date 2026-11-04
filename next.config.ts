@@ -168,6 +168,15 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+
+  // extonsports.com/orangish (2026-11-04, Aniket: "can we put up this page on
+  // extonsports.com/orangish"): the Orangish pitch for other clubs, a self-contained static
+  // page in public/orangish/ with its own screenshots. A rewrite, not a redirect, so the
+  // address people are sent stays /orangish. Rewrites run after the redirects above, so the
+  // apex still hops to www first.
+  async rewrites() {
+    return [{ source: '/orangish', destination: '/orangish/index.html' }];
+  },
 };
 
 export default nextConfig;
