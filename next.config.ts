@@ -90,6 +90,16 @@ const nextConfig: NextConfig = {
       // booking page does. Not in app/sitemap.ts: it is a redirect, not a page.
       { source: '/pay', destination: 'https://app.orangish.io/pay/exton-sports', permanent: false },
 
+      // ── /recording/<code> → the booker's session video on the app (2026-11-04) ──────────
+      // The "Thanks for playing" clip email links here so the booker sees the club's address;
+      // the page itself (clip, checkout, download) runs on the app. Aniket, 2026-11-04, on
+      // forwarding rather than proxying: "forwarding is fine". A proxy would have to carry the
+      // app's scripts, styles, clip and checkout routes as well, because they are relative.
+      // A redirect keeps the query string, so ?buy= and ?court= from the email survive. Same
+      // reasons as /pay above: above the apex rule for one hop, and 307, never a cached 308.
+      // /recording alone is not matched. Not in app/sitemap.ts: the code is a private link.
+      { source: '/recording/:code', destination: 'https://app.orangish.io/recording/exton-sports/:code', permanent: false },
+
       // ── /music → the hall speakers' control page (2026-10-29) ──────────────
       // Aniket, 2026-10-29: "put it up on extonsports.com/music ... keep it open, its ok for
       // now. just trying it out." The page runs on the camera box at the club (speaker-control,
