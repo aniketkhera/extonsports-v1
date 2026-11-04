@@ -86,10 +86,21 @@ const DECEMBER = 'From 30 November it runs Monday to Friday: coaching 5:30–7:3
    November 9–11am (also open play, orangish-app #694), so the note says that too:
    the table would otherwise promise a Saturday morning that is not on the courts.
 
+   2026-11-04, Aniket: Saturday 7 November's morning block moved to Sunday 8
+   November 9–11am the same way (open play, all three courts, same week so the
+   invoice is unchanged; events row dc7bd266, description starts "MOVED
+   2026-11-04"). That sentence only matters the week it happens, so it lives in
+   its own phase, 2–8 Nov, and the note drops it from Monday 9 November.
+
    The weekly table carries no dates, so this lives in the November phase only and
    leaves with it on 30 November, when the December rows take over at 7:30pm. */
 const novemberOpenPlay = (day: string): PbaSlot => ({ day, coaching: null, openPlay: '6–9pm' })
 const NOVEMBER = 'Tue, Thu & Fri open play runs to 27 November — none on Thanksgiving (26 Nov). Saturday 21 November’s morning session moves to Sunday 22 November, 9–11am.'
+const NOV_7_MOVE = 'Saturday 7 November’s morning session moves to Sunday 8 November, 9–11am.'
+const novemberSlots: PbaSlot[] = [
+  weekdayEvening('Mon'), novemberOpenPlay('Tue'), weekdayEvening('Wed'),
+  novemberOpenPlay('Thu'), novemberOpenPlay('Fri'), SAT, SUN,
+]
 
 const PBA_PHASES: ReadonlyArray<{ from: string; slots: PbaSlot[]; note: string | null }> = [
   {
@@ -99,10 +110,12 @@ const PBA_PHASES: ReadonlyArray<{ from: string; slots: PbaSlot[]; note: string |
   },
   {
     from: '2026-11-02',
-    slots: [
-      weekdayEvening('Mon'), novemberOpenPlay('Tue'), weekdayEvening('Wed'),
-      novemberOpenPlay('Thu'), novemberOpenPlay('Fri'), SAT, SUN,
-    ],
+    slots: novemberSlots,
+    note: `${NOV_7_MOVE} ${NOVEMBER} ${DECEMBER}`,
+  },
+  {
+    from: '2026-11-09',
+    slots: novemberSlots,
     note: `${NOVEMBER} ${DECEMBER}`,
   },
   {
