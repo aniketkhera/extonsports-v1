@@ -84,20 +84,20 @@
   text-wrap: balance;
 }
 
-/* His four asks, in his order, one tile each. They never turn. */
+/* His five asks, in his order, one tile each. They never turn. */
 .rules {
   list-style: none;
-  margin: calc(4 * var(--vh)) 0 0;
+  margin: calc(3 * var(--vh)) 0 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  column-gap: calc(1.4 * var(--vw));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  column-gap: calc(1.1 * var(--vw));
 }
 .rule {
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: calc(3 * var(--vh)) calc(1.4 * var(--vw)) calc(3.2 * var(--vh));
+  padding: calc(2.4 * var(--vh)) calc(1 * var(--vw)) calc(2.6 * var(--vh));
   background: rgba(255, 255, 255, 0.045);
   border: calc(0.08 * var(--vw)) solid rgba(255, 255, 255, 0.13);
   border-top: calc(0.36 * var(--vw)) solid #f89b72;
@@ -119,10 +119,35 @@
   38% { opacity: 0; }
   100% { opacity: 0; }
 }
+/* The tile that must not be missed (2026-11-05): a solid red border, and a red halo that
+   breathes round it. The halo is painted once on its own layer; only its opacity moves. */
+.alert.alert {
+  border: calc(0.2 * var(--vw)) solid #ff3b30;
+  border-top-width: calc(0.36 * var(--vw));
+  background: rgba(255, 59, 48, 0.1);
+}
+.alertGlow {
+  position: absolute;
+  inset: 0;
+  box-shadow:
+    0 0 calc(2.2 * var(--vw)) calc(0.35 * var(--vw)) rgba(255, 59, 48, 0.75),
+    inset 0 0 calc(1.6 * var(--vw)) rgba(255, 59, 48, 0.4);
+  pointer-events: none;
+  animation: alert-glow 2.4s ease-in-out infinite;
+}
+@keyframes alert-glow {
+  0% { opacity: 0.25; }
+  50% { opacity: 1; }
+  100% { opacity: 0.25; }
+}
+.alert .icon svg {
+  stroke: #ff3b30;
+}
+
 .icon svg {
   display: block;
-  width: calc(4.4 * var(--vw));
-  height: calc(4.4 * var(--vw));
+  width: calc(3.8 * var(--vw));
+  height: calc(3.8 * var(--vw));
   fill: none;
   stroke: #f89b72;
   stroke-width: 2.4;
@@ -133,7 +158,7 @@
   margin-top: calc(2.2 * var(--vh));
   font-family: var(--font-cond), "Arial Narrow", sans-serif;
   font-weight: 600;
-  font-size: calc(2.5 * var(--vw));
+  font-size: calc(2.05 * var(--vw));
   line-height: 1;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -149,7 +174,7 @@
 }
 
 .thanks {
-  margin: calc(4 * var(--vh)) 0 0;
+  margin: calc(3 * var(--vh)) 0 0;
   font-family: var(--font-cond), "Arial Narrow", sans-serif;
   font-weight: 500;
   font-size: calc(1.7 * var(--vw));
@@ -161,7 +186,8 @@
 /* Reduced motion: the first message stays up, still; the tiles do not glow. */
 @media (prefers-reduced-motion: reduce) {
   .turn,
-  .glow {
+  .glow,
+  .alertGlow {
     animation: none;
   }
   .turn:first-child {

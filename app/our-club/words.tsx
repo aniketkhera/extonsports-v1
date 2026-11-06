@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 
 /* The players' message, in one place (2026-11-03): the exit-door TV (OurClubScreen.tsx) rotates
-   all five MESSAGES over the four ASKS, and extonsports.com's About section (components/OurClubNote.tsx)
-   prints the first message and the same four asks. One copy, so the wall and the website can never
+   all five MESSAGES over the ASKS, and extonsports.com's About section (components/OurClubNote.tsx)
+   prints the first message and the same asks, less any marked `wallOnly`. One copy, so the wall and the website can never
    tell a player two different things. Why each line says what it says is in OurClubScreen.tsx's
    header; the lock-up line matches the key-box emails (orangish-app lib/lockbox-guide.ts). */
 
@@ -62,10 +62,14 @@ export const MESSAGES: Message[] = [
 /* His four asks, in his order. Each title is two lines, set by hand: "Lock up before you
    leave" is too long for one line of a quarter-width tile at a size the door can read,
    and four titles of one height keep the four lines under them level. */
-/** `web`, where set, is what extonsports.com prints instead of `line` (2026-11-03): the wall by the
+/** THE FIFTH TILE (2026-11-05, Aniket: "add one more - Park in SQUASHTIGERS parking slots only -
+ *  highlight it (glow) or make it red border"). `alert` gives it the red border and glow, and
+ *  `wallOnly` keeps it off extonsports.com, which he did not ask to change.
+ *
+ *  `web`, where set, is what extonsports.com prints instead of `line` (2026-11-03): the wall by the
  *  door tells players the door does not lock by itself, as the key-box emails do; the public site
  *  does not tell the world. Found by the 11-03 publishable-features audit. */
-export const ASKS: Array<{ key: string; title: [string, string]; line: string; web?: string; icon: ReactNode }> = [
+export const ASKS: Array<{ key: string; title: [string, string]; line: string; web?: string; icon: ReactNode; wallOnly?: true; alert?: true }> = [
   {
     key: "shoes",
     title: ["Clean", "shoes"],
@@ -114,6 +118,19 @@ export const ASKS: Array<{ key: string; title: [string, string]; line: string; w
         <path d="M19.5 14v-3.5h9V14" />
         <path d="M14 14l2 27h16l2-27" />
         <path d="M20.5 20v15M27.5 20v15" />
+      </svg>
+    ),
+  },
+  {
+    key: "parking",
+    title: ["Park in", "SQUASHTIGERS"],
+    line: "Park in SQUASHTIGERS parking slots only.",
+    wallOnly: true,
+    alert: true,
+    icon: (
+      <svg viewBox="0 0 48 48" aria-hidden>
+        <rect x="7" y="7" width="34" height="34" rx="5" />
+        <path d="M19 35V14h7.5a6.5 6.5 0 0 1 0 13H19" />
       </svg>
     ),
   },

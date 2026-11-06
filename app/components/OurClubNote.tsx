@@ -36,7 +36,7 @@ export default function OurClubNote() {
       <p className="text-white/60 text-[0.92rem] leading-[1.65] mt-2 max-w-[54ch]">{MESSAGE.lead}</p>
 
       <ul className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-px bg-[var(--color-line-2)] border border-[var(--color-line-2)]">
-        {ASKS.map((a) => (
+        {ASKS.filter((a) => !a.wallOnly).map((a) => (
           <li key={a.key} className="flex items-start gap-3.5 bg-[var(--color-void)] px-4 py-3.5">
             <span className="shrink-0 mt-0.5 [&_svg]:block [&_svg]:w-8 [&_svg]:h-8 [&_svg]:fill-none [&_svg]:stroke-[var(--color-ember)] [&_svg]:[stroke-width:2.4] [&_svg]:[stroke-linecap:round] [&_svg]:[stroke-linejoin:round]">
               {a.icon}
