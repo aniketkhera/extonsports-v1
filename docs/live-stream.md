@@ -47,6 +47,23 @@ exists. We ask for the read-only scope and nothing more.
 
 Channel: `UCdMOVp8clDNiQ4F4OdSqP_A` (aniket@extonsports.com).
 
+### As set up, 2026-11-09 — done, and verified
+
+| | |
+|---|---|
+| Cloud project | `exton-live`, number `462042750302`, under the **extonsports.com** organisation |
+| Consent screen | Google Auth Platform, audience **Internal** — so no seven-day token expiry |
+| Scope | `youtube.readonly`, and nothing else |
+| OAuth client | type **Desktop app**, named `exton-live cli` |
+| Client ID | `462042750302-7qrcmo2hrsdo9feqehp7u4ehhu5l83t1.apps.googleusercontent.com` |
+| Secret and refresh token | in `.env.local` (gitignored), written by the login script |
+
+Verified the same day with `node scripts/youtube-auth.mjs check`: the refresh token
+exchanges for an access token and `liveBroadcasts.list` answers. **Not yet verified: that an
+UNLISTED broadcast is visible to it.** Nothing was on air at the time, and that is the one
+assumption the whole OAuth rests on — run `check` once with a live unlisted broadcast before
+a parent is ever sent a link.
+
 1. In the Google Cloud console, make a project (or reuse one) and **enable the YouTube Data
    API v3**.
 2. OAuth consent screen: **User type "Internal"**, and the single scope
