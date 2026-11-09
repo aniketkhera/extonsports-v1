@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { readToken } from '@/lib/live/token'
 import { embedUrl, onAir } from '@/lib/live/youtube'
 import { LIVE_COPY } from '@/app/components/live-pure'
-import s from '@/app/components/live-gate.module.css'
 
 /* extonsports.com/live/<token> — the watch page. 2026-11-09.
    ──────────────────────────────────────────────────────────────────────────────
@@ -26,18 +25,21 @@ export const metadata: Metadata = {
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
-  return <main style={{ maxWidth: 980, margin: '0 auto', padding: '32px 20px 72px' }}>{children}</main>
+  return <main className="mx-auto w-full max-w-[72rem] px-5 pt-10 pb-20 sm:px-8">{children}</main>
 }
 
 function Problem({ title, body, action }: { title: string; body: string; action?: boolean }) {
   return (
     <Shell>
-      <div className={s.state}>
-        <p className={s.stateTitle}>{title}</p>
-        <p className={s.stateBody}>{body}</p>
+      <div className="max-w-[34rem] border-l-2 border-[var(--color-line-2)] bg-[var(--color-ink)] px-6 py-6">
+        <p className="text-white text-[1.15rem] font-semibold leading-snug">{title}</p>
+        <p className="mt-3 text-white/55 text-[0.95rem] leading-relaxed">{body}</p>
         {action ? (
-          <Link className={s.stateAction} href="/live">
-            {LIVE_COPY.again}
+          <Link
+            href="/live"
+            className="mt-6 inline-block bg-[var(--color-ember)] text-black hover:bg-[var(--color-ember-hi)] text-mono text-[0.7rem] transition-colors"
+          >
+            <span className="inline-block px-6 py-3">{LIVE_COPY.again.toUpperCase()}</span>
           </Link>
         ) : null}
       </div>
@@ -68,21 +70,37 @@ export default async function WatchPage({ params }: { params: Promise<{ token: s
 
   return (
     <Shell>
-      <h1 style={{ fontSize: 'clamp(22px, 4vw, 30px)', lineHeight: 1.15, margin: '0 0 14px' }}>
-        {air.title}
-      </h1>
-      <div className={s.player}>
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className="inline-flex items-center gap-2 text-mono text-[0.62rem] tracking-[0.16em] text-[var(--color-ember)]">
+          <span
+            aria-hidden="true"
+            className="inline-block h-[7px] w-[7px] rounded-full bg-[var(--color-ember)]"
+          />
+          ON AIR
+        </span>
+        <h1 className="text-white font-semibold leading-tight text-[clamp(1.25rem,3.2vw,1.75rem)]">
+          {air.title}
+        </h1>
+      </div>
+
+      <div className="mt-4 aspect-video w-full overflow-hidden bg-black">
         <iframe
           src={embedUrl(air.videoId)}
           title={air.title}
+          className="h-full w-full border-0"
           allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
           allowFullScreen
           referrerPolicy="strict-origin-when-cross-origin"
         />
       </div>
-      <p className={s.keepIt} style={{ maxWidth: '62ch' }}>
+
+      <p className="mt-5 max-w-[46rem] text-white/45 text-[0.84rem] leading-relaxed">
         {LIVE_COPY.keepIt} Your link stops working at the end of today; tomorrow’s session
-        needs a new one from <Link href="/live" style={{ color: '#F37A4A' }}>extonsports.com/live</Link>.
+        needs a new one from{' '}
+        <Link href="/live" className="text-[var(--color-ember)] hover:text-white transition-colors">
+          extonsports.com/live
+        </Link>
+        .
       </p>
     </Shell>
   )

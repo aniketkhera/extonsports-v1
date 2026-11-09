@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import LiveGate from '@/app/components/LiveGate'
 import { LIVE_COPY } from '@/app/components/live-pure'
-import s from '@/app/components/live-gate.module.css'
 
 /* extonsports.com/live — the door. 2026-11-09.
    ──────────────────────────────────────────────────────────────────────────────
@@ -10,34 +9,60 @@ import s from '@/app/components/live-gate.module.css'
 
    This page shows the SAME thing whether or not a session is on air, and deliberately so.
    Telling a visitor "nothing is on now" before they have identified themselves publishes
-   the club's timetable to anyone who asks, and the page is indexed. The watch page behind
-   the link is where on-air and off-air differ.
+   the club's timetable to anyone who asks, and the page is on a public address. The watch
+   page behind the link is where on-air and off-air differ.
 
    ⚠️ NOINDEX. A page whose whole purpose is to hand out links to video of children has no
    business in a search result. */
 export const metadata: Metadata = {
   title: 'Watch live',
-  description: 'Parents of children at Exton Sports Center coaching can ask for a link to watch today’s session.',
+  description:
+    'Parents of children at Exton Sports Center coaching can ask for a link to watch today’s session.',
   alternates: { canonical: '/live' },
   robots: { index: false, follow: false },
 }
 
 export default function LivePage() {
   return (
-    <main style={{ maxWidth: 760, margin: '0 auto', padding: '48px 20px 80px' }}>
-      <h1 style={{ fontSize: 'clamp(28px, 6vw, 40px)', lineHeight: 1.1, margin: '0 0 12px' }}>
+    <main className="mx-auto w-full max-w-[64rem] px-5 pt-14 pb-24 sm:px-8">
+      <p className="text-mono text-[0.62rem] tracking-[0.18em] text-[var(--color-ember)]">
+        EXTON SPORTS CENTER · LIVE
+      </p>
+
+      <h1 className="mt-3 text-white font-semibold leading-[1.04] text-[clamp(2rem,6vw,3.25rem)]">
         {LIVE_COPY.title}
       </h1>
-      <p style={{ fontSize: '1.05rem', lineHeight: 1.6, color: '#55504a', margin: '0 0 28px', maxWidth: '58ch' }}>
+
+      <p className="mt-4 max-w-[34rem] text-white/55 text-[1.02rem] leading-relaxed">
         {LIVE_COPY.lede}
       </p>
 
-      <LiveGate />
+      <div className="mt-9 border-t border-[var(--color-line)] pt-9">
+        <LiveGate />
+      </div>
 
-      <p className={s.keepIt} style={{ maxWidth: '58ch' }}>
-        Sessions are filmed for the children taking part and the parents who booked them.
-        Please don’t share your link or re-publish the video.
-      </p>
+      <div className="mt-12 grid gap-7 border-t border-[var(--color-line)] pt-8 sm:grid-cols-3">
+        <Note k="WHAT YOU SEE">
+          All six courts at once, so you can follow your child wherever they move during the
+          session.
+        </Note>
+        <Note k="WHEN">
+          Only while a coaching session is actually running. Outside that, the page says so.
+        </Note>
+        <Note k="YOUR LINK">
+          Works for today only, and we send a new one each day. Please keep it to yourself —
+          it shows children at their session.
+        </Note>
+      </div>
     </main>
+  )
+}
+
+function Note({ k, children }: { k: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-mono text-[0.6rem] text-white/40">{k}</p>
+      <p className="mt-2 text-white/65 text-[0.88rem] leading-relaxed">{children}</p>
+    </div>
   )
 }
