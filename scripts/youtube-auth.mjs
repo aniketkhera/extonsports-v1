@@ -38,8 +38,17 @@ function arg(name, fallback = undefined) {
   return i > -1 && process.argv[i + 1] ? process.argv[i + 1] : fallback
 }
 
+class Fatal extends Error {}
+
+/* Throws rather than process.exit()ing: exiting from inside a pending fetch or an open
+   HTTP handler trips a libuv assertion on Windows and buries the real message. */
 function die(msg) {
-  console.error('\n  ✗ ' + msg + '\n')
+  throw new Fatal(msg)
+}
+
+/* Pre-flight only, before any socket or fetch exists: here a plain exit is safe. */
+function bail(msg) {
+  console.error(['', '  x ' + msg, ''].join(String.fromCharCode(10)))
   process.exit(1)
 }
 
@@ -48,9 +57,9 @@ const clientId = arg('id', process.env.YOUTUBE_CLIENT_ID)
 const clientSecret = arg('secret', process.env.YOUTUBE_CLIENT_SECRET)
 
 if (!mode || !['login', 'check'].includes(mode)) {
-  die('usage: node scripts/youtube-auth.mjs <login|check> [--id ..] [--secret ..] [--refresh ..]')
+  bail('usage: node scripts/youtube-auth.mjs <login|check> [--id ..] [--secret ..] [--refresh ..]')
 }
-if (!clientId || !clientSecret) die('need --id and --secret (or YOUTUBE_CLIENT_ID / _SECRET in the environment)')
+if (!clientId || !clientSecret) bail('need --id and --secret (or YOUTUBE_CLIENT_ID / _SECRET in the environment)')
 
 // ── PKCE, because a desktop client secret is not really a secret ───────────
 function pkce() {
@@ -132,8 +141,8 @@ async function login() {
 
 function listen(expectedState) {
   return new Promise(resolve => {
-    let settle
-    const codePromise = new Promise(r => (settle = r))
+    let settle, fail
+    const codePromise = new Promise((r, j) => { settle = r; fail = j })
     const server = createServer((req, res) => {
       const u = new URL(req.url, 'http://127.0.0.1')
       const code = u.searchParams.get('code')
@@ -142,10 +151,10 @@ function listen(expectedState) {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
       if (err) {
         res.end(`<h1>Refused</h1><p>${err}</p><p>You can close this tab.</p>`)
-        die('Google refused: ' + err)
+        fail(new Fatal('Google refused: ' + err))
       } else if (state !== expectedState) {
         res.end('<h1>Mismatched state</h1><p>Start again.</p>')
-        die('state mismatch — start again')
+        fail(new Fatal('state mismatch - start again'))
       } else if (code) {
         res.end('<h1>Done</h1><p>You can close this tab and go back to the terminal.</p>')
         settle(code)
@@ -209,4 +218,9 @@ async function check() {
   )
 }
 
-await (mode === 'login' ? login() : check())
+try {
+  await (mode === 'login' ? login() : check())
+} catch (e) {
+  console.error(['', '  x ' + (e instanceof Fatal ? e.message : (e?.stack ?? String(e))), ''].join(String.fromCharCode(10)))
+  process.exitCode = 1
+}
