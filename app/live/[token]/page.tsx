@@ -68,9 +68,16 @@ export default async function WatchPage({ params }: { params: Promise<{ token: s
     return <Problem title={LIVE_COPY.offAir} body={LIVE_COPY.offAirMore} />
   }
 
+  /* ⚠️ THE ON-AIR VIEW DOES NOT USE <Shell>. A parent watches this on a phone held
+     sideways, and Shell's max-w-[72rem] plus side padding left the picture floating in a
+     black margin on every side (reported 2026-11-09, with a screenshot). The player below
+     is full-bleed and sized to the LARGER of what the viewport allows in each direction, so
+     it fills whichever dimension runs out first. Some letterboxing against a ~2.2:1 phone
+     screen is unavoidable for a 16:9 picture - that is the shape of the content, not a bug
+     - but none of it is now our own padding. */
   return (
-    <Shell>
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+    <main className="w-full pb-16">
+      <div className="mx-auto flex max-w-[72rem] flex-wrap items-baseline gap-x-3 gap-y-1 px-4 pt-5 pb-3 sm:px-8">
         <span className="inline-flex items-center gap-2 text-mono text-[0.62rem] tracking-[0.16em] text-[var(--color-ember)]">
           <span
             aria-hidden="true"
@@ -83,7 +90,14 @@ export default async function WatchPage({ params }: { params: Promise<{ token: s
         </h1>
       </div>
 
-      <div className="mt-4 aspect-video w-full overflow-hidden bg-black">
+      {/* min() against both axes: as wide as the viewport allows, but never taller than it,
+          so the picture is the biggest 16:9 box that fits the screen. 100dvh rather than
+          100vh because mobile browser chrome moves, and -4.5rem for the ON AIR row above it,
+          so the whole picture is on screen in landscape without the page scrolling. */}
+      <div
+        className="mx-auto w-full overflow-hidden bg-black"
+        style={{ width: 'min(100%, calc((100dvh - 4.5rem) * 16 / 9))', aspectRatio: '16 / 9' }}
+      >
         <iframe
           src={embedUrl(air.videoId)}
           title={air.title}
@@ -94,7 +108,7 @@ export default async function WatchPage({ params }: { params: Promise<{ token: s
         />
       </div>
 
-      <p className="mt-5 max-w-[46rem] text-white/45 text-[0.84rem] leading-relaxed">
+      <p className="mx-auto mt-5 max-w-[46rem] px-4 text-white/45 text-[0.84rem] leading-relaxed sm:px-8">
         {LIVE_COPY.keepIt} Your link stops working at the end of today; tomorrow’s session
         needs a new one from{' '}
         <Link href="/live" className="text-[var(--color-ember)] hover:text-white transition-colors">
@@ -102,6 +116,6 @@ export default async function WatchPage({ params }: { params: Promise<{ token: s
         </Link>
         .
       </p>
-    </Shell>
+    </main>
   )
 }
