@@ -1,0 +1,168 @@
+/* extonsports.com/live — the gate form and the watch page. 2026-11-09.
+   Colours follow mailer-admin.config.ts's theme: accent #F37A4A on the warm page ground. */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 420px;
+}
+
+.label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b655f;
+}
+
+.input {
+  font: inherit;
+  font-size: 1rem;
+  padding: 13px 14px;
+  border-radius: 8px;
+  border: 1px solid #d8cfc7;
+  background: #fff;
+  color: #221f1c;
+  min-height: 48px;
+}
+.input:focus-visible {
+  outline: 2px solid #F37A4A;
+  outline-offset: 1px;
+}
+
+/* Off-screen, not display:none — a bot that skips hidden fields still fills this. */
+.trap {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.optinRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.check {
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+  flex: none;
+  accent-color: #F37A4A;
+}
+.optinLabel {
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: #45403b;
+  cursor: pointer;
+}
+
+.send {
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  min-height: 48px;
+  padding: 13px 22px;
+  border: none;
+  border-radius: 8px;
+  background: #F37A4A;
+  color: #fff;
+  cursor: pointer;
+}
+.send:disabled {
+  background: #d8cfc7;
+  color: #6f6962;
+  cursor: progress;
+}
+.send:focus-visible {
+  outline: 2px solid #221f1c;
+  outline-offset: 2px;
+}
+
+.problem {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: #a8320f;
+}
+
+.done {
+  max-width: 460px;
+  padding: 18px 20px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #e6dcd3;
+  border-left: 3px solid #F37A4A;
+}
+.doneLine {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #221f1c;
+}
+.doneSmall {
+  margin: 8px 0 0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: #6b655f;
+}
+
+/* ── the watch page ──────────────────────────────────────────────────────── */
+
+.player {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.player iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.state {
+  max-width: 540px;
+  padding: 22px 24px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #e6dcd3;
+}
+.stateTitle {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #221f1c;
+}
+.stateBody {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #55504a;
+}
+.stateAction {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  background: #F37A4A;
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+  min-height: 44px;
+  line-height: 24px;
+}
+
+.keepIt {
+  margin: 14px 0 0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: #6b655f;
+}
