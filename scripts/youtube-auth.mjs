@@ -69,10 +69,20 @@ function pkce() {
 }
 
 function openBrowser(url) {
-  const cmd = process.platform === 'win32' ? 'cmd' : process.platform === 'darwin' ? 'open' : 'xdg-open'
-  const args = process.platform === 'win32' ? ['/c', 'start', '', url] : [url]
+  /* ⛔ NEVER THROUGH `cmd /c start`. Windows cmd treats & as a command separator, so it
+     chops an OAuth URL at the first &, and Google answers "Required parameter is missing:
+     response_type" for a URL that was correct when we printed it. Observed 2026-11-09.
+     rundll32 is spawned directly with no shell, so nothing re-parses the argument. */
+  const [cmd, args] =
+    process.platform === 'win32'
+      ? ['rundll32.exe', ['url.dll,FileProtocolHandler', url]]
+      : process.platform === 'darwin'
+        ? ['open', [url]]
+        : ['xdg-open', [url]]
   try {
-    spawn(cmd, args, { detached: true, stdio: 'ignore' }).unref()
+    const child = spawn(cmd, args, { detached: true, stdio: 'ignore', shell: false })
+    child.on('error', () => {})
+    child.unref()
     return true
   } catch {
     return false
