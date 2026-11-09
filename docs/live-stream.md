@@ -49,12 +49,20 @@ Channel: `UCdMOVp8clDNiQ4F4OdSqP_A` (aniket@extonsports.com).
 
 1. In the Google Cloud console, make a project (or reuse one) and **enable the YouTube Data
    API v3**.
-2. OAuth consent screen: **External**, add `aniket@extonsports.com` as the only user, and
-   request the single scope `https://www.googleapis.com/auth/youtube.readonly`.
-3. **⚠️ SET THE APP TO "IN PRODUCTION". Do not leave it in "Testing".** Google expires
-   refresh tokens after **seven days** while an OAuth app is in Testing. This feature would
-   work for a week of classes and then fail on a Tuesday evening with nobody watching the
-   logs. This is the single most likely way this breaks.
+2. OAuth consent screen: **User type "Internal"**, and the single scope
+   `https://www.googleapis.com/auth/youtube.readonly`.
+
+   Internal is available because the project sits under the **extonsports.com Google
+   Workspace organization** (chosen at project creation, 2026-11-09, and not changeable
+   afterwards). Only accounts in that org can consent, which is exactly the one account we
+   need. Take it over External wherever it is offered: an Internal app has no publishing
+   status, so there is no verification, no test-user list, and no "unverified app" warning.
+3. **⚠️ ONLY IF THE PROJECT IS NOT UNDER THE ORGANISATION** and you are forced to use
+   **External**: you must then **publish the app to "In production"**. Google expires
+   refresh tokens after **seven days** while an External app sits in "Testing", so the
+   feature would work for a week of classes and then fail on a Tuesday evening with nobody
+   watching the logs. An Internal app is not subject to this, which is the main reason to
+   prefer it. `scripts/youtube-auth.mjs` names this cause when a token is refused.
 4. Create an **OAuth client ID** of type *Desktop app*. Note the client id and secret.
 5. Run the consent flow once, signed in as the channel owner, and keep the **refresh token**.
 6. Put these on the Vercel project:
