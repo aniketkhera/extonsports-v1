@@ -77,35 +77,39 @@ export default async function WatchPage({ params }: { params: Promise<{ token: s
      - but none of it is now our own padding. */
   return (
     <main className="w-full pb-16">
-      <div className="mx-auto flex max-w-[72rem] flex-wrap items-baseline gap-x-3 gap-y-1 px-4 pt-5 pb-3 sm:px-8">
-        <span className="inline-flex items-center gap-2 text-mono text-[0.62rem] tracking-[0.16em] text-[var(--color-ember)]">
-          <span
-            aria-hidden="true"
-            className="inline-block h-[7px] w-[7px] rounded-full bg-[var(--color-ember)]"
-          />
-          ON AIR
-        </span>
-        <h1 className="text-white font-semibold leading-tight text-[clamp(1.25rem,3.2vw,1.75rem)]">
-          {air.title}
-        </h1>
-      </div>
+      {/* ⚠️ THE TITLE IS OVERLAID ON THE PICTURE, NOT ABOVE IT.
+          A row above the player steals height, and on a phone held sideways height is the
+          scarce axis: 4.5rem of heading cost 108px of picture width at 915x412, because a
+          16:9 box shrinks in BOTH directions when you take height from it. Overlaid, the
+          player gets the whole viewport and the title sits on the black the video letterboxes
+          into. Same reason every video app does this. */}
+      <div className="relative mx-auto w-full" style={{ width: 'min(100%, calc(100dvh * 16 / 9))' }}>
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-baseline gap-x-3 gap-y-1 bg-gradient-to-b from-black/80 to-transparent px-4 pt-3 pb-8 sm:px-6">
+          <span className="inline-flex items-center gap-2 text-mono text-[0.62rem] tracking-[0.16em] text-[var(--color-ember)]">
+            <span
+              aria-hidden="true"
+              className="inline-block h-[7px] w-[7px] rounded-full bg-[var(--color-ember)]"
+            />
+            ON AIR
+          </span>
+          <h1 className="text-white font-semibold leading-tight text-[clamp(1rem,2.6vw,1.5rem)] drop-shadow">
+            {air.title}
+          </h1>
+        </div>
 
-      {/* min() against both axes: as wide as the viewport allows, but never taller than it,
-          so the picture is the biggest 16:9 box that fits the screen. 100dvh rather than
-          100vh because mobile browser chrome moves, and -4.5rem for the ON AIR row above it,
-          so the whole picture is on screen in landscape without the page scrolling. */}
-      <div
-        className="mx-auto w-full overflow-hidden bg-black"
-        style={{ width: 'min(100%, calc((100dvh - 4.5rem) * 16 / 9))', aspectRatio: '16 / 9' }}
-      >
-        <iframe
-          src={embedUrl(air.videoId)}
-          title={air.title}
-          className="h-full w-full border-0"
-          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-          allowFullScreen
-          referrerPolicy="strict-origin-when-cross-origin"
-        />
+        <div
+          className="w-full overflow-hidden bg-black"
+          style={{ aspectRatio: '16 / 9' }}
+        >
+          <iframe
+            src={embedUrl(air.videoId)}
+            title={air.title}
+            className="h-full w-full border-0"
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+            allowFullScreen
+            referrerPolicy="strict-origin-when-cross-origin"
+          />
+        </div>
       </div>
 
       <p className="mx-auto mt-5 max-w-[46rem] px-4 text-white/45 text-[0.84rem] leading-relaxed sm:px-8">

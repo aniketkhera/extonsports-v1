@@ -152,6 +152,10 @@ async function ask(env: YouTubeEnv, fetchImpl: typeof fetch): Promise<OnAir> {
 
 /** The privacy-preserving embed host, so YouTube sets no cookie until the video plays. */
 export function embedUrl(videoId: string): string {
-  const p = new URLSearchParams({ autoplay: '1', rel: '0', modestbranding: '1', playsinline: '1' })
+  /* mute=1 is what makes autoplay actually happen: every browser blocks an unmuted
+   * autoplay, and silently - the player just sits on a poster. Our stream carries no
+   * audio at all (video only, no sound), so muting costs nothing and is the difference
+   * between a parent seeing their child and seeing a play button. */
+  const p = new URLSearchParams({ autoplay: '1', mute: '1', rel: '0', modestbranding: '1', playsinline: '1' })
   return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}?${p}`
 }
