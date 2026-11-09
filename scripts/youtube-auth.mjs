@@ -182,6 +182,20 @@ async function check() {
   const refresh = arg('refresh', process.env.YOUTUBE_REFRESH_TOKEN)
   if (!refresh) die('need --refresh (or YOUTUBE_REFRESH_TOKEN in the environment)')
 
+  /* The three values have distinctive shapes and are easy to cross, so name the one that
+     is in the wrong place rather than letting Google answer with something that sounds
+     like the credential itself is bad. Both mix-ups below were hit on 2026-11-09:
+     the client secret passed as --refresh, and a placeholder left unreplaced. */
+  if (/^GOCSPX-/.test(refresh)) {
+    die('that is the CLIENT SECRET, not the refresh token. --refresh wants what `login` printed, which starts with 1// ')
+  }
+  if (/^1[/][/]/.test(clientSecret)) {
+    die('that is the REFRESH TOKEN, not the client secret. The two are the wrong way round.')
+  }
+  for (const [flag, v] of [['--id', clientId], ['--secret', clientSecret], ['--refresh', refresh]]) {
+    if (/^(YOUR[_-]|<|[.][.][.])/i.test(v)) die(flag + ' is still the placeholder ' + v + ' - paste the real value.')
+  }
+
   const t = await fetch(TOKEN, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
