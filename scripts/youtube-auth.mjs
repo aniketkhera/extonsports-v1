@@ -25,6 +25,7 @@
    No dependencies: node built-ins and fetch only. */
 
 import { createServer } from 'node:http'
+import { appendFileSync, readFileSync, existsSync } from 'node:fs'
 import { randomBytes, createHash } from 'node:crypto'
 import { spawn } from 'node:child_process'
 
@@ -145,6 +146,34 @@ async function login() {
 
   console.log('\n  ✓ Got a refresh token. Put this on the Vercel project as YOUTUBE_REFRESH_TOKEN:\n')
   console.log('  ' + j.refresh_token + '\n')
+
+  /* Keep it, unless told not to. The token is printed once and a terminal scrollback is
+     not a safe place to leave the only copy — losing it on 2026-11-09 meant running the
+     whole consent flow again. .env.local is gitignored here (.gitignore line 4). */
+  if (!process.argv.includes('--no-save')) {
+    try {
+      const path = '.env.local'
+      const had = existsSync(path) ? readFileSync(path, 'utf8') : ''
+      if (had.includes('YOUTUBE_REFRESH_TOKEN=')) {
+        console.log('  .env.local already has a YOUTUBE_REFRESH_TOKEN; left it alone.')
+        console.log('  Replace it by hand if you meant to rotate.\n')
+      } else {
+        const pad = had && !had.endsWith('\n') ? '\n' : ''
+        appendFileSync(path, pad + [
+          '',
+          '# YouTube read-only OAuth for /live. Written by scripts/youtube-auth.mjs.',
+          '# Gitignored. These three also go on the Vercel project.',
+          'YOUTUBE_CLIENT_ID=' + clientId,
+          'YOUTUBE_CLIENT_SECRET=' + clientSecret,
+          'YOUTUBE_REFRESH_TOKEN=' + j.refresh_token,
+          '',
+        ].join('\n'))
+        console.log('  Also written to .env.local (gitignored), so it is not lost.\n')
+      }
+    } catch (e) {
+      console.log('  Could not write .env.local: ' + (e && e.message) + ' - copy the token above.\n')
+    }
+  }
   console.log('  Keep it out of chats, commits and screenshots. Then run:\n')
   console.log('    node scripts/youtube-auth.mjs check --id <ID> --secret <SECRET> --refresh <TOKEN>\n')
 }
