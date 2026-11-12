@@ -11,9 +11,9 @@ does. That is the whole reason YouTube is in this picture, and it is why there i
 
 ## What a parent sees
 
-1. `/live` — one field, a ticked-by-default mailing-list box, Send. The page looks the same
-   whether or not a class is on, deliberately: telling a visitor "nothing is on now" before
-   they have identified themselves publishes the club's timetable to anyone who asks.
+1. `/live` — one field, a ticked-by-default mailing-list box, Send, and a **LIVE NOW**
+   badge while a broadcast is actually on air (added 2026-11-12; see *The LIVE NOW badge*
+   below, which reverses what this line used to say).
 2. An email with a link to `/live/<token>`. **The YouTube address is never in the email.**
 3. `/live/<token>` — the broadcast if one is live, or one of three honest endings:
    *expired* (your link is old), *off air* (your link is fine, no class is running), or
@@ -115,6 +115,41 @@ the booking data and already derives the lights this way) or the owner should co
 each time. Noted here rather than in a comment because it is a fact about the outside world,
 which goes stale: re-check it whenever the academies' schedule changes.
 
+## The LIVE NOW badge (2026-11-12)
+
+A glowing **LIVE NOW** pill appears on `/live` and, as a link, near the top of the
+homepage, while and only while YouTube is serving a broadcast. Off air it renders
+nothing at all — not a greyed pill, nothing — so both pages look exactly as they did
+before it existed.
+
+**It reverses a decision taken on 9 November**, which is why it is written down. The
+original `/live` deliberately looked identical on and off air, the reasoning being that
+an on/off indicator on a public address publishes the club's timetable to anyone willing
+to poll it. Aniket decided on 2026-11-12 that a parent seeing "LIVE NOW" is worth more
+than that: *"if we are streaming - show a LIVE NOW glowing on this page, as well as the
+top of extonsports.com homepage."* The exposure is real but narrow — it reveals that a
+session is running now, not the week's schedule, and the building is visibly open anyway.
+
+What it still does **not** do is hand over the way in. The badge asks
+`GET /api/live/status`, which answers `{ live }` **and nothing else**. The videoId stays
+behind the emailed day link. If that endpoint ever grows a videoId, the day link stops
+being the control and becomes decoration.
+
+Three properties worth keeping:
+
+- **It fails closed.** `onAir()` has three states and only `on_air` lights the badge.
+  `unknown` — Google unreachable, credentials unset, refresh token expired — shows
+  nothing. A badge claiming cameras are live on children had better be right.
+- **It is a client component, polling.** The homepage is prerendered hourly
+  (`export const revalidate = 3600`), so anything rendered on the server would still say
+  LIVE NOW forty minutes after the coaches left. Polling also means the badge appears on
+  a page already open when a session starts.
+- **Two strikes before it goes dark.** One dropped request on a phone changing cell is
+  not evidence a session ended, and a badge blinking off and on reads as a broken site.
+
+Cost: `onAir()` caches 30 s in the lambda and the route caches 30 s at the edge, so a
+hall full of refreshing parents is about two quota units a minute against 10,000 a day.
+
 ## What this does not do
 
 - It does not stop a parent forwarding their link to a grandparent, and is not meant to. The
@@ -136,3 +171,7 @@ which goes stale: re-check it whenever the academies' schedule changes.
 | `app/components/LiveGate.tsx` | the form |
 | `app/live/page.tsx` | the door, `noindex` |
 | `app/live/[token]/page.tsx` | the watch page and its three endings |
+| `app/api/live/status/route.ts` | `{ live }` and nothing else, for the badge |
+| `app/components/live-now-pure.ts` | the badge's parse and backoff rules. Pure. |
+| `app/components/live-now-pure.test.mjs` | its rules, including truthy-but-not-true |
+| `app/components/LiveNowBadge.tsx` | the badge; renders null off air |

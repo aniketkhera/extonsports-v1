@@ -6,6 +6,7 @@ import TrustStrip from "./components/TrustStrip";
 import Sports from "./components/Sports";
 import About from "./components/About";
 import Footer from "./components/Footer";
+import LiveNowBadge from "./components/LiveNowBadge";
 
 export const metadata: Metadata = {
   title: {
@@ -28,6 +29,13 @@ export default function Home() {
   return (
     <div className="relative pb-[320px] sm:pb-[200px] md:pb-[90px]">
       <Nav />
+      {/* LIVE NOW, 2026-11-12. Fixed just under the 64px nav rather than placed INSIDE
+          it: the wordmark's font size is computed from a budget of 135px for everything
+          else on that row (Nav.tsx explains the arithmetic), so adding an element there
+          would push the brand into wrapping on a narrow phone. Fixed also means the badge
+          costs the off-air page nothing at all — it renders null, and the document flow
+          never knew it was a possibility. */}
+      <LiveNowBadge asLink className="fixed left-1/2 top-[74px] z-40 -translate-x-1/2" />
       <main>
         <Hero />
         <TrustStrip />

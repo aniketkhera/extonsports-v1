@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import LiveGate from '@/app/components/LiveGate'
+import LiveNowBadge from '@/app/components/LiveNowBadge'
 import { LIVE_COPY } from '@/app/components/live-pure'
 
 /* extonsports.com/live — the door. 2026-11-09.
@@ -7,10 +8,16 @@ import { LIVE_COPY } from '@/app/components/live-pure'
    Aniket, 2026-11-09: "let's do the email form on /live now", with YouTube behind it and
    "a new link every day".
 
-   This page shows the SAME thing whether or not a session is on air, and deliberately so.
-   Telling a visitor "nothing is on now" before they have identified themselves publishes
-   the club's timetable to anyone who asks, and the page is on a public address. The watch
-   page behind the link is where on-air and off-air differ.
+   UNTIL 2026-11-12 this page showed the SAME thing whether or not a session was on air,
+   and deliberately: telling a visitor "nothing is on now" before they have identified
+   themselves publishes the club's timetable to anyone willing to poll a public address.
+
+   Aniket reversed that on 2026-11-12 — "if we are streaming - show a LIVE NOW glowing on
+   this page, as well as the top of extonsports.com homepage" — so LiveNowBadge appears
+   while a broadcast is actually live, and nothing shows otherwise. The trade is real and
+   is recorded in docs/live-stream.md rather than argued again here. What the page still
+   does NOT do is hand over the way in: the badge says a session is on, never which video,
+   so the emailed day link remains the only route to the picture.
 
    ⚠️ NOINDEX. A page whose whole purpose is to hand out links to video of children has no
    business in a search result. */
@@ -25,9 +32,13 @@ export const metadata: Metadata = {
 export default function LivePage() {
   return (
     <main className="mx-auto w-full max-w-[64rem] px-5 pt-14 pb-24 sm:px-8">
-      <p className="text-mono text-[0.62rem] tracking-[0.18em] text-[var(--color-ember)]">
-        EXTON SPORTS CENTER · LIVE
-      </p>
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="text-mono text-[0.62rem] tracking-[0.18em] text-[var(--color-ember)]">
+          EXTON SPORTS CENTER · LIVE
+        </p>
+        {/* Not a link: the visitor is already here. */}
+        <LiveNowBadge />
+      </div>
 
       <h1 className="mt-3 text-white font-semibold leading-[1.04] text-[clamp(2rem,6vw,3.25rem)]">
         {LIVE_COPY.title}
