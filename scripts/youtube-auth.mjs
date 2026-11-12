@@ -9,6 +9,9 @@
      node scripts/youtube-auth.mjs login   --id <CLIENT_ID> --secret <CLIENT_SECRET>
          Opens the Google consent screen, catches the redirect on a loopback port, and
          prints the REFRESH TOKEN. Run it once, signed in as aniket@extonsports.com.
+         Add --replace to overwrite a token already in .env.local. That is needed whenever
+         SCOPE changes: an old, narrower token keeps refreshing happily and fails only at
+         the write, which reads like a caller bug rather than a stale grant.
 
      node scripts/youtube-auth.mjs check   --id <ID> --secret <SECRET> --refresh <TOKEN>
          Asks YouTube what is on air right now. Run this before trusting the deploy.
@@ -25,11 +28,21 @@
    No dependencies: node built-ins and fetch only. */
 
 import { createServer } from 'node:http'
-import { appendFileSync, readFileSync, existsSync } from 'node:fs'
+import { appendFileSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { randomBytes, createHash } from 'node:crypto'
 import { spawn } from 'node:child_process'
 
-const SCOPE = 'https://www.googleapis.com/auth/youtube.readonly'
+/* WRITE scope, deliberately - and the reason is measured, not theoretical.
+   youtube.readonly was enough to FIND an unlisted broadcast, which is all /live needed.
+   It is not enough to CREATE one or to correct its settings. On 2026-11-12 that bit: a
+   broadcast made by hand in Studio came out with enableEmbed=FALSE, so it would have gone
+   live and never played in the site's embed. "Allow embedding" does NOT inherit from the
+   previous broadcast - observed on kkuajxU6TAc against cnlDE9AXG-Q, which had it true.
+   force-ssl covers read as well, so the site's existing read path keeps working on a token
+   minted here; there is no need to keep a separate read-only token.
+   The scope must ALSO be listed on the OAuth consent screen in Google Cloud, or Google
+   refuses with invalid_scope before the browser ever opens. */
+const SCOPE = 'https://www.googleapis.com/auth/youtube.force-ssl'
 const AUTH = 'https://accounts.google.com/o/oauth2/v2/auth'
 const TOKEN = 'https://oauth2.googleapis.com/token'
 const BROADCASTS = 'https://www.googleapis.com/youtube/v3/liveBroadcasts'
@@ -58,7 +71,7 @@ const clientId = arg('id', process.env.YOUTUBE_CLIENT_ID)
 const clientSecret = arg('secret', process.env.YOUTUBE_CLIENT_SECRET)
 
 if (!mode || !['login', 'check'].includes(mode)) {
-  bail('usage: node scripts/youtube-auth.mjs <login|check> [--id ..] [--secret ..] [--refresh ..]')
+  bail('usage: node scripts/youtube-auth.mjs <login|check> [--id ..] [--secret ..] [--refresh ..] [--replace]')
 }
 if (!clientId || !clientSecret) bail('need --id and --secret (or YOUTUBE_CLIENT_ID / _SECRET in the environment)')
 
@@ -114,7 +127,9 @@ async function login() {
       code_challenge_method: 'S256',
     })
 
-  console.log('\n  Sign in as the channel owner (aniket@extonsports.com) and allow read-only access.\n')
+  console.log('\n  Sign in as the channel owner (aniket@extonsports.com).')
+  console.log('  Google will ask to "manage your YouTube account" - that is the write scope,')
+  console.log('  which is what lets us set a broadcast unlisted and embeddable at creation.\n')
   console.log('  If a browser does not open, paste this in yourself:\n')
   console.log('  ' + url + '\n')
   openBrowser(url)
@@ -154,14 +169,25 @@ async function login() {
     try {
       const path = '.env.local'
       const had = existsSync(path) ? readFileSync(path, 'utf8') : ''
-      if (had.includes('YOUTUBE_REFRESH_TOKEN=')) {
+      if (had.includes('YOUTUBE_REFRESH_TOKEN=') && !process.argv.includes('--replace')) {
         console.log('  .env.local already has a YOUTUBE_REFRESH_TOKEN; left it alone.')
-        console.log('  Replace it by hand if you meant to rotate.\n')
+        console.log('  Re-run with --replace to overwrite it. That is what you want after a')
+        console.log('  SCOPE change: the old token still refreshes, only the write fails.\n')
+      } else if (had.includes('YOUTUBE_REFRESH_TOKEN=')) {
+        /* Rewrite the three in place rather than appending a second copy. A duplicate key
+           later in the file wins in some loaders and loses in others, which is a very quiet
+           way to go on using the old read-only grant. */
+        const next = had
+          .replace(/^YOUTUBE_CLIENT_ID=.*$/m, 'YOUTUBE_CLIENT_ID=' + clientId)
+          .replace(/^YOUTUBE_CLIENT_SECRET=.*$/m, 'YOUTUBE_CLIENT_SECRET=' + clientSecret)
+          .replace(/^YOUTUBE_REFRESH_TOKEN=.*$/m, 'YOUTUBE_REFRESH_TOKEN=' + j.refresh_token)
+        writeFileSync(path, next)
+        console.log('  Replaced the three YOUTUBE_* values in .env.local (gitignored).\n')
       } else {
         const pad = had && !had.endsWith('\n') ? '\n' : ''
         appendFileSync(path, pad + [
           '',
-          '# YouTube read-only OAuth for /live. Written by scripts/youtube-auth.mjs.',
+          '# YouTube OAuth for /live (force-ssl: read + write). By scripts/youtube-auth.mjs.',
           '# Gitignored. These three also go on the Vercel project.',
           'YOUTUBE_CLIENT_ID=' + clientId,
           'YOUTUBE_CLIENT_SECRET=' + clientSecret,
