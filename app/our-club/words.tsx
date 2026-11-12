@@ -69,7 +69,13 @@ export const MESSAGES: Message[] = [
  *  `web`, where set, is what extonsports.com prints instead of `line` (2026-11-03): the wall by the
  *  door tells players the door does not lock by itself, as the key-box emails do; the public site
  *  does not tell the world. Found by the 11-03 publishable-features audit. */
-export const ASKS: Array<{ key: string; title: [string, string]; line: string; web?: string; icon: ReactNode; wallOnly?: true; alert?: true }> = [
+/** THE SIXTH TILE (2026-11-12, Aniket: "make it RECORDING 24/7. then push this as one of the boxes
+ *  on the outside TV", about the new court-camera sign). Not an ask but the camera notice, so
+ *  `notice` draws it in the sign's yellow rather than the asks' orange; `wallOnly` keeps it off
+ *  extonsports.com, which he did not ask to change. Every word here must stay true of the cameras
+ *  (orangish-app docs/camera-privacy.md): video only with no audio track, and footage kept 15 days.
+ *  If either changes, change this line the same day. */
+export const ASKS: Array<{ key: string; title: [string, string]; line: string; web?: string; icon: ReactNode; wallOnly?: true; alert?: true; notice?: true }> = [
   {
     key: "shoes",
     title: ["Clean", "shoes"],
@@ -131,6 +137,20 @@ export const ASKS: Array<{ key: string; title: [string, string]; line: string; w
       <svg viewBox="0 0 48 48" aria-hidden>
         <rect x="7" y="7" width="34" height="34" rx="5" />
         <path d="M19 35V14h7.5a6.5 6.5 0 0 1 0 13H19" />
+      </svg>
+    ),
+  },
+  {
+    key: "recording",
+    title: ["Recording", "24/7"],
+    line: "Video only, no sound. Kept 15 days.",
+    wallOnly: true,
+    notice: true,
+    icon: (
+      <svg viewBox="0 0 48 48" aria-hidden>
+        <rect x="5" y="14" width="26" height="20" rx="3.5" />
+        <path d="M31 21.5l12-6.5v18l-12-6.5" />
+        <circle cx="12" cy="20.5" r="1.6" />
       </svg>
     ),
   },
