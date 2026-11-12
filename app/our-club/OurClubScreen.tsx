@@ -27,6 +27,8 @@ import { MESSAGES, ASKS } from "./words";
      MIDDLE, FIXED — his asks, in his order, one tile each (ASKS). They never move,
        so whoever is reading one is not cut off. The fifth, parking, joined 2026-11-05
        in a red border with a pulsing red glow (words.tsx, our-club.module.css .alert).
+       The sixth, RECORDING 24/7, joined 2026-11-12: the court-camera notice in the
+       sign's yellow, with no glow (.notice).
 
    THE LOCK-UP LINE says what the key-box emails say (orangish-app lib/lockbox-guide.ts,
    2026-10-27): the last ones out lock the front door with the key, because it does not
@@ -88,10 +90,10 @@ export default function OurClubScreen() {
 
           <ol className={h.rules}>
             {ASKS.map((r, i) => (
-              <li key={r.key} className={`${h.rule} ${r.alert ? h.alert : ""} ${s.rise}`} style={at(0.8 + i * 0.18)}>
+              <li key={r.key} className={`${h.rule} ${r.alert ? h.alert : ""} ${r.notice ? h.notice : ""} ${s.rise}`} style={at(0.8 + i * 0.18)}>
                 {r.alert ? (
                   <span className={h.alertGlow} aria-hidden />
-                ) : (
+                ) : r.notice ? null : (
                   <span className={h.glow} style={at(3 + i * 2.5)} aria-hidden />
                 )}
                 <span className={h.icon}>{r.icon}</span>
