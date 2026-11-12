@@ -69,31 +69,18 @@ export default function Footer() {
           ))}
         </dl>
 
-        <div className="flex flex-col gap-3 text-[0.82rem] text-white/45 max-w-[68ch] leading-relaxed">
-          {/* The "Friday and Saturday nights are different" paragraph lived
-              here until 2026-10-08. It existed only because every OTHER night
-              from 10pm was late night, and those two were the exception at the
-              off-peak rate. With late night abolished there is no exception
-              left to draw — all seven nights are off-peak from 9pm (10pm until 2026-10-15) — so the
-              paragraph went rather than being reworded into a tautology. */}
-          {/* A recommendation, not a table of limits — Aniket, 2026-10-13: "let's remove
-              the number of people only - just say we recommend no more than 4 per court
-              for squash, 6 per court for badminton and 8 per lane for cricket. let's not
-              put these numbers up, either on the website or on the booking window."
-              The per-court and lanes-together tables that stood here earlier that day
-              (#97, #98) are in git; the caps they printed still live on the platform
-              (court_player_limits, court_group_player_limits) and are still enforced
-              there — they are just no longer published. The booking page says the same
-              (orangish-app lib/guest-court-booking-rules.ts recommendedPerCourt). */}
-          <p className="m-0">
-            <span className="text-white/65">
-              We recommend no more than 4 players per court for squash, 6 per court for
-              badminton and 8 per lane for cricket.
-            </span>{" "}
-            The person who books counts towards the total.
-          </p>
-
-        </div>
+        {/* Nothing below the rate bands now. Two paragraphs stood here:
+            - "Friday and Saturday nights are different", until 2026-10-08. It existed only
+              because every OTHER night from 10pm was late night; with late night abolished
+              there was no exception left to draw, so it went rather than becoming a tautology.
+            - The players-per-court recommendation ("We recommend no more than 4 players per
+              court for squash, 6 per court for badminton and 8 per lane for cricket. The person
+              who books counts towards the total."), 2026-10-13 to 2026-11-12. It had replaced
+              the per-court limit tables (#97, #98, in git) on Aniket's "let's not put these
+              numbers up", and on 2026-11-12 he removed it too: "remove this line from
+              extonsports.com". The caps are still enforced on the platform
+              (court_player_limits, court_group_player_limits), and the booking page keeps its
+              own one-line recommendation (orangish-app lib/guest-court-booking-rules.ts). */}
       </section>
 
       {/* Three centered columns */}
