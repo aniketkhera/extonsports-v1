@@ -45,6 +45,12 @@ export const PANEL = "rgba(255,255,255,0.075)";
  *  reasons (PANEL_BORDER, SESSION_ORANGE). */
 export const ORANGE = "#F89B72";
 
+/** LIVE NOW on the walls (2026-11-12). Brighter than the website's #E11D2E for the same
+ *  reason GREEN is brighter than the web green: a colour read from across a lobby loses
+ *  saturation, and this one has to be unmistakable at a glance. It is a solid fill with
+ *  white on it, so it needs no light-theme twin the way a tinted chip would. */
+export const LIVE = "#FF3B4E";
+
 /* ── 16:9, ALWAYS (2026-10-18) ──────────────────────────────────────────────
    These screens are drawn for 16:9 televisions, and every size on them was
    viewport-relative — vw for most things, vh for the band and the paddings. On any

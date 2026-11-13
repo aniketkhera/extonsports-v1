@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { onAir } from '../../../../lib/live/youtube'
+import { NO_SPORTS, liveSports, sportsOnAir, type LiveSports } from '../../../../lib/live/sports'
 
 /* GET /api/live/status — "is a coaching session on air right now?"
    ──────────────────────────────────────────────────────────────────────────────
@@ -27,9 +28,14 @@ import { onAir } from '../../../../lib/live/youtube'
 
 export const revalidate = 30
 
-export type LiveStatusPayload = { live: boolean }
+export type LiveStatusPayload = { live: boolean; sports: LiveSports }
 
 export async function GET() {
   const a = await onAir()
-  return NextResponse.json({ live: a.state === 'on_air' } satisfies LiveStatusPayload)
+  const live = a.state === 'on_air'
+  /* The sides are asked for only when something is actually on air, so the club's screens
+     never spend a call on the platform outside session hours — and `sportsOnAir` would
+     have thrown the answer away anyway. */
+  const sports = sportsOnAir(live, live ? await liveSports() : NO_SPORTS)
+  return NextResponse.json({ live, sports } satisfies LiveStatusPayload)
 }

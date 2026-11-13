@@ -5,6 +5,7 @@ import { makeTicker, useTick } from "../components/ticker";
 import Image from "next/image";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
 import { ScreenHeader, BookingBand, BAND_GAP, BOOK_BAND, BAND_STAMP, secondTicker } from "../components/ScreenChrome";
+import LiveBand from "../components/LiveBand";
 import ScreenStamp from "../components/ScreenStamp";
 import { BG, INK, EMBER, GREEN, LABEL, NEXT_VAL, NEXT_LBL, MUTED, RULE_SOFT, PANEL, BOX } from "../components/tv-palette";
 import {
@@ -1369,6 +1370,7 @@ export default function ReceptionBoard() {
           with /exit since 2026-10-20: components/ScreenChrome. `stale` is the faint
           dot by the title that says the feed has failed. */}
       <ScreenHeader stale={stale} />
+      <LiveBand />
 
       {/* gridTemplateRows minmax(0, 1fr) (review, 2026-10-14): with the default
           `auto` row a panel grew to its content, so three live entries with the

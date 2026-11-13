@@ -2,6 +2,7 @@
 
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
 import { ScreenHeader, BookingBand, BAND_GAP, BOOK_BAND, BAND_STAMP } from "../components/ScreenChrome";
+import LiveBand from "../components/LiveBand";
 import ScreenStamp from "../components/ScreenStamp";
 import { BG, INK, BOX, PANEL } from "../components/tv-palette";
 import {
@@ -202,6 +203,7 @@ export default function VestibuleScreen() {
         }}
       >
         <ScreenHeader stale={stale} />
+        <LiveBand />
 
         <div className={v.body}>
           {/* One equal row per sport the feed carries — three at Exton today. Not a

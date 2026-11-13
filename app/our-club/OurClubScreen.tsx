@@ -2,6 +2,7 @@
 
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
 import { ScreenHeader, BookingBand, BAND_GAP, BOOK_BAND, BAND_STAMP } from "../components/ScreenChrome";
+import LiveBand from "../components/LiveBand";
 import ScreenStamp from "../components/ScreenStamp";
 import { BG, INK, BOX } from "../components/tv-palette";
 import s from "../exit/exit.module.css";
@@ -68,6 +69,7 @@ export default function OurClubScreen() {
         }}
       >
         <ScreenHeader />
+        <LiveBand />
 
         <main className={h.body}>
           <div className={h.round}>
