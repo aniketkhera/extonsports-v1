@@ -458,10 +458,50 @@ test("three bookings: one code each, the length picked on the phone", () => {
   assert.equal(red.cards[0].small, "ended 2:00 · open until 2:05");
 });
 
+test("the music code: badminton TV only, gone with the extend panel, image and URL agree (2026-11-13)", () => {
+  const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
+  const tv = read("../components/TvScreen.tsx");
+  // Exactly one screen asks for it.
+  assert.equal(tv.match(/\bmusic\b(?= \/>)/g)?.length, 1);
+  assert.match(tv, /"cricket-board": \(\) => <SportBoard sport="Cricket" \/>/);
+  // No other screen fills the band's slot: only SportBoard and ExtendBand mention MusicQr.
+  for (const p of [
+    "../reception/ReceptionBoard.tsx", "../vestibule/VestibuleScreen.tsx", "../our-club/OurClubScreen.tsx",
+    "../exit/ExitScreen.tsx", "../components/LiveBand.tsx", "../components/ScreenChrome.tsx",
+  ]) {
+    const src = read(p);
+    // JSX use only: ScreenChrome's comment names MusicQr.tsx, which is fine.
+    assert.ok(!/<MusicQr\b|\bmusic=\{/.test(src), `${p} must not draw the music code`);
+  }
+  // SportBoard is all that keeps it off the cricket TV (review, 2026-11-13): off by default,
+  // and passed on only from its own `music` prop, on both branches.
+  const sport = read("../reception/SportBoard.tsx");
+  assert.match(sport, /export default function SportBoard\(\{ sport, extend = false, music = false \}/);
+  assert.match(sport, /<ExtendBand p=\{p\} stale=\{stale\} stamp=\{<ScreenStamp style=\{BAND_STAMP\} \/>\} music=\{music\} \/>/);
+  assert.match(sport, /: <BookingBand stamp=\{<ScreenStamp style=\{BAND_STAMP\} \/>\} music=\{music \? <MusicQr \/> : undefined\} \/>/);
+  assert.equal(sport.match(/<MusicQr \/>/g)?.length, 1);
+  // Under `extend` it rides the same `up` that hides the booking QR: never beside the panel.
+  const ext = read("../reception/ExtendPanel.tsx");
+  assert.match(ext, /<BookingBand showBookQr=\{!up\} stamp=\{stamp\} music=\{music && !up \? <MusicQr \/> : undefined\} \/>/);
+  assert.match(ext, /export function ExtendBand\(\{ p, stale, stamp, music = false \}/);
+  // The band's default leaves every other screen's markup as it was: the slot is rendered
+  // as given, once, between the pill and the booking link, and nothing stands in for it.
+  const chrome = read("../components/ScreenChrome.tsx");
+  assert.match(chrome, /export function BookingBand\(\{ showBookQr = true, stamp, music \}/);
+  assert.equal(chrome.match(/\{music\}/g)?.length, 1);
+  assert.match(chrome, /<OrangishPill tv \/>\s*<\/div>\s*\{\/\*[\s\S]*?\*\/\}\s*\{music\}\s*<a\s+href=\{BOOK_URL\}/);
+  // The SVG is generated from MUSIC_URL; its <title> carries the URL, so a change to one without the other fails here.
+  const url = read("../reception/MusicQr.tsx").match(/export const MUSIC_URL = "([^"]+)";/)?.[1];
+  assert.equal(url, "https://extonsports.com/music");
+  const svg = read("../../public/reception/music-qr.svg");
+  assert.match(svg, new RegExp(`<title>Music at Exton Sports: ${url.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")}</title>`));
+  assert.match(svg, /viewBox="0 0 37 37"/); // version 3 + 4-module quiet zone, as generated
+});
+
 test("the badminton TV alone reads `extend`; the line is FREE AFTER everywhere else (Q19)", () => {
   const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
   const tv = read("../components/TvScreen.tsx");
-  assert.match(tv, /"badminton-board": \(\) => <SportBoard sport="Badminton" extend \/>/);
+  assert.match(tv, /"badminton-board": \(\) => <SportBoard sport="Badminton" extend music \/>/);
   assert.match(tv, /"cricket-board": \(\) => <SportBoard sport="Cricket" \/>/);
   // Reception and the vestibule never ask for it.
   for (const p of ["../reception/ReceptionBoard.tsx", "../vestibule/VestibuleScreen.tsx"]) {

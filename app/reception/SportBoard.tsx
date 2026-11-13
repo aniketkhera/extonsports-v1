@@ -7,6 +7,7 @@ import ScreenStamp from "../components/ScreenStamp";
 import { BG, INK, RULE_SOFT, BOX } from "../components/tv-palette";
 import { useCourtPanels, PANEL_BOX, PanelTitle, NowArea, ComingUp } from "./ReceptionBoard";
 import { ExtendCell, ExtendBand } from "./ExtendPanel";
+import { MusicQr } from "./MusicQr";
 
 /* ONE SPORT'S SCREEN — the badminton and cricket TVs (2026-10-28).
    ──────────────────────────────────────────────────────────────────────────
@@ -57,8 +58,13 @@ const COMING_UP_STYLE: CSSProperties = {
    platform opts in (board_screens.extend_offers_sport_id), and the one whose speaker is
    being tested. Without it this screen does not read the feed's `extend` at all, so the
    cricket TV draws exactly what it did, whatever a payload carries. And the offers ride
-   the KEYED feed only: unkeyed, this page shows today's board and no code. */
-export default function SportBoard({ sport, extend = false }: { sport: BoardSport; extend?: boolean }) {
+   the KEYED feed only: unkeyed, this page shows today's board and no code.
+
+   `music` (2026-11-13): the static "SCAN FOR MUSIC" code for the Main Door speaker's
+   open page (MusicQr.tsx), in the band. ONLY RENDER["badminton-board"] passes it. It
+   needs no feed, so it shows keyed or not; under `extend` it hides while the panel is
+   up (ExtendBand). */
+export default function SportBoard({ sport, extend = false, music = false }: { sport: BoardSport; extend?: boolean; music?: boolean }) {
   useReloadOnDeploy();
   /* No heartbeat here: TvScreen.tsx beats once per page, named by the TV. */
   const { panels, today, stale } = useCourtPanels({ upcoming: UPCOMING_COUNT, upNextMax: UP_NEXT_MAX, nudges: true, extend });
@@ -107,8 +113,8 @@ export default function SportBoard({ sport, extend = false }: { sport: BoardSpor
       </div>
 
       {extend
-        ? <ExtendBand p={p} stale={stale} stamp={<ScreenStamp style={BAND_STAMP} />} />
-        : <BookingBand stamp={<ScreenStamp style={BAND_STAMP} />} />}
+        ? <ExtendBand p={p} stale={stale} stamp={<ScreenStamp style={BAND_STAMP} />} music={music} />
+        : <BookingBand stamp={<ScreenStamp style={BAND_STAMP} />} music={music ? <MusicQr /> : undefined} />}
     </div>
     </div>
   );
