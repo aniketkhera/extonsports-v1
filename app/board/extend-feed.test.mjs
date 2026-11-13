@@ -478,6 +478,36 @@ test("bandFace: booking and music take turns, 15 s each on the wall clock; never
   for (const at of [0, -1, NaN, Infinity]) assert.equal(bandFace(at, false), "book");
 });
 
+test("bandCode: each face's code waits 1.5 s behind its words, so a locked camera loses it (review, 2026-11-13)", async () => {
+  const { bandCode, bandFace, BAND_GAP_MS, BAND_ROTATE_MS } = await import("./band-face.ts");
+  assert.equal(BAND_GAP_MS, 1_500);
+  const T = Date.UTC(2026, 10, 13, 15, 0, 0);
+  for (const slot of [0, 1, 2, 3]) {
+    const start = T + slot * BAND_ROTATE_MS;
+    assert.equal(bandCode(start, false), false, `slot ${slot} opens with no code`);
+    assert.equal(bandCode(start + 1_499, false), false);
+    assert.equal(bandCode(start + 1_500, false), true);
+    assert.equal(bandCode(start + 14_999, false), true);
+    // The words change at the slot's start, not at the code's: the gap shows the NEW face.
+    assert.equal(bandFace(start, false), slot % 2 ? "music" : "book");
+  }
+  // No two different codes are ever drawn in consecutive seconds: every change of face
+  // passes through a second with no code at all.
+  let prev = null;
+  let gaps = 0;
+  for (let s = 0; s < 120; s++) {
+    const at = T + s * 1000;
+    const now = bandCode(at, false) ? bandFace(at, false) : null;
+    if (prev && now) assert.equal(now, prev, `code changed straight from ${prev} to ${now} at +${s}s`);
+    if (prev && !now) gaps++;
+    prev = now;
+  }
+  assert.equal(gaps, 7); // one gap per face change: 8 slots in 2 minutes, so 7 changes after the first
+  // Panel up: never a code. Before the first tick: the code, as the band's first paint always had.
+  for (const at of [T, T + 3_000, T + 18_000]) assert.equal(bandCode(at, true), false);
+  for (const at of [0, -1, NaN]) assert.equal(bandCode(at, false), true);
+});
+
 test("the music code: badminton TV only, gone with the extend panel, image and URL agree (2026-11-13)", () => {
   const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
   const tv = read("../components/TvScreen.tsx");
@@ -490,8 +520,13 @@ test("the music code: badminton TV only, gone with the extend panel, image and U
     "../exit/ExitScreen.tsx", "../components/LiveBand.tsx",
   ]) {
     const src = read(p);
-    // On the band itself: ReceptionBoard's EntryFoot has a `face` of its own, unrelated.
-    assert.ok(!/<BookingBand\b[^>]*\b(face|music)=|bandFace|music-qr/.test(src), `${p} must not draw the music code`);
+    // Each whole <BookingBand …/> call line, because `stamp={<ScreenStamp … />}` carries a `>`
+    // that a [^>]* scan would stop at (review, 2026-11-13). ReceptionBoard's EntryFoot has a
+    // `face` of its own, unrelated, so only the band's lines are searched for it.
+    for (const m of src.matchAll(/<BookingBand\b[^\n]*/g)) {
+      assert.ok(!/\b(face|faceCode|music)=/.test(m[0]), `${p}: ${m[0].trim()}`);
+    }
+    assert.ok(!/<ExtendBand\b|bandFace|bandCode|music-qr/.test(src), `${p} must not draw the music code`);
   }
   // SportBoard is all that keeps it off the cricket TV (review, 2026-11-13): off by default,
   // passed only to ExtendBand, and the plain band (cricket's) gets neither music nor a face.
@@ -503,11 +538,15 @@ test("the music code: badminton TV only, gone with the extend panel, image and U
   // The face comes from the same tick and the same `up` that hide every band code beside the panel.
   const ext = read("../reception/ExtendPanel.tsx");
   assert.match(ext, /export function ExtendBand\(\{ p, stale, stamp, music = false \}/);
-  assert.match(ext, /<BookingBand showBookQr=\{!up\} stamp=\{stamp\} face=\{music \? bandFace\(ms, up\) : undefined\} \/>/);
+  assert.match(ext, /<BookingBand showBookQr=\{!up\} stamp=\{stamp\} face=\{music \? bandFace\(ms, up\) : undefined\} faceCode=\{bandCode\(ms, up\)\} \/>/);
   // The band: no face → the booking link alone, the markup from before; with the code hidden
   // (the panel up) → the booking link alone too; the music link only inside the two-face cell.
   const chrome = read("../components/ScreenChrome.tsx");
-  assert.match(chrome, /export function BookingBand\(\{ showBookQr = true, stamp, face \}/);
+  assert.match(chrome, /export function BookingBand\(\{ showBookQr = true, stamp, face, faceCode = true \}/);
+  // The gap applies only inside the two-face cell, and only ever HIDES (never forces visible).
+  assert.match(chrome, /const gap = face !== undefined && showBookQr && !faceCode;/);
+  assert.match(chrome, /const codeGap: CSSProperties = gap \? \{ visibility: "hidden" \} : \{\};/);
+  assert.equal(chrome.match(/\.\.\.codeGap,/g)?.length, 2);
   assert.match(chrome, /const middle = face === undefined \|\| !showBookQr\s*\? bookLink/);
   assert.equal(chrome.match(/\{musicLink\}/g)?.length, 1);
   assert.match(chrome, /visibility: face === "music" \? "visible" : "hidden" \}\}>\{musicLink\}/);

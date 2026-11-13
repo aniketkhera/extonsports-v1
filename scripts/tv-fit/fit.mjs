@@ -140,8 +140,10 @@ function measure() {
   res.bandQr = bandQr
   res.musicQr = musicQr
   res.face = document.querySelector('[data-band-face]')?.dataset.bandFace ?? null
+  // band-face.ts's gap: the first 1.5 s of a face shows its words and no code, by design.
+  res.gap = !!document.querySelector('[data-band-gap="true"]')
   if (wrap && (bandQr || orScan || musicQr)) bad.push('the band still shows a code beside the panel')
-  if (!wrap && !bandQr && !musicQr) bad.push('no panel, yet the band shows no code')
+  if (!wrap && !bandQr && !musicQr && !res.gap) bad.push('no panel, yet the band shows no code')
   if (bandQr && musicQr) bad.push('the band shows both codes at once')
   if (bookImg && musicImg) {
     const b = r(bookImg)
@@ -200,9 +202,11 @@ for (const size of sizes) {
     await ctx.close()
   }
 }
-/* THE ROTATION (2026-11-13). A no-panel answer read twice, 15 s apart on the frozen clock: the
-   face must change, each read must show exactly one code and the matching line, and both faces
-   are saved as rotate-book.png / rotate-music.png for decode.py and an eye. */
+/* THE ROTATION (2026-11-13). A no-panel answer, the frozen clock stepped to known points in the
+   15 s cycle: 3 s into a face (its code up), 15 s later (the other face, its code up), then 0.5 s
+   into the face after (the gap: its words, NO code). The faces must alternate, a code must match
+   its line, the gap must hold no code at all, and the three are saved as rotate-<face>.png and
+   rotate-gap.png for decode.py and an eye. */
 for (const size of sizes) {
   const s = SCENARIOS.movedPaid
   const { body } = payload('movedPaid', s, qrFor)
@@ -222,29 +226,35 @@ for (const size of sizes) {
   await page.goto(`${base}/badminton#k=${'f'.repeat(43)}`, { waitUntil: 'networkidle' })
   await page.clock.runFor(2000)
   await page.waitForTimeout(500)
+  const read = () => page.evaluate(() => {
+    const seen = (el) => !!el && el.checkVisibility({ visibilityProperty: true })
+    return {
+      face: document.querySelector('[data-band-face]')?.dataset.bandFace ?? null,
+      gap: !!document.querySelector('[data-band-gap="true"]'),
+      book: seen(document.querySelector('img[src="/reception/book-qr.svg"]')),
+      music: seen(document.querySelector('img[src="/reception/music-qr.svg"]')),
+      bookLine: seen(document.querySelector('a[aria-label="Book a court or lane at Exton Sports"]')),
+      musicLine: seen(document.querySelector('a[data-music-qr]')),
+    }
+  })
+  // To 3 s into the next face, wherever the scenario's instant fell in the cycle.
+  const into = await page.evaluate(() => Date.now() % 15_000)
+  await page.clock.runFor(15_000 - into + 3_000)
+  await page.waitForTimeout(300)
   const reads = []
-  for (let k = 0; k < 2; k++) {
-    const g = await page.evaluate(() => {
-      const seen = (el) => !!el && el.checkVisibility({ visibilityProperty: true })
-      const text = document.querySelector('[data-band-face]')?.innerText ?? ''
-      return {
-        face: document.querySelector('[data-band-face]')?.dataset.bandFace ?? null,
-        book: seen(document.querySelector('img[src="/reception/book-qr.svg"]')),
-        music: seen(document.querySelector('img[src="/reception/music-qr.svg"]')),
-        bookLine: seen(document.querySelector('a[aria-label="Book a court or lane at Exton Sports"]')),
-        musicLine: seen(document.querySelector('a[data-music-qr]')),
-        text: text.replace(/\s+/g, ' ').trim(),
-      }
-    })
+  for (const [step, tag] of [[0, null], [15_000, null], [12_500, 'gap']]) {
+    if (step) { await page.clock.runFor(step); await page.waitForTimeout(300) }
+    const g = await read()
     reads.push(g)
-    await page.screenshot({ path: join(out, size.tag, `rotate-${g.face}.png`) })
-    if (k === 0) { await page.clock.runFor(15_000); await page.waitForTimeout(300) }
+    await page.screenshot({ path: join(out, size.tag, `rotate-${tag ?? g.face}.png`) })
   }
-  const ok = reads[0].face && reads[1].face && reads[0].face !== reads[1].face &&
-    reads.every((g) => g.book !== g.music && g.music === (g.face === 'music') && g.bookLine === g.book && g.musicLine === g.music)
+  const [a, b, c] = reads
+  const shows = (g) => !g.gap && g.book !== g.music && g.music === (g.face === 'music') && g.bookLine === g.book && g.musicLine === g.music
+  const ok = a.face && b.face && a.face !== b.face && shows(a) && shows(b) &&
+    c.gap && c.face === a.face && !c.book && !c.music && (c.face === 'music' ? c.musicLine : c.bookLine)
   if (!ok) failed++
   report[`${size.tag}/rotate`] = { reads } // an object, like every other entry: decode.py walks them
-  console.log(`${ok ? 'ok  ' : 'FAIL'} ${size.tag.padEnd(14)} rotate               ${reads.map((g) => `${g.face}: book ${g.book} music ${g.music}`).join(' → ')}`)
+  console.log(`${ok ? 'ok  ' : 'FAIL'} ${size.tag.padEnd(14)} rotate               ${reads.map((g) => `${g.face}${g.gap ? ' (gap)' : ''}: book ${g.book} music ${g.music}`).join(' → ')}`)
   await ctx.close()
 }
 /* THE GATE. The same answer, offers and all, on the screens that must never draw them: the
@@ -284,11 +294,12 @@ for (const [path, codes, keyed] of [['/cricket', 'book', true], ['/reception', '
       inApp: document.body.innerText.includes('EXTEND IN THE APP'),
       musicQr: seen(document.querySelector('img[src="/reception/music-qr.svg"]')),
       musicInDom: !!document.querySelector('[data-music-qr]'),
+      gap: !!document.querySelector('[data-band-gap="true"]'),
     }
   })
-  const codesOk = codes === 'book' ? g.bandQr && !g.musicInDom
-    : codes === 'none' ? !g.bandQr && !g.musicInDom
-      : g.bandQr !== g.musicQr
+  const codesOk = codes === 'book' ? g.bandQr && !g.musicInDom && !g.gap
+    : codes === 'none' ? !g.bandQr && !g.musicInDom && !g.gap
+      : g.gap ? !g.bandQr && !g.musicQr : g.bandQr !== g.musicQr
   const ok = !g.panel && codesOk && !g.scan && !g.inApp
   if (!ok) failed++
   report[`gate${path}${keyed ? '' : ' (unkeyed)'}`] = g

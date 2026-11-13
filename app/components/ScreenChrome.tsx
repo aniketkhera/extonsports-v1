@@ -253,8 +253,14 @@ export function ScreenHeader({ stale = false }: { stale?: boolean }) {
  *  and the booking line does not move when the faces change. The hidden one is
  *  `visibility: hidden`: no pixels for a camera, no focus, no clicks, nothing for a
  *  screen reader. Unset — every other screen — or with the code hidden (showBookQr
- *  false, the extend panel up), the band is exactly the markup it was. */
-export function BookingBand({ showBookQr = true, stamp, face }: { showBookQr?: boolean; stamp?: ReactNode; face?: BandFace } = {}) {
+ *  false, the extend panel up), the band is exactly the markup it was. `faceCode` false
+ *  (band-face.ts's gap, the first 1.5 s of a face) hides the visible face's code too,
+ *  leaving its words: read only with a face, so it changes nothing anywhere else. */
+export function BookingBand({ showBookQr = true, stamp, face, faceCode = true }: { showBookQr?: boolean; stamp?: ReactNode; face?: BandFace; faceCode?: boolean } = {}) {
+  /* Only ever "hidden", never "visible": a child set visible would show through the idle
+     face's hidden wrapper. Unset, the image inherits, and the style is the one it was. */
+  const gap = face !== undefined && showBookQr && !faceCode;
+  const codeGap: CSSProperties = gap ? { visibility: "hidden" } : {};
   const bookLink = (
     <a
       href={BOOK_URL}
@@ -277,6 +283,7 @@ export function BookingBand({ showBookQr = true, stamp, face }: { showBookQr?: b
           style={{
             height: BOOK_QR, width: BOOK_QR, display: "block", borderRadius: "calc(0.5 * var(--vh))",
             boxShadow: "0 calc(0.4 * var(--vh)) calc(1.4 * var(--vh)) rgba(0,0,0,0.45)",
+            ...codeGap,
           }}
         />
       )}
@@ -309,6 +316,7 @@ export function BookingBand({ showBookQr = true, stamp, face }: { showBookQr?: b
         style={{
           height: BOOK_QR, width: BOOK_QR, display: "block", borderRadius: "calc(0.5 * var(--vh))",
           boxShadow: "0 calc(0.4 * var(--vh)) calc(1.4 * var(--vh)) rgba(0,0,0,0.45)",
+          ...codeGap,
         }}
       />
     </a>
@@ -316,7 +324,7 @@ export function BookingBand({ showBookQr = true, stamp, face }: { showBookQr?: b
   const middle = face === undefined || !showBookQr
     ? bookLink
     : (
-      <div data-band-face={face} style={{ display: "grid", justifyItems: "end", alignItems: "center" }}>
+      <div data-band-face={face} data-band-gap={gap ? "true" : undefined} style={{ display: "grid", justifyItems: "end", alignItems: "center" }}>
         <div style={{ gridArea: "1 / 1", visibility: face === "book" ? "visible" : "hidden" }}>{bookLink}</div>
         <div style={{ gridArea: "1 / 1", visibility: face === "music" ? "visible" : "hidden" }}>{musicLink}</div>
       </div>
