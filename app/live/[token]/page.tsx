@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { readToken } from '@/lib/live/token'
+import { clubDay, readToken } from '@/lib/live/token'
+import { nextWords, upcomingStream } from '@/lib/live/next'
+import OffAirRefresh from '@/app/components/OffAirRefresh'
 import { embedUrl, onAir } from '@/lib/live/youtube'
 import { LIVE_COPY } from '@/app/components/live-pure'
 
@@ -28,11 +30,22 @@ function Shell({ children }: { children: React.ReactNode }) {
   return <main className="mx-auto w-full max-w-[72rem] px-5 pt-10 pb-20 sm:px-8">{children}</main>
 }
 
-function Problem({ title, body, action }: { title: string; body: string; action?: boolean }) {
+function Problem({
+  title,
+  body,
+  action,
+  children,
+}: {
+  title: string
+  body: string
+  action?: boolean
+  children?: React.ReactNode
+}) {
   return (
     <Shell>
       <div className="max-w-[34rem] border-l-2 border-[var(--color-line-2)] bg-[var(--color-ink)] px-6 py-6">
         <p className="text-white text-[1.15rem] font-semibold leading-snug">{title}</p>
+        {children}
         <p className="mt-3 text-white/55 text-[0.95rem] leading-relaxed">{body}</p>
         {action ? (
           <Link
@@ -62,10 +75,39 @@ export default async function WatchPage({ params }: { params: Promise<{ token: s
 
   if (air.state === 'unknown') {
     console.error('[live] could not read the broadcast: %s', air.why)
-    return <Problem title={LIVE_COPY.unknown} body={LIVE_COPY.unknownMore} />
+    return (
+      <Problem title={LIVE_COPY.unknown} body={LIVE_COPY.unknownMore}>
+        <OffAirRefresh />
+      </Problem>
+    )
   }
   if (air.state === 'off_air') {
-    return <Problem title={LIVE_COPY.offAir} body={LIVE_COPY.offAirMore} />
+    /* 2026-11-13: say when the next session is, and come to the picture by itself when it
+       starts. Both only here, behind the token — /live itself still says nothing. */
+    const words = nextWords(await upcomingStream(), clubDay())
+    return (
+      <Problem title={LIVE_COPY.offAir} body={LIVE_COPY.offAirMore}>
+        <OffAirRefresh />
+        {words ? (
+          <div className="mt-4 border-l-2 border-[var(--color-ember)] pl-4">
+            <p className="text-white text-[1rem] font-semibold leading-snug">{words.headline}</p>
+            {words.lines.map(line => (
+              <p key={line} className="mt-1 text-white/75 text-[0.95rem] leading-relaxed">
+                {line}
+              </p>
+            ))}
+            {words.newLinkNeeded ? (
+              <p className="mt-2 text-white/55 text-[0.88rem] leading-relaxed">
+                This link works for today only — ask for a new one at extonsports.com/live on the day.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+        <p className="mt-4 text-mono text-[0.62rem] tracking-[0.14em] text-white/40">
+          {LIVE_COPY.autoSwitch.toUpperCase()}
+        </p>
+      </Problem>
+    )
   }
 
   /* ⚠️ THE ON-AIR VIEW DOES NOT USE <Shell>. A parent watches this on a phone held
