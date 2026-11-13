@@ -603,6 +603,10 @@ test("the birthday greeting: cricket TV only, off at midnight EST on 13 Nov (202
   // Midnight at the club: EST (UTC-5) from 1 Nov 2026, so 05:00Z on the 14th.
   assert.match(line, /endsAt: "2026-11-14T05:00:00Z"/);
   assert.equal(new Date("2026-11-14T05:00:00Z").toLocaleString("en-US", { timeZone: "America/New_York", hourCycle: "h23" }), "11/14/2026, 00:00:00");
-  // Absolute in the title row, so the NOW area and COMING UP keep their measured height.
-  assert.match(line, /position: "absolute"/);
+  // Absolute in the title row, so the NOW area and COMING UP keep their measured height
+  // (the box and its glow, 2026-11-13: in birthday.module.css; only opacity animates).
+  assert.match(line, /className=\{`text-cond \$\{b\.box\}`\}/);
+  const css = read("../reception/birthday.module.css");
+  assert.match(css, /\.box \{\s*position: absolute;/);
+  assert.match(css, /@keyframes birthday-glow \{\s*from \{ opacity: [\d.]+; \}\s*to \{ opacity: 1; \}\s*\}/);
 });

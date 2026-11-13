@@ -1,0 +1,30 @@
+/* The cricket TV's birthday greeting, boxed and glowing (2026-11-13, Aniket on the first
+   version: "Put a box around it. And glow it"). See BirthdayLine.tsx.
+
+   The glow PULSES on a layer of its own (::before), and only that layer's OPACITY moves:
+   the boards' rule is transform/opacity only, and the Fire TV's Silk composites an opacity
+   change without repainting the shadow. The box itself is still. */
+.box {
+  position: absolute;
+  border: 2px solid #ffc94a;
+  border-radius: 0.4em;
+  background: rgba(255, 201, 74, 0.08);
+  box-shadow: 0 0 0.35em rgba(255, 201, 74, 0.45), inset 0 0 0.35em rgba(255, 201, 74, 0.18);
+  text-shadow: 0 0 0.3em rgba(255, 201, 74, 0.55);
+}
+
+.box::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  box-shadow: 0 0 0.55em 0.08em rgba(255, 201, 74, 0.85), inset 0 0 0.5em rgba(255, 201, 74, 0.35);
+  opacity: 0.25;
+  animation: birthday-glow 2.4s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes birthday-glow {
+  from { opacity: 0.25; }
+  to { opacity: 1; }
+}
