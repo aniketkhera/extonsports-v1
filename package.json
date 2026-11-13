@@ -7,13 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test app/board/board-lib.test.mjs app/board/extend-feed.test.mjs app/components/tv-screens.test.mjs app/components/screen-pure.test.mjs app/components/replay-handoff.test.mjs app/components/my-bookings-pure.test.mjs app/api/mailing-list-optin/optin-core.test.mjs app/api/waitlist/footer-notice.test.mjs lib/signup-notice.test.mjs lib/public-lights.test.mjs lib/court-slots-relay.test.mjs lib/my-bookings/my-bookings.test.mjs lib/my-bookings/court-pack.test.mjs lib/my-bookings/pack-book.test.mjs lib/my-bookings/pack-list.test.mjs lib/my-bookings/pack-buy.test.mjs lib/my-bookings/pack-integration.test.mjs lib/my-bookings/coupon.test.mjs"
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test app/board/board-lib.test.mjs app/board/extend-feed.test.mjs app/components/tv-screens.test.mjs app/components/screen-pure.test.mjs app/components/replay-handoff.test.mjs app/components/my-bookings-pure.test.mjs app/components/live-now-pure.test.mjs app/api/mailing-list-optin/optin-core.test.mjs app/api/waitlist/footer-notice.test.mjs lib/signup-notice.test.mjs lib/public-lights.test.mjs lib/court-slots-relay.test.mjs lib/my-bookings/my-bookings.test.mjs lib/my-bookings/court-pack.test.mjs lib/my-bookings/pack-book.test.mjs lib/my-bookings/pack-list.test.mjs lib/my-bookings/pack-buy.test.mjs lib/my-bookings/pack-integration.test.mjs lib/my-bookings/coupon.test.mjs lib/live/token.test.mjs"
   },
   "dependencies": {
     "@types/three": "^0.184.1",
     "@vercel/analytics": "^2.0.1",
     "framer-motion": "^11.18.0",
-    "mailer-admin": "git+https://github.com/aniketkhera/mailer-admin.git#0823359cf01e878dc813e100b7c662319e17c1e1",
+    "mailer-admin": "git+https://github.com/aniketkhera/mailer-admin.git#6b454842be546ce86ec343902e055c9f4669b424",
     "next": "16.2.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",

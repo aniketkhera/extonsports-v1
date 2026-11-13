@@ -38,6 +38,31 @@ export const config = defineConfig({
     contactEmail: 'info@extonsports.com',
     signupContext: 'you signed up at extonsports.com',
     logoUrl: 'https://extonsports.com/logo.png',
+    // Every Exton email (the welcome, newsletters, test sends) wears the website's look:
+    // navy from app/globals.css, the ember accent, Oswald capitals over Barlow. Aniket,
+    // 2026-11-09: "change this email to match the Exton Sports Center format". Before
+    // this it was the package's shared light peach card. The admin colours (`theme`
+    // below) are untouched; this is the email only.
+    style: {
+      colorScheme: 'dark',
+      pageBg: '#0A1019',     // --color-void
+      cardBg: '#0E1825',     // --color-ink
+      cardBorder: '#1F2E3E', // --color-line
+      divider: '#1F2E3E',
+      footerBg: '#0A1019',
+      heading: '#FAFAFA',    // --color-paper
+      text: '#B8C2CD',       // between --color-fog and --color-bone, for reading on navy
+      mutedText: '#7D8896',
+      brandColor: '#FAFAFA',
+      accent: '#F89B72',     // --color-ember
+      buttonBg: '#F89B72',
+      buttonText: '#0A1019',
+      headingFont: "Oswald,'Arial Narrow',Arial,sans-serif",
+      bodyFont: 'Barlow,Helvetica,Arial,sans-serif',
+      uppercaseHeadings: true,
+      fontsUrl: 'https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap',
+      tagline: 'Open 24x7 · Exton, PA',
+    },
   },
   theme: {
     accent: '#F37A4A',

@@ -624,3 +624,61 @@ html { scroll-behavior: smooth; }
    a smudge, so light mode keeps the border and drops the halo. */
 :root[data-theme="light"] .opening-glow      { animation: none; border-color: var(--ember-ink); }
 :root[data-theme="light"] .opening-glow-text { animation: none; text-shadow: none; color: var(--ember-ink); }
+
+/* LIVE NOW badge (app/components/LiveNowBadge.tsx). Red, 2026-11-12.
+   ---------------------------------------------------------------------------------
+   Aniket: "put the LIVE NOW in RED, bright RED, and put it near the green 24x7 sign."
+
+   So it is a sibling of .open-chip above and borrows its geometry exactly, but it is a
+   SOLID fill where the green one is a soft tint. That is the hierarchy on purpose: the
+   club being open is a standing fact and children being on camera right now is news.
+
+   WHY NOT THE BRIGHTEST RED THERE IS. White on #FF2D2D is about 3.3:1, and at 0.82rem
+   this is not large text, so it needs 4.5:1. #E11D2E keeps the hue unmistakably bright
+   red and lands near 4.9:1. The fill means neither theme changes it, which is also why
+   there is no light-theme override here where .open-chip needs one.
+
+   The dot reuses the green chip's @keyframes open-dot rather than owning a second
+   identical animation, so the two chips blink in step. */
+:root {
+  --color-live: #E11D2E;
+}
+
+.live-chip,
+.live-sub {
+  background: var(--color-live);
+  color: #FFFFFF;
+  font-family: var(--font-cond);
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+  /* NO display here. Nav.tsx sets it with Tailwind, and an unlayered display would beat
+     the layered utilities and defeat `hidden` -- the bug .open-chip records above. */
+}
+.live-chip {
+  font-size: 0.82rem;
+  letter-spacing: 0.16em;
+  padding: 7px 12px;
+}
+.live-sub {
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  padding: 4px 8px;
+}
+
+.live-chip .live-dot,
+.live-sub .live-dot {
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+  animation: open-dot 1.4s ease-in-out infinite;
+}
+.live-chip .live-dot { width: 7px; height: 7px; }
+.live-sub .live-dot { width: 5px; height: 5px; }
+
+/* A visitor who has asked for less motion still gets the badge, just not the blink. */
+@media (prefers-reduced-motion: reduce) {
+  .live-chip .live-dot,
+  .live-sub .live-dot { animation: none; }
+}

@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Badminton TV audio test</title>
+<!--
+  THE BADMINTON TV'S AUDIO TEST — TEMPORARY (orangish-app docs/court-extend.md §11.2, rollout step 4).
+  ─────────────────────────────────────────────────────────────────────────────────────────────
+  Can the VIZIO M55Q6-L4's own browser play sound with nobody pressing anything? Decision 5
+  (Aniket, 2026-11-02): test the badminton TV's speaker first, fall back to the Main Door Sonos.
+  This page answers it, on the set, in the hall, with Aniket there (Q23). MERGE IT BY HAND JUST
+  BEFORE THE VISIT AND DELETE IT AFTERWARDS (this file and public/tv/audio-test/).
+
+  Opened as https://extonsports.com/tv/audio-test.html?until=<ISO instant, at most 60 min ahead>.
+  Without a valid `until` in the next hour it plays NOTHING: tv-keeper relaunches its pages
+  hourly, so a set nobody pointed back must come up silent and say so.
+
+  It never waits for input. On load it draws the UA, the viewport @ DPR (the set's real CSS
+  viewport has never been read — §10.9) and the clock, then one row per probe:
+     0 s     new AudioContext(): its state BEFORE anything plays (once one method succeeds the
+             whole document may sound, so this order keeps each result separate)
+    +5 s     Web Audio resume(); if running, a 1 s tone at gain 0.3
+    +10 s    new Audio(chime).play() at volume 0.3
+    +15 s    the mock announcement through an <audio> element at volume 1.0 (is it intelligible
+             from the courts?)
+    +2 min, +10 min   <audio> again, with no input: the real page plays hours after it loads
+    then     ONE location.reload() (flagged in sessionStorage), the AudioContext state and the
+             +10 s probe again — a fresh document, as a deploy reload or a relaunch makes
+  Then TEST OVER. Results survive the reload in sessionStorage, so the table can be photographed.
+  It reads and writes nothing else: no localStorage (never the screen key), no network but its
+  own two clips, no heartbeat — this is not a TV route.
+
+  The voice in announce-1court.mp3 is Windows "Zira", the mock-up's: for this test only.
+-->
+<style>
+  html, body { margin: 0; background: #0B1623; color: #FFFFFF; }
+  /* Every row on one 16:9 screen, so one photo holds the whole result. */
+  body { font: 1.45vw/1.25 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: 2vh 3vw; }
+  h1 { font-size: 2.4vw; margin: 0 0 0.8vh; color: #FFBE97; letter-spacing: 0.04em; }
+  .info { color: #A9B1BF; margin-bottom: 1.5vh; }
+  .info b { color: #FFFFFF; font-weight: 600; }
+  table { border-collapse: collapse; width: 100%; }
+  td { padding: 0.35vh 1vw; border-top: 1px solid rgba(255,255,255,0.18); vertical-align: top; white-space: nowrap; }
+  td.t { color: #A9B1BF; white-space: nowrap; width: 9vw; }
+  td.r { font-weight: 700; white-space: nowrap; }
+  .played { color: #79EA92; } .blocked { color: #FF5B45; } .error { color: #FFC43D; } .note { color: #FFFFFF; }
+  .over { margin-top: 1.5vh; font-size: 2.4vw; font-weight: 700; color: #FF5B45; }
+  .next { margin-top: 1.5vh; color: #FFBE97; }
+</style>
+</head>
+<body>
+<h1>BADMINTON TV · AUDIO TEST</h1>
+<div class="info" id="info"></div>
+<table id="rows"></table>
+<div class="next" id="next"></div>
+<div class="over" id="over"></div>
+<script>
+(function () {
+  "use strict";
+  var ROWS = "audio-test-rows", RELOADED = "audio-test-reloaded";
+  var CHIME = "audio-test/chime.mp3", CLIP = "audio-test/announce-1court.mp3";
+  var MAX_AHEAD_MS = 60 * 60 * 1000;
+  var t0 = Date.now();
+
+  function store(k, v) { try { if (v === undefined) return sessionStorage.getItem(k); sessionStorage.setItem(k, v); } catch (e) { return null; } }
+  // `until`: an instant at most an hour ahead, or nothing plays.
+  var raw = new URLSearchParams(location.search).get("until");
+  /* The rows and the reload flag belong to THIS run (this `until`): a later run in the same
+     browser session starts from the top. */
+  var rows = [];
+  try { var kept = JSON.parse(store(ROWS) || "null"); if (kept && kept.until === raw) rows = kept.rows || []; } catch (e) { rows = []; }
+  var reloaded = !!raw && store(RELOADED) === raw;
+  var until = raw ? Date.parse(raw) : NaN;
+  var armedAtLoad = isFinite(until) && until > t0 && until - t0 <= MAX_AHEAD_MS;
+  function armed() { return armedAtLoad && Date.now() < until; }
+
+  function clock(ms) {
+    return new Date(ms).toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit", second: "2-digit" });
+  }
+  function el(id) { return document.getElementById(id); }
+
+  function drawInfo() {
+    var vv = innerWidth + " × " + innerHeight + " @ " + devicePixelRatio;
+    el("info").innerHTML = "";
+    var lines = [
+      ["Clock", clock(Date.now()) + " ET"],
+      ["Viewport", vv + "  (screen " + screen.width + " × " + screen.height + ")"],
+      ["User agent", navigator.userAgent],
+      ["speechSynthesis", "speechSynthesis" in window ? "exists (not used)" : "absent"],
+      ["Armed", armedAtLoad ? "until " + clock(until) + " ET" : "NO — needs ?until= an instant in the next 60 min"],
+      ["Document", reloaded ? "after the reload" : "first load"],
+    ];
+    lines.forEach(function (l) {
+      var d = document.createElement("div");
+      var b = document.createElement("b"); b.textContent = l[0] + ": ";
+      d.appendChild(b); d.appendChild(document.createTextNode(l[1]));
+      el("info").appendChild(d);
+    });
+  }
+
+  function drawRows() {
+    var tb = el("rows"); tb.innerHTML = "";
+    rows.forEach(function (r) {
+      var tr = document.createElement("tr");
+      [[r.at, "t"], [r.probe, ""], [r.result, "r " + r.kind]].forEach(function (c) {
+        var td = document.createElement("td"); td.className = c[1]; td.textContent = c[0]; tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+  }
+
+  function record(probe, result, kind) {
+    var s = Math.round((Date.now() - t0) / 1000);
+    rows.push({ at: (reloaded ? "reload +" : "+") + s + " s", probe: probe, result: result, kind: kind });
+    store(ROWS, JSON.stringify({ until: raw, rows: rows }));
+    drawRows();
+  }
+
+  function why(e) {
+    var n = e && e.name ? e.name : String(e);
+    return n === "NotAllowedError" ? ["BLOCKED NotAllowedError", "blocked"] : ["ERROR " + n, "error"];
+  }
+
+  var ctx = null;
+  function contextState(label) {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return record(label, "no AudioContext", "error");
+      ctx = new AC();
+      record(label, "state: " + ctx.state, ctx.state === "running" ? "played" : "blocked");
+    } catch (e) { var w = why(e); record(label, w[0], w[1]); }
+  }
+
+  function webAudio() {
+    if (!armed()) return record("Web Audio resume() + tone", "SKIPPED (not armed)", "note");
+    if (!ctx) return record("Web Audio resume() + tone", "no context", "error");
+    var done = false;
+    var timer = setTimeout(function () { if (!done) { done = true; record("Web Audio resume() + tone", "BLOCKED (resume did not settle, state " + ctx.state + ")", "blocked"); } }, 2000);
+    Promise.resolve(ctx.resume()).then(function () {
+      if (done) return; done = true; clearTimeout(timer);
+      if (ctx.state !== "running") return record("Web Audio resume() + tone", "BLOCKED (state " + ctx.state + ")", "blocked");
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.value = 440; g.gain.value = 0.3;
+      o.connect(g); g.connect(ctx.destination);
+      o.start(); o.stop(ctx.currentTime + 1);
+      record("Web Audio resume() + tone", "PLAYED (1 s tone, gain 0.3)", "played");
+    }, function (e) { if (done) return; done = true; clearTimeout(timer); var w = why(e); record("Web Audio resume() + tone", w[0], w[1]); });
+  }
+
+  function element(label, src, volume, inDom) {
+    if (!armed()) return record(label, "SKIPPED (not armed)", "note");
+    try {
+      var a = inDom ? document.createElement("audio") : new Audio();
+      a.src = src; a.volume = volume; a.preload = "auto";
+      if (inDom) { a.style.display = "none"; document.body.appendChild(a); }
+      var p = a.play();
+      if (!p || !p.then) return record(label, "play() returned no promise", "note");
+      p.then(function () { record(label, "PLAYED", "played"); },
+             function (e) { var w = why(e); record(label, w[0], w[1]); });
+    } catch (e) { var w = why(e); record(label, w[0], w[1]); }
+  }
+
+  var plan = reloaded
+    ? [
+        [0, "AudioContext state, after the reload", function () { contextState("AudioContext state, after the reload"); }],
+        [10e3, "new Audio(chime).play(), after the reload", function () { element("new Audio(chime).play(), after the reload", CHIME, 0.3, false); }],
+      ]
+    : [
+        [0, "AudioContext state at load", function () { contextState("AudioContext state at load (before any sound)"); }],
+        [5e3, "Web Audio resume() + tone", webAudio],
+        [10e3, "new Audio(chime).play()", function () { element("new Audio(chime).play() at 0.3", CHIME, 0.3, false); }],
+        [15e3, "<audio> announcement", function () { element("<audio> announcement at 1.0", CLIP, 1, true); }],
+        [120e3, "<audio> announcement at +2 min", function () { element("<audio> announcement at +2 min", CLIP, 1, true); }],
+        [600e3, "<audio> announcement at +10 min", function () { element("<audio> announcement at +10 min", CLIP, 1, true); }],
+        [630e3, "reload once", function () {
+          if (!armed()) return record("reload once", "SKIPPED (not armed)", "note");
+          store(RELOADED, raw);
+          location.reload();
+        }],
+      ];
+
+  var last = plan[plan.length - 1][0];
+  plan.forEach(function (p) { setTimeout(p[2], p[0]); });
+  // TEST OVER after the last probe (or at once, unarmed): nothing more plays.
+  setTimeout(function () { el("over").textContent = "TEST OVER: point the set back"; el("next").textContent = ""; }, armedAtLoad ? last + (reloaded ? 15e3 : 60e3) : 0);
+
+  drawInfo(); drawRows();
+  setInterval(function () {
+    drawInfo();
+    var now = Date.now() - t0;
+    var nx = plan.filter(function (p) { return p[0] > now; })[0];
+    if (!armed()) { el("over").textContent = "TEST OVER: point the set back"; el("next").textContent = ""; return; }
+    el("next").textContent = nx ? "Next: " + nx[1] + " in " + Math.ceil((nx[0] - now) / 1000) + " s" : "";
+  }, 1000);
+})();
+</script>
+</body>
+</html>

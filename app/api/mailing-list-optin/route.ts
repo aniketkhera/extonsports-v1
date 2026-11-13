@@ -10,7 +10,7 @@
 
 import { NextRequest, NextResponse, after } from 'next/server'
 import { createSupabase } from 'mailer-admin/lib/supabase'
-import { sendOne, renderEmailHtml, markdownToEmailHtml, unsubscribeUrl } from 'mailer-admin/lib/email'
+import { sendOne, renderEmailHtml, emailBodyHtml, unsubscribeUrl } from 'mailer-admin/lib/email'
 import { config } from '@/mailer-admin.config'
 import { noticeDepsFor } from '@/lib/signup-notice-send'
 import { createRateLimiter, handleOptin, OPTIN_LIMIT, OPTIN_WINDOW_MS, type OptinDeps } from './optin-core'
@@ -30,7 +30,7 @@ const deps: OptinDeps = {
     welcomeHtml: ({ subject, bodyMd, token }) =>
       renderEmailHtml(config, {
         subject,
-        bodyHtml: markdownToEmailHtml(bodyMd, { linkColor: config.theme.accent }),
+        bodyHtml: emailBodyHtml(config, bodyMd),
         unsubscribeUrl: unsubscribeUrl(config, token),
       }),
   },
