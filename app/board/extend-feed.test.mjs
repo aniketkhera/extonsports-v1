@@ -513,7 +513,7 @@ test("the music code: badminton TV only, gone with the extend panel, image and U
   const tv = read("../components/TvScreen.tsx");
   // Exactly one screen asks for it.
   assert.equal(tv.match(/\bmusic\b(?= \/>)/g)?.length, 1);
-  assert.match(tv, /"cricket-board": \(\) => <SportBoard sport="Cricket" \/>/);
+  assert.match(tv, /"cricket-board": \(\) => <SportBoard sport="Cricket"(?: birthday)? \/>/);
   // No other screen passes a face or computes one.
   for (const p of [
     "../reception/ReceptionBoard.tsx", "../vestibule/VestibuleScreen.tsx", "../our-club/OurClubScreen.tsx",
@@ -531,7 +531,7 @@ test("the music code: badminton TV only, gone with the extend panel, image and U
   // SportBoard is all that keeps it off the cricket TV (review, 2026-11-13): off by default,
   // passed only to ExtendBand, and the plain band (cricket's) gets neither music nor a face.
   const sport = read("../reception/SportBoard.tsx");
-  assert.match(sport, /export default function SportBoard\(\{ sport, extend = false, music = false \}/);
+  assert.match(sport, /export default function SportBoard\(\{ sport, extend = false, music = false(?:, birthday = false)? \}/);
   assert.match(sport, /<ExtendBand p=\{p\} stale=\{stale\} stamp=\{<ScreenStamp style=\{BAND_STAMP\} \/>\} music=\{music\} \/>/);
   assert.match(sport, /: <BookingBand stamp=\{<ScreenStamp style=\{BAND_STAMP\} \/>\} \/>\}/);
   assert.ok(!/\bface=|bandFace/.test(sport));
@@ -564,7 +564,7 @@ test("the badminton TV alone reads `extend`; the line is FREE AFTER everywhere e
   const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
   const tv = read("../components/TvScreen.tsx");
   assert.match(tv, /"badminton-board": \(\) => <SportBoard sport="Badminton" extend music \/>/);
-  assert.match(tv, /"cricket-board": \(\) => <SportBoard sport="Cricket" \/>/);
+  assert.match(tv, /"cricket-board": \(\) => <SportBoard sport="Cricket"(?: birthday)? \/>/);
   // Reception and the vestibule never ask for it.
   for (const p of ["../reception/ReceptionBoard.tsx", "../vestibule/VestibuleScreen.tsx"]) {
     for (const m of read(p).matchAll(/useCourtPanels\(\{([^}]*)\}\)/g)) assert.ok(!/extend/.test(m[1]), `${p}: ${m[1]}`);
@@ -590,4 +590,19 @@ test("never green, never a holder: the panel's words carry no name and no colour
   assert.ok(!/#79EA92/i.test(src) && !/import[^;]*\bGREEN\b/.test(src), "green on this board means a free court");
   assert.ok(!/dangerouslySetInnerHTML/.test(src), "the code is drawn as a React attribute");
   assert.ok(!/\.who\b/.test(src) && !/\.who\b/.test(lib), "the panel never reads a holder");
+});
+
+test("the birthday greeting: cricket TV only, off at midnight EST on 13 Nov (2026-11-13)", () => {
+  const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
+  const tv = read("../components/TvScreen.tsx");
+  // Exactly one screen asks for it, and it is the cricket board.
+  assert.equal(tv.match(/\bbirthday\b(?= \/>)/g)?.length, 1);
+  assert.match(tv, /"cricket-board": \(\) => <SportBoard sport="Cricket" birthday \/>/);
+  const line = read("../reception/BirthdayLine.tsx");
+  assert.match(line, /name: "Avyukth Tharun"/);
+  // Midnight at the club: EST (UTC-5) from 1 Nov 2026, so 05:00Z on the 14th.
+  assert.match(line, /endsAt: "2026-11-14T05:00:00Z"/);
+  assert.equal(new Date("2026-11-14T05:00:00Z").toLocaleString("en-US", { timeZone: "America/New_York", hourCycle: "h23" }), "11/14/2026, 00:00:00");
+  // Absolute in the title row, so the NOW area and COMING UP keep their measured height.
+  assert.match(line, /position: "absolute"/);
 });
