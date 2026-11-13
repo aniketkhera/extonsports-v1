@@ -5,6 +5,7 @@ import { nextWords, upcomingStream } from '@/lib/live/next'
 import OffAirRefresh from '@/app/components/OffAirRefresh'
 import { embedUrl, onAir } from '@/lib/live/youtube'
 import { LIVE_COPY } from '@/app/components/live-pure'
+import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_E164 } from '@/lib/legal'
 
 /* extonsports.com/live/<token> — the watch page. 2026-11-09.
    ──────────────────────────────────────────────────────────────────────────────
@@ -37,7 +38,7 @@ function Problem({
   children,
 }: {
   title: string
-  body: string
+  body: React.ReactNode
   action?: boolean
   children?: React.ReactNode
 }) {
@@ -86,7 +87,23 @@ export default async function WatchPage({ params }: { params: Promise<{ token: s
        starts. Both only here, behind the token — /live itself still says nothing. */
     const words = nextWords(await upcomingStream(), clubDay())
     return (
-      <Problem title={LIVE_COPY.offAir} body={LIVE_COPY.offAirMore}>
+      <Problem
+        title={LIVE_COPY.offAir}
+        body={
+          <>
+            {LIVE_COPY.offAirMore}{' '}
+            <a href={`mailto:${CONTACT_EMAIL}`} className="text-[var(--color-ember)] hover:text-white transition-colors">
+              {CONTACT_EMAIL}
+            </a>{' '}
+            {LIVE_COPY.offAirOr}{' '}
+            {/* nowrap so "(484)" and "252-2523" never part, as in the bookings toast. */}
+            <a href={`tel:${CONTACT_PHONE_E164}`} className="whitespace-nowrap text-[var(--color-ember)] hover:text-white transition-colors">
+              {CONTACT_PHONE}
+            </a>
+            .
+          </>
+        }
+      >
         <OffAirRefresh />
         {words ? (
           <div className="mt-4 border-l-2 border-[var(--color-ember)] pl-4">
