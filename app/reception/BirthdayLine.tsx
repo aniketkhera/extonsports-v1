@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import b from "./birthday.module.css";
 
 /* A birthday greeting on the cricket TV, for ONE evening (2026-11-13).
    ──────────────────────────────────────────────────────────────────────────
@@ -46,18 +47,26 @@ export function useBirthday(enabled: boolean): boolean {
   return enabled && on;
 }
 
-/* Sizes are in the box's scaled --vw (SportBoard's SCALED), like the title beside it. */
+/* Sizes are in the box's scaled --vw (SportBoard's SCALED), like the title beside it.
+
+   BOXED AND GLOWING (2026-11-13, Aniket on the first version: "Put a box around it. And
+   glow it"; birthday.module.css). The box is taller than the title's line, and below the
+   title row is COMING UP's heading (195px at 1080p, measured), so the box is pinned by its
+   TOP, 0.65 scaled vw (20px) above the row: 117-188px at 1920x1080, inside the panel's
+   border (106px) and clear of COMING UP. Smaller type than the unboxed line (1.45 against
+   1.65) so the box fits that band. */
 export default function BirthdayLine() {
   return (
     <div
-      className="text-cond"
+      className={`text-cond ${b.box}`}
       data-birthday
       aria-label={`Happy birthday, ${BIRTHDAY.name}`}
       style={{
-        position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)",
+        left: "50%", top: "calc(-0.65 * var(--vw))", transform: "translateX(-50%)",
         display: "flex", alignItems: "center", gap: "0.45em",
         whiteSpace: "nowrap", pointerEvents: "none", lineHeight: 1,
-        fontSize: "calc(1.65 * var(--vw))", letterSpacing: "0.08em",
+        fontSize: "calc(1.45 * var(--vw))", letterSpacing: "0.08em",
+        padding: "0.25em 0.8em",
         color: "#FFC94A",
       }}
     >
