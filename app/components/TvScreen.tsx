@@ -56,8 +56,8 @@ const RENDER: Record<TvContent, (tv: TvEntry) => ReactNode> = {
   "board-and-promos": () => <VestibuleScreen />,
   /* `extend`: the badminton TV alone draws the offers to extend a booking (2026-11-03,
      SportBoard.tsx). Cricket is later, after its own audio test and key.
-     `music`: and alone draws the "SCAN FOR MUSIC" code for the Main Door speaker
-     (2026-11-13, MusicQr.tsx). */
+     `music`: and alone has its band's code take turns with the Main Door speaker
+     page's (2026-11-13, app/board/band-face.ts). */
   "badminton-board": () => <SportBoard sport="Badminton" extend music />,
   "cricket-board": () => <SportBoard sport="Cricket" />,
   "our-club": () => <OurClubScreen />,

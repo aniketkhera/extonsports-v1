@@ -458,40 +458,102 @@ test("three bookings: one code each, the length picked on the phone", () => {
   assert.equal(red.cards[0].small, "ended 2:00 · open until 2:05");
 });
 
+test("bandFace: booking and music take turns, 15 s each on the wall clock; never with the panel up (2026-11-13)", async () => {
+  const { bandFace, BAND_ROTATE_MS } = await import("./band-face.ts");
+  assert.equal(BAND_ROTATE_MS, 15_000);
+  const T = Date.UTC(2026, 10, 13, 15, 0, 0); // a whole minute: an even slot
+  assert.equal(bandFace(T, false), "book");
+  assert.equal(bandFace(T + 14_999, false), "book");
+  assert.equal(bandFace(T + 15_000, false), "music");
+  assert.equal(bandFace(T + 29_999, false), "music");
+  assert.equal(bandFace(T + 30_000, false), "book");
+  assert.equal(bandFace(T + 45_000, false), "music");
+  // Half the minute each.
+  let music = 0;
+  for (let s = 0; s < 60; s++) if (bandFace(T + s * 1000, false) === "music") music++;
+  assert.equal(music, 30);
+  // The panel up: always the booking face (which then shows no code at all).
+  for (const at of [T, T + 15_000, T + 45_000]) assert.equal(bandFace(at, true), "book");
+  // Before the first tick, and nonsense: the booking face, the band's markup from before.
+  for (const at of [0, -1, NaN, Infinity]) assert.equal(bandFace(at, false), "book");
+});
+
+test("bandCode: each face's code waits 1.5 s behind its words, so a locked camera loses it (review, 2026-11-13)", async () => {
+  const { bandCode, bandFace, BAND_GAP_MS, BAND_ROTATE_MS } = await import("./band-face.ts");
+  assert.equal(BAND_GAP_MS, 1_500);
+  const T = Date.UTC(2026, 10, 13, 15, 0, 0);
+  for (const slot of [0, 1, 2, 3]) {
+    const start = T + slot * BAND_ROTATE_MS;
+    assert.equal(bandCode(start, false), false, `slot ${slot} opens with no code`);
+    assert.equal(bandCode(start + 1_499, false), false);
+    assert.equal(bandCode(start + 1_500, false), true);
+    assert.equal(bandCode(start + 14_999, false), true);
+    // The words change at the slot's start, not at the code's: the gap shows the NEW face.
+    assert.equal(bandFace(start, false), slot % 2 ? "music" : "book");
+  }
+  // No two different codes are ever drawn in consecutive seconds: every change of face
+  // passes through a second with no code at all.
+  let prev = null;
+  let gaps = 0;
+  for (let s = 0; s < 120; s++) {
+    const at = T + s * 1000;
+    const now = bandCode(at, false) ? bandFace(at, false) : null;
+    if (prev && now) assert.equal(now, prev, `code changed straight from ${prev} to ${now} at +${s}s`);
+    if (prev && !now) gaps++;
+    prev = now;
+  }
+  assert.equal(gaps, 7); // one gap per face change: 8 slots in 2 minutes, so 7 changes after the first
+  // Panel up: never a code. Before the first tick: the code, as the band's first paint always had.
+  for (const at of [T, T + 3_000, T + 18_000]) assert.equal(bandCode(at, true), false);
+  for (const at of [0, -1, NaN]) assert.equal(bandCode(at, false), true);
+});
+
 test("the music code: badminton TV only, gone with the extend panel, image and URL agree (2026-11-13)", () => {
   const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
   const tv = read("../components/TvScreen.tsx");
   // Exactly one screen asks for it.
   assert.equal(tv.match(/\bmusic\b(?= \/>)/g)?.length, 1);
   assert.match(tv, /"cricket-board": \(\) => <SportBoard sport="Cricket" \/>/);
-  // No other screen fills the band's slot: only SportBoard and ExtendBand mention MusicQr.
+  // No other screen passes a face or computes one.
   for (const p of [
     "../reception/ReceptionBoard.tsx", "../vestibule/VestibuleScreen.tsx", "../our-club/OurClubScreen.tsx",
-    "../exit/ExitScreen.tsx", "../components/LiveBand.tsx", "../components/ScreenChrome.tsx",
+    "../exit/ExitScreen.tsx", "../components/LiveBand.tsx",
   ]) {
     const src = read(p);
-    // JSX use only: ScreenChrome's comment names MusicQr.tsx, which is fine.
-    assert.ok(!/<MusicQr\b|\bmusic=\{/.test(src), `${p} must not draw the music code`);
+    // Each whole <BookingBand …/> call line, because `stamp={<ScreenStamp … />}` carries a `>`
+    // that a [^>]* scan would stop at (review, 2026-11-13). ReceptionBoard's EntryFoot has a
+    // `face` of its own, unrelated, so only the band's lines are searched for it.
+    for (const m of src.matchAll(/<BookingBand\b[^\n]*/g)) {
+      assert.ok(!/\b(face|faceCode|music)=/.test(m[0]), `${p}: ${m[0].trim()}`);
+    }
+    assert.ok(!/<ExtendBand\b|bandFace|bandCode|music-qr/.test(src), `${p} must not draw the music code`);
   }
   // SportBoard is all that keeps it off the cricket TV (review, 2026-11-13): off by default,
-  // and passed on only from its own `music` prop, on both branches.
+  // passed only to ExtendBand, and the plain band (cricket's) gets neither music nor a face.
   const sport = read("../reception/SportBoard.tsx");
   assert.match(sport, /export default function SportBoard\(\{ sport, extend = false, music = false \}/);
   assert.match(sport, /<ExtendBand p=\{p\} stale=\{stale\} stamp=\{<ScreenStamp style=\{BAND_STAMP\} \/>\} music=\{music\} \/>/);
-  assert.match(sport, /: <BookingBand stamp=\{<ScreenStamp style=\{BAND_STAMP\} \/>\} music=\{music \? <MusicQr \/> : undefined\} \/>/);
-  assert.equal(sport.match(/<MusicQr \/>/g)?.length, 1);
-  // Under `extend` it rides the same `up` that hides the booking QR: never beside the panel.
+  assert.match(sport, /: <BookingBand stamp=\{<ScreenStamp style=\{BAND_STAMP\} \/>\} \/>\}/);
+  assert.ok(!/\bface=|bandFace/.test(sport));
+  // The face comes from the same tick and the same `up` that hide every band code beside the panel.
   const ext = read("../reception/ExtendPanel.tsx");
-  assert.match(ext, /<BookingBand showBookQr=\{!up\} stamp=\{stamp\} music=\{music && !up \? <MusicQr \/> : undefined\} \/>/);
   assert.match(ext, /export function ExtendBand\(\{ p, stale, stamp, music = false \}/);
-  // The band's default leaves every other screen's markup as it was: the slot is rendered
-  // as given, once, between the pill and the booking link, and nothing stands in for it.
+  assert.match(ext, /<BookingBand showBookQr=\{!up\} stamp=\{stamp\} face=\{music \? bandFace\(ms, up\) : undefined\} faceCode=\{bandCode\(ms, up\)\} \/>/);
+  // The band: no face → the booking link alone, the markup from before; with the code hidden
+  // (the panel up) → the booking link alone too; the music link only inside the two-face cell.
   const chrome = read("../components/ScreenChrome.tsx");
-  assert.match(chrome, /export function BookingBand\(\{ showBookQr = true, stamp, music \}/);
-  assert.equal(chrome.match(/\{music\}/g)?.length, 1);
-  assert.match(chrome, /<OrangishPill tv \/>\s*<\/div>\s*\{\/\*[\s\S]*?\*\/\}\s*\{music\}\s*<a\s+href=\{BOOK_URL\}/);
+  assert.match(chrome, /export function BookingBand\(\{ showBookQr = true, stamp, face, faceCode = true \}/);
+  // The gap applies only inside the two-face cell, and only ever HIDES (never forces visible).
+  assert.match(chrome, /const gap = face !== undefined && showBookQr && !faceCode;/);
+  assert.match(chrome, /const codeGap: CSSProperties = gap \? \{ visibility: "hidden" \} : \{\};/);
+  assert.equal(chrome.match(/\.\.\.codeGap,/g)?.length, 2);
+  assert.match(chrome, /const middle = face === undefined \|\| !showBookQr\s*\? bookLink/);
+  assert.equal(chrome.match(/\{musicLink\}/g)?.length, 1);
+  assert.match(chrome, /visibility: face === "music" \? "visible" : "hidden" \}\}>\{musicLink\}/);
+  assert.match(chrome, /visibility: face === "book" \? "visible" : "hidden" \}\}>\{bookLink\}/);
+  assert.match(chrome, /<OrangishPill tv \/>\s*<\/div>\s*\{middle\}\s*<div style=\{\{ justifySelf: "end"/);
   // The SVG is generated from MUSIC_URL; its <title> carries the URL, so a change to one without the other fails here.
-  const url = read("../reception/MusicQr.tsx").match(/export const MUSIC_URL = "([^"]+)";/)?.[1];
+  const url = chrome.match(/const MUSIC_URL = "([^"]+)";/)?.[1];
   assert.equal(url, "https://extonsports.com/music");
   const svg = read("../../public/reception/music-qr.svg");
   assert.match(svg, new RegExp(`<title>Music at Exton Sports: ${url.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")}</title>`));

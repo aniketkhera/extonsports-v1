@@ -7,7 +7,6 @@ import ScreenStamp from "../components/ScreenStamp";
 import { BG, INK, RULE_SOFT, BOX } from "../components/tv-palette";
 import { useCourtPanels, PANEL_BOX, PanelTitle, NowArea, ComingUp } from "./ReceptionBoard";
 import { ExtendCell, ExtendBand } from "./ExtendPanel";
-import { MusicQr } from "./MusicQr";
 
 /* ONE SPORT'S SCREEN — the badminton and cricket TVs (2026-10-28).
    ──────────────────────────────────────────────────────────────────────────
@@ -60,10 +59,11 @@ const COMING_UP_STYLE: CSSProperties = {
    cricket TV draws exactly what it did, whatever a payload carries. And the offers ride
    the KEYED feed only: unkeyed, this page shows today's board and no code.
 
-   `music` (2026-11-13): the static "SCAN FOR MUSIC" code for the Main Door speaker's
-   open page (MusicQr.tsx), in the band. ONLY RENDER["badminton-board"] passes it. It
-   needs no feed, so it shows keyed or not; under `extend` it hides while the panel is
-   up (ExtendBand). */
+   `music` (2026-11-13): the band's code takes turns between the booking page and the
+   Main Door speaker's open page (app/board/band-face.ts). ONLY RENDER["badminton-board"]
+   passes it, and it works only with `extend`, because the turn-taking lives in
+   ExtendBand beside the panel test that hides every band code. It needs no feed, so it
+   runs keyed or not. */
 export default function SportBoard({ sport, extend = false, music = false }: { sport: BoardSport; extend?: boolean; music?: boolean }) {
   useReloadOnDeploy();
   /* No heartbeat here: TvScreen.tsx beats once per page, named by the TV. */
@@ -114,7 +114,7 @@ export default function SportBoard({ sport, extend = false, music = false }: { s
 
       {extend
         ? <ExtendBand p={p} stale={stale} stamp={<ScreenStamp style={BAND_STAMP} />} music={music} />
-        : <BookingBand stamp={<ScreenStamp style={BAND_STAMP} />} music={music ? <MusicQr /> : undefined} />}
+        : <BookingBand stamp={<ScreenStamp style={BAND_STAMP} />} />}
     </div>
     </div>
   );
