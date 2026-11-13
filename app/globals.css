@@ -625,58 +625,60 @@ html { scroll-behavior: smooth; }
 :root[data-theme="light"] .opening-glow      { animation: none; border-color: var(--ember-ink); }
 :root[data-theme="light"] .opening-glow-text { animation: none; text-shadow: none; color: var(--ember-ink); }
 
-/* ── LIVE NOW badge (app/components/LiveNowBadge.tsx), 2026-11-12 ──────────────
-   On screen only while YouTube is actually serving a broadcast, so these rules are
-   invisible the rest of the time. Built on the same idea as the nav's .opening-glow
-   chip above, and carrying the same two overrides for the same reasons: no pulse when
-   the visitor has asked for less motion, and no halo in light mode, where a bloom on a
-   pale ground reads as a smudge rather than a glow.
+/* LIVE NOW badge (app/components/LiveNowBadge.tsx). Red, 2026-11-12.
+   ---------------------------------------------------------------------------------
+   Aniket: "put the LIVE NOW in RED, bright RED, and put it near the green 24x7 sign."
 
-   The colours are here rather than on the element because the light-theme rule has to
-   be able to win, and an inline style outranks any selector. */
-@keyframes live-now-breathe {
-  0%, 100% { box-shadow: 0 0  8px rgba(248, 155, 114, 0.30), 0 0 20px rgba(248, 155, 114, 0.12); }
-  50%      { box-shadow: 0 0 16px rgba(248, 155, 114, 0.60), 0 0 34px rgba(248, 155, 114, 0.26); }
-}
-@keyframes live-now-blink {
-  0%, 100% { opacity: 1;    transform: scale(1); }
-  50%      { opacity: 0.35; transform: scale(0.78); }
+   So it is a sibling of .open-chip above and borrows its geometry exactly, but it is a
+   SOLID fill where the green one is a soft tint. That is the hierarchy on purpose: the
+   club being open is a standing fact and children being on camera right now is news.
+
+   WHY NOT THE BRIGHTEST RED THERE IS. White on #FF2D2D is about 3.3:1, and at 0.82rem
+   this is not large text, so it needs 4.5:1. #E11D2E keeps the hue unmistakably bright
+   red and lands near 4.9:1. The fill means neither theme changes it, which is also why
+   there is no light-theme override here where .open-chip needs one.
+
+   The dot reuses the green chip's @keyframes open-dot rather than owning a second
+   identical animation, so the two chips blink in step. */
+:root {
+  --color-live: #E11D2E;
 }
 
-.live-now-pill {
-  background: var(--color-ink-2);
-  border: 1px solid var(--color-ember);
-  color: var(--color-ember);
-  animation: live-now-breathe 2.4s ease-in-out infinite;
+.live-chip,
+.live-sub {
+  background: var(--color-live);
+  color: #FFFFFF;
+  font-family: var(--font-cond);
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+  /* NO display here. Nav.tsx sets it with Tailwind, and an unlayered display would beat
+     the layered utilities and defeat `hidden` -- the bug .open-chip records above. */
 }
-.live-now-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 9999px;
-  background: var(--color-ember);
+.live-chip {
+  font-size: 0.82rem;
+  letter-spacing: 0.16em;
+  padding: 7px 12px;
+}
+.live-sub {
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  padding: 4px 8px;
+}
+
+.live-chip .live-dot,
+.live-sub .live-dot {
+  border-radius: 50%;
+  background: currentColor;
   flex: none;
-  animation: live-now-blink 1.4s ease-in-out infinite;
+  animation: open-dot 1.4s ease-in-out infinite;
 }
+.live-chip .live-dot { width: 7px; height: 7px; }
+.live-sub .live-dot { width: 5px; height: 5px; }
 
-/* Keep the glow, drop the pulse — as .opening-glow does. */
+/* A visitor who has asked for less motion still gets the badge, just not the blink. */
 @media (prefers-reduced-motion: reduce) {
-  .live-now-pill {
-    animation: none;
-    box-shadow: 0 0 12px rgba(248, 155, 114, 0.42);
-  }
-  .live-now-dot { animation: none; }
+  .live-chip .live-dot,
+  .live-sub .live-dot { animation: none; }
 }
-
-/* Light mode: the halo becomes a smudge, so the badge keeps the border and the blinking
-   dot and drops the bloom. The LABEL goes near-black rather than --ember-ink, which the
-   rest of the light theme uses happily at display sizes but which lands near 4:1 on this
-   #EEF2F6 ground — too thin for a 10px label tracked out to 0.18em. Ember stays on the
-   border and the dot, where it is signal rather than text, and the words stay readable.
-   The background needs no override: --color-ink-2 is itself themed. */
-:root[data-theme="light"] .live-now-pill {
-  animation: none;
-  box-shadow: none;
-  border-color: var(--ember-ink);
-  color: var(--color-bone);
-}
-:root[data-theme="light"] .live-now-dot { background: var(--ember-ink); }

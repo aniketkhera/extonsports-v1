@@ -6,6 +6,7 @@ import { SPORT_ORDER } from "../../lib/rates";
 import { BOOK_COURT_URL } from "../../lib/booking";
 import LogoGlobe from "./LogoGlobe";
 import ThemeToggle from "./ThemeToggle";
+import LiveNowBadge from "./LiveNowBadge";
 
 const navLinks = [
   { label: "Sports", href: "/#sports" },
@@ -69,9 +70,16 @@ export default function Nav() {
             <span>
               EXTON <span className="brand-accent">SPORTS CENTER</span>
             </span>
-            <span className="open-sub inline-flex items-center gap-[5px] sm:hidden" aria-hidden="true">
-              <span className="open-dot" />
-              Open 24×7
+            {/* The phone line. LIVE NOW joins OPEN 24×7 here rather than becoming a
+                THIRD line: the children of this wrapper stack below sm, and a third row
+                would push the 64px header open. Off air the badge renders null and this
+                is the one chip it has always been. */}
+            <span className="inline-flex items-center gap-[5px] sm:hidden">
+              <span className="open-sub inline-flex items-center gap-[5px]" aria-hidden="true">
+                <span className="open-dot" />
+                Open 24×7
+              </span>
+              <LiveNowBadge variant="sub" className="inline-flex" />
             </span>
           </span>
         </Link>
@@ -92,6 +100,13 @@ export default function Nav() {
           <span className="open-dot" aria-hidden="true" />
           <span className="md:hidden xl:inline">Open&nbsp;</span>24×7
         </span>
+
+        {/* LIVE NOW, beside the green chip because that is where the club's status
+            already lives. Only on screen while a broadcast is actually on air, so the
+            widths worked out for .open-chip above are untouched the rest of the time;
+            see the measurements in the commit. A link, because the thing a visitor
+            wants next is the page that gets them a watch link. */}
+        <LiveNowBadge asLink className="hidden sm:inline-flex" />
 
         {/* The status chip beside the title — persistent (nav is sticky) and links
             to the booking section. Same glow and same breathing dot it has always

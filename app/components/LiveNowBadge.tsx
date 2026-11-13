@@ -2,42 +2,46 @@
 
 /* The LIVE NOW badge. 2026-11-12.
    ──────────────────────────────────────────────────────────────────────────────
-   Aniket, 2026-11-12: "if we are streaming - show a LIVE NOW glowing on this page, as
-   well as the top of extonsports.com homepage."
+   Aniket: "if we are streaming - show a LIVE NOW glowing on this page, as well as the
+   top of extonsports.com homepage", then: "put the LIVE NOW in RED, bright RED, and put
+   it near the green 24x7 sign."
 
-   WHY A CLIENT COMPONENT AND NOT A SERVER ONE. The homepage is prerendered and rebuilt at
-   most hourly (app/page.tsx: `export const revalidate = 3600`), so anything the server
-   renders about on-air state is stale by up to an hour — it would still say LIVE NOW
-   forty minutes after the coaches went home. This polls instead, which also means the
-   badge appears on a page already open when a session starts, with no refresh.
+   So it lives in the nav beside `.open-chip`, and it is a sibling of that chip in every
+   way except loudness: same geometry, solid red fill instead of a soft green tint. The
+   club being open is a standing fact; children being on camera right now is news.
 
-   IT RENDERS NOTHING WHEN OFF AIR. Not a greyed-out pill, not "not live" — nothing. The
-   page off air must look exactly as it did before this existed.
+   TWO SIZES, FOR THE REASON THE GREEN CHIP HAS TWO. A chip cannot sit beside the wordmark
+   on a phone — Nav.tsx works the arithmetic out in full, and the short version is that the
+   wordmark already spends every spare pixel below ~423px. So from `sm` up this is a chip
+   on the nav row, and below `sm` it joins OPEN 24×7 on the second line under the wordmark.
+   Same solution, same place, so there is one pattern to understand rather than two.
 
-   COLOURS LIVE IN globals.css, NOT HERE. LiveGate.tsx records that Tailwind's
-   arbitrary-value utilities (`bg-[var(--color-ink-2)]`) are resolved at build time and did
-   not follow the `:root[data-theme="light"]` override, so a dark token painted a light
-   surface. Its fix was inline styles. The fix here is a plain class instead, because this
-   badge needs a light-theme rule of its own — the halo reads as a smudge on a pale ground,
-   exactly as the nav's `.opening-glow` chip does — and an inline style outranks any rule a
-   stylesheet could write.
+   WHY A CLIENT COMPONENT. The homepage is prerendered and rebuilt at most hourly
+   (app/page.tsx: `export const revalidate = 3600`), so anything the server renders about
+   on-air state is stale by up to an hour — it would still say LIVE NOW forty minutes after
+   the coaches went home. Polling also means the badge appears on a page already open when
+   a session starts, with no refresh.
 
-   EMBER, NOT RED. A red dot is the convention, but this palette has no red token (only
-   ember, green and the greys) and inventing one for a badge would leave an off-palette
-   colour for the next person to wonder about. Ember is the site's attention colour and
-   the words carry the meaning. */
+   IT RENDERS NOTHING WHEN OFF AIR. Not a greyed-out chip, not "not live" — nothing. The
+   nav off air is exactly the nav that was there before this existed.
+
+   Colours live in globals.css (`.live-chip`, `.live-sub`), not here: the fill has to be
+   able to carry a theme rule if it ever needs one, and an inline style outranks any
+   selector a stylesheet could write. */
 
 import { useEffect, useState } from 'react'
 import { LIVE_NOW_COPY, LIVE_STATUS_PATH, parseLiveStatus, pollDelayMs } from './live-now-pure'
 
 type Props = {
-  /** The homepage badge is a way in to /live. The badge ON /live has nowhere to go. */
+  /** 'chip' is the nav row and /live; 'sub' is the phone line under the wordmark. */
+  variant?: 'chip' | 'sub'
+  /** A way in to /live. Never set it for 'sub': that one renders inside the wordmark's
+   *  own <Link>, and an anchor inside an anchor is invalid HTML. */
   asLink?: boolean
   className?: string
-  style?: React.CSSProperties
 }
 
-export default function LiveNowBadge({ asLink = false, className = '', style }: Props) {
+export default function LiveNowBadge({ variant = 'chip', asLink = false, className = '' }: Props) {
   const [live, setLive] = useState(false)
 
   useEffect(() => {
@@ -68,8 +72,7 @@ export default function LiveNowBadge({ asLink = false, className = '', style }: 
         /* Two strikes before going dark, not one. The badge must not claim a camera is
            on children when we cannot confirm it — but a single dropped request on a
            phone changing cell mid-session is not evidence the session ended, and
-           blinking the badge off and on reads as a broken site. Two consecutive
-           failures is ~90 s of silence, which is a real outage. */
+           blinking the badge off and on reads as a broken site. */
         if (!stopped && failures >= 2) setLive(false)
       }
       if (!stopped) arm(pollDelayMs(failures))
@@ -90,29 +93,25 @@ export default function LiveNowBadge({ asLink = false, className = '', style }: 
 
   if (!live) return null
 
+  const base = variant === 'sub' ? 'live-sub' : 'live-chip'
+  const cls = `${base} items-center gap-2 shrink-0 ${className}`
+
   const inner = (
     <>
-      <span aria-hidden="true" className="live-now-dot" />
+      <span aria-hidden="true" className="live-dot" />
       <span>{LIVE_NOW_COPY.label}</span>
-      {/* Announced once when it appears; the dot and the pill are decoration. */}
-      <span className="sr-only">{LIVE_NOW_COPY.announce}</span>
     </>
   )
 
-  const shared =
-    'live-now-pill text-mono inline-flex items-center gap-2 px-3 py-1.5 ' +
-    'text-[0.62rem] tracking-[0.18em] ' +
-    className
-
-  /* aria-live on a wrapper that is always in the tree would be better, but this badge is
-     mounted and unmounted wholesale; role=status on the thing itself is announced by
-     screen readers when it is inserted, which is exactly the moment that matters. */
+  /* role=status is announced by a screen reader when the element is inserted, which is
+     exactly the moment that matters; the badge is mounted and unmounted wholesale rather
+     than living in the tree with its text swapped. */
   return asLink ? (
-    <a href={LIVE_NOW_COPY.href} title={LIVE_NOW_COPY.linkTitle} role="status" className={shared} style={style}>
+    <a href={LIVE_NOW_COPY.href} title={LIVE_NOW_COPY.linkTitle} role="status" className={cls}>
       {inner}
     </a>
   ) : (
-    <span role="status" className={shared} style={style}>
+    <span role="status" aria-label={LIVE_NOW_COPY.announce} className={cls}>
       {inner}
     </span>
   )
