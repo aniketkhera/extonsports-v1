@@ -7,6 +7,7 @@ import { PhoneNumber } from "./PhoneIcon";
 import LogoGlobe from "./LogoGlobe";
 import { CONTACT_PHONE } from "../../lib/legal";
 import { EMBER, INK, LABEL, ORANGE, RULE, RULE_SOFT } from "./tv-palette";
+import type { BandFace } from "../board/band-face";
 
 /* The top strip and the bottom band of the in-club React screens.
    ──────────────────────────────────────────────────────────────────────────
@@ -58,7 +59,7 @@ export const secondTicker = makeTicker(1_000, { align: true });
    NOT measured: three live groups on every sport at once — with the 4.8vh strip
    that case had ~9px of NOW height to spare at 1080p, so it will now lose rows. */
 export const BOOK_BAND = "calc(13 * var(--vh))";
-export const BOOK_QR = "calc(10.4 * var(--vh))";
+const BOOK_QR = "calc(10.4 * var(--vh))";
 /** Air between the boxes and the band's top rule. */
 export const BAND_GAP = "calc(1.6 * var(--vh))";
 /** The booking line and the number — large, because both are meant to be acted on. */
@@ -70,6 +71,28 @@ const BAND_PILL_TEXT = "calc(1.6 * var(--vw))";
  *  button opens. The QR image (public/reception/book-qr.svg) is GENERATED from
  *  this string; change one and regenerate the other. */
 const BOOK_URL = "https://app.orangish.io/book-court/exton-sports?theme=light";
+
+/** The badminton TV's other code (2026-11-13, PR #194; Aniket: "point the QR to the open
+ *  page"): the Main Door speaker's page, which next.config.ts redirects /music to — public,
+ *  no login, so the code adds no access the address did not already give; it hands the
+ *  address to everyone in the hall. Close that page and this code dies with it.
+ *  public/reception/music-qr.svg is GENERATED from this string (python segno, version 3,
+ *  level Q — asked for M, segno boosts it when the version has room — 4-module quiet zone,
+ *  #0B1623 on white); its <title> carries the URL and a test checks they agree. */
+const MUSIC_URL = "https://extonsports.com/music";
+
+/** An eighth note, drawn: the band's face has no ♪, and a TV whose fallback font lacks it
+ *  would draw a box. Orange, as the band's other accents are; sized to the line's text. */
+function MusicNote() {
+  return (
+    <svg
+      viewBox="0 0 16 20" aria-hidden
+      style={{ display: "inline-block", height: "0.95em", width: "auto", verticalAlign: "-0.12em", marginRight: "0.35em", overflow: "visible" }}
+    >
+      <path d="M7 1.5v12.2a3.6 3.2 0 1 0 1.8 2.8V6.2c2.2.4 4 1.8 4.8 4.2.5-3.8-2-6.6-4.8-7.4V1.5z" fill={ORANGE} />
+    </svg>
+  );
+}
 
 /** Where the version stamp sits in the band (ScreenStamp through BookingBand's `stamp`;
  *  2026-10-20, with the freeze watchdog's heartbeat): bottom right on the band's 3.42vw
@@ -222,12 +245,82 @@ export function ScreenHeader({ stale = false }: { stale?: boolean }) {
  *  no grid track; unset, or on an unkeyed screen without ?diag, it renders nothing
  *  and the band is unchanged.
  *
- *  `music` (2026-11-13) is a slot for the badminton TV's music code (MusicQr.tsx), in
- *  the free run between the orangish.io pill and the booking line. Absolute, like
- *  `stamp`, so it takes no grid track and moves nothing. Only SportBoard fills it, and
- *  only when told to (RENDER["badminton-board"]); unset — every other screen — the band
- *  is exactly the markup it was. */
-export function BookingBand({ showBookQr = true, stamp, music }: { showBookQr?: boolean; stamp?: ReactNode; music?: ReactNode } = {}) {
+ *  `face` (2026-11-13) is the badminton TV's: its booking code and its music code take
+ *  turns in the one spot (app/board/band-face.ts says when, and why it replaced #194's
+ *  separate music tile). Given a face, the middle track holds BOTH lines in one grid
+ *  cell, one visible: the cell is as wide as the wider — the booking line — and the music
+ *  line is right-aligned in it, so its code lands on exactly the booking code's pixels
+ *  and the booking line does not move when the faces change. The hidden one is
+ *  `visibility: hidden`: no pixels for a camera, no focus, no clicks, nothing for a
+ *  screen reader. Unset — every other screen — or with the code hidden (showBookQr
+ *  false, the extend panel up), the band is exactly the markup it was. */
+export function BookingBand({ showBookQr = true, stamp, face }: { showBookQr?: boolean; stamp?: ReactNode; face?: BandFace } = {}) {
+  const bookLink = (
+    <a
+      href={BOOK_URL}
+      aria-label="Book a court or lane at Exton Sports"
+      style={{
+        display: "flex", alignItems: "center", gap: "calc(1.4 * var(--vw))",
+        color: "inherit", textDecoration: "none", pointerEvents: "auto", cursor: "pointer",
+      }}
+    >
+      <span style={{ fontWeight: 500, letterSpacing: "0.02em" }}>
+        For bookings, go to{" "}
+        <span style={{ color: ORANGE, fontWeight: 600 }}>extonsports.com</span>
+        {showBookQr && <span style={{ color: LABEL }}> or scan</span>}
+      </span>
+      {showBookQr && (
+        /* eslint-disable-next-line @next/next/no-img-element -- a static SVG; next/image adds nothing here */
+        <img
+          src="/reception/book-qr.svg"
+          alt={`QR code: ${BOOK_URL}`}
+          style={{
+            height: BOOK_QR, width: BOOK_QR, display: "block", borderRadius: "calc(0.5 * var(--vh))",
+            boxShadow: "0 calc(0.4 * var(--vh)) calc(1.4 * var(--vh)) rgba(0,0,0,0.45)",
+          }}
+        />
+      )}
+    </a>
+  );
+  /* The music line mirrors the booking line's shape — words, the accent word in orange,
+     the grey ", scan", then the code at BOOK_QR — so the swap reads as the same sign
+     saying something else, not a new thing appearing. Its accessible name starts with its
+     visible words (WCAG 2.5.3). */
+  const musicLink = (
+    <a
+      href={MUSIC_URL}
+      data-music-qr
+      aria-label="To change the music, scan: opens the Exton Sports speaker remote"
+      style={{
+        display: "flex", alignItems: "center", gap: "calc(1.4 * var(--vw))",
+        color: "inherit", textDecoration: "none", pointerEvents: "auto", cursor: "pointer",
+      }}
+    >
+      <span style={{ fontWeight: 500, letterSpacing: "0.02em" }}>
+        <MusicNote />
+        To change the{" "}
+        <span style={{ color: ORANGE, fontWeight: 600 }}>music</span>
+        <span style={{ color: LABEL }}>, scan</span>
+      </span>
+      {/* eslint-disable-next-line @next/next/no-img-element -- a static SVG; next/image adds nothing here */}
+      <img
+        src="/reception/music-qr.svg"
+        alt={`QR code: ${MUSIC_URL}`}
+        style={{
+          height: BOOK_QR, width: BOOK_QR, display: "block", borderRadius: "calc(0.5 * var(--vh))",
+          boxShadow: "0 calc(0.4 * var(--vh)) calc(1.4 * var(--vh)) rgba(0,0,0,0.45)",
+        }}
+      />
+    </a>
+  );
+  const middle = face === undefined || !showBookQr
+    ? bookLink
+    : (
+      <div data-band-face={face} style={{ display: "grid", justifyItems: "end", alignItems: "center" }}>
+        <div style={{ gridArea: "1 / 1", visibility: face === "book" ? "visible" : "hidden" }}>{bookLink}</div>
+        <div style={{ gridArea: "1 / 1", visibility: face === "music" ? "visible" : "hidden" }}>{musicLink}</div>
+      </div>
+    );
   return (
     /* Full width under the boxes, so it reads as its own line on the wall rather
        than as part of them.
@@ -268,35 +361,7 @@ export function BookingBand({ showBookQr = true, stamp, music }: { showBookQr?: 
       <div style={{ justifySelf: "start", fontSize: BAND_PILL_TEXT }}>
         <OrangishPill tv />
       </div>
-      {/* `music` here, between the pill and the booking line, is where it SITS, so keyboard
-          focus meets it in reading order (review, 2026-11-13). It is absolute, so the grid
-          does not place it and the three tracks are unchanged. */}
-      {music}
-      <a
-        href={BOOK_URL}
-        aria-label="Book a court or lane at Exton Sports"
-        style={{
-          display: "flex", alignItems: "center", gap: "calc(1.4 * var(--vw))",
-          color: "inherit", textDecoration: "none", pointerEvents: "auto", cursor: "pointer",
-        }}
-      >
-        <span style={{ fontWeight: 500, letterSpacing: "0.02em" }}>
-          For bookings, go to{" "}
-          <span style={{ color: ORANGE, fontWeight: 600 }}>extonsports.com</span>
-          {showBookQr && <span style={{ color: LABEL }}> or scan</span>}
-        </span>
-        {showBookQr && (
-          /* eslint-disable-next-line @next/next/no-img-element -- a static SVG; next/image adds nothing here */
-          <img
-            src="/reception/book-qr.svg"
-            alt={`QR code: ${BOOK_URL}`}
-            style={{
-              height: BOOK_QR, width: BOOK_QR, display: "block", borderRadius: "calc(0.5 * var(--vh))",
-              boxShadow: "0 calc(0.4 * var(--vh)) calc(1.4 * var(--vh)) rgba(0,0,0,0.45)",
-            }}
-          />
-        )}
-      </a>
+      {middle}
       <div style={{ justifySelf: "end", fontWeight: 500, letterSpacing: "0.06em", fontVariantNumeric: "tabular-nums" }}>
         <PhoneNumber number={CONTACT_PHONE} color={ORANGE} />
       </div>

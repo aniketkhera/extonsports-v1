@@ -5,7 +5,7 @@ import { useTick } from "../components/ticker";
 import { BookingBand, secondTicker } from "../components/ScreenChrome";
 import { ComingUp, type Panel } from "./ReceptionBoard";
 import { drawnOffers, panelFace, type Line, type PanelFace, type Qr, type Tone } from "../board/extend-feed";
-import { MusicQr } from "./MusicQr";
+import { bandFace } from "../board/band-face";
 import styles from "./ExtendPanel.module.css";
 
 /* THE EXTEND PANEL — the badminton TV's offer to extend a booking that is ending
@@ -318,11 +318,12 @@ export function ExtendCell({ p, today, stale, style }: { p: Panel; today: string
 }
 
 /** The booking band, without its small QR while the panel is up (§10.3).
- *  `music` (2026-11-13): the badminton TV's music code (MusicQr.tsx) goes on exactly
- *  this `up` too, so while a booking is ending the extension's codes have the wall to
- *  themselves. */
+ *  `music` (2026-11-13): the band's one code takes turns between the booking page and
+ *  the Main Door speaker page (band-face.ts), on this same tick. With the panel up the
+ *  face is "book" and showBookQr false, so the band shows no code at all and the
+ *  extension's codes have the wall to themselves. */
 export function ExtendBand({ p, stale, stamp, music = false }: { p: Panel | undefined; stale: boolean; stamp?: ReactNode; music?: boolean }) {
   const ms = useTick(secondTicker);
   const up = !!(p?.extend && ms && drawnOffers(p.extend.view, ms, stale).length);
-  return <BookingBand showBookQr={!up} stamp={stamp} music={music && !up ? <MusicQr /> : undefined} />;
+  return <BookingBand showBookQr={!up} stamp={stamp} face={music ? bandFace(ms, up) : undefined} />;
 }

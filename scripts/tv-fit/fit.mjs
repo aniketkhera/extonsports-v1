@@ -126,29 +126,32 @@ function measure() {
     res.nowText = [...now.querySelectorAll('div')].filter((d) => d.children.length === 0 && d.textContent.trim()).map((d) => d.textContent.trim())
     res.notes = [...now.querySelectorAll('span')].map((s) => s.textContent.trim()).filter((t) => /FREE AFTER|NEXT GROUP|MOVE TO/.test(t))
   }
-  const bandQr = document.querySelector('img[src="/reception/book-qr.svg"]')
-  const orScan = [...document.querySelectorAll('span')].some((s) => s.textContent.trim() === 'or scan')
-  res.bandQr = !!bandQr
-  if (wrap && (bandQr || orScan)) bad.push('the band still shows its booking QR beside the panel')
-  if (!wrap && !bandQr) bad.push('no panel, yet the band QR is hidden')
-  /* The music code (MusicQr.tsx, 2026-11-13): it goes and comes back with the booking QR, and
-     sits wholly between the orangish.io pill and the booking line — never over either. */
-  const musicQr = document.querySelector('[data-music-qr]')
-  res.musicQr = !!musicQr
-  if (wrap && musicQr) bad.push('the band shows the music QR beside the panel')
-  if (!wrap && !musicQr) bad.push('no panel, yet the music QR is hidden')
-  if (musicQr) {
-    const m = r(musicQr)
-    const book = document.querySelector('a[aria-label="Book a court or lane at Exton Sports"]')
-    const pill = book?.parentElement?.firstElementChild
-    const band = book?.parentElement
-    if (pill && m.left < r(pill).right + 4) bad.push(`the music QR overlaps the orangish.io pill (${Math.round(r(pill).right + 4 - m.left)} px)`)
-    if (book && m.right > r(book).left - 4) bad.push(`the music QR overlaps the booking line (${Math.round(m.right - r(book).left + 4)} px)`)
-    if (band && (m.top < r(band).top - 0.5 || m.bottom > r(band).bottom + 0.5)) bad.push('the music QR leaves the band')
-    const img = musicQr.querySelector('img')
-    res.music = { left: Math.round(m.left), right: Math.round(m.right), qrCss: img ? +r(img).width.toFixed(1) : null,
-      pillRight: pill ? Math.round(r(pill).right) : null, bookLeft: book ? Math.round(r(book).left) : null }
+  /* The band's codes (2026-11-13): on the badminton TV the booking code and the music code take
+     turns in one spot (app/board/band-face.ts). Only what is VISIBLE counts — with a face, both
+     links are in the DOM and the idle one is visibility:hidden. Never a code beside the panel;
+     without the panel exactly one; the music code on the booking code's very pixels; and the
+     music line no wider than the booking line, or the booking line would move at each swap. */
+  const seen = (el) => !!el && el.checkVisibility({ visibilityProperty: true })
+  const bookImg = document.querySelector('img[src="/reception/book-qr.svg"]')
+  const musicImg = document.querySelector('img[src="/reception/music-qr.svg"]')
+  const bandQr = seen(bookImg)
+  const musicQr = seen(musicImg)
+  const orScan = [...document.querySelectorAll('span')].some((s) => s.textContent.trim() === 'or scan' && seen(s))
+  res.bandQr = bandQr
+  res.musicQr = musicQr
+  res.face = document.querySelector('[data-band-face]')?.dataset.bandFace ?? null
+  if (wrap && (bandQr || orScan || musicQr)) bad.push('the band still shows a code beside the panel')
+  if (!wrap && !bandQr && !musicQr) bad.push('no panel, yet the band shows no code')
+  if (bandQr && musicQr) bad.push('the band shows both codes at once')
+  if (bookImg && musicImg) {
+    const b = r(bookImg)
+    const m = r(musicImg)
+    if (Math.abs(b.left - m.left) > 0.5 || Math.abs(b.top - m.top) > 0.5 || Math.abs(b.width - m.width) > 0.5) bad.push("the music code is not on the booking code's pixels")
+    res.musicAt = [Math.round(m.left), Math.round(m.top), +m.width.toFixed(1)]
   }
+  const bookLink = document.querySelector('a[aria-label="Book a court or lane at Exton Sports"]')
+  const musicLink = document.querySelector('a[data-music-qr]')
+  if (bookLink && musicLink && r(musicLink).width > r(bookLink).width + 0.5) bad.push('the music line is wider than the booking line, so the booking line moves at each swap')
   res.bad = bad
   return res
 }
@@ -197,15 +200,64 @@ for (const size of sizes) {
     await ctx.close()
   }
 }
+/* THE ROTATION (2026-11-13). A no-panel answer read twice, 15 s apart on the frozen clock: the
+   face must change, each read must show exactly one code and the matching line, and both faces
+   are saved as rotate-book.png / rotate-music.png for decode.py and an eye. */
+for (const size of sizes) {
+  const s = SCENARIOS.movedPaid
+  const { body } = payload('movedPaid', s, qrFor)
+  const t = instantOf(s)
+  const ctx = await browser.newContext({ viewport: { width: size.w, height: size.h }, deviceScaleFactor: size.dpr })
+  const page = await ctx.newPage()
+  await page.clock.install({ time: t })
+  await page.clock.pauseAt(t)
+  const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'authorization, content-type', 'access-control-allow-methods': 'GET, POST, OPTIONS' }
+  await page.route('https://app.orangish.io/api/public/**', (route) => {
+    const req = route.request()
+    if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors })
+    if (req.url().includes('/api/public/court-board')) return route.fulfill({ status: 200, contentType: 'application/json', headers: cors, body: JSON.stringify(body) })
+    return route.fulfill({ status: 204, headers: cors })
+  })
+  await page.route('**/api/screen-version**', (route) => route.fulfill({ contentType: 'application/json', body: '{"version":"tv-fit"}' }))
+  await page.goto(`${base}/badminton#k=${'f'.repeat(43)}`, { waitUntil: 'networkidle' })
+  await page.clock.runFor(2000)
+  await page.waitForTimeout(500)
+  const reads = []
+  for (let k = 0; k < 2; k++) {
+    const g = await page.evaluate(() => {
+      const seen = (el) => !!el && el.checkVisibility({ visibilityProperty: true })
+      const text = document.querySelector('[data-band-face]')?.innerText ?? ''
+      return {
+        face: document.querySelector('[data-band-face]')?.dataset.bandFace ?? null,
+        book: seen(document.querySelector('img[src="/reception/book-qr.svg"]')),
+        music: seen(document.querySelector('img[src="/reception/music-qr.svg"]')),
+        bookLine: seen(document.querySelector('a[aria-label="Book a court or lane at Exton Sports"]')),
+        musicLine: seen(document.querySelector('a[data-music-qr]')),
+        text: text.replace(/\s+/g, ' ').trim(),
+      }
+    })
+    reads.push(g)
+    await page.screenshot({ path: join(out, size.tag, `rotate-${g.face}.png`) })
+    if (k === 0) { await page.clock.runFor(15_000); await page.waitForTimeout(300) }
+  }
+  const ok = reads[0].face && reads[1].face && reads[0].face !== reads[1].face &&
+    reads.every((g) => g.book !== g.music && g.music === (g.face === 'music') && g.bookLine === g.book && g.musicLine === g.music)
+  if (!ok) failed++
+  report[`${size.tag}/rotate`] = { reads } // an object, like every other entry: decode.py walks them
+  console.log(`${ok ? 'ok  ' : 'FAIL'} ${size.tag.padEnd(14)} rotate               ${reads.map((g) => `${g.face}: book ${g.book} music ${g.music}`).join(' → ')}`)
+  await ctx.close()
+}
 /* THE GATE. The same answer, offers and all, on the screens that must never draw them: the
    cricket TV and reception (and the vestibule, which shares reception's parts). No panel, the
    band's booking QR as it was (the vestibule never had one), and the entry's line FREE AFTER
    alone (Q19). Last, the badminton TV UNKEYED, as it is today: its page reads the site's relay,
    here answering with offers it would never forward — still nothing, because an unkeyed page
    does not read `extend` at all. */
-/* The music code (2026-11-13) is the badminton TV's alone: none on the other three, and on the
-   unkeyed badminton page it shows (it is static and needs no feed). */
-for (const [path, bandQr, keyed, musicQr] of [['/cricket', true, true, false], ['/reception', true, true, false], ['/vestibule', false, true, false], ['/badminton', true, false, true]]) {
+/* The music code (2026-11-13) is the badminton TV's alone: not even in the DOM on the other
+   three; on the unkeyed badminton page the two codes still take turns (it needs no feed), so
+   exactly one of them shows, whichever the frozen clock picks. `codes`: 'book' = the booking
+   code alone, 'none' = no code, 'one' = exactly one of the two. */
+for (const [path, codes, keyed] of [['/cricket', 'book', true], ['/reception', 'book', true], ['/vestibule', 'none', true], ['/badminton', 'one', false]]) {
   const s = SCENARIOS.one
   const { body } = payload('one', s, qrFor)
   const t = instantOf(s)
@@ -222,15 +274,22 @@ for (const [path, bandQr, keyed, musicQr] of [['/cricket', true, true, false], [
   await page.goto(`${base}${path}${keyed ? `#k=${'f'.repeat(43)}` : ''}`, { waitUntil: 'networkidle' })
   await page.clock.runFor(2000)
   await page.waitForTimeout(500)
-  const g = await page.evaluate(() => ({
-    panel: !!document.querySelector('[data-extend-panel]'),
-    bandQr: !!document.querySelector('img[src="/reception/book-qr.svg"]'),
-    scan: document.body.innerText.includes('SCAN TO EXTEND'),
-    freeAfter: document.body.innerText.includes('FREE AFTER'),
-    inApp: document.body.innerText.includes('EXTEND IN THE APP'),
-    musicQr: !!document.querySelector('[data-music-qr]'),
-  }))
-  const ok = !g.panel && g.bandQr === bandQr && !g.scan && !g.inApp && g.musicQr === musicQr
+  const g = await page.evaluate(() => {
+    const seen = (el) => !!el && el.checkVisibility({ visibilityProperty: true })
+    return {
+      panel: !!document.querySelector('[data-extend-panel]'),
+      bandQr: seen(document.querySelector('img[src="/reception/book-qr.svg"]')),
+      scan: document.body.innerText.includes('SCAN TO EXTEND'),
+      freeAfter: document.body.innerText.includes('FREE AFTER'),
+      inApp: document.body.innerText.includes('EXTEND IN THE APP'),
+      musicQr: seen(document.querySelector('img[src="/reception/music-qr.svg"]')),
+      musicInDom: !!document.querySelector('[data-music-qr]'),
+    }
+  })
+  const codesOk = codes === 'book' ? g.bandQr && !g.musicInDom
+    : codes === 'none' ? !g.bandQr && !g.musicInDom
+      : g.bandQr !== g.musicQr
+  const ok = !g.panel && codesOk && !g.scan && !g.inApp
   if (!ok) failed++
   report[`gate${path}${keyed ? '' : ' (unkeyed)'}`] = g
   console.log(`${ok ? 'ok  ' : 'FAIL'} gate ${(path + (keyed ? '' : ' unkeyed')).padEnd(19)} panel ${g.panel} · band QR ${g.bandQr} · music QR ${g.musicQr} · SCAN TO EXTEND ${g.scan} · FREE AFTER ${g.freeAfter} · IN THE APP ${g.inApp}`)
