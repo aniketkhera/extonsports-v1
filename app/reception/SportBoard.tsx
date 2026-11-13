@@ -7,6 +7,7 @@ import ScreenStamp from "../components/ScreenStamp";
 import { BG, INK, RULE_SOFT, BOX } from "../components/tv-palette";
 import { useCourtPanels, PANEL_BOX, PanelTitle, NowArea, ComingUp } from "./ReceptionBoard";
 import { ExtendCell, ExtendBand } from "./ExtendPanel";
+import BirthdayLine, { useBirthday } from "./BirthdayLine";
 
 /* ONE SPORT'S SCREEN — the badminton and cricket TVs (2026-10-28).
    ──────────────────────────────────────────────────────────────────────────
@@ -64,8 +65,10 @@ const COMING_UP_STYLE: CSSProperties = {
    passes it, and it works only with `extend`, because the turn-taking lives in
    ExtendBand beside the panel test that hides every band code. It needs no feed, so it
    runs keyed or not. */
-export default function SportBoard({ sport, extend = false, music = false }: { sport: BoardSport; extend?: boolean; music?: boolean }) {
+export default function SportBoard({ sport, extend = false, music = false, birthday = false }: { sport: BoardSport; extend?: boolean; music?: boolean; birthday?: boolean }) {
   useReloadOnDeploy();
+  /* `birthday` (2026-11-13, one evening): BirthdayLine.tsx. Only RENDER["cricket-board"] passes it. */
+  const greet = useBirthday(birthday);
   /* No heartbeat here: TvScreen.tsx beats once per page, named by the TV. */
   const { panels, today, stale } = useCourtPanels({ upcoming: UPCOMING_COUNT, upNextMax: UP_NEXT_MAX, nudges: true, extend });
   const p = panels.find((x) => x.sport === sport);
@@ -87,7 +90,9 @@ export default function SportBoard({ sport, extend = false, music = false }: { s
       <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
         {p && (
           <div style={{ ...PANEL_BOX, ...SCALED, flex: 1, minHeight: 0 }}>
-            <PanelTitle p={p} />
+            {greet
+              ? <div style={{ position: "relative" }}><PanelTitle p={p} /><BirthdayLine /></div>
+              : <PanelTitle p={p} />}
             <div
               style={{
                 flex: 1, minHeight: 0, display: "grid",

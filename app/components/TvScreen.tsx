@@ -59,7 +59,8 @@ const RENDER: Record<TvContent, (tv: TvEntry) => ReactNode> = {
      `music`: and alone has its band's code take turns with the Main Door speaker
      page's (2026-11-13, app/board/band-face.ts). */
   "badminton-board": () => <SportBoard sport="Badminton" extend music />,
-  "cricket-board": () => <SportBoard sport="Cricket" />,
+  /* `birthday`: "Happy Birthday Avyukth Tharun" until midnight 13 Nov (BirthdayLine.tsx). */
+  "cricket-board": () => <SportBoard sport="Cricket" birthday />,
   "our-club": () => <OurClubScreen />,
 };
 
