@@ -30,6 +30,8 @@ export const LIVE_COPY = {
   offAir: 'No session is on air right now.',
   offAirMore:
     'Coaching appears here a few minutes after the coaches start. If a session is running and you still see this, the stream has not come up — please tell the front desk.',
+  /** Under the off-air message; OffAirRefresh is what makes it true. */
+  autoSwitch: 'This page switches to the picture by itself when the session starts.',
   unknown: 'We can’t tell whether a session is on air right now.',
   unknownMore: 'This is a problem at our end, not yours. Please try again in a minute.',
   expired: 'This link has expired.',
