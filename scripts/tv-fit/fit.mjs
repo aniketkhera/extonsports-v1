@@ -131,6 +131,24 @@ function measure() {
   res.bandQr = !!bandQr
   if (wrap && (bandQr || orScan)) bad.push('the band still shows its booking QR beside the panel')
   if (!wrap && !bandQr) bad.push('no panel, yet the band QR is hidden')
+  /* The music code (MusicQr.tsx, 2026-11-13): it goes and comes back with the booking QR, and
+     sits wholly between the orangish.io pill and the booking line — never over either. */
+  const musicQr = document.querySelector('[data-music-qr]')
+  res.musicQr = !!musicQr
+  if (wrap && musicQr) bad.push('the band shows the music QR beside the panel')
+  if (!wrap && !musicQr) bad.push('no panel, yet the music QR is hidden')
+  if (musicQr) {
+    const m = r(musicQr)
+    const book = document.querySelector('a[aria-label="Book a court or lane at Exton Sports"]')
+    const pill = book?.parentElement?.firstElementChild
+    const band = book?.parentElement
+    if (pill && m.left < r(pill).right + 4) bad.push(`the music QR overlaps the orangish.io pill (${Math.round(r(pill).right + 4 - m.left)} px)`)
+    if (book && m.right > r(book).left - 4) bad.push(`the music QR overlaps the booking line (${Math.round(m.right - r(book).left + 4)} px)`)
+    if (band && (m.top < r(band).top - 0.5 || m.bottom > r(band).bottom + 0.5)) bad.push('the music QR leaves the band')
+    const img = musicQr.querySelector('img')
+    res.music = { left: Math.round(m.left), right: Math.round(m.right), qrCss: img ? +r(img).width.toFixed(1) : null,
+      pillRight: pill ? Math.round(r(pill).right) : null, bookLeft: book ? Math.round(r(book).left) : null }
+  }
   res.bad = bad
   return res
 }
@@ -185,7 +203,9 @@ for (const size of sizes) {
    alone (Q19). Last, the badminton TV UNKEYED, as it is today: its page reads the site's relay,
    here answering with offers it would never forward — still nothing, because an unkeyed page
    does not read `extend` at all. */
-for (const [path, bandQr, keyed] of [['/cricket', true, true], ['/reception', true, true], ['/vestibule', false, true], ['/badminton', true, false]]) {
+/* The music code (2026-11-13) is the badminton TV's alone: none on the other three, and on the
+   unkeyed badminton page it shows (it is static and needs no feed). */
+for (const [path, bandQr, keyed, musicQr] of [['/cricket', true, true, false], ['/reception', true, true, false], ['/vestibule', false, true, false], ['/badminton', true, false, true]]) {
   const s = SCENARIOS.one
   const { body } = payload('one', s, qrFor)
   const t = instantOf(s)
@@ -208,11 +228,12 @@ for (const [path, bandQr, keyed] of [['/cricket', true, true], ['/reception', tr
     scan: document.body.innerText.includes('SCAN TO EXTEND'),
     freeAfter: document.body.innerText.includes('FREE AFTER'),
     inApp: document.body.innerText.includes('EXTEND IN THE APP'),
+    musicQr: !!document.querySelector('[data-music-qr]'),
   }))
-  const ok = !g.panel && g.bandQr === bandQr && !g.scan && !g.inApp
+  const ok = !g.panel && g.bandQr === bandQr && !g.scan && !g.inApp && g.musicQr === musicQr
   if (!ok) failed++
   report[`gate${path}${keyed ? '' : ' (unkeyed)'}`] = g
-  console.log(`${ok ? 'ok  ' : 'FAIL'} gate ${(path + (keyed ? '' : ' unkeyed')).padEnd(19)} panel ${g.panel} · band QR ${g.bandQr} · SCAN TO EXTEND ${g.scan} · FREE AFTER ${g.freeAfter} · IN THE APP ${g.inApp}`)
+  console.log(`${ok ? 'ok  ' : 'FAIL'} gate ${(path + (keyed ? '' : ' unkeyed')).padEnd(19)} panel ${g.panel} · band QR ${g.bandQr} · music QR ${g.musicQr} · SCAN TO EXTEND ${g.scan} · FREE AFTER ${g.freeAfter} · IN THE APP ${g.inApp}`)
   await page.screenshot({ path: join(out, `gate-${path.slice(1)}${keyed ? '' : '-unkeyed'}.png`) })
   await ctx.close()
 }

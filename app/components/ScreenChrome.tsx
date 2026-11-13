@@ -58,7 +58,7 @@ export const secondTicker = makeTicker(1_000, { align: true });
    NOT measured: three live groups on every sport at once — with the 4.8vh strip
    that case had ~9px of NOW height to spare at 1080p, so it will now lose rows. */
 export const BOOK_BAND = "calc(13 * var(--vh))";
-const BOOK_QR = "calc(10.4 * var(--vh))";
+export const BOOK_QR = "calc(10.4 * var(--vh))";
 /** Air between the boxes and the band's top rule. */
 export const BAND_GAP = "calc(1.6 * var(--vh))";
 /** The booking line and the number — large, because both are meant to be acted on. */
@@ -220,8 +220,14 @@ export function ScreenHeader({ stale = false }: { stale?: boolean }) {
  *  With the band living here, the stamp arrives through a prop. Both screens pass
  *  <ScreenStamp style={BAND_STAMP} />, which is positioned absolutely, so it takes
  *  no grid track; unset, or on an unkeyed screen without ?diag, it renders nothing
- *  and the band is unchanged. */
-export function BookingBand({ showBookQr = true, stamp }: { showBookQr?: boolean; stamp?: ReactNode } = {}) {
+ *  and the band is unchanged.
+ *
+ *  `music` (2026-11-13) is a slot for the badminton TV's music code (MusicQr.tsx), in
+ *  the free run between the orangish.io pill and the booking line. Absolute, like
+ *  `stamp`, so it takes no grid track and moves nothing. Only SportBoard fills it, and
+ *  only when told to (RENDER["badminton-board"]); unset — every other screen — the band
+ *  is exactly the markup it was. */
+export function BookingBand({ showBookQr = true, stamp, music }: { showBookQr?: boolean; stamp?: ReactNode; music?: ReactNode } = {}) {
   return (
     /* Full width under the boxes, so it reads as its own line on the wall rather
        than as part of them.
@@ -262,6 +268,10 @@ export function BookingBand({ showBookQr = true, stamp }: { showBookQr?: boolean
       <div style={{ justifySelf: "start", fontSize: BAND_PILL_TEXT }}>
         <OrangishPill tv />
       </div>
+      {/* `music` here, between the pill and the booking line, is where it SITS, so keyboard
+          focus meets it in reading order (review, 2026-11-13). It is absolute, so the grid
+          does not place it and the three tracks are unchanged. */}
+      {music}
       <a
         href={BOOK_URL}
         aria-label="Book a court or lane at Exton Sports"
