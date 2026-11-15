@@ -54,13 +54,16 @@ const RENDER: Record<TvContent, (tv: TvEntry) => ReactNode> = {
   "court-board": () => <ReceptionBoard />,
   "starter-pack": () => <ExitScreen />,
   "board-and-promos": () => <VestibuleScreen />,
-  /* `extend`: the badminton TV alone draws the offers to extend a booking (2026-11-03,
-     SportBoard.tsx). Cricket is later, after its own audio test and key.
+  /* `extend`: the offers to extend a booking (2026-11-03, SportBoard.tsx). The badminton
+     TV first; the cricket TV too since 2026-11-15 (Aniket: "TV and email", both sports).
+     It draws only what the keyed feed carries, so it shows nothing until its screen is
+     opted in for cricket (orangish-app scripts/provision-board-screen.mjs --extend-sport).
+     No announcement on cricket: that waits for its own audio test.
      `music`: and alone has its band's code take turns with the Main Door speaker
      page's (2026-11-13, app/board/band-face.ts). */
   "badminton-board": () => <SportBoard sport="Badminton" extend music />,
   /* `birthday`: "Happy Birthday Avyukth Tharun" until midnight 13 Nov (BirthdayLine.tsx). */
-  "cricket-board": () => <SportBoard sport="Cricket" birthday />,
+  "cricket-board": () => <SportBoard sport="Cricket" extend birthday />,
   "our-club": () => <OurClubScreen />,
 };
 

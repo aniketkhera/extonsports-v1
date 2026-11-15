@@ -72,14 +72,26 @@ export type ExtendOffer = {
   endsAt: number;
   /** Drawn from here (end − 10 min) … */
   opensAt: number;
-  /** … to here (end + 5 min), even from a payload that is otherwise still fresh. */
+  /** … to here (end + 10 min since 2026-11-15; end + 5 before), even from a payload that is
+   *  otherwise still fresh. */
   closesAt: number;
   basis: "published" | "contract";
   /** courtIds still offered, labelled from the payload's own `courts`. */
   courts: string[];
   qr: Qr | null;
-  lengths: { m30: ExtendLength; m60: ExtendLength };
+  /** m90 since 2026-11-15 (Aniket: "options are 30 mins, 60 mins, 90 mins"). A platform
+   *  from before then sends no m90; the offer then has two lengths, as it always did. */
+  lengths: { m30: ExtendLength; m60: ExtendLength; m90?: ExtendLength };
 };
+
+/** The lengths an offer carries, in order, with the words a tile uses. */
+export const LENGTHS = [["m30", 30, "30 MIN"], ["m60", 60, "1 HOUR"], ["m90", 90, "90 MIN"]] as const;
+export type LengthKey = (typeof LENGTHS)[number][0];
+export function lengthsOf(o: ExtendOffer) {
+  return LENGTHS.filter(([k]) => o.lengths[k] !== undefined);
+}
+/** An offer's length by key; only ever called with a key lengthsOf returned. */
+const lenOf = (o: ExtendOffer, k: LengthKey) => o.lengths[k] as ExtendLength;
 
 /** A paid extension that continues on another court: the old court's "MOVE TO COURT 3"
  *  face, from `at` for five minutes (§9e E4). */
@@ -176,8 +188,10 @@ export function parseOffer(v: unknown, known: ReadonlySet<string>): ExtendOffer 
   if (!Number.isInteger(end) || (end as number) < 1 || (end as number) > 1440) return null;
   const endsAt = instant(v.endsAt), opensAt = instant(v.opensAt), closesAt = instant(v.closesAt);
   if (![endsAt, opensAt, closesAt].every(Number.isFinite)) return null;
-  // The window the platform writes, end − 10 to end + 5: anything else is not one.
-  if (endsAt - opensAt !== 10 * MINUTE || closesAt - endsAt !== 5 * MINUTE) return null;
+  /* The window the platform writes: end − 10 to end + 10 (since 2026-11-15), or end + 5 as
+     it wrote before. Both, so this TV and the platform can be deployed in either order.
+     Anything else is not one. */
+  if (endsAt - opensAt !== 10 * MINUTE || (closesAt - endsAt !== 5 * MINUTE && closesAt - endsAt !== 10 * MINUTE)) return null;
   /* date and end must name the instant endsAt, in the club's time — they are what the
      ON NOW entry is matched on. The minute before the end, so midnight (1440) lands on
      the booking's own date. */
@@ -193,13 +207,16 @@ export function parseOffer(v: unknown, known: ReadonlySet<string>): ExtendOffer 
   if (!isObj(v.lengths)) return null;
   const m30 = parseLength(v.lengths.m30, courts, known, oneCode);
   const m60 = parseLength(v.lengths.m60, courts, known, oneCode);
-  /* Both lengths are always sent, and at least one must be for sale. A new offer has both
-     (Q2: a court free for the hour, and then 30 min too); a committed one may be left with
-     one (see parseLength), drawn beside the other's reason — measured by scripts/tv-fit. */
-  if (!m30 || !m60 || (!m30.available && !m60.available)) return null;
+  // m90 is optional (a platform from before 2026-11-15 sends none); if sent, it must parse.
+  const m90 = v.lengths.m90 === undefined ? undefined : parseLength(v.lengths.m90, courts, known, oneCode);
+  /* 30 and 60 are always sent, and at least one length must be for sale. Since 2026-11-15
+     each length stands on its own (a booking with only 30 free minutes after it is offered
+     30 minutes), so any of them may be drawn beside the others' reasons. */
+  if (!m30 || !m60 || m90 === null || (!m30.available && !m60.available && !m90?.available)) return null;
   return {
     key: v.key, layout, state: v.state, date: v.date, end: end as number,
-    endsAt, opensAt, closesAt, basis: v.basis, courts: [...courts] as string[], qr, lengths: { m30, m60 },
+    endsAt, opensAt, closesAt, basis: v.basis, courts: [...courts] as string[], qr,
+    lengths: m90 ? { m30, m60, m90 } : { m30, m60 },
   };
 }
 
@@ -339,7 +356,7 @@ export type Tone = "orange" | "red";
 export type Line = { text: string; accent?: string; tail?: string };
 /* A tile, code tile or card option for a length that is not for sale (a committed offer
    whose other length is still on): `qr` null, no price, and `why` says why. */
-export type Tile = { key: string; qr: Qr | null; what: string; when: string; price: string; agreed: boolean; why: string | null };
+export type Tile = { key: string; qr: Qr | null; what: string; when: string; price: string; agreed: boolean; why: string | null; on?: string };
 export type TableCell = { price: string } | { why: string };
 export type CodeTile = { key: string; qr: Qr | null; what: string; lines: string[] };
 export type CardOpt = { key: string; qr: Qr | null; what: string; price: string; agreed: boolean; when: string; why: string | null };
@@ -351,6 +368,18 @@ export type PanelFace =
   | { layout: "multi"; tone: Tone; chip: string; h1: string; h2: Line; paying: boolean; heads: string[] | null; rows: Array<{ n: string; cells: TableCell[] }>; agreed: string | null; codes: CodeTile[] }
   | { layout: "cards"; tone: Tone; h1: string; h2: Line; cards: Card[] }
   | { layout: "cards-one-code"; tone: Tone; h1: string; cards: OneCodeCard[] };
+
+/** "6:42" for ms left, rounded UP to the second, so "0:00" is never shown while it runs.
+ *
+ *  THE COUNTDOWN (Aniket, 2026-11-15: "can we also show a countdown to the extension feature
+ *  on the TV?"). It runs in the words the panel already has, to the second: "BOOKING ENDS IN
+ *  6:42" up to the end, then "7:18 left to extend" where the face said "open until 2:10",
+ *  down to the close at end + 10. Not a box of its own: scripts/tv-fit measured a corner
+ *  countdown pushing every layout's top row out of the panel. */
+export function mmss(ms: number): string {
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
 
 /**
  * The panel's face for the offers drawn this second (drawnOffers). `labelOf` names a
@@ -366,23 +395,29 @@ export function panelFace(
   if (!drawn.length) return null;
   const Noun = noun[0] + noun.slice(1).toLowerCase();
   const labels = (ids: readonly string[]) => ids.map(labelOf).sort(byNumber);
-  const lens = [["m30", 30, "30 MIN"], ["m60", 60, "1 HOUR"]] as const;
 
   const ended = (o: ExtendOffer) => nowMs >= o.endsAt;
   const allEnded = drawn.every(ended);
   /* Red only for an OPEN offer past its end (§10.4): never before the end, never while
      someone is paying — PAYMENT IN PROGRESS is not an alarm. */
   const tone: Tone = allEnded && drawn.some((o) => o.state === "open") ? "red" : "orange";
-  // Minutes to the earliest end still to come: rounded up, never 0 (nudgeFace's rule).
+  // The countdown to the earliest end still to come, to the second (see mmss).
   const coming = drawn.filter((o) => !ended(o));
-  const min = coming.length ? Math.max(1, Math.ceil((Math.min(...coming.map((o) => o.endsAt)) - nowMs) / MINUTE)) : 0;
+  const min = coming.length ? mmss(Math.min(...coming.map((o) => o.endsAt)) - nowMs) : "";
   const timeUp = "YOUR TIME IS UP";
-  const closes = (o: ExtendOffer) => hm(clubNow(new Date(o.closesAt)).minutes);
-  const scanNow = (o: ExtendOffer): Line => ({ text: `Scan now to keep playing · open until ${closes(o)}` });
+  /** After the end the countdown runs on, to the close: "7:18 left to extend". */
+  const left = (o: ExtendOffer) => `${mmss(o.closesAt - nowMs)} left to extend`;
+  const scanNow = (o: ExtendOffer): Line => ({ text: `Scan now to keep playing · ${left(o)}` });
   const payingLine: Line = { text: "PAYMENT IN PROGRESS" };
   const agreed = (o: ExtendOffer) => o.basis === "contract";
+  /** The lengths an offer shows on this face: every length on `one`; on every other layout
+   *  (several courts, two or three bookings) only 30 min and 1 hour, because a third column
+   *  or option does not fit (scripts/tv-fit, 2026-11-15). 90 min is still on the phone the
+   *  code opens, and in the email. */
+  const twoOnly = drawn[0].layout !== "one";
+  const shown = (o: ExtendOffer) => (twoOnly ? lengthsOf(o).filter(([k]) => k !== "m90") : lengthsOf(o));
   /** The lengths still for sale, in order. */
-  const forSale = (o: ExtendOffer) => lens.filter(([k]) => o.lengths[k].available);
+  const forSale = (o: ExtendOffer) => shown(o).filter(([k]) => lenOf(o, k).available);
   /** Where a length continues, as labels: "3", or "" when it stays put (or is not for sale:
    *  an unavailable length carries no moves). */
   const target = (l: ExtendLength) => [...new Set(l.moves.map((m) => labelOf(m.to)))].sort(byNumber).join(", ");
@@ -395,24 +430,30 @@ export function panelFace(
   if (drawn[0].layout === "one") {
     const o = drawn[0];
     const own = labelOf(o.courts[0]);
-    const t30 = target(o.lengths.m30), t60 = target(o.lengths.m60);
     /* THE MOVE FACE (Q20; tv-move.png): the booker's own court is taken from the end
-       and another is free, so both lengths continue elsewhere. The TV never offers to
-       stay on a taken court. When only the hour moves, the court is free for 30 min
-       and taken after: the ordinary face, with the hour's tile naming its court. */
-    const move = !!t30 && !!t60;
-    const same = move && t30 === t60;
+       and another is free, so every length on sale continues elsewhere. The TV never
+       offers to stay on a taken court. When only the longer lengths move, the court is
+       free for the shorter one and taken after: the ordinary face, with each moving
+       length's tile naming its court. */
+    const ts = forSale(o).map(([k]) => target(lenOf(o, k)));
+    const move = ts.length > 0 && ts.every(Boolean);
+    const same = move && ts.every((t) => t === ts[0]);
+    const t30 = ts[0] ?? "";
     const h2: Line = o.state === "paying" ? payingLine
-      : ended(o) ? (move ? (same ? { text: "Keep playing on ", accent: `${Noun} ${t30}`, tail: ` · open until ${closes(o)}` } : { text: `Keep playing on another ${noun.toLowerCase()} · open until ${closes(o)}` }) : scanNow(o))
+      : ended(o) ? (move ? (same ? { text: "Keep playing on ", accent: `${Noun} ${t30}`, tail: ` · ${left(o)}` } : { text: `Keep playing on another ${noun.toLowerCase()} · ${left(o)}` }) : scanNow(o))
       : move ? (same ? { text: "Keep playing on ", accent: `${Noun} ${t30}`, tail: "?" } : { text: `Keep playing on another ${noun.toLowerCase()}?` })
       : { text: "Do you wish to extend?" };
-    const tiles: Tile[] = lens.map(([k, L, w]) => {
-      const l = o.lengths[k];
+    /* Three tiles share the width two had: a moving tile names its court on a line of its
+       own ("ON COURT 3") instead of in its title (scripts/tv-fit, 2026-11-15). */
+    const three = shown(o).length > 2;
+    const tiles: Tile[] = shown(o).map(([k, L, w]) => {
+      const l = lenOf(o, k);
       const to = target(l);
       if (!l.available) return { key: `${o.key}-${L}`, qr: null, what: `EXTEND ${w}`, when: "", price: "", agreed: false, why: l.why };
       return {
         key: `${o.key}-${L}`, qr: l.qr,
-        what: to ? `${w} · ${noun} ${to}` : `EXTEND ${w}`,
+        ...(three && to ? { on: `ON ${noun} ${to}` } : {}),
+        what: to && !three ? `${w} · ${noun} ${to}` : `EXTEND ${w}`,
         when: spanA(o.end, o.end + L),
         price: agreed(o) ? "AGREED RATE" : money(l.totals[0]),
         agreed: agreed(o), why: null,
@@ -420,18 +461,22 @@ export function panelFace(
     });
     /** One length alone moves (the other stays, or is not for sale): its tile names the
      *  court, and the foot says it. */
-    const lone = forSale(o).filter(([k]) => target(o.lengths[k]));
+    const lone = forSale(o).filter(([k]) => target(lenOf(o, k)));
     const foot = move
       ? ended(o) && same ? `The extension starts at ${hm(o.end)} on ${Noun} ${t30}, so the next players can start on ${Noun} ${own}`
         : same ? `Move to ${Noun} ${t30} at ${hm(o.end)} so the next players can start on ${Noun} ${own}`
         : `Move at ${hm(o.end)} so the next players can start on ${Noun} ${own}`
       : ended(o) ? `The extension starts at ${hm(o.end)}, when your booking ended`
       : agreed(o) ? `Scan to see your agreed rate · pay by card · stay on ${Noun} ${own}`
-      : lone.length === 1 ? `Scan with your phone camera · pay by card · ${lone[0][2].toLowerCase()} is on ${Noun} ${target(o.lengths[lone[0][0]])}`
+      : lone.length === 1 ? `Scan with your phone camera · pay by card · ${lone[0][2].toLowerCase()} is on ${Noun} ${target(lenOf(o, lone[0][0]))}`
+      /* Two of three lengths move (2026-11-15, three tiles): name both, never "stay on". */
+      : lone.length > 1 && new Set(lone.map(([k]) => target(lenOf(o, k)))).size === 1
+        ? `Scan with your phone camera · pay by card · ${lone.map(([, , w]) => w.toLowerCase()).join(" and ")} are on ${Noun} ${target(lenOf(o, lone[0][0]))}`
+      : lone.length > 1 ? `Scan with your phone camera · pay by card · some lengths continue on another ${noun.toLowerCase()}`
       : `Scan with your phone camera · pay by card · stay on ${Noun} ${own}`;
     return {
       layout: "one", tone, chip: `${noun} ${own}`,
-      h1: ended(o) ? timeUp : move ? `IS BOOKED FROM ${hm(o.end)}` : `BOOKING ENDS IN ${min} MIN`,
+      h1: ended(o) ? timeUp : move ? `IS BOOKED FROM ${hm(o.end)}` : `BOOKING ENDS IN ${min}`,
       h2, paying: o.state === "paying", tiles, foot,
     };
   }
@@ -444,8 +489,8 @@ export function panelFace(
        A row past a length's maxCourts shows the server's reason once, then a dash. */
     const rows = Array.from({ length: n }, (_, i) => ({
       n: courtsWord(i + 1),
-      cells: lens.map(([k]): TableCell => {
-        const l = o.lengths[k];
+      cells: shown(o).map(([k]): TableCell => {
+        const l = lenOf(o, k);
         if (i < l.maxCourts) return { price: money(l.totals[i]) };
         return { why: i === l.maxCourts && l.why ? l.why : "—" };
       }),
@@ -453,14 +498,14 @@ export function panelFace(
     return {
       layout: "multi", tone,
       chip: `${noun}${n > 1 ? "S" : ""} ${labels(o.courts).join(" · ")}`,
-      h1: ended(o) ? timeUp : `END${n > 1 ? "" : "S"} IN ${min} MIN`,
+      h1: ended(o) ? timeUp : `END${n > 1 ? "" : "S"} IN ${min}`,
       h2, paying: o.state === "paying",
       // Contract (Q4): no figures on the wall. One line in place of the table.
-      heads: agreed(o) ? null : lens.map(([, L, w]) => `${w} · ${spanTight(o.end, o.end + L)}`),
+      heads: agreed(o) ? null : shown(o).map(([, L, w]) => `${w} · ${spanTight(o.end, o.end + L)}`),
       rows: agreed(o) ? [] : rows,
       agreed: agreed(o) ? "AGREED RATE · scan to see" : null,
-      codes: lens.map(([k, L, w]) => {
-        const l = o.lengths[k];
+      codes: shown(o).map(([k, L, w]) => {
+        const l = lenOf(o, k);
         if (!l.available) return { key: `${o.key}-${L}`, qr: null, what: w, lines: [l.why ?? ""] };
         const note = moveNote(l);
         return {
@@ -472,12 +517,12 @@ export function panelFace(
   }
 
   const count = drawn.length;
-  const h1 = allEnded ? timeUp : `${count === 1 ? "BOOKING ENDS" : `${count} BOOKINGS END`} IN ${min} MIN`;
+  const h1 = allEnded ? timeUp : `${count === 1 ? "BOOKING ENDS" : `${count} BOOKINGS END`} IN ${min}`;
   /** A card's court label: "COURT 1", "COURTS 2 + 3", or "COURT 2 → 3" when both lengths
    *  continue on the same other courts (§10.5). */
   const cardName = (o: ExtendOffer) => {
-    const a = moveNote(o.lengths.m30), b = moveNote(o.lengths.m60);
-    if (a && a === b) return a;
+    const notes = forSale(o).map(([k]) => moveNote(lenOf(o, k)));
+    if (notes.length && notes[0] && notes.every((n) => n === notes[0])) return notes[0];
     const ls = labels(o.courts);
     return `${noun}${ls.length > 1 ? "S" : ""} ${ls.join(" + ")}`;
   };
@@ -485,24 +530,25 @@ export function panelFace(
    *  PROGRESS goes; a 'cards-one-code' card has its own line for that. */
   const small = (o: ExtendOffer, extra: string, paying: boolean) =>
     paying ? "PAYMENT IN PROGRESS"
-      : ended(o) ? `ended ${hm(o.end)} · open until ${closes(o)}`
+      : ended(o) ? `ended ${hm(o.end)} · ${left(o)}`
       : `ends ${hmA(o.end)}${extra}`;
 
   if (drawn[0].layout === "cards") {
     const cards: Card[] = drawn.map((o) => {
       const n = o.courts.length;
-      const full = o.lengths.m30.maxCourts === n && o.lengths.m60.maxCourts === n;
-      const a = moveNote(o.lengths.m30), b = moveNote(o.lengths.m60);
+      const full = forSale(o).every(([k]) => lenOf(o, k).maxCourts === n);
+      const notes = forSale(o).map(([k]) => moveNote(lenOf(o, k)));
+      const allSame = notes.length > 0 && notes.every((x) => x === notes[0]);
       return {
         key: o.key, name: cardName(o), paying: o.state === "paying",
         small: small(o, n > 1 && full ? ` · price for ${n} courts, pick on phone` : n > 1 ? " · pick courts on phone" : "", o.state === "paying"),
-        opts: lens.map(([k, L, w]): CardOpt => {
-          const l = o.lengths[k];
+        opts: shown(o).map(([k, L, w]): CardOpt => {
+          const l = lenOf(o, k);
           if (!l.available) return { key: `${o.key}-${L}`, qr: null, what: w, price: "", agreed: false, when: "", why: l.why };
           const to = target(l);
           const bits = [spanTight(o.end, o.end + L)];
           if (n > 1 && l.maxCourts < n) bits.push(courtsWord(l.maxCourts));
-          if (to && a !== b) bits.push(`${noun} ${to}`);
+          if (to && !allSame) bits.push(`${noun} ${to}`);
           return {
             key: `${o.key}-${L}`, qr: l.qr, what: w,
             price: agreed(o) ? "AGREED RATE" : money(l.totals[l.maxCourts - 1]), agreed: agreed(o),
@@ -524,12 +570,13 @@ export function panelFace(
     cards: drawn.map((o) => {
       // Only the lengths still for sale: the phone says why the other is not.
       const sale = forSale(o);
-      const pick = sale.length === 2 ? "pick 30 min or 1 hour" : `extend ${sale[0][2].toLowerCase()}`;
+      const names = sale.map(([, , w]) => w.toLowerCase());
+      const pick = names.length > 1 ? `pick ${names.slice(0, -1).join(", ")} or ${names[names.length - 1]}` : `extend ${names[0]}`;
       return {
         key: o.key, qr: o.qr as Qr, name: cardName(o), paying: o.state === "paying",
         small: small(o, "", false),
         // A contract's card says AGREED RATE where the prices go, as every other layout does.
-        prices: agreed(o) ? null : sale.map(([k, , w]) => ({ what: w, price: money(o.lengths[k].totals[o.lengths[k].maxCourts - 1]) })),
+        prices: agreed(o) ? null : sale.map(([k, , w]) => ({ what: w, price: money(lenOf(o, k).totals[lenOf(o, k).maxCourts - 1]) })),
         line: o.state === "paying" ? "PAYMENT IN PROGRESS" : agreed(o) ? `scan to see it, then ${pick}` : `scan, then ${pick}`,
       };
     }),

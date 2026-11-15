@@ -85,3 +85,18 @@ the room left under the face's last line, at its natural height:
   is the same model. The audio test page prints the badminton set's own (§11.2).
 - **That the pulse is smooth on the VIZIO.** The pulse is an opacity change on an overlay; it has
   not been watched on the set.
+
+## Results, 2026-11-15 (branch `feat/tv-extend-90-countdown`)
+
+Three lengths (30 min, 1 hour, 90 min), the offer open to end + 10, and the countdown to the
+second (orangish-app `docs/court-extend.md` §17). 12 new scenarios (`*90*`, `oneTail5`).
+
+- **All 100 faces fit** (50 scenarios × 2 sizes), plus `rotate`; **every code decodes**; all four
+  gates pass (the cricket TV now reads `extend`, but draws only cricket offers, so a badminton
+  answer still draws nothing there).
+- `one` draws three tiles; their code is `QR_SIDE_THREE` (5.9 N): 181 CSS px at 1920×1080,
+  about 11.5 cm on the 55". A moving tile names its court on its own line ("ON COURT 3").
+- Every other layout keeps 30 min and 1 hour on the wall: a third column or option did not fit
+  (measured first, then cut). 90 min is on the phone the code opens, and in the email.
+- A corner countdown was tried first and pushed every top row out of the panel; the countdown
+  is now the headline's own number ("BOOKING ENDS IN 6:42", then "7:18 left to extend").
