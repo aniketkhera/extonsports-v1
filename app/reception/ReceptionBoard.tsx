@@ -9,7 +9,7 @@ import LiveBand from "../components/LiveBand";
 import ScreenStamp from "../components/ScreenStamp";
 import { BG, INK, EMBER, GREEN, LABEL, NEXT_VAL, NEXT_LBL, MUTED, RULE_SOFT, PANEL, BOX } from "../components/tv-palette";
 import {
-  PLATFORM, readKey, clubNow, span, clock, holderLabel, brandFor, sessionOf, splitUpNext, lightChip, SESSION_TEXT, SPORT_OBJECT,
+  PLATFORM, readKey, clubNow, span, clock, holderLabel, brandFor, sessionOf, splitUpNext, lightChip, SESSION_TEXT, SPORT_OBJECT, asWritten, isAddress,
   courtNudges, nudgeFace, clubInstant, startOf, endOf, bandKey,
   type BrandKey, type LightChip, type Lights, type NamedBlock, type NamedSlots, type SessionKey, type NudgeFace,
 } from "../board/board-lib";
@@ -459,6 +459,9 @@ function courtsLabel(sport: string, labels: string[]): string {
 /* The clock and the date line moved to components/ScreenChrome with the header
    (2026-10-20), shared with /exit. */
 
+/** One line and an ellipsis, for an address in a Lockup — see the note in Lockup. */
+const ADDRESS_FIT: CSSProperties = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 };
+
 export function Lockup({ brand, who }: { brand: BrandKey | null; who: string }) {
   if (brand === "philadelphia-badminton") {
     return (
@@ -555,9 +558,9 @@ export function Lockup({ brand, who }: { brand: BrandKey | null; who: string }) 
       </div>
     );
   }
-  /* Not a partner — somebody's own hire. On reception that is their name; on
-     the vestibule the feed carries no name and holderLabel has already made it
-     "PRIVATE" (board-lib, 2026-10-09). Printing `who` either way keeps one
+  /* Not a partner — somebody's own hire. On a screen whose key names people that
+     is their name, or their email address; on any other the feed carries no name
+     and holderLabel has already made it "PRIVATE" (board-lib). Printing `who` either way keeps one
      source of truth for the wording; only the weight differs, because PRIVATE
      is a placeholder and a name is a fact. */
   const isPrivate = who === "PRIVATE";
@@ -569,6 +572,15 @@ export function Lockup({ brand, who }: { brand: BrandKey | null; who: string }) 
         color: isPrivate ? MUTED : INK,
         letterSpacing: isPrivate ? "0.06em" : "0.03em",
         lineHeight: 1.1,
+        /* A booker's email address (2026-11-15) keeps its own lower case
+           (board-lib isAddress), and stays on ONE line, ending in an ellipsis when it
+           is wider than the column. A name may wrap at its spaces; an address has none,
+           so it would otherwise be cut mid-letter at the column edge with no sign that
+           it was — "…@companyname." reading as a whole, wrong address (review,
+           2026-11-15: from ~42 characters on /reception; the longest real one then
+           was 29). The row around it is a flex row, so minWidth 0 lets it shrink. */
+        ...asWritten(who),
+        ...(isAddress(who) ? ADDRESS_FIT : {}),
       }}
     >
       {who}
@@ -1327,7 +1339,7 @@ export function ComingUp({ p, today, style }: { p: Panel; today: string; style?:
                     {SESSION_TEXT[e.session]}
                   </span>
                 )}
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{e.who}</span>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", minWidth: 0, ...asWritten(e.who) }}>{e.who}</span>
               </span>
               <CourtBoxes sport={p.sport} labels={p.labels} taken={e.courts} />
             </div>

@@ -159,6 +159,48 @@ test("an org this bundle does not know is treated as no org, never a blank holde
   assert.equal(L.holderLabel({ ...base, kind: "booking", org: "some-new-key" }), "PRIVATE");
 });
 
+/* A booker's EMAIL ADDRESS (2026-11-15): the platform sends one, on a names screen, for a
+   booker whose profile has no name. It prints as written, lower case; a name is still
+   upper-cased; and an address is never a partner, here as on the platform. */
+test("an address prints lower case, a name upper case, nothing at all PRIVATE", () => {
+  assert.equal(L.holderLabel({ ...base, who: "Vikas.Reddy18@Gmail.com" }), "vikas.reddy18@gmail.com");
+  assert.equal(L.holderLabel({ ...base, who: "  someone@example.org " }), "someone@example.org");
+  assert.equal(L.holderLabel({ ...base, who: "Asha Rao" }), "ASHA RAO");
+  assert.equal(L.holderLabel({ ...base }), "PRIVATE");
+  assert.equal(L.holderLabel({ ...base, who: "   " }), "PRIVATE");
+});
+
+test("isAddress / asWritten: only an '@' turns the CSS upper-casing off", () => {
+  assert.equal(L.isAddress("a@b.com"), true);
+  for (const v of ["Asha Rao", "PRIVATE", "", null, undefined]) assert.equal(L.isAddress(v), false, String(v));
+  assert.deepEqual(L.asWritten("vikas.reddy18@gmail.com"), { textTransform: "none" });
+  assert.deepEqual(L.asWritten("ASHA RAO"), {});
+  assert.deepEqual(L.asWritten(undefined), {});
+});
+
+test("an address made of a partner's words is still the person, never the partner", () => {
+  for (const who of ["someone@squashtigers.com", "squad@club.com", "sera@example.com", "phila.badminton@x.com"]) {
+    const b = { ...base, kind: "booking", who };
+    assert.equal(L.brandFor(b), null, who);
+    assert.equal(L.holderLabel(b), who, who);
+  }
+});
+
+/* Every TV line that prints a holder keeps an address's case: the lockup and the
+   COMING UP row (reception, badminton, cricket — SportBoard draws both through
+   ReceptionBoard), and the vestibule's row. A line added without it shows an
+   address in capitals; a source read is the cheapest check of all three. */
+test("each TV holder line applies asWritten", () => {
+  const rb = readFileSync(new URL("../reception/ReceptionBoard.tsx", import.meta.url), "utf8");
+  assert.match(rb, /\.\.\.asWritten\(who\),\s*\.\.\.\(isAddress\(who\) \? ADDRESS_FIT : \{\}\)/);
+  assert.match(rb, /const ADDRESS_FIT: CSSProperties = \{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 \}/);
+  assert.match(rb, /\.\.\.asWritten\(e\.who\) \}\}>\{e\.who\}/);
+  const vs = readFileSync(new URL("../vestibule/VestibuleScreen.tsx", import.meta.url), "utf8");
+  assert.match(vs, /className=\{v\.rowHolder\} style=\{asWritten\(e\.who\)\}>\{e\.who\}/);
+  const sb = readFileSync(new URL("../reception/SportBoard.tsx", import.meta.url), "utf8");
+  assert.match(sb, /import \{[^}]*NowArea[^}]*ComingUp[^}]*\} from "\.\/ReceptionBoard"/);
+});
+
 test("/api/court-slots forwards 'throwball' and still drops an unknown org", async (t) => {
   const upstream = {
     timeZone: "America/New_York",

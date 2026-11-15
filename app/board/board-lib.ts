@@ -105,13 +105,16 @@ export function kindLabel(kind: SlotBlock["kind"]): string {
 /* ⛔ WHETHER A MEMBER IS NAMED IS NOT THIS FILE'S DECISION, 2026-10-09. The
    platform redacts per screen (board_screens.names_visible), so:
 
-     reception  — behind the desk. Its key named members until 2026-10-25,
-                  when Aniket turned names off on it: players can read that
-                  TV from the courts, so it is a public screen too. Which key
-                  names anyone is the board_screens row, not this comment.
-     vestibule  — the airlock anybody walks through. Its feed carries the four
-                  partner organisations and NOTHING else, so `who` is absent
-                  and this prints PRIVATE.
+     a key with names_visible — the feed names the booker (or, since
+                  2026-11-15, gives their email address when they have no name),
+                  and this prints it.
+     a key without it — the feed carries the partner organisations and
+                  NOTHING else, so `who` is absent and this prints PRIVATE.
+
+   WHICH screen is which has changed more than once (reception named members,
+   then didn't from 2026-10-25, then did again from 2026-11-05, with the
+   vestibule, badminton and cricket keys): it is the board_screens row, never
+   this comment, and a keyless page is always the second kind.
 
    That is deliberately a server-side split: the vestibule's payload never
    contains a name, which matters because its token sits in a config file on a
@@ -133,7 +136,30 @@ export function holderLabel(b: NamedBlock): string {
   const brand = brandFor(b);
   if (brand) return PARTNER_TEXT[brand];
   const who = (b.who || "").trim();
-  return who ? who.toUpperCase() : "PRIVATE";
+  if (!who) return "PRIVATE";
+  return isAddress(who) ? who.toLowerCase() : who.toUpperCase();
+}
+
+/* A BOOKER'S EMAIL ADDRESS (2026-11-15). Aniket: "for TVs - reception, cricket,
+   badminton, vestibule - for all bookings, show the name/email id of the person
+   booking the court. Don't show the names on the web interface". The guest form
+   asks for an email and never a name, so the platform (lib/court-holders.ts) now
+   sends a booker with no name as their address — on a keyed screen whose
+   board_screens row has names_visible, and nowhere else. The keyless page's
+   feed never carries one, so this file has nothing to withhold.
+
+   An address prints as it is written, lower case: upper-cased it reads as
+   shouting and is harder to match against an inbox. That is holderLabel above
+   for the string, and AS_WRITTEN below for the CSS — every holder sits inside a
+   .text-cond, which upper-cases by itself. Any '@' counts: no name or partner
+   carries one. */
+export function isAddress(who: string | undefined | null): boolean {
+  return typeof who === "string" && who.includes("@");
+}
+
+/** The style that stops .text-cond upper-casing an address (see isAddress). */
+export function asWritten(who: string | undefined | null): { textTransform?: "none" } {
+  return isAddress(who) ? { textTransform: "none" } : {};
 }
 
 /* ── WHICH PARTNER HOLDS THIS HOUR ────────────────────────────────────────────
