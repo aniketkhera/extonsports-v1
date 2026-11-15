@@ -32,7 +32,22 @@ export const CHIME_WINDOW_MS = 20_000;
  *  CHIME_TEST_LEVELS and picks one. */
 export const CHIME_GAIN = 0.45;
 
-/** The three levels the test mode cycles through (?chimetest=1), quiet to loud. */
+/** The longest a test URL may stay live: ?chimetest=<until> beyond this is refused. */
+export const CHIME_TEST_MAX_AHEAD_MS = 3 * 60 * 60_000;
+
+/** The test's deadline from ?chimetest=<until> (epoch ms, or an ISO time), or null when the
+ *  page must not test: no parameter, unreadable, already past, or more than
+ *  CHIME_TEST_MAX_AHEAD_MS ahead (review, 2026-11-15). An ABSOLUTE time, not one counted
+ *  from page load, because a set left on the test URL is relaunched hourly by tv-keeper
+ *  and on every deploy: counted from load, it would ring again after each. */
+export function testUntil(param: string | null, nowMs: number): number | null {
+  if (param == null || param === "") return null;
+  const n = /^\d{12,14}$/.test(param) ? Number(param) : Date.parse(param);
+  if (!Number.isFinite(n) || n <= nowMs || n - nowMs > CHIME_TEST_MAX_AHEAD_MS) return null;
+  return n;
+}
+
+/** The three levels the test mode cycles through (?chimetest=<until>), quiet to loud. */
 export const CHIME_TEST_LEVELS = [0.2, 0.45, 0.9] as const;
 /** The test rings once every this many ms ... */
 export const CHIME_TEST_EVERY_MS = 12_000;

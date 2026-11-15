@@ -1,9 +1,10 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { readKey } from "./screen-key";
 import {
   CHIME_DECAY_S, CHIME_GAIN, CHIME_PARTIALS, CHIME_PEAK, CHIME_STRIKES, CHIME_TEST_EVERY_MS, CHIME_TEST_FOR_MS,
-  CHIME_TEST_LEVELS, chimeDue, chimeKey, chimesFor, testLevel,
+  CHIME_TEST_LEVELS, CHIME_WINDOW_MS, chimeDue, chimeKey, chimesFor, testLevel, testUntil,
 } from "../board/chime-pure";
 
 /* THE TIME-UP CHIME ON A TV (2026-11-15) — the sound and the switches. The rules (when,
@@ -20,7 +21,7 @@ import {
    AudioUnlock creates and resumes the one AudioContext inside it. On the VIZIOs the
    context runs with no gesture and this changes nothing.
 
-   ChimeTest — ?chimetest=1 on any TV page rings every CHIME_TEST_EVERY_MS at the three
+   ChimeTest — ?chimetest=<until> (epoch ms or ISO, at most 3 h ahead) on any TV page rings every CHIME_TEST_EVERY_MS at the three
    CHIME_TEST_LEVELS in turn (or ?chimelevel=2 for one), for CHIME_TEST_FOR_MS, and says
    on screen which level just rang and whether the browser PLAYED or BLOCKED it. For the
    sound check with someone in the hall; without the parameter it renders nothing. It
@@ -62,6 +63,7 @@ export async function playChime(gain: number = CHIME_GAIN): Promise<ChimeResult>
     out.connect(c.destination);
     const t0 = c.currentTime + 0.05;
     let last = t0;
+    let lastOsc: OscillatorNode | null = null;
     for (const { at, hz } of CHIME_STRIKES) {
       for (const [mult, amp] of CHIME_PARTIALS) {
         const start = t0 + at;
@@ -76,10 +78,13 @@ export async function playChime(gain: number = CHIME_GAIN): Promise<ChimeResult>
         o.connect(g).connect(out);
         o.start(start);
         o.stop(end + 0.05);
-        last = Math.max(last, end);
+        if (end >= last) { last = end; lastOsc = o; }
       }
     }
-    setTimeout(() => { try { out.disconnect(); } catch { /* gone */ } }, (last - c.currentTime + 0.5) * 1000);
+    /* Let go of the master gain when the LAST tone has stopped — on the audio clock
+       (onended), not a wall-clock timer, which could cut the ring short if the audio
+       clock started late (review, 2026-11-15). */
+    if (lastOsc) lastOsc.onended = () => { try { out.disconnect(); } catch { /* gone */ } };
     return "played";
   } catch (e) {
     console.warn("[chime]", e instanceof Error ? e.message : e);
@@ -87,27 +92,56 @@ export async function playChime(gain: number = CHIME_GAIN): Promise<ChimeResult>
   }
 }
 
-/** Has this page already rung for `key`? Memory first, then sessionStorage, which a
- *  reload keeps, so a TV that reloads inside the window does not ring the same end twice.
- *  Storage that throws (private mode, a locked-down browser) just means memory only. */
+/** Has this set already rung for `key`? Memory first, then localStorage — shared by every
+ *  page of the origin on the set and kept across reloads and tv-keeper's relaunches into a
+ *  new page (review, 2026-11-15: sessionStorage is per page), so the same end never rings
+ *  twice. Old claims are pruned as new ones are made. Storage that throws (private mode, a
+ *  locked-down browser) just means memory only. */
 const rung = new Set<string>();
 function claim(key: string): boolean {
   if (rung.has(key)) return false;
   rung.add(key);
   try {
-    if (sessionStorage.getItem(key)) return false;
-    sessionStorage.setItem(key, String(Date.now()));
+    if (localStorage.getItem(key)) return false;
+    const now = Date.now();
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith("chime:") && now - Number(localStorage.getItem(k)) > 2 * CHIME_WINDOW_MS) localStorage.removeItem(k);
+    }
+    localStorage.setItem(key, String(now));
   } catch {
     /* memory only */
   }
   return true;
 }
 
+/** A ring the browser refused gives its claim back, so the next second inside the window
+ *  tries again — a context that starts a moment later (the cricket set's unlock press)
+ *  still rings (review, 2026-11-15). Claim-before-play stays: two entries ending together
+ *  must not both ring. */
+function release(key: string): void {
+  rung.delete(key);
+  try { localStorage.removeItem(key); } catch { /* memory only */ }
+}
+
+const noSubscribe = () => () => {};
+/** Is this page a PAIRED screen (a board key in the URL fragment or its storage)? */
+function useKeyed(): boolean {
+  return useSyncExternalStore(noSubscribe, () => readKey() !== null, () => false);
+}
+
 const ChimeSports = createContext<readonly string[]>([]);
 
-/** Turns the chime on for these sports inside it. Empty = silent, and no audio is set up. */
+/** Turns the chime on for these sports inside it. Empty = silent, and no audio is set up.
+
+    ONLY ON A PAIRED SCREEN (review, 2026-11-15). /reception, /badminton and /cricket are
+    public addresses; without this a phone or laptop with one open would ring at every
+    TIME UP after one tap. Same rule as ReplayHandoff ("ONLY A PAIRED TV MOVES") and the
+    heartbeat: no board key, no chime. */
+const NONE: readonly string[] = [];
 export function ChimeSportsProvider({ sports, children }: { sports?: readonly string[]; children: ReactNode }) {
-  const list = sports ?? [];
+  const keyed = useKeyed();
+  const list = keyed && sports ? sports : NONE;
   return (
     <ChimeSports.Provider value={list}>
       {list.length > 0 && <AudioUnlock />}
@@ -123,9 +157,12 @@ export function useTimeUpChime(sport: string, endMs: number, faceKind: string, n
   const on = chimesFor(sports, sport);
   useEffect(() => {
     if (!on || !nowMs || !chimeDue(faceKind, nowMs - endMs)) return;
-    if (!claim(chimeKey(endMs))) return;
+    const key = chimeKey(endMs);
+    if (!claim(key)) return;
     void playChime(CHIME_GAIN).then((r) => {
-      if (r !== "played") console.warn(`[chime] TIME UP ${sport}: ${r}`);
+      if (r === "played") return;
+      release(key);
+      console.warn(`[chime] TIME UP ${sport}: ${r}`);
     });
   }, [on, sport, endMs, faceKind, nowMs]);
 }
@@ -147,7 +184,8 @@ function AudioUnlock() {
   return null;
 }
 
-/** ?chimetest=1 — the sound check (see the header). Renders nothing without it. */
+/** ?chimetest=<until> — the sound check (see the header). Renders nothing without a live
+ *  deadline (chime-pure testUntil): after it, a set left on the test URL is silent. */
 export function ChimeTest() {
   const [state, setState] = useState<{ on: boolean; n: number; level: number; result: string; done: boolean }>(
     { on: false, n: 0, level: 0, result: "", done: false },
@@ -159,14 +197,15 @@ export function ChimeTest() {
     } catch {
       return;
     }
-    if (!params.has("chimetest")) return;
+    const until = testUntil(params.get("chimetest"), Date.now());
+    if (until === null) return;
     const pinned = Number(params.get("chimelevel")) || null;
     const started = Date.now();
     let n = 0;
     let stopped = false;
     const ring = async () => {
       if (stopped) return;
-      if (Date.now() - started >= CHIME_TEST_FOR_MS) {
+      if (Date.now() - started >= CHIME_TEST_FOR_MS || Date.now() >= until) {
         stopped = true;
         setState((s) => ({ ...s, done: true }));
         return;

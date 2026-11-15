@@ -781,6 +781,20 @@ test("the countdown rings the chime; the TV's own list decides; the test mode is
   assert.match(tv, /<ChimeSportsProvider sports=\{chimeOf\(tv\)\}>\s*<ChimeTest \/>/);
   // A sport rings only where the list names it.
   assert.match(tc, /const on = chimesFor\(sports, sport\);/);
-  // Claimed BEFORE it plays, so two entries ending together cannot both ring.
-  assert.match(tc, /if \(!claim\(chimeKey\(endMs\)\)\) return;\s*void playChime\(CHIME_GAIN\)/);
+  // Claimed BEFORE it plays, so two entries ending together cannot both ring; a refused
+  // ring gives the claim back so the next second retries.
+  assert.match(tc, /if \(!claim\(key\)\) return;\s*void playChime\(CHIME_GAIN\)\.then\(\(r\) => \{\s*if \(r === "played"\) return;\s*release\(key\);/);
+  // Only on a paired screen: no board key, no chime (a public /reception never rings).
+  assert.match(tc, /const list = keyed && sports \? sports : NONE;/);
+});
+
+test("the sound check's URL carries an absolute deadline, at most 3 hours ahead", () => {
+  const now = Date.UTC(2026, 10, 15, 20, 0, 0);
+  assert.equal(C.testUntil(null, now), null);
+  assert.equal(C.testUntil("1", now), null, "the old ?chimetest=1 does nothing");
+  assert.equal(C.testUntil(String(now + 30 * 60_000), now), now + 30 * 60_000);
+  assert.equal(C.testUntil("2026-11-15T20:30:00Z", now), now + 30 * 60_000);
+  assert.equal(C.testUntil(String(now - 1), now), null, "past: silent");
+  assert.equal(C.testUntil(String(now + 4 * 3600_000), now), null, "too far ahead: refused");
+  assert.equal(C.testUntil("soon", now), null);
 });
