@@ -7,6 +7,7 @@ import SportBoard from "../reception/SportBoard";
 import ScreenHeartbeat from "./ScreenHeartbeat";
 import SilkFullscreen from "./SilkFullscreen";
 import ReplayHandoff from "./ReplayHandoff";
+import { ChimeSportsProvider, ChimeTest } from "./TimeUpChime";
 import { tvScreen, type TvContent, type TvEntry, type TvId } from "./tv-screens";
 
 /* One TV's page: whatever its entry in tv-screens.ts says it shows (2026-10-20).
@@ -50,6 +51,11 @@ import { tvScreen, type TvContent, type TvEntry, type TvId } from "./tv-screens"
    and does nothing outside Amazon Silk, where it turns an OK press into full
    screen. See that file. */
 
+/** A TV's chime list (tv-screens.ts `chime`), or none. */
+function chimeOf(tv: TvEntry): readonly string[] {
+  return "chime" in tv && Array.isArray(tv.chime) ? tv.chime : [];
+}
+
 const RENDER: Record<TvContent, (tv: TvEntry) => ReactNode> = {
   "court-board": () => <ReceptionBoard />,
   "starter-pack": () => <ExitScreen />,
@@ -69,8 +75,13 @@ const RENDER: Record<TvContent, (tv: TvEntry) => ReactNode> = {
 
 export default function TvScreen({ id }: { id: TvId }) {
   const tv = tvScreen(id);
+  /* `chime` (2026-11-15): the sports whose TIME UP rings a chime on THIS set — its
+     tv-screens.ts entry, provided around the whole page so whichever board it shows reads
+     it (TimeUpChime.tsx). By TV, not by content, so a board moved to another set never
+     brings the sound with it. ?chimetest=1 is the sound check; nothing without it. */
   return (
-    <>
+    <ChimeSportsProvider sports={chimeOf(tv)}>
+      <ChimeTest />
       <SilkFullscreen />
       {/* 2026-11-04: these two sets go to the N95's court-replay screen during their sport's
           junior academy (ReplayHandoff.tsx). By TV, not by `shows:`, because it is the set in
@@ -78,6 +89,6 @@ export default function TvScreen({ id }: { id: TvId }) {
       {(tv.id === "badminton" || tv.id === "cricket") && <ReplayHandoff sport={tv.id} />}
       <ScreenHeartbeat page={tv.id} />
       {RENDER[tv.shows](tv)}
-    </>
+    </ChimeSportsProvider>
   );
 }
