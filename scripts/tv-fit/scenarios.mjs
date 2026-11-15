@@ -137,6 +137,10 @@ export const SCENARIOS = {
   threeGroups90: { day: SUN, clock: T7, blocks: threeGBlocks, offers: threeG([{ m90: len(6750, 1) }, { m90: len(6750, 1) }, { m90: len(6750, 1) }]) },
   // The old window still draws (a platform not yet deployed).
   oneTail5: { day: SUN, clock: T7, blocks: oneBlocks, offers: [one({ tail5: true })] },
+  // Review of #740: lengths moving to DIFFERENT courts, red, at the first second (the longest
+  // countdown "10:00"). 30 min to Court 1, the hour and 90 min to Court 3.
+  oneMoveSplitRed: { day: SUN, clock: [14, 0], blocks: moveBlocks, offers: [one({ m30: len(2250, 1, mv(B2, B1)), m60: len(4500, 1, mv(B2, B3)), m90: len(6750, 1, mv(B2, B3)) })] },
+  oneMoveSplit: { day: SUN, clock: T7, blocks: moveBlocks, offers: [one({ m30: len(2250, 1, mv(B2, B1)), m60: len(4500, 1, mv(B2, B3)), m90: len(6750, 1, mv(B2, B3)) })] },
 }
 
 /** The instant a scenario's clock reads. */

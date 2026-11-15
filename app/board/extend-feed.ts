@@ -349,7 +349,9 @@ export function spanA(from: number, to: number): string {
 /** "2:00–2:30", for the table heads and the cards, as on the mock-up. */
 export const spanTight = (from: number, to: number) => `${hm(from)}–${hm(to)}`;
 
-const courtsWord = (n: number) => (n === 1 ? "1 court" : `${n} courts`);
+/** "1 court" / "3 courts", or "1 lane" / "3 lanes" on the cricket TV (review of #740, 2026-11-15:
+ *  the multi and card layouts said "courts" on a LANE screen). */
+const courtsWord = (n: number, noun = "COURT") => `${n} ${noun.toLowerCase()}${n === 1 ? "" : "s"}`;
 const byNumber = (a: string, b: string) => Number(a) - Number(b) || a.localeCompare(b);
 
 export type Tone = "orange" | "red";
@@ -440,7 +442,9 @@ export function panelFace(
     const same = move && ts.every((t) => t === ts[0]);
     const t30 = ts[0] ?? "";
     const h2: Line = o.state === "paying" ? payingLine
-      : ended(o) ? (move ? (same ? { text: "Keep playing on ", accent: `${Noun} ${t30}`, tail: ` · ${left(o)}` } : { text: `Keep playing on another ${noun.toLowerCase()} · ${left(o)}` }) : scanNow(o))
+      /* Lengths moving to DIFFERENT courts, after the end: "… · 7:18 left", without "to
+         extend" — the longer line measured 859 px in an 829 px panel (review of #740). */
+      : ended(o) ? (move ? (same ? { text: "Keep playing on ", accent: `${Noun} ${t30}`, tail: ` · ${left(o)}` } : { text: `Keep playing on another ${noun.toLowerCase()} · ${mmss(o.closesAt - nowMs)} left` }) : scanNow(o))
       : move ? (same ? { text: "Keep playing on ", accent: `${Noun} ${t30}`, tail: "?" } : { text: `Keep playing on another ${noun.toLowerCase()}?` })
       : { text: "Do you wish to extend?" };
     /* Three tiles share the width two had: a moving tile names its court on a line of its
@@ -488,7 +492,7 @@ export function panelFace(
     /* The price table (decision 1): one row per number of courts, a column per length.
        A row past a length's maxCourts shows the server's reason once, then a dash. */
     const rows = Array.from({ length: n }, (_, i) => ({
-      n: courtsWord(i + 1),
+      n: courtsWord(i + 1, noun),
       cells: shown(o).map(([k]): TableCell => {
         const l = lenOf(o, k);
         if (i < l.maxCourts) return { price: money(l.totals[i]) };
@@ -510,7 +514,7 @@ export function panelFace(
         const note = moveNote(l);
         return {
           key: `${o.key}-${L}`, qr: l.qr, what: w,
-          lines: [l.maxCourts === 1 ? "1 court" : `up to ${courtsWord(l.maxCourts)}`, "pick on phone", ...(note ? [note] : [])],
+          lines: [l.maxCourts === 1 ? courtsWord(1, noun) : `up to ${courtsWord(l.maxCourts, noun)}`, "pick on phone", ...(note ? [note] : [])],
         };
       }),
     };
@@ -541,13 +545,13 @@ export function panelFace(
       const allSame = notes.length > 0 && notes.every((x) => x === notes[0]);
       return {
         key: o.key, name: cardName(o), paying: o.state === "paying",
-        small: small(o, n > 1 && full ? ` · price for ${n} courts, pick on phone` : n > 1 ? " · pick courts on phone" : "", o.state === "paying"),
+        small: small(o, n > 1 && full ? ` · price for ${courtsWord(n, noun)}, pick on phone` : n > 1 ? ` · pick ${noun.toLowerCase()}s on phone` : "", o.state === "paying"),
         opts: shown(o).map(([k, L, w]): CardOpt => {
           const l = lenOf(o, k);
           if (!l.available) return { key: `${o.key}-${L}`, qr: null, what: w, price: "", agreed: false, when: "", why: l.why };
           const to = target(l);
           const bits = [spanTight(o.end, o.end + L)];
-          if (n > 1 && l.maxCourts < n) bits.push(courtsWord(l.maxCourts));
+          if (n > 1 && l.maxCourts < n) bits.push(courtsWord(l.maxCourts, noun));
           if (to && !allSame) bits.push(`${noun} ${to}`);
           return {
             key: `${o.key}-${L}`, qr: l.qr, what: w,

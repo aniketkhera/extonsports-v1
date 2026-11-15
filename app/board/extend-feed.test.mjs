@@ -672,3 +672,26 @@ test("three tiles, the hour and 90 min moving: the foot names them, never 'stay 
   assert.deepEqual(f.tiles.map((t) => t.on ?? ""), ["", "ON COURT 3", "ON COURT 3"]);
   assert.equal(f.h1, "BOOKING ENDS IN 7:00");
 });
+
+test("the cricket TV says lane(s) in the multi and card layouts too (review of #740)", () => {
+  const multi = parse(feed([offer({ layout: "multi", courts: [B1, B2], lengths: { m30: len(2250, 2), m60: len(4500, 1, { why: "Lane 1 booked at 2:30 PM" }) } })])).offers[0];
+  const m = X.panelFace([multi], T - 7 * MIN, labelOf, "LANE");
+  assert.deepEqual(m.rows.map((r) => r.n), ["1 lane", "2 lanes"]);
+  assert.deepEqual(m.codes.map((c) => c.lines[0]), ["up to 2 lanes", "1 lane"]);
+  const a = offer({ key: "abcdefgh0001", layout: "cards", courts: [B1] });
+  const b = offer({ key: "abcdefgh0002", layout: "cards", courts: [B2, B3], lengths: { m30: len(2250, 2), m60: len(4500, 2) } });
+  const c = X.panelFace(parse(feed([a, b])).offers, T - 7 * MIN, labelOf, "LANE");
+  assert.match(c.cards.find((x) => x.name.startsWith("LANES")).small, /price for 2 lanes, pick on phone/);
+  const all = JSON.stringify([m, c]);
+  assert.ok(!/\bcourts?\b/i.test(all), all.match(/.{20}\bcourts?\b.{20}/i)?.[0]);
+});
+
+test("red, lengths moving to different courts: the short line, still counting (review of #740)", () => {
+  const base = offer({ closesAt: iso(T + 10 * MIN) });
+  const o = parse(feed([offer({ closesAt: iso(T + 10 * MIN), lengths: {
+    m30: { ...base.lengths.m30, moves: [{ from: B2, to: B1 }] },
+    m60: { ...base.lengths.m60, moves: [{ from: B2, to: B3 }] },
+  } })], { now: iso(T + 2 * MIN) }), T + 2 * MIN).offers[0];
+  const f = X.panelFace([o], T + 2 * MIN, labelOf);
+  assert.equal(f.h2.text, "Keep playing on another court · 8:00 left");
+});

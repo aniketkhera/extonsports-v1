@@ -100,3 +100,8 @@ second (orangish-app `docs/court-extend.md` §17). 12 new scenarios (`*90*`, `on
   (measured first, then cut). 90 min is on the phone the code opens, and in the email.
 - A corner countdown was tried first and pushed every top row out of the panel; the countdown
   is now the headline's own number ("BOOKING ENDS IN 6:42", then "7:18 left to extend").
+
+**Review of #200 (same day):** the red face with lengths moving to DIFFERENT courts clipped its
+sub-head ("… · 9:59 left to extend", 859 px in an 829 px box); it now reads "… · 9:59 left".
+Two scenarios added (`oneMoveSplit`, `oneMoveSplitRed`): **all 104 faces fit, every code decodes.**
+The cricket TV's multi and card layouts now say lane(s), not court(s).
