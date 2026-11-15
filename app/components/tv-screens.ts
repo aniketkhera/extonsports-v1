@@ -147,6 +147,13 @@ export type Tv = {
   set: string;
   /** What it shows. Changing this line changes the TV. */
   shows: TvContent;
+  /** The sports whose TIME UP rings the time-up chime on this set (2026-11-15,
+   *  app/components/TimeUpChime.tsx), as the feed names them: "Badminton", "Cricket",
+   *  "Squash". Absent = silent. Only a set that shows a countdown can ring (the court
+   *  board or a sport board), and a sport board only for its own sport — the test in
+   *  tv-screens.test.mjs holds both. Whether the set's browser lets the page play sound
+   *  is a fact about the set: check it with ?chimetest=1 before adding a sport here. */
+  chime?: readonly string[];
 };
 
 export const TV_SCREENS = [

@@ -737,3 +737,50 @@ test("NOW_SCALE: only reception passes it, and four or more on court draw at 1x"
   // the time line shrinks to fit rather than being cut
   assert.match(rb, /<FitLine style=\{\{ fontSize: `calc\(\$\{size\} \* var\(--vw\) \* var\(--fit, 1\)\)`/);
 });
+
+/* The time-up chime (2026-11-15, Aniket: "build the chime at time-up"). The rules are
+   app/board/chime-pure.ts; the sound is app/components/TimeUpChime.tsx. */
+const C = await import("./chime-pure.ts");
+
+test("chimeDue: only TIME UP, only in its first 20 s", () => {
+  assert.equal(C.chimeDue("timeUp", 0), true);
+  assert.equal(C.chimeDue("timeUp", 19_999), true);
+  assert.equal(C.chimeDue("timeUp", C.CHIME_WINDOW_MS), false, "a TV waking later does not ring a stale TIME UP");
+  assert.equal(C.chimeDue("timeUp", -1), false, "never before the end");
+  for (const f of ["none", "offIn", "offSec", "endsIn"]) assert.equal(C.chimeDue(f, 500), false, f);
+});
+
+test("one chime per end instant; a sport rings only where its set lists it", () => {
+  assert.equal(C.chimeKey(1763240400000), C.chimeKey(1763240400000.4));
+  assert.notEqual(C.chimeKey(1763240400000), C.chimeKey(1763242200000));
+  assert.equal(C.chimesFor(["Badminton"], "Badminton"), true);
+  assert.equal(C.chimesFor(["Badminton"], "Cricket"), false);
+  assert.equal(C.chimesFor(["Badminton"], "badminton"), false, "exact names, as the feed gives them");
+  assert.equal(C.chimesFor(undefined, "Badminton"), false);
+  assert.equal(C.chimesFor([], "Squash"), false);
+});
+
+test("the test mode cycles the three levels, or holds a pinned one; nothing can clip", () => {
+  assert.deepEqual([0, 1, 2, 3, 4].map((n) => C.testLevel(n).level), [1, 2, 3, 1, 2]);
+  assert.deepEqual(C.testLevel(0, 2), { level: 2, gain: C.CHIME_TEST_LEVELS[1] });
+  assert.equal(C.testLevel(5, 9).level, 3, "an out-of-range pin is ignored");
+  for (let i = 1; i < C.CHIME_TEST_LEVELS.length; i++) assert.ok(C.CHIME_TEST_LEVELS[i] > C.CHIME_TEST_LEVELS[i - 1]);
+  assert.ok(Math.max(...C.CHIME_TEST_LEVELS) <= 1 && C.CHIME_GAIN > 0 && C.CHIME_GAIN <= 1);
+  assert.ok(Math.abs(C.CHIME_PEAK - C.CHIME_PARTIALS.reduce((s, [, a]) => s + a, 0)) < 1e-9);
+  assert.ok(C.CHIME_TEST_FOR_MS > C.CHIME_TEST_EVERY_MS, "the test stops by itself");
+});
+
+test("the countdown rings the chime; the TV's own list decides; the test mode is on every TV page", () => {
+  const rb = readFileSync(new URL("../reception/ReceptionBoard.tsx", import.meta.url), "utf8");
+  const tv = readFileSync(new URL("../components/TvScreen.tsx", import.meta.url), "utf8");
+  const tc = readFileSync(new URL("../components/TimeUpChime.tsx", import.meta.url), "utf8");
+  // NudgedFoot is the only caller: the countdown is the only thing that rings.
+  assert.equal(rb.match(/useTimeUpChime\(/g)?.length, 1);
+  assert.match(rb, /useTimeUpChime\(sport, nudge\.endMs, face\.kind, ms\);/);
+  // The TV's own list, around the whole page; the sound check on every TV page.
+  assert.match(tv, /<ChimeSportsProvider sports=\{chimeOf\(tv\)\}>\s*<ChimeTest \/>/);
+  // A sport rings only where the list names it.
+  assert.match(tc, /const on = chimesFor\(sports, sport\);/);
+  // Claimed BEFORE it plays, so two entries ending together cannot both ring.
+  assert.match(tc, /if \(!claim\(chimeKey\(endMs\)\)\) return;\s*void playChime\(CHIME_GAIN\)/);
+});

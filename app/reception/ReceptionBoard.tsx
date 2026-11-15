@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { makeTicker, useTick } from "../components/ticker";
+import { useTimeUpChime } from "../components/TimeUpChime";
 import Image from "next/image";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
 import { ScreenHeader, BookingBand, BAND_GAP, BOOK_BAND, BAND_STAMP, secondTicker } from "../components/ScreenChrome";
@@ -685,6 +686,10 @@ function NudgedFoot({
 }: { e: Entry; nudge: EntryNudge; sport: string; labels: string[]; big: boolean }) {
   const ms = useTick(secondTicker);
   const face: NudgeFace = ms ? nudgeFace(nudge.kind, nudge.endMs - ms) : { kind: "none" };
+  /* The time-up chime (2026-11-15, TimeUpChime.tsx): rings once as TIME UP begins, on a
+     TV page whose tv-screens.ts entry lists this sport in `chime` (TvScreen.tsx provides
+     the list around the whole page). Silent everywhere else, /reception's own page too. */
+  useTimeUpChime(sport, nudge.endMs, face.kind, ms);
   return <EntryFoot e={e} sport={sport} labels={labels} big={big} face={face} nudge={nudge} />;
 }
 

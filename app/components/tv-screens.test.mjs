@@ -116,3 +116,14 @@ test("no TV route is shadowed by a redirect or by a file in public/", () => {
     assert.ok(!existsSync(pub) || statSync(pub).isDirectory(), `public/${t.id} is a file and would shadow ${t.route}`);
   }
 });
+
+test("a TV rings the time-up chime only for sports its own countdown shows (2026-11-15)", () => {
+  const SPORTS = { "court-board": ["Badminton", "Cricket", "Squash"], "badminton-board": ["Badminton"], "cricket-board": ["Cricket"] };
+  for (const t of TVS) {
+    if (!("chime" in t) || t.chime === undefined) continue;
+    const allowed = SPORTS[t.shows];
+    assert.ok(allowed, `${t.id}: shows ${t.shows}, which has no countdown to ring at`);
+    assert.equal(new Set(t.chime).size, t.chime.length, `${t.id}: a sport listed twice`);
+    for (const s of t.chime) assert.ok(allowed.includes(s), `${t.id}: ${s} is not on its board`);
+  }
+});
