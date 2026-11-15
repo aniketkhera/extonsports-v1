@@ -7,8 +7,10 @@
    information only. It has no button and no admin link, and the only link in it is the
    new address (mailto). Tests: lib/signup-notice.test.mjs.
 
-   Two routes send it, both through sendSignupNotice below:
-     - the My bookings popup's mailing-list box (app/api/mailing-list-optin), and
+   Three routes send it, all through sendSignupNotice below:
+     - the My bookings popup's mailing-list box (app/api/mailing-list-optin),
+     - the waiver signing link's mailing-list box (app/api/mailing-list-optin/server,
+       2026-11-15): the platform signs the waiver and calls this site, server to server, and
      - the footer bar (app/api/waitlist, footer-notice.ts), which keeps mailer-admin's
        subscribe route and only swaps its plain notice for this one.
 
@@ -22,7 +24,7 @@
    Pure: no imports that run. The Resend send and the database count are handed in
    (lib/signup-notice-send.ts wires the real ones), so node:test can drive all of it. */
 
-export type NoticeSource = 'popup' | 'footer'
+export type NoticeSource = 'popup' | 'footer' | 'waiver'
 
 /** What happened to the new subscriber's welcome email, as far as the route knows.
  *  'on' = switched on, and sent by code whose outcome the route cannot see (the footer). */
@@ -68,7 +70,7 @@ export type NoticeInput = {
   geo?: NoticeGeo | null
   /** The footer bar asks for a name; the popup does not. */
   name?: string | null
-  /** The footer's UTM and referrer. Ignored for the popup, which has none. */
+  /** The footer's UTM and referrer. Ignored for the popup and the waiver, which have none. */
   acquisition?: NoticeAcquisition | null
   /** ACTIVE subscribers for the property, this one included; null when the count failed. */
   listCount?: number | null
@@ -93,9 +95,13 @@ const FONT = 'Helvetica,Arial,sans-serif'
 
 /* ── the words ─────────────────────────────────────────────────────────────── */
 
-const WHERE: Record<NoticeSource, { via: string; html: string; text: string }> = {
-  popup: { via: 'My bookings popup', html: 'the <b>My bookings</b> popup', text: 'the My bookings popup' },
-  footer: { via: 'Mailing-list form', html: 'the <b>mailing-list form</b>', text: 'the mailing-list form' },
+// onHost: is the box on this site? The popup and the footer are; the waiver is signed
+// on the platform's page (app.orangish.io), which is not this host, so its sentence names no
+// host rather than a wrong one (2026-11-15).
+const WHERE: Record<NoticeSource, { via: string; html: string; text: string; onHost: boolean }> = {
+  popup: { via: 'My bookings popup', html: 'the <b>My bookings</b> popup', text: 'the My bookings popup', onHost: true },
+  footer: { via: 'Mailing-list form', html: 'the <b>mailing-list form</b>', text: 'the mailing-list form', onHost: true },
+  waiver: { via: 'Waiver signing link', html: 'the <b>waiver signing link</b>', text: 'the waiver signing link', onHost: false },
 }
 
 /** 'on': the setting, in the present tense, and no claim about this person's email. */
@@ -106,8 +112,9 @@ function sentence(brand: NoticeBrand, source: NoticeSource, welcome: WelcomeStat
   const host = esc(brand.host)
   const where = WHERE[source]
   // The popup's box is ticked before anyone touches it (a deliberate default, 2026-10-21),
-  // so its notice says the box was ticked: that is how this person consented.
-  const tail = source === 'popup'
+  // so its notice says the box was ticked: that is how this person consented. The waiver
+  // link's box is ticked by default too (2026-11-15), so it says the same.
+  const tail = source === 'popup' || source === 'waiver'
     ? {
         sent: '. The mailing-list box was ticked, and our welcome email has gone out.',
         on: `. The mailing-list box was ticked. ${WELCOME_ON}`,
@@ -123,8 +130,8 @@ function sentence(brand: NoticeBrand, source: NoticeSource, welcome: WelcomeStat
         unknown: '.',
       }[welcome]
   return {
-    html: `Joined from ${where.html} on ${host}${esc(tail)}`,
-    text: `Joined from ${where.text} on ${brand.host}${tail}`,
+    html: `Joined from ${where.html}${where.onHost ? ` on ${host}` : ''}${esc(tail)}`,
+    text: `Joined from ${where.text}${where.onHost ? ` on ${brand.host}` : ''}${tail}`,
   }
 }
 

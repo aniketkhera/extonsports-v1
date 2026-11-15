@@ -1,43 +1,22 @@
 // POST /api/mailing-list-optin — the "Add me to the Exton Sports mailing list" box in the
 // My bookings popup (2026-10-21). All the rules live in optin-core.ts and its tests; this
-// file only plugs in mailer-admin's database client and email shell, the same ones the
-// footer's /api/waitlist uses, so the row lands on the same property-scoped list and a new
-// address gets the same welcome.
+// file only plugs in mailer-admin's database client and email shell (live-deps.ts), the same
+// ones the footer's /api/waitlist uses, so the row lands on the same property-scoped list
+// and a new address gets the same welcome.
 //
 // The answer goes back BEFORE the database is touched; the lookup, the insert and the two
 // emails run in after(), so neither the body nor the response time says whether the
 // address was already on the list (Vercel keeps the function alive for them).
 
 import { NextRequest, NextResponse, after } from 'next/server'
-import { createSupabase } from 'mailer-admin/lib/supabase'
-import { sendOne, renderEmailHtml, emailBodyHtml, unsubscribeUrl } from 'mailer-admin/lib/email'
-import { config } from '@/mailer-admin.config'
-import { noticeDepsFor } from '@/lib/signup-notice-send'
 import { createRateLimiter, handleOptin, OPTIN_LIMIT, OPTIN_WINDOW_MS, type OptinDeps } from './optin-core'
+import { liveDeps } from './live-deps'
 
-const supa = createSupabase(config)
-
+// The database, email and staff notice are live-deps.ts's (2026-11-15), shared with the
+// waiver link's server route; this route adds its per-IP limit.
 const deps: OptinDeps = {
-  site: config,
-  // Only the two calls the rule allows are handed over: a lookup and a plain insert.
-  db: {
-    configured: () => supa.configured(),
-    selectRows: (table, opts) => supa.selectRows(table, opts),
-    insertRow: (table, row) => supa.insertRow(table, row),
-  },
-  mail: {
-    send: (a) => sendOne(config, a),
-    welcomeHtml: ({ subject, bodyMd, token }) =>
-      renderEmailHtml(config, {
-        subject,
-        bodyHtml: emailBodyHtml(config, bodyMd),
-        unsubscribeUrl: unsubscribeUrl(config, token),
-      }),
-  },
+  ...liveDeps,
   allow: createRateLimiter(OPTIN_LIMIT, OPTIN_WINDOW_MS),
-  log: (m) => console.error(m),
-  // The staff notice, the same one the footer sends (lib/signup-notice.ts, 2026-10-21).
-  notice: noticeDepsFor(config),
 }
 
 export async function POST(req: NextRequest) {

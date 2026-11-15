@@ -140,6 +140,23 @@ const nextConfig: NextConfig = {
       // a 404. 307, like /field: a cached 308 could never be pointed anywhere else.
       { source: '/fitnessworkshop', destination: 'https://app.orangish.io/c/bollywood', permanent: false },
 
+      // ── /waiver → the open waiver-signing page in the Orangish app (2026-11-15) ──────────
+      // The waiver's "open link" (orangish-app docs/exton-waiver-draft.md, "The open link"):
+      // anyone the platform does not know — a walk-in, a subscriber, a partner player's parent —
+      // gives an email and a name there and is sent a signing link of their own. The admin
+      // panel's front-desk QR encodes https://www.extonsports.com/waiver, the club's own
+      // address, so a printed code outlives any change to the app's paths. That is the point of
+      // this hop, and why it is permanent: false (307), like /pay: a browser that cached a 308
+      // could never be re-pointed, and the club front-doors plan may move the app's URL. Above
+      // the apex rule so both hosts take one hop.
+      //
+      // /waiver/ needs no rule of its own and could not have one: Next's trailing-slash 308
+      // (/waiver/ -> /waiver) runs before every rule in this list, then this one answers. Exact
+      // on purpose: /waiver/<anything> is not forwarded — the app's per-person links are
+      // app.orangish.io/waiver/<token> and never pass through this site. Not in app/sitemap.ts,
+      // the nav or the footer: it is a redirect, not a page.
+      { source: '/waiver', destination: 'https://app.orangish.io/sign-waiver/exton-sports', permanent: false },
+
       // ── ONE CANONICAL HOST: www ────────────────────────────────────────────
       // Until 2026-09-30 the apex and www BOTH served 200 with no redirect
       // between them, while the site declared the APEX canonical (metadataBase,
