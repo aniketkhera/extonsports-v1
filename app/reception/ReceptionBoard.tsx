@@ -197,8 +197,15 @@ export type Panel = {
    Ten is close to the ceiling. Measured at 720p, a panel with a live booking
    AND ten rows comes to roughly 490px of the ~640px available, so there is
    headroom but not another ten. If this grows again the row height has to
-   come down with it. */
-const UPCOMING_COUNT = 10;
+   come down with it.
+
+   BACK TO FIVE, 2026-11-15. Aniket: "include only the next 5 bookings at the bottom
+   against each sport (currently it is 10 I think, so that is eating up space)". The
+   rows given back go to the NOW area above (flex), where three live groups and the
+   OFF COURT countdown were the ones short of room (see BigEntry). Reception only:
+   the badminton and cricket TVs list beside their NOW area, not under it, and keep
+   their own count (SportBoard.tsx); the vestibule shows one AFTER THAT row. */
+const UPCOMING_COUNT = 5;
 
 /* How many simultaneous starts UP NEXT shows in the big area — see splitUpNext in
    board-lib. Two, because the UP NEXT line costs about one entry's lockup row:
