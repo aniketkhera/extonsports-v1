@@ -122,6 +122,25 @@ export const SCENARIOS = {
   twoGroupsHalfPaying: { day: SUN, clock: T7, blocks: twoHalfBlocks, offers: [off([B1], m(14), len(2250, 1), gone(c1), paying), off([B2, B3], m(14), len(2250, 2), len(4500, 2))] },
   threeGroupsHalf: { day: SUN, clock: T7, blocks: threeGHalfBlocks, offers: [off([B1], m(14), len(2250, 1), gone(c1)), ...threeG().slice(1)] },
   threeGroupsHalfPaying: { day: SUN, clock: T7, blocks: threeGHalfBlocks, offers: [off([B1], m(14), len(2250, 1), gone(c1), paying), ...threeG().slice(1)] },
+
+  // ── 2026-11-15: three lengths (30, 60, 90), the countdown, end + 10 (§17) ──────────
+  one90: { day: SUN, clock: T7, blocks: oneBlocks, offers: [one({ m90: len(6750, 1) })] },
+  one90Red: { day: SUN, clock: T2, blocks: oneBlocks, offers: [one({ m90: len(6750, 1) })] },
+  one90Paying: { day: SUN, clock: T7, blocks: oneBlocks, offers: [one({ ...paying, m90: len(6750, 1) })] },
+  one90Move: { day: SUN, clock: T7, blocks: move60Blocks, offers: [one({ m60: len(4500, 1, mv(B2, B3)), m90: len(6750, 1, mv(B2, B3)) })] },
+  one90Contract: { day: SUN, clock: T7, blocks: oneBlocks, offers: [one({ ...contract, m30: len(1500, 1), m60: len(3000, 1), m90: len(4500, 1) })] },
+  one90Half: { day: SUN, clock: T7, blocks: halfBlocks, offers: [off([B1], m(14), len(2250, 1), gone(c1), { m90: gone(c1) })] },
+  three90: { day: SUN, clock: T7, blocks: threeBlocks, offers: [three({ m90: len(6750, 2, { why: c1 }) })] },
+  three90Red: { day: SUN, clock: T2, blocks: threeBlocks, offers: [three({ m90: len(6750, 2, { why: c1 }) })] },
+  late90: { day: FRI, clock: [21, 53], blocks: [B1, B2, B3].map((c) => bk(FRI, c, m(20, 30), m(22))), offers: [off([B1, B2, B3], m(22), len(2000, 3), len(4000, 3), { m90: len(6000, 3) })] },
+  twoGroups90: { day: SUN, clock: T7, blocks: twoBlocks, offers: two([{ m90: len(6750, 1) }, { m90: len(6750, 2) }]) },
+  threeGroups90: { day: SUN, clock: T7, blocks: threeGBlocks, offers: threeG([{ m90: len(6750, 1) }, { m90: len(6750, 1) }, { m90: len(6750, 1) }]) },
+  // The old window still draws (a platform not yet deployed).
+  oneTail5: { day: SUN, clock: T7, blocks: oneBlocks, offers: [one({ tail5: true })] },
+  // Review of #740: lengths moving to DIFFERENT courts, red, at the first second (the longest
+  // countdown "10:00"). 30 min to Court 1, the hour and 90 min to Court 3.
+  oneMoveSplitRed: { day: SUN, clock: [14, 0], blocks: moveBlocks, offers: [one({ m30: len(2250, 1, mv(B2, B1)), m60: len(4500, 1, mv(B2, B3)), m90: len(6750, 1, mv(B2, B3)) })] },
+  oneMoveSplit: { day: SUN, clock: T7, blocks: moveBlocks, offers: [one({ m30: len(2250, 1, mv(B2, B1)), m60: len(4500, 1, mv(B2, B3)), m90: len(6750, 1, mv(B2, B3)) })] },
 }
 
 /** The instant a scenario's clock reads. */
@@ -156,7 +175,9 @@ export function payload(name, s, qrFor) {
       // Not for sale: exactly the platform's lengthFeed for an unavailable length, and no code.
       if (l.gone) return { available: false, maxCourts: 0, perCourt: null, totals: [], moves: [], why: l.gone, qr: null }
       const q = layout === 'cards-one-code' ? null : qrFor(url(L))
-      if (q) texts.push(url(L))
+      // The TV draws 90 min only on `one` (extend-feed.ts panelFace, 2026-11-15): elsewhere its
+      // code is sent but never on the wall, so it is not expected back from the screenshot.
+      if (q && (L !== 90 || layout === 'one')) texts.push(url(L))
       return {
         available: true, maxCourts: l.max, perCourt: l.per,
         totals: Array.from({ length: l.max }, (_, k) => l.per * (k + 1)),
@@ -167,9 +188,10 @@ export function payload(name, s, qrFor) {
     if (qr) texts.push(url())
     return {
       key: keyOf(i), layout, state: o.state ?? 'open', date: s.day, end: o.end,
-      endsAt: new Date(endsAt).toISOString(), opensAt: new Date(endsAt - 600_000).toISOString(), closesAt: new Date(endsAt + 300_000).toISOString(),
+      // end + 10 since 2026-11-15 (orangish-app docs/court-extend.md §17); `tail5` keeps the old window.
+      endsAt: new Date(endsAt).toISOString(), opensAt: new Date(endsAt - 600_000).toISOString(), closesAt: new Date(endsAt + (o.tail5 ? 300_000 : 600_000)).toISOString(),
       basis: o.basis ?? 'published', courts: o.courts, qr,
-      lengths: { m30: length(o.m30, 30), m60: length(o.m60, 60) },
+      lengths: o.m90 ? { m30: length(o.m30, 30), m60: length(o.m60, 60), m90: length(o.m90, 90) } : { m30: length(o.m30, 30), m60: length(o.m60, 60) },
     }
   })
   return {

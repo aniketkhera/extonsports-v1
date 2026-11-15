@@ -100,7 +100,7 @@ test("a malformed offer is dropped — and only that one", () => {
     { date: "2026-11-09" },                           // not the date of endsAt in club time
     { end: 870 },                                     // not the minute of endsAt
     { opensAt: iso(T - 12 * MIN) },                   // the window is end − 10 … end + 5
-    { closesAt: iso(T + 10 * MIN) },
+    { closesAt: iso(T + 15 * MIN) },
     { endsAt: "tomorrow" },
     { courts: [] },
     { courts: ["not-a-court"] },                      // labelled from the payload's courts only
@@ -302,7 +302,7 @@ test("one court, T−7: the approved face", () => {
   assert.equal(f.layout, "one");
   assert.equal(f.tone, "orange");
   assert.equal(f.chip, "COURT 2");
-  assert.equal(f.h1, "BOOKING ENDS IN 7 MIN");
+  assert.equal(f.h1, "BOOKING ENDS IN 7:00");
   assert.equal(f.h2.text, "Do you wish to extend?");
   assert.deepEqual(f.tiles.map((t) => [t.what, t.when, t.price]), [
     ["EXTEND 30 MIN", "2:00 – 2:30 PM", "$22.50"],
@@ -311,14 +311,15 @@ test("one court, T−7: the approved face", () => {
   assert.equal(f.foot, "Scan with your phone camera · pay by card · stay on Court 2");
 });
 
-test("minutes are rounded up and never 0; at the end it turns red and holds to end + 5", () => {
-  assert.equal(face([offer()], T - 10 * MIN).h1, "BOOKING ENDS IN 10 MIN");
-  assert.equal(face([offer()], T - 9 * MIN - 59_000).h1, "BOOKING ENDS IN 10 MIN");
-  assert.equal(face([offer()], T - 1000).h1, "BOOKING ENDS IN 1 MIN");
+test("the countdown runs to the second and never shows 0:00; at the end it turns red and counts to the close (2026-11-15)", () => {
+  assert.equal(face([offer()], T - 10 * MIN).h1, "BOOKING ENDS IN 10:00");
+  assert.equal(face([offer()], T - 9 * MIN - 59_000).h1, "BOOKING ENDS IN 9:59");
+  assert.equal(face([offer()], T - 1000).h1, "BOOKING ENDS IN 0:01");
+  assert.equal(face([offer()], T - 1).h1, "BOOKING ENDS IN 0:01");
   const red = face([offer()], T);
   assert.equal(red.tone, "red");
   assert.equal(red.h1, "YOUR TIME IS UP");
-  assert.equal(red.h2.text, "Scan now to keep playing · open until 2:05");
+  assert.equal(red.h2.text, "Scan now to keep playing · 5:00 left to extend");
   assert.equal(red.foot, "The extension starts at 2:00, when your booking ended");
   assert.equal(X.panelFace([], T, labelOf), null);
 });
@@ -341,7 +342,7 @@ test("the TV never works out a price: every figure is a total the server sent", 
   });
   const f = face([o], T - 7 * MIN);
   assert.equal(f.chip, "COURTS 1 · 2 · 3");
-  assert.equal(f.h1, "END IN 7 MIN");
+  assert.equal(f.h1, "END IN 7:00");
   assert.deepEqual(f.heads, ["30 MIN · 2:00–2:30", "1 HOUR · 2:00–3:00"]);
   assert.deepEqual(f.rows.map((r) => [r.n, ...r.cells.map((c) => c.price ?? c.why)]), [
     ["1 court", "$22.50", "$45"],
@@ -383,7 +384,7 @@ test("the move face (Q20): the own court is taken from the end, another is free"
   assert.equal(f.foot, "Move to Court 3 at 2:00 so the next players can start on Court 2");
   // Only the hour moves: the ordinary face, with the hour's tile naming its court.
   const half = face([offer({ lengths: { m30: len(2250, 1), m60: len(4500, 1, mv) } })], T - 7 * MIN);
-  assert.equal(half.h1, "BOOKING ENDS IN 7 MIN");
+  assert.equal(half.h1, "BOOKING ENDS IN 7:00");
   assert.deepEqual(half.tiles.map((t) => t.what), ["EXTEND 30 MIN", "1 HOUR · COURT 3"]);
   // On a card: COURT 2 → 3.
   const card = offer({ layout: "cards", lengths: { m30: len(2250, 1, mv), m60: len(4500, 1, mv) } });
@@ -423,7 +424,7 @@ test("two bookings: a card each; red and paying are said on the card", () => {
   const a = offer({ key: "aaaaaaaaaaaa", layout: "cards", courts: [B1] });
   const b = offer({ key: "bbbbbbbbbbbb", layout: "cards", courts: [B2, B3], lengths: { m30: len(2250, 2), m60: len(4500, 2) } });
   const f = face([a, b], T - 7 * MIN);
-  assert.equal(f.h1, "2 BOOKINGS END IN 7 MIN");
+  assert.equal(f.h1, "2 BOOKINGS END IN 7:00");
   assert.deepEqual(f.cards.map((c) => [c.name, c.small]), [
     ["COURT 1", "ends 2:00 PM"],
     ["COURTS 2 + 3", "ends 2:00 PM · price for 2 courts, pick on phone"],
@@ -432,20 +433,20 @@ test("two bookings: a card each; red and paying are said on the card", () => {
   const late = face([a, { ...b, state: "paying" }], T + MIN);
   assert.equal(late.tone, "red", "one open offer past its end");
   assert.equal(late.h1, "YOUR TIME IS UP");
-  assert.deepEqual(late.cards.map((c) => c.small), ["ended 2:00 · open until 2:05", "PAYMENT IN PROGRESS"]);
+  assert.deepEqual(late.cards.map((c) => c.small), ["ended 2:00 · 4:00 left to extend", "PAYMENT IN PROGRESS"]);
   // Fewer drawn than the layout counts: the server's layout, the count from what is drawn.
   const b2 = { ...b, end: 870, endsAt: iso(T + 30 * MIN), opensAt: iso(T + 20 * MIN), closesAt: iso(T + 35 * MIN) };
   const few = face([a, b2], T - 7 * MIN);
   assert.equal(few.layout, "cards");
   assert.equal(few.cards.length, 1);
-  assert.equal(few.h1, "BOOKING ENDS IN 7 MIN");
+  assert.equal(few.h1, "BOOKING ENDS IN 7:00");
 });
 
 test("three bookings: one code each, the length picked on the phone", () => {
   const c = (k, court, over = {}) => offer({ key: k, layout: "cards-one-code", courts: [court], qr, lengths: { m30: len(2250, 1, { qr: null }), m60: len(4500, 1, { qr: null }) }, ...over });
   const all = [c("aaaaaaaaaaaa", B1), c("bbbbbbbbbbbb", B2, { state: "paying" }), c("cccccccccccc", B3, { basis: "contract" })];
   const f = face(all, T - 7 * MIN);
-  assert.equal(f.h1, "3 BOOKINGS END IN 7 MIN");
+  assert.equal(f.h1, "3 BOOKINGS END IN 7:00");
   assert.deepEqual(f.cards.map((x) => [x.name, x.small, x.line]), [
     ["COURT 1", "ends 2:00 PM", "scan, then pick 30 min or 1 hour"],
     ["COURT 2", "ends 2:00 PM", "PAYMENT IN PROGRESS"],
@@ -455,7 +456,7 @@ test("three bookings: one code each, the length picked on the phone", () => {
   assert.equal(f.cards[2].prices, null);
   const red = face(all, T + MIN);
   assert.equal(red.h1, "YOUR TIME IS UP");
-  assert.equal(red.cards[0].small, "ended 2:00 · open until 2:05");
+  assert.equal(red.cards[0].small, "ended 2:00 · 4:00 left to extend");
 });
 
 test("bandFace: booking and music take turns, 15 s each on the wall clock; never with the panel up (2026-11-13)", async () => {
@@ -513,7 +514,7 @@ test("the music code: badminton TV only, gone with the extend panel, image and U
   const tv = read("../components/TvScreen.tsx");
   // Exactly one screen asks for it.
   assert.equal(tv.match(/\bmusic\b(?= \/>)/g)?.length, 1);
-  assert.match(tv, /"cricket-board": \(\) => <SportBoard sport="Cricket"(?: birthday)? \/>/);
+  assert.match(tv, /"cricket-board": \(\) => <SportBoard sport="Cricket" extend(?: birthday)? \/>/);
   // No other screen passes a face or computes one.
   for (const p of [
     "../reception/ReceptionBoard.tsx", "../vestibule/VestibuleScreen.tsx", "../our-club/OurClubScreen.tsx",
@@ -560,11 +561,11 @@ test("the music code: badminton TV only, gone with the extend panel, image and U
   assert.match(svg, /viewBox="0 0 37 37"/); // version 3 + 4-module quiet zone, as generated
 });
 
-test("the badminton TV alone reads `extend`; the line is FREE AFTER everywhere else (Q19)", () => {
+test("the sport TVs read `extend` (cricket too since 2026-11-15); the line is FREE AFTER everywhere else (Q19)", () => {
   const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
   const tv = read("../components/TvScreen.tsx");
   assert.match(tv, /"badminton-board": \(\) => <SportBoard sport="Badminton" extend music \/>/);
-  assert.match(tv, /"cricket-board": \(\) => <SportBoard sport="Cricket"(?: birthday)? \/>/);
+  assert.match(tv, /"cricket-board": \(\) => <SportBoard sport="Cricket" extend(?: birthday)? \/>/);
   // Reception and the vestibule never ask for it.
   for (const p of ["../reception/ReceptionBoard.tsx", "../vestibule/VestibuleScreen.tsx"]) {
     for (const m of read(p).matchAll(/useCourtPanels\(\{([^}]*)\}\)/g)) assert.ok(!/extend/.test(m[1]), `${p}: ${m[1]}`);
@@ -597,7 +598,7 @@ test("the birthday greeting: cricket TV only, off at midnight EST on 13 Nov (202
   const tv = read("../components/TvScreen.tsx");
   // Exactly one screen asks for it, and it is the cricket board.
   assert.equal(tv.match(/\bbirthday\b(?= \/>)/g)?.length, 1);
-  assert.match(tv, /"cricket-board": \(\) => <SportBoard sport="Cricket" birthday \/>/);
+  assert.match(tv, /"cricket-board": \(\) => <SportBoard sport="Cricket" extend birthday \/>/);
   const line = read("../reception/BirthdayLine.tsx");
   assert.match(line, /name: "Avyukth Tharun"/);
   // Midnight at the club: EST (UTC-5) from 1 Nov 2026, so 05:00Z on the 14th.
@@ -609,4 +610,88 @@ test("the birthday greeting: cricket TV only, off at midnight EST on 13 Nov (202
   const css = read("../reception/birthday.module.css");
   assert.match(css, /\.box \{\s*position: absolute;/);
   assert.match(css, /@keyframes birthday-glow \{\s*from \{ opacity: [\d.]+; \}\s*to \{ opacity: 1; \}\s*\}/);
+});
+
+
+/* ── 2026-11-15: 90 minutes, end + 10, the countdown (orangish-app docs/court-extend.md §17) ── */
+
+test("end + 10 is a window the platform writes; end + 5 still parses (either deploy order)", () => {
+  for (const tail of [5, 10]) {
+    const raw = feed([offer({ closesAt: iso(T + tail * MIN) })]);
+    assert.equal(parse(raw).offers.length, 1, `end + ${tail}`);
+  }
+  assert.equal(parse(feed([offer({ closesAt: iso(T + 15 * MIN) })])).offers.length, 0);
+});
+
+test("a 90-minute length: parsed when sent, drawn as a third tile with its own code and price", () => {
+  const base = offer();
+  const m90 = { ...base.lengths.m60, perCourt: 6750, totals: [6750] };
+  const o = offer({ lengths: { ...base.lengths, m90 } });
+  const parsed = parse(feed([o])).offers[0];
+  assert.equal(parsed.lengths.m90.perCourt, 6750);
+  const f = X.panelFace([parsed], T - 7 * MIN, labelOf);
+  assert.deepEqual(f.tiles.map((t) => t.what), ["EXTEND 30 MIN", "EXTEND 1 HOUR", "EXTEND 90 MIN"]);
+  assert.equal(f.tiles[2].price, "$67.50");
+  assert.ok(f.tiles[2].qr, "a code for 90 minutes");
+  // No m90 sent: two tiles, as before.
+  const two = X.panelFace([parse(feed([offer()])).offers[0]], T - 7 * MIN, labelOf);
+  assert.equal(two.tiles.length, 2);
+});
+
+test("a malformed 90-minute length drops the offer, as any malformed length does", () => {
+  const base = offer();
+  const bad = offer({ lengths: { ...base.lengths, m90: { ...base.lengths.m60, totals: [1, 2, 3] } } });
+  assert.equal(parse(feed([bad])).offers.length, 0);
+});
+
+test("the countdown with end + 10: to the end in the headline, then to the close in the sub-head", () => {
+  assert.equal(X.mmss(14 * MIN + 32_000), "14:32");
+  assert.equal(X.mmss(1), "0:01");
+  assert.equal(X.mmss(0), "0:00");
+  const o = parse(feed([offer({ closesAt: iso(T + 10 * MIN) })], { now: iso(T - 7 * MIN) })).offers[0];
+  assert.equal(X.panelFace([o], T - 6 * MIN - 42_000, labelOf).h1, "BOOKING ENDS IN 6:42");
+  const after = X.panelFace([o], T + 2 * MIN + 42_000, labelOf);
+  assert.equal(after.tone, "red");
+  assert.equal(after.h1, "YOUR TIME IS UP");
+  assert.equal(after.h2.text, "Scan now to keep playing · 7:18 left to extend");
+});
+
+test("the cricket TV says LANE", () => {
+  const o = parse(feed([offer()])).offers[0];
+  const f = X.panelFace([o], T - 7 * MIN, labelOf, "LANE");
+  assert.match(f.chip, /^LANE /);
+  assert.match(f.foot, /stay on Lane /);
+});
+
+test("three tiles, the hour and 90 min moving: the foot names them, never 'stay on' (2026-11-15)", () => {
+  const base = offer();
+  const mv = { moves: [{ from: B2, to: B3 }] };
+  const o = parse(feed([offer({ lengths: { m30: base.lengths.m30, m60: { ...base.lengths.m60, ...mv }, m90: { ...base.lengths.m60, perCourt: 6750, totals: [6750], ...mv } } })])).offers[0];
+  const f = X.panelFace([o], T - 7 * MIN, labelOf);
+  assert.equal(f.foot, "Scan with your phone camera · pay by card · 1 hour and 90 min are on Court 3");
+  assert.deepEqual(f.tiles.map((t) => t.on ?? ""), ["", "ON COURT 3", "ON COURT 3"]);
+  assert.equal(f.h1, "BOOKING ENDS IN 7:00");
+});
+
+test("the cricket TV says lane(s) in the multi and card layouts too (review of #740)", () => {
+  const multi = parse(feed([offer({ layout: "multi", courts: [B1, B2], lengths: { m30: len(2250, 2), m60: len(4500, 1, { why: "Lane 1 booked at 2:30 PM" }) } })])).offers[0];
+  const m = X.panelFace([multi], T - 7 * MIN, labelOf, "LANE");
+  assert.deepEqual(m.rows.map((r) => r.n), ["1 lane", "2 lanes"]);
+  assert.deepEqual(m.codes.map((c) => c.lines[0]), ["up to 2 lanes", "1 lane"]);
+  const a = offer({ key: "abcdefgh0001", layout: "cards", courts: [B1] });
+  const b = offer({ key: "abcdefgh0002", layout: "cards", courts: [B2, B3], lengths: { m30: len(2250, 2), m60: len(4500, 2) } });
+  const c = X.panelFace(parse(feed([a, b])).offers, T - 7 * MIN, labelOf, "LANE");
+  assert.match(c.cards.find((x) => x.name.startsWith("LANES")).small, /price for 2 lanes, pick on phone/);
+  const all = JSON.stringify([m, c]);
+  assert.ok(!/\bcourts?\b/i.test(all), all.match(/.{20}\bcourts?\b.{20}/i)?.[0]);
+});
+
+test("red, lengths moving to different courts: the short line, still counting (review of #740)", () => {
+  const base = offer({ closesAt: iso(T + 10 * MIN) });
+  const o = parse(feed([offer({ closesAt: iso(T + 10 * MIN), lengths: {
+    m30: { ...base.lengths.m30, moves: [{ from: B2, to: B1 }] },
+    m60: { ...base.lengths.m60, moves: [{ from: B2, to: B3 }] },
+  } })], { now: iso(T + 2 * MIN) }), T + 2 * MIN).offers[0];
+  const f = X.panelFace([o], T + 2 * MIN, labelOf);
+  assert.equal(f.h2.text, "Keep playing on another court · 8:00 left");
 });

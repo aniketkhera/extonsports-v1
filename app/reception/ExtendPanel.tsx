@@ -29,6 +29,14 @@ import styles from "./ExtendPanel.module.css";
    no longer for sale on a committed offer (Q15's second scan, Q8's joinable Checkout)
    is drawn as its reason, with no code and no price.
 
+   2026-11-15 (orangish-app docs/court-extend.md §17): up to THREE lengths (30 min, 1 hour,
+   90 min), so `one` may draw three tiles, with a smaller code (QR_SIDE_THREE); the offer is
+   open to end + 10; and a COUNTDOWN to the second in the panel's own words (extend-feed.ts
+   mmss: "BOOKING ENDS IN 6:42", then "7:18 left to extend"). Aniket: "can we also show a
+   countdown to the extension feature on the TV?". Every layout but `one` keeps two
+   lengths (90 min is on the phone and in the email). The cricket TV draws offers too,
+   its courts called LANE (nounOf).
+
    EVERY SIZE IS THE APPROVED MOCK-UP'S (inject-b.js), in this box's units: the panel
    sits inside PANEL_BOX at SportBoard's SCALE 1.6, where one --vw is 30.72px at 1080p,
    so N = mock px ÷ 30.72 (§10.4's table). Remeasured on this component by
@@ -61,6 +69,12 @@ const TABLE_RULE = "rgba(255,255,255,0.12)";
 
 /** Each layout's code side, in N (§10.4): the largest each measured panel holds. */
 const QR_SIDE = { one: 7.68, multi: 6.67, cards: 4.88, "cards-one-code": 5.21 } as const;
+/** `one` with three tiles (2026-11-15): three tiles share the width two had, so the code
+ *  shrinks with them. Checked in the browser at 1920×1080; re-run scripts/tv-fit before
+ *  relying on it from the far end of a court. */
+const QR_SIDE_THREE = 5.9;
+/** The same for `multi`'s code row with three codes. */
+const QR_SIDE_MULTI_THREE = 4.9;
 
 const nowrap: CSSProperties = { whiteSpace: "nowrap" };
 const tile: CSSProperties = {
@@ -96,7 +110,7 @@ function Chip({ text, tone }: { text: string; tone: Tone }) {
 }
 
 function H1({ text, tone }: { text: string; tone: Tone }) {
-  return <div style={{ ...nowrap, fontSize: vw(2.02), lineHeight: 1, color: tone === "red" ? ALARM : PEACH }}>{text}</div>;
+  return <div style={{ ...nowrap, fontSize: vw(2.02), lineHeight: 1, fontVariantNumeric: "tabular-nums", color: tone === "red" ? ALARM : PEACH }}>{text}</div>;
 }
 
 /** The sub-head: "Do you wish to extend?", "Keep playing on Court 3?", PAYMENT IN
@@ -136,16 +150,20 @@ function Body({ face }: { face: PanelFace }) {
                   gap: vw(0.2), textAlign: "center", padding: vw(0.46),
                 }}
               >
-                {t.qr && <QrCode qr={t.qr} side={QR_SIDE.one} />}
+                {t.qr && <QrCode qr={t.qr} side={face.tiles.length > 2 ? QR_SIDE_THREE : QR_SIDE.one} />}
                 <div style={{ ...nowrap, fontSize: vw(1.17), lineHeight: 1, letterSpacing: "0.03em", marginTop: vw(0.26) }}>{t.what}</div>
+                {t.on && <div style={{ ...nowrap, fontSize: vw(0.85), lineHeight: 1.1, color: ACCENT, letterSpacing: "0.03em" }}>{t.on}</div>}
                 {t.qr ? (
                   <>
                     <div style={{ ...nowrap, fontSize: vw(0.85), lineHeight: 1.1, color: QUIET }}>{t.when}</div>
                     <div style={{ ...nowrap, fontSize: vw(t.agreed ? 1.43 : 1.89), lineHeight: 1, color: ACCENT }}>{t.price}</div>
                   </>
                 ) : (
-                  /* Not for sale: the reason, no code and no price. */
-                  <div style={{ ...nowrap, fontSize: vw(1.04), lineHeight: 1.1, color: QUIET }}>{t.why}</div>
+                  /* Not for sale: the reason, no code and no price. Beside two other tiles it
+                     wraps, smaller (scripts/tv-fit, 2026-11-15). */
+                  <div style={face.tiles.length > 2
+                    ? { fontSize: vw(0.85), lineHeight: 1.15, color: QUIET, overflowWrap: "anywhere" }
+                    : { ...nowrap, fontSize: vw(1.04), lineHeight: 1.1, color: QUIET }}>{t.why}</div>
                 )}
               </div>
             ))}
@@ -196,7 +214,7 @@ function Body({ face }: { face: PanelFace }) {
           <div style={{ display: "flex", gap: vw(0.72) }}>
             {face.codes.map((c) => (
               <div key={c.key} style={{ ...tile, flex: 1, display: "flex", gap: vw(0.52), alignItems: "center", padding: `${vw(0.33)} ${vw(0.46)}` }}>
-                {c.qr && <QrCode qr={c.qr} side={QR_SIDE.multi} />}
+                {c.qr && <QrCode qr={c.qr} side={face.codes.length > 2 ? QR_SIDE_MULTI_THREE : QR_SIDE.multi} />}
                 <div style={{ display: "flex", flexDirection: "column", gap: vw(0.1), minWidth: 0 }}>
                   <div style={{ ...nowrap, fontSize: vw(1.01), lineHeight: 1, letterSpacing: "0.03em" }}>{c.what}</div>
                   {c.lines.map((l) => (
