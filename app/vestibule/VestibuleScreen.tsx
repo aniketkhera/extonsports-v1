@@ -9,7 +9,7 @@ import {
   useCourtPanels, CourtBoxes, Lockup, SessionTag, LightStatus, dayLabel, sessionInk,
   PANEL_GLOW, PANEL_LIT, PANEL_BORDER, PANEL_SHADOW, type Entry, type Panel,
 } from "../reception/ReceptionBoard";
-import { SESSION_TEXT, SPORT_OBJECT, span } from "../board/board-lib";
+import { SESSION_TEXT, SPORT_OBJECT, span, asWritten } from "../board/board-lib";
 import { usePromos } from "../exit/promos";
 import StarterHero from "../exit/StarterHero";
 import PhoenixHero from "../exit/PhoenixHero";
@@ -84,7 +84,7 @@ function Row({ e, sport, labels, today, lead, more = 0 }: { e: Entry; sport: str
             {SESSION_TEXT[e.session]}
           </span>
         )}
-        <span className={v.rowHolder}>{e.who}</span>
+        <span className={v.rowHolder} style={asWritten(e.who)}>{e.who}</span>
         {more > 0 && <span className={v.more}>+{more}</span>}
       </span>
       <CourtBoxes sport={sport} labels={labels} taken={e.courts} />
