@@ -14,7 +14,9 @@ import { createTotalCap, handleServerOptin, SERVER_LIMIT, SERVER_WINDOW_MS, type
 
 const deps: ServerOptinDeps = {
   ...liveDeps,
-  // Read per request, never at build time: unset means 503, not a crashed deploy.
+  // Read per request, never at build time: unset means 503, not a crashed deploy. Vercel
+  // still applies a new or changed variable only to the NEXT deployment, so set the secret
+  // on this site before this route deploys, or redeploy after setting it (2026-11-15 review).
   secret: () => process.env.EXTON_OPTIN_SECRET,
   allow: createTotalCap(SERVER_LIMIT, SERVER_WINDOW_MS),
 }
