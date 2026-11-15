@@ -30,10 +30,16 @@
 
 import type { MailerConfig } from 'mailer-admin/config'
 import { isEmailShaped } from '../../components/my-bookings-pure'
-import { sendSignupNotice, type NoticeDeps, type WelcomeStatus } from '../../../lib/signup-notice'
+import { sendSignupNotice, type NoticeDeps, type NoticeSource, type WelcomeStatus } from '../../../lib/signup-notice'
 
 /** subscribers.source for a row made here. Set by the route, never read from the browser. */
 export const OPTIN_SOURCE = 'my-bookings-popup'
+
+/** Where an added address came from: the subscribers.source it is stored with, and how the
+ *  staff notice names it. A parameter since 2026-11-15, when the waiver signing link's box
+ *  (server/route.ts) began adding addresses by the same rule; the popup's is unchanged. */
+export type OptinOrigin = { source: string; notice: NoticeSource }
+export const POPUP_ORIGIN: OptinOrigin = { source: OPTIN_SOURCE, notice: 'popup' }
 
 /** mailer-admin's subscribe route allows 5 a minute per IP; so does this (2026-10-21). Its
  *  limiter is not exported, so this is the same fixed window, kept separately. */
@@ -84,7 +90,7 @@ export type OptinReply = {
   work: (() => Promise<OptinResult>) | null
 }
 
-type Geo = { country: string | null; region: string | null; city: string | null }
+export type Geo = { country: string | null; region: string | null; city: string | null }
 
 const ACCEPTED = { status: 202, body: { success: true } } as const
 
@@ -173,8 +179,15 @@ export async function handleOptin(
   return { ...ACCEPTED, work: () => addIfNew(email, geo, deps) }
 }
 
-/** Add `email` only if this property has never had it. See THE RULE at the top. */
-async function addIfNew(email: string, geo: Geo, deps: OptinDeps): Promise<OptinResult> {
+/** Add `email` only if this property has never had it. See THE RULE at the top. Exported
+ *  for the waiver link's server route (2026-11-15), which answers on its own terms and then
+ *  hands the same work to after(); `deps.allow` is not read here. */
+export async function addIfNew(
+  email: string,
+  geo: Geo,
+  deps: Omit<OptinDeps, 'allow'>,
+  origin: OptinOrigin = POPUP_ORIGIN,
+): Promise<OptinResult> {
   const { site, db, log } = deps
   if (!db.configured()) {
     log('[mailing-list-optin] mailer database not configured; nothing done')
@@ -195,7 +208,7 @@ async function addIfNew(email: string, geo: Geo, deps: OptinDeps): Promise<Optin
     const row = await db.insertRow<{ unsubscribe_token?: string | null }>('subscribers', {
       property: site.property,
       email,
-      source: OPTIN_SOURCE,
+      source: origin.source,
       country: geo.country,
       region: geo.region,
       city: geo.city,
@@ -212,7 +225,7 @@ async function addIfNew(email: string, geo: Geo, deps: OptinDeps): Promise<Optin
   const welcome = await sendWelcome(email, token, deps)
   await sendSignupNotice(
     site.notifyEmail,
-    { email, source: 'popup', welcome, at: deps.now ? deps.now() : new Date(), geo },
+    { email, source: origin.notice, welcome, at: deps.now ? deps.now() : new Date(), geo },
     deps.notice,
   )
   return 'added'
@@ -244,7 +257,7 @@ export async function addressOnList(db: Pick<OptinDb, 'selectRows'>, property: s
  *  no welcome, rather than an email whose unsubscribe link is "#". Returns what happened,
  *  for the staff notice: 'off' only when it is switched off; anything that stopped an
  *  email that should have gone (no token, a failed lookup, a failed send) is 'failed'. */
-async function sendWelcome(email: string, token: string | null, deps: OptinDeps): Promise<WelcomeStatus> {
+async function sendWelcome(email: string, token: string | null, deps: Omit<OptinDeps, 'allow'>): Promise<WelcomeStatus> {
   const { site, db, mail, log } = deps
   if (site.welcomeEmails === false) return 'off'
   if (!token) {
