@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { makeTicker, useTick } from "../components/ticker";
 import Image from "next/image";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
@@ -466,10 +466,57 @@ function courtsLabel(sport: string, labels: string[]): string {
 /* The clock and the date line moved to components/ScreenChrome with the header
    (2026-10-20), shared with /exit. */
 
+/* LARGER NAMES AND TIMES IN THE NOW AREA, RECEPTION ONLY (2026-11-15). Aniket, the
+   day COMING UP went from ten rows to five: "make the ON NOW names and times larger".
+   The five rows gave the NOW area back ~144px at 1080p (428 -> 572), so a person's
+   name and the time line under it are drawn NOW_SCALE times their size there.
+
+   ONLY THOSE TWO, AND ONLY ON RECEPTION. Height was never the limit; WIDTH is. At
+   1.35x the cricket academy's lockup with its JUNIOR COACHING tag (499px at 1x) and
+   a time that crosses noon ("11:30 AM – 12:30 PM") would both run past the 547px
+   column, so partners' lockups, session tags, court boxes and the ON NOW line keep
+   their size, and the time line shrinks itself to fit when it must (FitLine). The
+   badminton and cricket TVs share these parts but already draw the whole box 1.6x,
+   with ~40px to spare when three groups are on court; the vestibule draws its own
+   rows. Neither passes `scale`, so this context's default, 1, is theirs. */
+export const NOW_SCALE = 1.35;
+const NowScale = createContext(1);
+
+/* One line that SHRINKS TO FIT its width rather than run past it (2026-11-15). The
+   NOW area's time line is nowrap in a column that clips, so a long one — a booking
+   across noon, "OFF COURT IN 10 MIN" at the larger reception size — would lose its
+   end without any sign. Here the font gives way instead, by exactly the overflow,
+   through --fit (1 when it fits, which is every ordinary line). Measured on every
+   render, because the countdown changes the words each second, and again when the
+   column resizes or the web font arrives. */
+function FitLine({ style, children }: { style: CSSProperties; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const fit = () => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.setProperty("--fit", "1");
+    const over = el.scrollWidth / Math.max(1, el.clientWidth);
+    if (over > 1.001) el.style.setProperty("--fit", String(Math.floor(1000 / over) / 1000));
+  };
+  useLayoutEffect(fit);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    document.fonts?.ready.then(fit).catch(() => {});
+    return () => ro.disconnect();
+  }, []);
+  return <div ref={ref} className="text-cond" style={{ ...style, whiteSpace: "nowrap", overflow: "hidden" }}>{children}</div>;
+}
+
 /** One line and an ellipsis, for an address in a Lockup — see the note in Lockup. */
 const ADDRESS_FIT: CSSProperties = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 };
 
 export function Lockup({ brand, who }: { brand: BrandKey | null; who: string }) {
+  /* NOW_SCALE on reception's NOW area, 1 everywhere else (2026-11-15, NowScale). A
+     person's name only: partner lockups keep their size (width — see NOW_SCALE). */
+  const scale = useContext(NowScale);
   if (brand === "philadelphia-badminton") {
     return (
       <div
@@ -575,7 +622,7 @@ export function Lockup({ brand, who }: { brand: BrandKey | null; who: string }) 
     <div
       className="text-cond"
       style={{
-        fontSize: "calc(1.5 * var(--vw))",
+        fontSize: `calc(${1.5 * scale} * var(--vw))`,
         color: isPrivate ? MUTED : INK,
         letterSpacing: isPrivate ? "0.06em" : "0.03em",
         lineHeight: 1.1,
@@ -707,11 +754,15 @@ function EntryFoot({
       : `${which ? `${which} ` : ""}FREE AFTER${showing.scan ? " · SCAN TO EXTEND →" : ""}`;
   }
   const alarm = showing?.kind === "next" ? showing.courts : [];
+  /* NOW_SCALE on reception's NOW area, 1 elsewhere (2026-11-15); FitLine shrinks the
+     rare line that would still be wider than the column. */
+  const scale = useContext(NowScale);
+  const size = (big && !tight ? 3.1 : 2.6) * scale;
   return (
     <>
-      <div className="text-cond" style={{ fontSize: big && !tight ? "calc(3.1 * var(--vw))" : "calc(2.6 * var(--vw))", color: ink, lineHeight: 1.03, whiteSpace: "nowrap" }}>
+      <FitLine style={{ fontSize: `calc(${size} * var(--vw) * var(--fit, 1))`, color: ink, lineHeight: 1.03 }}>
         {line}
-      </div>
+      </FitLine>
       {/* display:flex so the row has no inherited 16px/1.5 line box under it. */}
       <div style={{ display: "flex", alignItems: "center", gap: "calc(0.8 * var(--vw))", marginTop: "calc(0.5 * var(--vh))", minWidth: 0 }}>
         <CourtBoxes sport={sport} labels={labels} taken={e.courts} big={big} alarm={alarm} />
@@ -1226,8 +1277,15 @@ export function PanelTitle({ p }: { p: Panel }) {
    centring spilled them out of BOTH ends and the ON NOW line was the
    first thing cut. Safe, the overflow goes off the bottom only, and
    the earliest booking — the one in TIME UP — stays in view. */
-export function NowArea({ p, today }: { p: Panel; today: string }) {
+export function NowArea({ p, today, scale = 1 }: { p: Panel; today: string; scale?: number }) {
+  /* FOUR OR MORE ON COURT: today's size, not `scale` (2026-11-15). Squash has four
+     courts, and four groups at once at NOW_SCALE ran 53px past the NOW area at 1080p
+     (measured in the mock-up), cutting the last group's time. At 1x they fit, as they
+     did before. Three — every court of badminton or cricket — fit at NOW_SCALE with
+     ~47px to spare (two of them counting down). */
+  const s = p.now.length >= 4 ? 1 : scale;
   return (
+    <NowScale.Provider value={s}>
     <div
       style={{
         flex: 1, minHeight: 0, overflow: "hidden",
@@ -1275,6 +1333,7 @@ export function NowArea({ p, today }: { p: Panel; today: string }) {
         </div>
       )}
     </div>
+    </NowScale.Provider>
   );
 }
 
@@ -1400,7 +1459,7 @@ export default function ReceptionBoard() {
         {panels.map((p) => (
           <div key={p.sport} style={PANEL_BOX}>
             <PanelTitle p={p} />
-            <NowArea p={p} today={today} />
+            <NowArea p={p} today={today} scale={NOW_SCALE} />
             <ComingUp p={p} today={today} />
           </div>
         ))}

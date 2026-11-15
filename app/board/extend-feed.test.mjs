@@ -581,7 +581,7 @@ test("the sport TVs read `extend` (cricket too since 2026-11-15); the line is FR
   // Q20's words, with the time (§9e E4).
   assert.ok(board.includes('line = `MOVE TO ${noun}${to.length > 1 ? "S" : ""} ${to.join(", ")} AT ${hm(at)}`'), "MOVE TO COURT 3 AT 2:00");
   // …at the compact entry size even in a big entry: the big one ran 45 px past the column (tv-fit movedPaidBig).
-  assert.ok(board.includes("tight = true; break;") && board.includes("fontSize: big && !tight ?"), "the move line is drawn compact");
+  assert.ok(board.includes("tight = true; break;") && board.includes("(big && !tight ? 3.1 : 2.6) * scale"), "the move line is drawn compact");
 });
 
 test("never green, never a holder: the panel's words carry no name and no colour", () => {

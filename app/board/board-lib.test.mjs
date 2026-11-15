@@ -721,3 +721,19 @@ test("the crest is on the calendar's and the TVs' throwball marks, beside the na
   assert.equal(cal.match(/\/partners\/phoenix-/g).length, 1);
   assert.equal(tv.match(/\/partners\/phoenix-/g).length, 1);
 });
+
+/* Larger names and times in reception's NOW area (2026-11-15, Aniket: "make the ON NOW
+   names and times larger"). Reception only — the badminton and cricket TVs share
+   NowArea and have ~40px to spare — and back to 1x at four groups on court, which ran
+   53px past the area at the larger size. Source reads: the sizes themselves were
+   measured in the mock-up, not here. */
+test("NOW_SCALE: only reception passes it, and four or more on court draw at 1x", () => {
+  const rb = readFileSync(new URL("../reception/ReceptionBoard.tsx", import.meta.url), "utf8");
+  const sb = readFileSync(new URL("../reception/SportBoard.tsx", import.meta.url), "utf8");
+  assert.equal(rb.match(/<NowArea p=\{p\} today=\{today\} scale=\{NOW_SCALE\} \/>/g)?.length, 1);
+  assert.doesNotMatch(sb, /scale=/);
+  assert.match(rb, /const s = p\.now\.length >= 4 \? 1 : scale;/);
+  assert.match(rb, /<NowScale\.Provider value=\{s\}>/);
+  // the time line shrinks to fit rather than being cut
+  assert.match(rb, /<FitLine style=\{\{ fontSize: `calc\(\$\{size\} \* var\(--vw\) \* var\(--fit, 1\)\)`/);
+});
