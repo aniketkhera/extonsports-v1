@@ -17,6 +17,10 @@
      503 {"error":"not configured"}  EXTON_OPTIN_SECRET is not set on this site
    www, not the apex: extonsports.com answers every path with a 308 to www (next.config.ts),
    and fetch drops Authorization on a redirect to another host, so an apex URL gets a 401.
+   A batch paces itself: the platform's replay of failed boxes sends one call every 2.5 s or
+   slower (24 a minute), which leaves room under SERVER_LIMIT for people signing at the same
+   time. A 429 says nothing about the address; the caller tries that one again later.
+   2026-11-15 review: an unpaced replay of about 60 would have had about half refused here.
 
    THE RULE is the popup's, unchanged and shared (../optin-core.ts addIfNew): look for the
    address in ANY state, and if the property has ever had it, do nothing at all; never

@@ -309,6 +309,25 @@ test("a total of 30 a minute, whoever calls; the 31st is 429; a bad secret uses 
   assert.equal((await S.handleServerOptin(req(GOOD), d)).status, 200, "the window turns over");
 });
 
+test("the contract's pace for a batch (one call every 2.5 s) never meets the cap, with room for live signers", async () => {
+  // The platform's replay of failed boxes is paced to this (server-core.ts, THE CONTRACT).
+  // If SERVER_LIMIT is ever lowered under it, this fails here rather than as 429s there.
+  const GAP_MS = 2_500;
+  const perMinute = S.SERVER_WINDOW_MS / GAP_MS;
+  assert.ok(S.SERVER_LIMIT - perMinute >= 5, `${perMinute} a minute leaves under 5 for live signers`);
+  let now = 2_000_000;
+  const allow = S.createTotalCap(S.SERVER_LIMIT, S.SERVER_WINDOW_MS, () => now);
+  const { db } = fakeDb();
+  const { mail } = fakeMail();
+  const { deps: d } = deps({ db, mail, allow });
+  for (let i = 0; i < 100; i++) {
+    assert.equal((await S.handleServerOptin(req({ email: `r${i}@x.com`, source: "waiver-link" }), d)).status, 200, `replay call ${i + 1}`);
+    // A live signer every fifth gap: 4.8 a minute on top of the replay's 24.
+    if (i % 5 === 4) assert.equal((await S.handleServerOptin(req({ email: `live${i}@x.com`, source: "waiver-link" }), d)).status, 200, `live signer after ${i + 1}`);
+    now += GAP_MS;
+  }
+});
+
 /* ── the popup is unchanged, and the wiring ─────────────────────────────── */
 
 test("the popup's origin is unchanged: my-bookings-popup, and the notice's 'popup'", async () => {
