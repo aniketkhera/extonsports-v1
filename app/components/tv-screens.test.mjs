@@ -127,3 +127,15 @@ test("a TV rings the time-up chime only for sports its own countdown shows (2026
     for (const s of t.chime) assert.ok(allowed.includes(s), `${t.id}: ${s} is not on its board`);
   }
 });
+
+test("a TV announces only its own sport, and only a sport with recorded clips (2026-11-16)", async () => {
+  const C = await import("../board/chime-pure.ts");
+  const OWN = { "badminton-board": "Badminton", "cricket-board": "Cricket" };
+  for (const t of TVS) {
+    if (!("announce" in t) || t.announce === undefined) continue;
+    for (const s of t.announce) {
+      assert.equal(OWN[t.shows], s, `${t.id}: announces ${s}, but its board is ${t.shows}`);
+      assert.ok(Object.prototype.hasOwnProperty.call(C.ANNOUNCE_LANES, s), `${t.id}: no clips for ${s}`);
+    }
+  }
+});

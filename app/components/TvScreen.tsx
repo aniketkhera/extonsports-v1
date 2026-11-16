@@ -56,6 +56,11 @@ function chimeOf(tv: TvEntry): readonly string[] {
   return "chime" in tv && Array.isArray(tv.chime) ? tv.chime : [];
 }
 
+/** A TV's announcement list (tv-screens.ts `announce`, 2026-11-16), or none. */
+function announceOf(tv: TvEntry): readonly string[] {
+  return "announce" in tv && Array.isArray(tv.announce) ? tv.announce : [];
+}
+
 const RENDER: Record<TvContent, (tv: TvEntry) => ReactNode> = {
   "court-board": () => <ReceptionBoard />,
   "starter-pack": () => <ExitScreen />,
@@ -80,7 +85,7 @@ export default function TvScreen({ id }: { id: TvId }) {
      it (TimeUpChime.tsx). By TV, not by content, so a board moved to another set never
      brings the sound with it. ?chimetest=1 is the sound check; nothing without it. */
   return (
-    <ChimeSportsProvider sports={chimeOf(tv)}>
+    <ChimeSportsProvider sports={chimeOf(tv)} announce={announceOf(tv)}>
       <ChimeTest />
       <SilkFullscreen />
       {/* 2026-11-04: these two sets go to the N95's court-replay screen during their sport's
