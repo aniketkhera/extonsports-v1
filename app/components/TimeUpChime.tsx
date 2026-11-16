@@ -321,9 +321,12 @@ export function useCourtAnnouncements(
 
 /** The countdown's hook: rings once when this entry's TIME UP begins, if its sport rings
  *  on this page. `faceKind` and `nowMs` are what the countdown drew this second. */
-export function useTimeUpChime(sport: string, endMs: number, faceKind: string, nowMs: number): void {
+export function useTimeUpChime(sport: string, endMs: number, faceKind: string, nowMs: number, privateHire: boolean): void {
   const sports = useContext(ChimeSports);
-  const on = chimesFor(sports, sport);
+  /* `privateHire`: the ending booking is somebody's own hire, not a partner's session
+     (2026-11-16, "only for private bookings, not PBA"). A partner never claims the end
+     instant, so a private booking ending at the same moment still rings. */
+  const on = privateHire && chimesFor(sports, sport);
   useEffect(() => {
     if (!on || !nowMs || !chimeDue(faceKind, nowMs - endMs)) return;
     const key = chimeKey(endMs);

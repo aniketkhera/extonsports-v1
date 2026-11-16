@@ -776,11 +776,13 @@ test("the countdown rings the chime; the TV's own list decides; the test mode is
   const tc = readFileSync(new URL("../components/TimeUpChime.tsx", import.meta.url), "utf8");
   // NudgedFoot is the only caller: the countdown is the only thing that rings.
   assert.equal(rb.match(/useTimeUpChime\(/g)?.length, 1);
-  assert.match(rb, /useTimeUpChime\(sport, nudge\.endMs, face\.kind, ms\);/);
+  // Private bookings only: a partner's session ending never rings (2026-11-16).
+  assert.match(rb, /useTimeUpChime\(sport, nudge\.endMs, face\.kind, ms, !e\.brand\);/);
+  assert.match(tc, /const on = privateHire && chimesFor\(sports, sport\);/);
   // The TV's own list, around the whole page; the sound check on every TV page.
   assert.match(tv, /<ChimeSportsProvider sports=\{chimeOf\(tv\)\} announce=\{announceOf\(tv\)\}>\s*<ChimeTest \/>/);
   // A sport rings only where the list names it.
-  assert.match(tc, /const on = chimesFor\(sports, sport\);/);
+  assert.match(tc, /const on = privateHire && chimesFor\(sports, sport\);/);
   // Claimed BEFORE it plays, so two entries ending together cannot both ring; a refused
   // ring gives the claim back so the next second retries.
   assert.match(tc, /if \(!claim\(key\)\) return;[\s\S]{0,400}?void play\(CHIME_GAIN, strikes\)\.then\(\(r\) => \{\s*if \(r === "played"\) return;\s*release\(key\);/);
