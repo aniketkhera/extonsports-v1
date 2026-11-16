@@ -842,14 +842,16 @@ test("announcements: lane phrases, clip names, and every clip the code can ask f
   assert.equal(C.announceClip("Cricket", "ended", ["2"]), "/tv/announce/cricket-ended.mp3");
   assert.equal(C.announceClip("Cricket", "ending", ["4"]), null, "no clip for a lane that was not recorded");
   assert.equal(C.announceClip("Cricket", "ending", []), null);
-  assert.equal(C.announceClip("Badminton", "ending", ["1"]), null, "badminton does not speak yet");
+  assert.equal(C.announceClip("Badminton", "ending", ["2", "1"]), "/tv/announce/badminton-ending-1-2.mp3");
+  assert.equal(C.lanePhrase(["1", "3"], C.ANNOUNCE_NOUN.Badminton), "courts 1 and 3");
+  assert.equal(C.announceClip("Squash", "ended", []), null, "squash does not speak");
   assert.equal(C.announceClip("toString", "ended", []), null);
   const want = [];
   for (const [sport, lanes] of Object.entries(C.ANNOUNCE_LANES)) {
     for (const set of C.laneSets(lanes)) want.push(C.announceClip(sport, "ending", set));
     want.push(C.announceClip(sport, "ended", []));
   }
-  assert.equal(want.length, 8);
+  assert.equal(want.length, 16);
   for (const url of want) {
     const size = statSync(new URL(`../../public${url}`, import.meta.url)).size;
     assert.ok(size > 20_000, `${url} is missing or empty`);
@@ -858,8 +860,11 @@ test("announcements: lane phrases, clip names, and every clip the code can ask f
 
 test("the recording script's chime and lanes are the TV's", () => {
   const py = readFileSync(new URL("../../scripts/announce/make_clips.py", import.meta.url), "utf8");
-  const strikes = C.CHIME_STRIKES.map((s) => `(${s.at}, ${s.hz})`).join(", ");
-  assert.ok(py.includes(`STRIKES = [${strikes}]`), "STRIKES");
+  for (const sport of Object.keys(C.ANNOUNCE_LANES)) {
+    const strikes = C.chimeStrikes(sport).map((s) => `(${s.at}, ${s.hz})`).join(", ");
+    assert.ok(py.includes(`"${sport.toLowerCase()}": [${strikes}]`), `${sport}'s chime`);
+    assert.ok(py.includes(`"${sport.toLowerCase()}": "${C.ANNOUNCE_NOUN[sport]}"`), `${sport}'s noun`);
+  }
   const partials = C.CHIME_PARTIALS.map(([m, a]) => `(${m}, ${a})`).join(", ");
   assert.ok(py.includes(`PARTIALS = [${partials}]`), "PARTIALS");
   assert.ok(py.includes(`ATTACK_S = ${C.CHIME_ATTACK_S}`), "ATTACK_S");

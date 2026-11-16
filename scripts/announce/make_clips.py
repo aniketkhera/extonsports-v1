@@ -2,8 +2,9 @@
 
     python scripts/announce/make_clips.py
 
-Writes public/tv/announce/cricket-ending-<lanes>.mp3 (one per non-empty set of lanes 1-3) and
-cricket-ended.mp3: the soft three-tone chime, a short pause, then Microsoft's neural voice Jenny
+Writes public/tv/announce/<sport>-ending-<courts>.mp3 (one per non-empty set of courts 1-3) and
+<sport>-ended.mp3, for cricket and (since the same afternoon) badminton: that sport's soft
+three-tone chime, a short pause, then Microsoft's neural voice Jenny
 (en-US-JennyNeural, through the free `edge-tts` package: pip install edge-tts). Needs ffmpeg on
 PATH or FFMPEG=<path>. The wording, the voice and "one chime, softer" are Aniket's, at the
 on-site sound check on 2026-11-16; the rules for when each plays are app/board/chime-pure.ts
@@ -29,8 +30,13 @@ OUT = os.path.join(ROOT, "public", "tv", "announce")
 VOICE = "en-US-JennyNeural"
 RATE = 24000
 
-# app/board/chime-pure.ts, the cricket chime as it rings on the TV.
-STRIKES = [(0, 392), (0.35, 523.25), (0.7, 659.25)]
+# app/board/chime-pure.ts: each sport's chime as it rings on its TV (CHIME_SOUNDS), and what
+# its clips call a court (ANNOUNCE_NOUN).
+SOUNDS = {
+    "cricket": [(0, 392), (0.35, 523.25), (0.7, 659.25)],
+    "badminton": [(0, 523.25), (0.35, 659.25), (0.7, 783.99)],
+}
+NOUNS = {"cricket": "lane", "badminton": "court"}
 PARTIALS = [(1, 1), (2, 0.12), (3, 0.03)]
 ATTACK_S = 0.02
 DECAY_S = 1.8
@@ -42,14 +48,14 @@ ENDED = ("Your booking has ended. The lights will turn off automatically in 15 m
          "and lock up the place. Thanks for playing!")
 
 
-def lane_phrase(labels):
+def lane_phrase(labels, noun):
     if len(labels) == 1:
-        return f"lane {labels[0]}"
-    return f"lanes {', '.join(labels[:-1])} and {labels[-1]}"
+        return f"{noun} {labels[0]}"
+    return f"{noun}s {', '.join(labels[:-1])} and {labels[-1]}"
 
 
-def ending(labels):
-    return (f"Your cricket {lane_phrase(labels)} booking is ending in 5 minutes. "
+def ending(sport, labels):
+    return (f"Your {sport} {lane_phrase(labels, NOUNS[sport])} booking is ending in 5 minutes. "
             "A free slot is available. Scan the QR code on the screen to extend your time.")
 
 
@@ -60,12 +66,12 @@ def lane_sets():
     return sorted(sets, key=lambda s: (len(s), ",".join(s)))
 
 
-def chime_wav(path):
+def chime_wav(path, strikes):
     peak = sum(a for _, a in PARTIALS)
-    tail = max(a for a, _ in STRIKES) + DECAY_S + 0.2
+    tail = max(a for a, _ in strikes) + DECAY_S + 0.2
     n = int(math.ceil(tail * RATE))
     buf = [0.0] * n
-    for at, hz in STRIKES:
+    for at, hz in strikes:
         for mult, amp in PARTIALS:
             length = DECAY_S / math.sqrt(mult)
             k = math.log(amp / 0.0001) / length
@@ -91,10 +97,13 @@ async def main():
         raise SystemExit("ffmpeg not found: put it on PATH or set FFMPEG")
     os.makedirs(OUT, exist_ok=True)
     with tempfile.TemporaryDirectory() as tmp:
-        chime = os.path.join(tmp, "chime.wav")
-        chime_wav(chime)
-        jobs = [(f"cricket-ending-{'-'.join(s)}", ending(s)) for s in lane_sets()] + [("cricket-ended", ENDED)]
-        for name, text in jobs:
+        jobs = []
+        for sport, strikes in SOUNDS.items():
+            chime = os.path.join(tmp, f"chime-{sport}.wav")
+            chime_wav(chime, strikes)
+            jobs += [(chime, f"{sport}-ending-{'-'.join(s)}", ending(sport, s)) for s in lane_sets()]
+            jobs.append((chime, f"{sport}-ended", ENDED))
+        for chime, name, text in jobs:
             speech = os.path.join(tmp, f"{name}.mp3")
             # The free service drops connections now and then (seen 2026-11-16): retry.
             for attempt in range(6):

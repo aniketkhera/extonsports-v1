@@ -72,10 +72,11 @@ export const CHIME_STRIKES: ReadonlyArray<ChimeStrike> = [
    bell tone, same level, different notes and rhythm. */
 export const CHIME_SOUNDS: Readonly<Record<string, ReadonlyArray<ChimeStrike>>> = {
   Cricket: CHIME_STRIKES,
-  /* Three notes rising, C5 E5 G5, twice: brighter and quicker than cricket's ding-dong. */
+  /* Cricket's three-tone chime a fourth higher, C5 E5 G5, once (2026-11-16, Aniket: "do the
+     same for badminton. similar chime"): the same family and rhythm, so the hall hears one
+     kind of sound, but a brighter pitch tells badminton from the lanes. */
   Badminton: [
-    { at: 0, hz: 523.25 }, { at: 0.28, hz: 659.25 }, { at: 0.56, hz: 783.99 },
-    { at: 1.6, hz: 523.25 }, { at: 1.88, hz: 659.25 }, { at: 2.16, hz: 783.99 },
+    { at: 0, hz: 523.25 }, { at: 0.35, hz: 659.25 }, { at: 0.7, hz: 783.99 },
   ],
   /* Squash (reception): three quick high dings on A5, twice. */
   Squash: [
@@ -128,8 +129,13 @@ export function zoneBusyAfter(
     (until > 1440 && e.date === nextDate && (e.from ?? Infinity) < until - 1440));
 }
 
-/** The lanes each sport's clips were recorded for. Only cricket speaks. */
-export const ANNOUNCE_LANES: Readonly<Record<string, readonly string[]>> = { Cricket: ["1", "2", "3"] };
+/** The courts each sport's clips were recorded for: cricket's lanes (2026-11-16) and, the
+ *  same afternoon, badminton's courts ("do the same for badminton ... similar
+ *  sounds/speech/narration"). */
+export const ANNOUNCE_LANES: Readonly<Record<string, readonly string[]>> = { Cricket: ["1", "2", "3"], Badminton: ["1", "2", "3"] };
+
+/** What a sport calls one of them in the clips: cricket has lanes, badminton courts. */
+export const ANNOUNCE_NOUN: Readonly<Record<string, string>> = { Cricket: "lane", Badminton: "court" };
 
 /** Is this announcement due now? `msToEnd` is the end instant minus now. */
 export function announceDue(kind: AnnounceKind, msToEnd: number): boolean {
@@ -142,11 +148,11 @@ export function announceKey(kind: AnnounceKind, endMs: number): string {
   return `announce:${kind}:${Math.round(endMs)}`;
 }
 
-/** "lane 2", "lanes 1 and 3", "lanes 1, 2 and 3" — how the clips say them. */
-export function lanePhrase(labels: readonly string[]): string {
+/** "lane 2", "lanes 1 and 3", "courts 1, 2 and 3" — how the clips say them. */
+export function lanePhrase(labels: readonly string[], noun = "lane"): string {
   const l = [...labels];
-  if (l.length === 1) return `lane ${l[0]}`;
-  return `lanes ${l.slice(0, -1).join(", ")} and ${l[l.length - 1]}`;
+  if (l.length === 1) return `${noun} ${l[0]}`;
+  return `${noun}s ${l.slice(0, -1).join(", ")} and ${l[l.length - 1]}`;
 }
 
 /** The clip's path on the site, or null when there is none for these lanes (an unknown lane,
