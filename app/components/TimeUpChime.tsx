@@ -3,7 +3,8 @@
 import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { readKey } from "./screen-key";
 import {
-  CHIME_DECAY_S, CHIME_GAIN, CHIME_PARTIALS, CHIME_PEAK, CHIME_STRIKES, CHIME_TEST_EVERY_MS, CHIME_TEST_FOR_MS,
+  CHIME_DECAY_S, CHIME_GAIN, CHIME_PARTIALS, CHIME_PEAK, CHIME_TEST_EVERY_MS, CHIME_TEST_FOR_MS, chimeStrikes, chimeVia,
+  type ChimeStrike,
   CHIME_TEST_LEVELS, CHIME_WINDOW_MS, chimeDue, chimeKey, chimesFor, testLevel, testUntil,
 } from "../board/chime-pure";
 
@@ -54,7 +55,7 @@ async function wake(c: AudioContext, ms = 400): Promise<boolean> {
 export type ChimeResult = "played" | "blocked" | "error";
 
 /** Ring the chime once at `gain` (1 = full scale; see CHIME_GAIN). Never throws. */
-export async function playChime(gain: number = CHIME_GAIN): Promise<ChimeResult> {
+export async function playChime(gain: number = CHIME_GAIN, strikes: ReadonlyArray<ChimeStrike> = chimeStrikes(null)): Promise<ChimeResult> {
   try {
     const c = audio();
     if (!c || !(await wake(c))) return "blocked";
@@ -64,7 +65,7 @@ export async function playChime(gain: number = CHIME_GAIN): Promise<ChimeResult>
     const t0 = c.currentTime + 0.05;
     let last = t0;
     let lastOsc: OscillatorNode | null = null;
-    for (const { at, hz } of CHIME_STRIKES) {
+    for (const { at, hz } of strikes) {
       for (const [mult, amp] of CHIME_PARTIALS) {
         const start = t0 + at;
         const end = start + CHIME_DECAY_S / Math.sqrt(mult);
@@ -98,16 +99,17 @@ export async function playChime(gain: number = CHIME_GAIN): Promise<ChimeResult>
    <audio> clips to the end, so this renders the identical ding-dong into a WAV (16-bit
    mono, 22.05 kHz, built here: no file to fetch) and plays it as media. One clip per level,
    cached as a blob: URL. `play()` resolving is "played"; NotAllowedError is "blocked". */
-const clips = new Map<number, string>();
-function chimeClip(gain: number): string {
+const clips = new Map<string, string>();
+function chimeClip(gain: number, strikes: ReadonlyArray<ChimeStrike>): string {
   const g = Math.max(0, Math.min(1, gain));
-  const hit = clips.get(g);
+  const id = `${g}|${strikes.map((s) => `${s.at}:${s.hz}`).join(",")}`;
+  const hit = clips.get(id);
   if (hit) return hit;
   const rate = 22050;
-  const tail = Math.max(...CHIME_STRIKES.map((s) => s.at)) + CHIME_DECAY_S + 0.3;
+  const tail = Math.max(...strikes.map((s) => s.at)) + CHIME_DECAY_S + 0.3;
   const n = Math.ceil(tail * rate);
   const buf = new Float32Array(n);
-  for (const { at, hz } of CHIME_STRIKES) {
+  for (const { at, hz } of strikes) {
     for (const [mult, amp] of CHIME_PARTIALS) {
       const len = CHIME_DECAY_S / Math.sqrt(mult);
       const k = Math.log(amp / 0.0001) / len;
@@ -130,14 +132,14 @@ function chimeClip(gain: number): string {
   str(36, "data"); v.setUint32(40, n * 2, true);
   for (let i = 0; i < n; i++) v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, buf[i] * scale)) * 32767, true);
   const url = URL.createObjectURL(new Blob([bytes], { type: "audio/wav" }));
-  clips.set(g, url);
+  clips.set(id, url);
   return url;
 }
 
 /** Ring the chime once as an <audio> clip at `gain`. Never throws. */
-export async function playChimeClip(gain: number = CHIME_GAIN): Promise<ChimeResult> {
+export async function playChimeClip(gain: number = CHIME_GAIN, strikes: ReadonlyArray<ChimeStrike> = chimeStrikes(null)): Promise<ChimeResult> {
   try {
-    const a = new Audio(chimeClip(gain));
+    const a = new Audio(chimeClip(gain, strikes));
     a.volume = 1;
     await a.play();
     return "played";
@@ -215,7 +217,11 @@ export function useTimeUpChime(sport: string, endMs: number, faceKind: string, n
     if (!on || !nowMs || !chimeDue(faceKind, nowMs - endMs)) return;
     const key = chimeKey(endMs);
     if (!claim(key)) return;
-    void playChime(CHIME_GAIN).then((r) => {
+    /* The sport's own sound, played the way this set can (chimeVia: Silk the tone, the
+       VIZIOs the clip — 2026-11-16 sound check). */
+    const strikes = chimeStrikes(sport);
+    const play = chimeVia(navigator.userAgent) === "tone" ? playChime : playChimeClip;
+    void play(CHIME_GAIN, strikes).then((r) => {
       if (r === "played") return;
       release(key);
       console.warn(`[chime] TIME UP ${sport}: ${r}`);
@@ -258,7 +264,10 @@ export function ChimeTest() {
     const pinned = Number(params.get("chimelevel")) || null;
     /* &via=clip: ring the <audio> clip instead of Web Audio (2026-11-16, for the badminton
        VIZIO, silent through Web Audio at the sound check). */
-    const clip = params.get("via") === "clip";
+    const via = params.get("via");
+    const clip = via === "clip" || (via !== "tone" && chimeVia(navigator.userAgent) === "clip");
+    /* &sound=Badminton|Cricket|Squash: that sport's pattern (2026-11-16). */
+    const strikes = chimeStrikes(params.get("sound"));
     const started = Date.now();
     let n = 0;
     let stopped = false;
@@ -270,7 +279,7 @@ export function ChimeTest() {
         return;
       }
       const { level, gain } = testLevel(n, pinned);
-      const result = clip ? await playChimeClip(gain) : await playChime(gain);
+      const result = clip ? await playChimeClip(gain, strikes) : await playChime(gain, strikes);
       setState({ on: true, n: n + 1, level, result, done: false, via: clip ? "CLIP" : "TONE" });
       n += 1;
     };
