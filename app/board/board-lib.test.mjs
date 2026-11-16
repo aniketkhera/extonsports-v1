@@ -783,9 +783,28 @@ test("the countdown rings the chime; the TV's own list decides; the test mode is
   assert.match(tc, /const on = chimesFor\(sports, sport\);/);
   // Claimed BEFORE it plays, so two entries ending together cannot both ring; a refused
   // ring gives the claim back so the next second retries.
-  assert.match(tc, /if \(!claim\(key\)\) return;\s*void playChime\(CHIME_GAIN\)\.then\(\(r\) => \{\s*if \(r === "played"\) return;\s*release\(key\);/);
+  assert.match(tc, /if \(!claim\(key\)\) return;[\s\S]{0,400}?void play\(CHIME_GAIN, strikes\)\.then\(\(r\) => \{\s*if \(r === "played"\) return;\s*release\(key\);/);
+  // The sport's own sound, the way the set can play it.
+  assert.match(tc, /const strikes = chimeStrikes\(sport\);\s*const play = chimeVia\(navigator\.userAgent\) === "tone" \? playChime : playChimeClip;/);
   // Only on a paired screen: no board key, no chime (a public /reception never rings).
   assert.match(tc, /const list = keyed && sports \? sports : NONE;/);
+});
+
+test("each sport has its own sound; Silk plays the tone, the VIZIOs the clip (2026-11-16)", () => {
+  const sig = (s) => C.chimeStrikes(s).map((x) => `${x.at}:${x.hz}`).join(",");
+  assert.equal(sig("Cricket"), sig(null), "cricket keeps the approved ding-dong");
+  assert.notEqual(sig("Badminton"), sig("Cricket"));
+  assert.notEqual(sig("Squash"), sig("Cricket"));
+  assert.notEqual(sig("Squash"), sig("Badminton"));
+  assert.equal(sig("toString"), sig(null), "an unknown sport rings the ding-dong");
+  for (const s of ["Cricket", "Badminton", "Squash"]) {
+    const st = C.chimeStrikes(s);
+    assert.ok(st.length >= 2 && st.every((x, i) => i === 0 || x.at > st[i - 1].at), s);
+  }
+  const SILK = "Mozilla/5.0 (Linux; Android 9; AFTDCT31) AppleWebKit/537.36 (KHTML, like Gecko) Silk/138.20.3 like Chrome/138.0.7204.244 Safari/537.36";
+  const VIZIO = "Mozilla/5.0 (X11; Linux aarch64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.194 Safari/537.36 CrKey/1.0.999999 VIZIO SmartCast/1.8.1768.1 Conjure/128.1.8";
+  assert.equal(C.chimeVia(SILK), "tone");
+  assert.equal(C.chimeVia(VIZIO), "clip");
 });
 
 test("the sound check's URL carries an absolute deadline, at most 3 hours ahead", () => {
