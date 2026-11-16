@@ -778,7 +778,7 @@ test("the countdown rings the chime; the TV's own list decides; the test mode is
   assert.equal(rb.match(/useTimeUpChime\(/g)?.length, 1);
   assert.match(rb, /useTimeUpChime\(sport, nudge\.endMs, face\.kind, ms\);/);
   // The TV's own list, around the whole page; the sound check on every TV page.
-  assert.match(tv, /<ChimeSportsProvider sports=\{chimeOf\(tv\)\}>\s*<ChimeTest \/>/);
+  assert.match(tv, /<ChimeSportsProvider sports=\{chimeOf\(tv\)\} announce=\{announceOf\(tv\)\}>\s*<ChimeTest \/>/);
   // A sport rings only where the list names it.
   assert.match(tc, /const on = chimesFor\(sports, sport\);/);
   // Claimed BEFORE it plays, so two entries ending together cannot both ring; a refused
@@ -816,4 +816,78 @@ test("the sound check's URL carries an absolute deadline, at most 3 hours ahead"
   assert.equal(C.testUntil(String(now - 1), now), null, "past: silent");
   assert.equal(C.testUntil(String(now + 4 * 3600_000), now), null, "too far ahead: refused");
   assert.equal(C.testUntil("soon", now), null);
+});
+
+/* Spoken announcements on the cricket TV (2026-11-16): "ending in 5 minutes" while the
+   extend codes show, "your booking has ended" when nobody is next. chime-pure.ts SPOKEN
+   ANNOUNCEMENTS; the clips are public/tv/announce/, made by scripts/announce/make_clips.py. */
+test("announcements: due in the first 20 s at T-5 (ending) and at T (ended), never otherwise", () => {
+  const M = 60_000;
+  assert.equal(C.announceDue("ending", 5 * M), true);
+  assert.equal(C.announceDue("ending", 5 * M - 19_999), true);
+  assert.equal(C.announceDue("ending", 5 * M - 20_000), false);
+  assert.equal(C.announceDue("ending", 5 * M + 1), false, "not before T-5");
+  assert.equal(C.announceDue("ended", 0), true);
+  assert.equal(C.announceDue("ended", -19_999), true);
+  assert.equal(C.announceDue("ended", -20_000), false);
+  assert.equal(C.announceDue("ended", 1), false, "not before the end");
+  assert.notEqual(C.announceKey("ending", 1), C.announceKey("ended", 1));
+});
+
+test("announcements: lane phrases, clip names, and every clip the code can ask for exists", () => {
+  assert.equal(C.lanePhrase(["2"]), "lane 2");
+  assert.equal(C.lanePhrase(["1", "3"]), "lanes 1 and 3");
+  assert.equal(C.lanePhrase(["1", "2", "3"]), "lanes 1, 2 and 3");
+  assert.equal(C.announceClip("Cricket", "ending", ["3", "1"]), "/tv/announce/cricket-ending-1-3.mp3");
+  assert.equal(C.announceClip("Cricket", "ended", ["2"]), "/tv/announce/cricket-ended.mp3");
+  assert.equal(C.announceClip("Cricket", "ending", ["4"]), null, "no clip for a lane that was not recorded");
+  assert.equal(C.announceClip("Cricket", "ending", []), null);
+  assert.equal(C.announceClip("Badminton", "ending", ["1"]), null, "badminton does not speak yet");
+  assert.equal(C.announceClip("toString", "ended", []), null);
+  const want = [];
+  for (const [sport, lanes] of Object.entries(C.ANNOUNCE_LANES)) {
+    for (const set of C.laneSets(lanes)) want.push(C.announceClip(sport, "ending", set));
+    want.push(C.announceClip(sport, "ended", []));
+  }
+  assert.equal(want.length, 8);
+  for (const url of want) {
+    const size = statSync(new URL(`../../public${url}`, import.meta.url)).size;
+    assert.ok(size > 20_000, `${url} is missing or empty`);
+  }
+});
+
+test("the recording script's chime and lanes are the TV's", () => {
+  const py = readFileSync(new URL("../../scripts/announce/make_clips.py", import.meta.url), "utf8");
+  const strikes = C.CHIME_STRIKES.map((s) => `(${s.at}, ${s.hz})`).join(", ");
+  assert.ok(py.includes(`STRIKES = [${strikes}]`), "STRIKES");
+  const partials = C.CHIME_PARTIALS.map(([m, a]) => `(${m}, ${a})`).join(", ");
+  assert.ok(py.includes(`PARTIALS = [${partials}]`), "PARTIALS");
+  assert.ok(py.includes(`ATTACK_S = ${C.CHIME_ATTACK_S}`), "ATTACK_S");
+  assert.ok(py.includes(`DECAY_S = ${C.CHIME_DECAY_S}`), "DECAY_S");
+  assert.ok(py.includes(`GAIN = ${C.CHIME_GAIN}`), "GAIN");
+  assert.ok(py.includes(`LANES = [${C.ANNOUNCE_LANES.Cricket.map((l) => `"${l}"`).join(", ")}]`), "LANES");
+  assert.ok(py.includes('VOICE = "en-US-JennyNeural"'), "Jenny, his choice");
+});
+
+test("the cricket board runs the announcer; the clip test only plays names from /tv/announce", () => {
+  const sb = readFileSync(new URL("../reception/SportBoard.tsx", import.meta.url), "utf8");
+  const tc = readFileSync(new URL("../components/TimeUpChime.tsx", import.meta.url), "utf8");
+  assert.match(sb, /useCourtAnnouncements\(sport, p\?\.now \?\? NO_ENTRIES, p\?\.upNext \?\? NO_ENTRIES, p\?\.upcoming \?\? NO_ENTRIES\);/);
+  // A partner never hears "ended", and "ending" needs the codes on screen.
+  assert.match(tc, /if \(!e\.brand && n\.kind === "free"\) \{/);
+  assert.match(tc, /if \(n\.scan\) f\.ending\.add\(c\);/);
+  assert.match(tc, /ended: f\.ended\.size && !busy \?/);
+  assert.match(tc, /const spoken = keyed && announce \? announce : NONE;/);
+  assert.ok(tc.includes(String.raw`/^[a-z]+-(ended|ending(-\d)+)$/.test(say)`), "the clip test's name filter");
+});
+
+test("'ended' only when the lights line is true: nobody on or starting within 15 min", () => {
+  const today = "2026-11-16", tom = "2026-11-17";
+  const end = 19 * 60;
+  assert.equal(C.zoneBusyAfter(end, today, [{ date: today, to: end }], [], tom), false, "only the ending booking itself");
+  assert.equal(C.zoneBusyAfter(end, today, [{ date: today, to: end + 30 }], [], tom), true, "another lane still on");
+  assert.equal(C.zoneBusyAfter(end, today, [], [{ date: today, from: end + 10 }], tom), true, "next group in 10 min");
+  assert.equal(C.zoneBusyAfter(end, today, [], [{ date: today, from: end + 15 }], tom), false, "at 15 min the lights are off");
+  assert.equal(C.zoneBusyAfter(1435, today, [], [{ date: tom, from: 5 }], tom), true, "across midnight");
+  assert.equal(C.zoneBusyAfter(1435, today, [], [{ date: tom, from: 30 }], tom), false);
 });

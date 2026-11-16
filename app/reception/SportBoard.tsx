@@ -8,6 +8,7 @@ import { BG, INK, RULE_SOFT, BOX } from "../components/tv-palette";
 import { useCourtPanels, PANEL_BOX, PanelTitle, NowArea, ComingUp } from "./ReceptionBoard";
 import { ExtendCell, ExtendBand } from "./ExtendPanel";
 import BirthdayLine, { useBirthday } from "./BirthdayLine";
+import { useCourtAnnouncements } from "../components/TimeUpChime";
 
 /* ONE SPORT'S SCREEN — the badminton and cricket TVs (2026-10-28).
    ──────────────────────────────────────────────────────────────────────────
@@ -43,6 +44,7 @@ const SCALED = {
    the heading come to ~645px (measured 2026-10-28). A fourteenth would be clipped.
    Two in UP NEXT, as on reception. */
 const UPCOMING_COUNT = 13;
+const NO_ENTRIES: never[] = [];
 const UP_NEXT_MAX = 2;
 
 export type BoardSport = "Badminton" | "Cricket";
@@ -72,6 +74,9 @@ export default function SportBoard({ sport, extend = false, music = false, birth
   /* No heartbeat here: TvScreen.tsx beats once per page, named by the TV. */
   const { panels, today, stale } = useCourtPanels({ upcoming: UPCOMING_COUNT, upNextMax: UP_NEXT_MAX, nudges: true, extend });
   const p = panels.find((x) => x.sport === sport);
+  /* The spoken announcements (2026-11-16, TimeUpChime.tsx): silent unless this TV's
+     tv-screens.ts entry lists the sport in `announce`. */
+  useCourtAnnouncements(sport, p?.now ?? NO_ENTRIES, p?.upNext ?? NO_ENTRIES, p?.upcoming ?? NO_ENTRIES);
 
   return (
     <div style={{ position: "absolute", inset: 0, background: BG }}>

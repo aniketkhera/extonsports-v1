@@ -154,6 +154,11 @@ export type Tv = {
    *  tv-screens.test.mjs holds both. Whether the set's browser lets the page play sound
    *  is a fact about the set: check it with ?chimetest=1 before adding a sport here. */
   chime?: readonly string[];
+  /** The sports whose bookings are ANNOUNCED on this set (2026-11-16): "ending in 5
+   *  minutes" while its extend codes show, and "your booking has ended" when nobody is
+   *  next (app/board/chime-pure.ts SPOKEN ANNOUNCEMENTS). Only a sport with recorded clips
+   *  (ANNOUNCE_LANES), on its own sport board — tv-screens.test.mjs holds both. */
+  announce?: readonly string[];
 };
 
 export const TV_SCREENS = [
@@ -210,6 +215,11 @@ export const TV_SCREENS = [
     location: "Cricket lanes",
     set: 'Insignia NS-50F301NA24, 50" Fire TV (model AFTDCT31)',
     shows: "cricket-board",
+    /* ON since 2026-11-16, after the on-site sound check (Aniket: "Cricket chime is fine",
+       then the announcements, "jenny is good"). Silk plays once unlocked by the N95's
+       full-screen key press after each load. */
+    chime: ["Cricket"],
+    announce: ["Cricket"],
   },
 ] as const satisfies readonly Tv[];
 

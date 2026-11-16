@@ -30,7 +30,7 @@ export const CHIME_WINDOW_MS = 20_000;
 /** The level a live chime plays at, as a Web Audio gain where 1 is full scale (the TV's
  *  own volume sets the rest). PROVISIONAL until the 2026-11-15 sound check, which plays
  *  CHIME_TEST_LEVELS and picks one. */
-export const CHIME_GAIN = 0.45;
+export const CHIME_GAIN = 0.28;
 
 /** The longest a test URL may stay live: ?chimetest=<until> beyond this is refused. */
 export const CHIME_TEST_MAX_AHEAD_MS = 3 * 60 * 60_000;
@@ -56,13 +56,14 @@ export const CHIME_TEST_FOR_MS = 6 * 60_000;
 
 export type ChimeStrike = { at: number; hz: number };
 
-/** The chime: a doorbell's "ding-dong" (E5 then C5), rung twice. Seconds from the start.
- *  The cricket lanes' sound, heard and approved at level 2 on 2026-11-16. */
+/** The chime: a three-tone hotel/airport chime, G4 C5 E5 rising, ONCE. Seconds from the
+ *  start. The cricket lanes' sound since 2026-11-16 — Aniket chose it ("bell 4") from five
+ *  options, after a ding-dong (approved at level 2, then "just one chime is ok" and "can we
+ *  make the chime softer?") the same afternoon. */
 export const CHIME_STRIKES: ReadonlyArray<ChimeStrike> = [
-  { at: 0, hz: 659.25 },
-  { at: 0.55, hz: 523.25 },
-  { at: 1.6, hz: 659.25 },
-  { at: 2.15, hz: 523.25 },
+  { at: 0, hz: 392 },
+  { at: 0.35, hz: 523.25 },
+  { at: 0.7, hz: 659.25 },
 ];
 
 /* A SOUND PER SPORT (2026-11-16, Aniket at the sound check: "Maybe have a different chime
@@ -83,6 +84,90 @@ export const CHIME_SOUNDS: Readonly<Record<string, ReadonlyArray<ChimeStrike>>> 
   ],
 };
 
+/* SPOKEN ANNOUNCEMENTS ON THE CRICKET TV (2026-11-16). Aniket: "Your cricket lane <lane or
+   lanes numbers> booking is ending in 5 mins. A free slot is available, scan the QR code to
+   extend your time", and at the end "Your booking has ended. The lights will automatically
+   turn off. If you are the last people in the building, please see your email for the
+   lockbox code and lock up the place - Thanks for playing"; then "use the natural voice,
+   female, lights off in 15 minutes", "just one chime is ok. jenny is good".
+
+   Pre-recorded clips (public/tv/announce/, made by scripts/announce/make_clips.py with
+   Microsoft's neural voice Jenny, the ding-dong first): nothing is spoken that was not
+   recorded, and nothing personal is in them. One "ending" clip per set of lanes, one
+   "ended" clip.
+
+     ending — ANNOUNCE_BEFORE_MS before the end, ONLY while the TV is drawing that booking's
+              extend codes (the entry's nudge has `scan`): it never promises a slot that is
+              not on the screen. A private hire only.
+     ended  — at the end, ONLY when nobody is next on its lanes (a 'free' nudge) and it is a
+              private hire: a partner (the academy) holds its own keys and gets no lockbox
+              code, and with a group waiting the TIME UP chime plays instead.
+   Each once per end instant, in its first CHIME_WINDOW_MS, like the chime. */
+export const ANNOUNCE_BEFORE_MS = 5 * 60_000;
+export type AnnounceKind = "ending" | "ended";
+
+/** "The lights will turn off automatically in 15 minutes" must be TRUE when it is said: the
+ *  zone's lights go off this long after its last booking (lighting windows, 15 min since
+ *  2026-10-18). So "ended" plays only when no booking of the sport is still on after the end,
+ *  or starts within this many minutes of it — then nobody's lights are on but theirs. */
+export const ANNOUNCE_LIGHTS_GRACE_MIN = 15;
+
+/** Is any of the sport's bookings on (or starting) within the grace after an end at `endMin`
+ *  on `date`? `now` are the entries on court, `ahead` the ones still to start (club-local
+ *  minutes, with their date). An end near midnight looks into the next day. */
+export function zoneBusyAfter(
+  endMin: number, date: string,
+  now: ReadonlyArray<{ date?: string; to?: number }>,
+  ahead: ReadonlyArray<{ date?: string; from?: number }>,
+  nextDate: string,
+): boolean {
+  const until = endMin + ANNOUNCE_LIGHTS_GRACE_MIN;
+  if (now.some((e) => e.date === date && (e.to ?? 0) > endMin)) return true;
+  return ahead.some((e) =>
+    (e.date === date && (e.from ?? Infinity) < until) ||
+    (until > 1440 && e.date === nextDate && (e.from ?? Infinity) < until - 1440));
+}
+
+/** The lanes each sport's clips were recorded for. Only cricket speaks. */
+export const ANNOUNCE_LANES: Readonly<Record<string, readonly string[]>> = { Cricket: ["1", "2", "3"] };
+
+/** Is this announcement due now? `msToEnd` is the end instant minus now. */
+export function announceDue(kind: AnnounceKind, msToEnd: number): boolean {
+  const past = kind === "ending" ? ANNOUNCE_BEFORE_MS - msToEnd : -msToEnd;
+  return past >= 0 && past < CHIME_WINDOW_MS;
+}
+
+/** One announcement per kind per end instant on a set. */
+export function announceKey(kind: AnnounceKind, endMs: number): string {
+  return `announce:${kind}:${Math.round(endMs)}`;
+}
+
+/** "lane 2", "lanes 1 and 3", "lanes 1, 2 and 3" — how the clips say them. */
+export function lanePhrase(labels: readonly string[]): string {
+  const l = [...labels];
+  if (l.length === 1) return `lane ${l[0]}`;
+  return `lanes ${l.slice(0, -1).join(", ")} and ${l[l.length - 1]}`;
+}
+
+/** The clip's path on the site, or null when there is none for these lanes (an unknown lane,
+ *  a sport that does not speak). `lanes` in any order; the file names them sorted. */
+export function announceClip(sport: string, kind: AnnounceKind, lanes: readonly string[]): string | null {
+  const known = Object.prototype.hasOwnProperty.call(ANNOUNCE_LANES, sport) ? ANNOUNCE_LANES[sport] : null;
+  if (!known) return null;
+  const slug = sport.toLowerCase();
+  if (kind === "ended") return `/tv/announce/${slug}-ended.mp3`;
+  const set = [...new Set(lanes)].sort((a, b) => Number(a) - Number(b));
+  if (!set.length || !set.every((x) => known.includes(x))) return null;
+  return `/tv/announce/${slug}-ending-${set.join("-")}.mp3`;
+}
+
+/** Every non-empty set of a sport's lanes, sorted — the clips the generator must make. */
+export function laneSets(lanes: readonly string[]): string[][] {
+  const out: string[][] = [];
+  for (let m = 1; m < 1 << lanes.length; m++) out.push(lanes.filter((_, i) => m & (1 << i)));
+  return out.sort((a, b) => a.length - b.length || a.join().localeCompare(b.join()));
+}
+
 /** The strikes for a sport; anything unknown rings the ding-dong. */
 export function chimeStrikes(sport: string | null | undefined): ReadonlyArray<ChimeStrike> {
   return (sport && Object.prototype.hasOwnProperty.call(CHIME_SOUNDS, sport) && CHIME_SOUNDS[sport]) || CHIME_STRIKES;
@@ -95,10 +180,15 @@ export function chimeStrikes(sport: string | null | undefined): ReadonlyArray<Ch
 export function chimeVia(userAgent: string): "tone" | "clip" {
   return /\bSilk\//.test(userAgent) ? "tone" : "clip";
 }
-/** A bell-ish tone: the fundamental and three quieter overtones (multiple, amplitude). */
-export const CHIME_PARTIALS: ReadonlyArray<readonly [number, number]> = [[1, 1], [2, 0.32], [3, 0.11], [4.16, 0.05]];
+/** A soft bell: the fundamental and two quiet overtones (multiple, amplitude). SOFTER since
+ *  2026-11-16 (Aniket: "can we make the chime softer?"): the 3rd and inharmonic 4.16th
+ *  overtones that gave the strike its edge are down or gone, the attack is slower
+ *  (CHIME_ATTACK_S), and CHIME_GAIN went 0.45 -> 0.28. */
+export const CHIME_PARTIALS: ReadonlyArray<readonly [number, number]> = [[1, 1], [2, 0.12], [3, 0.03]];
+/** How long a strike takes to reach full level: a felt mallet rather than a hard one. */
+export const CHIME_ATTACK_S = 0.02;
 /** One strike's ring-out, in seconds (overtones die faster: this / sqrt(multiple)). */
-export const CHIME_DECAY_S = 1.9;
+export const CHIME_DECAY_S = 1.8;
 /** The sum of the partials' amplitudes: the master gain divides by it, so a strike's
  *  peak is the requested level and the loudest test level cannot clip. */
 export const CHIME_PEAK = CHIME_PARTIALS.reduce((s, [, a]) => s + a, 0);

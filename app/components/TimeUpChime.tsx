@@ -1,11 +1,14 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useTick } from "./ticker";
+import { secondTicker } from "./ScreenChrome";
 import { readKey } from "./screen-key";
 import {
-  CHIME_DECAY_S, CHIME_GAIN, CHIME_PARTIALS, CHIME_PEAK, CHIME_TEST_EVERY_MS, CHIME_TEST_FOR_MS, chimeStrikes, chimeVia,
+  CHIME_ATTACK_S, CHIME_DECAY_S, CHIME_GAIN, CHIME_PARTIALS, CHIME_PEAK, CHIME_TEST_EVERY_MS, CHIME_TEST_FOR_MS, chimeStrikes, chimeVia,
   type ChimeStrike,
   CHIME_TEST_LEVELS, CHIME_WINDOW_MS, chimeDue, chimeKey, chimesFor, testLevel, testUntil,
+  announceClip, announceDue, announceKey, zoneBusyAfter, type AnnounceKind,
 } from "../board/chime-pure";
 
 /* THE TIME-UP CHIME ON A TV (2026-11-15) — the sound and the switches. The rules (when,
@@ -74,7 +77,7 @@ export async function playChime(gain: number = CHIME_GAIN, strikes: ReadonlyArra
         o.frequency.value = hz * mult;
         const g = c.createGain();
         g.gain.setValueAtTime(0.0001, start);
-        g.gain.exponentialRampToValueAtTime(amp, start + 0.012);
+        g.gain.exponentialRampToValueAtTime(amp, start + CHIME_ATTACK_S);
         g.gain.exponentialRampToValueAtTime(0.0001, end);
         o.connect(g).connect(out);
         o.start(start);
@@ -117,7 +120,7 @@ function chimeClip(gain: number, strikes: ReadonlyArray<ChimeStrike>): string {
       const w = (2 * Math.PI * hz * mult) / rate;
       for (let i = 0; i < Math.ceil(len * rate) && i0 + i < n; i++) {
         const t = i / rate;
-        const env = t < 0.012 ? amp * (t / 0.012) : amp * Math.exp(-k * (t - 0.012));
+        const env = t < CHIME_ATTACK_S ? amp * (t / CHIME_ATTACK_S) : amp * Math.exp(-k * (t - CHIME_ATTACK_S));
         buf[i0 + i] += env * Math.sin(w * i);
       }
     }
@@ -189,6 +192,8 @@ function useKeyed(): boolean {
 }
 
 const ChimeSports = createContext<readonly string[]>([]);
+/** The sports whose bookings are ANNOUNCED on this page (tv-screens.ts `announce`). */
+const AnnounceSports = createContext<readonly string[]>([]);
 
 /** Turns the chime on for these sports inside it. Empty = silent, and no audio is set up.
 
@@ -197,15 +202,121 @@ const ChimeSports = createContext<readonly string[]>([]);
     TIME UP after one tap. Same rule as ReplayHandoff ("ONLY A PAIRED TV MOVES") and the
     heartbeat: no board key, no chime. */
 const NONE: readonly string[] = [];
-export function ChimeSportsProvider({ sports, children }: { sports?: readonly string[]; children: ReactNode }) {
+export function ChimeSportsProvider({ sports, announce, children }: { sports?: readonly string[]; announce?: readonly string[]; children: ReactNode }) {
   const keyed = useKeyed();
   const list = keyed && sports ? sports : NONE;
+  /* The spoken announcements (2026-11-16): the same fence, a paired screen only. */
+  const spoken = keyed && announce ? announce : NONE;
   return (
     <ChimeSports.Provider value={list}>
-      {list.length > 0 && <AudioUnlock />}
-      {children}
+      <AnnounceSports.Provider value={spoken}>
+        {(list.length > 0 || spoken.length > 0) && <AudioUnlock />}
+        {children}
+      </AnnounceSports.Provider>
     </ChimeSports.Provider>
   );
+}
+
+/** Play a recorded clip once (an announcement). Never throws. */
+export async function playClipUrl(url: string): Promise<ChimeResult> {
+  try {
+    const a = new Audio(url);
+    a.volume = 1;
+    await a.play();
+    return "played";
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "NotAllowedError") return "blocked";
+    console.warn("[announce]", e instanceof Error ? e.message : e);
+    return "error";
+  }
+}
+
+/** What the announcer needs from an entry on the board (ReceptionBoard's Entry). */
+type AnnounceEntry = {
+  date?: string; from?: number; to?: number; brand: unknown;
+  nudge?: { kind: "next" | "free"; endMs: number; courts: string[]; scan?: true };
+};
+
+const byLane = (a: string, b: string) => Number(a) - Number(b) || a.localeCompare(b);
+function dayAfter(date: string): string {
+  const [y, m, d] = date.split("-").map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d + 1, 12));
+  return t.toISOString().slice(0, 10);
+}
+
+/* The announcer (2026-11-16, chime-pure SPOKEN ANNOUNCEMENTS). Called by SportBoard with its
+   panel's NOW entries on every render. A 'free' nudge — and so the entry's sight of its end —
+   goes away AT the end (courtNudges), so what each end will say is remembered as it is seen,
+   on the board's 15 s tick, and the second ticker plays it when due. A later look replaces an
+   earlier one: if a group books in after the end at the last minute, the nudge turns 'next'
+   and the "ended" message is dropped for the TIME UP chime.
+
+   ONE PLAN PER END INSTANT, FOLDED OVER EVERY ENTRY THAT ENDS THEN (review of the first
+   browser run, 2026-11-16): keyed per entry, a lane with a group waiting overwrote a free
+   lane's "ended" when both ended at 7 PM. Now the free private lanes are gathered, "ending"
+   names all of them that show codes ("lanes 1 and 3"), and "ended" plays only when the
+   lights line is true (zoneBusyAfter). */
+export function useCourtAnnouncements(
+  sport: string,
+  now: readonly AnnounceEntry[],
+  upNext: readonly AnnounceEntry[] = [],
+  upcoming: readonly AnnounceEntry[] = [],
+): void {
+  const sports = useContext(AnnounceSports);
+  const on = sports.includes(sport);
+  const plan = useRef(new Map<number, Record<AnnounceKind, string[] | null>>());
+  useEffect(() => {
+    if (!on) return;
+    const fresh = new Map<number, { ending: Set<string>; ended: Set<string>; endMin: number; date: string }>();
+    for (const e of now) {
+      const n = e.nudge;
+      if (!n) continue;
+      let f = fresh.get(n.endMs);
+      if (!f) {
+        f = { ending: new Set(), ended: new Set(), endMin: e.to ?? 0, date: e.date ?? "" };
+        fresh.set(n.endMs, f);
+      }
+      if (!e.brand && n.kind === "free") {
+        for (const c of n.courts) {
+          f.ended.add(c);
+          if (n.scan) f.ending.add(c);
+        }
+      }
+    }
+    const ahead = [...upNext, ...upcoming];
+    for (const [endMs, f] of fresh) {
+      const before = plan.current.get(endMs);
+      const busy = zoneBusyAfter(f.endMin, f.date, now, ahead, f.date ? dayAfter(f.date) : "");
+      plan.current.set(endMs, {
+        // `scan` is true only while the codes are drawn; once seen, kept for its window.
+        ending: f.ending.size ? [...f.ending].sort(byLane) : f.ended.size ? before?.ending ?? null : null,
+        ended: f.ended.size && !busy ? [...f.ended].sort(byLane) : null,
+      });
+    }
+  }, [on, now, upNext, upcoming]);
+  const ms = useTick(secondTicker);
+  useEffect(() => {
+    if (!on || !ms) return;
+    for (const [endMs, says] of plan.current) {
+      if (ms - endMs > 2 * CHIME_WINDOW_MS) {
+        plan.current.delete(endMs);
+        continue;
+      }
+      for (const kind of ["ending", "ended"] as const) {
+        const lanes = says[kind];
+        if (!lanes || !announceDue(kind, endMs - ms)) continue;
+        const url = announceClip(sport, kind, lanes);
+        if (!url) continue;
+        const key = announceKey(kind, endMs);
+        if (!claim(key)) continue;
+        void playClipUrl(url).then((r) => {
+          if (r === "played") return;
+          release(key);
+          console.warn(`[announce] ${kind} ${sport}: ${r}`);
+        });
+      }
+    }
+  }, [on, ms, sport]);
 }
 
 /** The countdown's hook: rings once when this entry's TIME UP begins, if its sport rings
@@ -268,6 +379,10 @@ export function ChimeTest() {
     const clip = via === "clip" || (via !== "tone" && chimeVia(navigator.userAgent) === "clip");
     /* &sound=Badminton|Cricket|Squash: that sport's pattern (2026-11-16). */
     const strikes = chimeStrikes(params.get("sound"));
+    /* &say=<clip>: play a recorded announcement instead, e.g. cricket-ending-1-3 or
+       cricket-ended (2026-11-16). Only a name of the form below, from /tv/announce/. */
+    const say = params.get("say");
+    const sayUrl = say && /^[a-z]+-(ended|ending(-\d)+)$/.test(say) ? `/tv/announce/${say}.mp3` : null;
     const started = Date.now();
     let n = 0;
     let stopped = false;
@@ -279,13 +394,14 @@ export function ChimeTest() {
         return;
       }
       const { level, gain } = testLevel(n, pinned);
-      const result = clip ? await playChimeClip(gain, strikes) : await playChime(gain, strikes);
-      setState({ on: true, n: n + 1, level, result, done: false, via: clip ? "CLIP" : "TONE" });
+      const result = sayUrl ? await playClipUrl(sayUrl) : clip ? await playChimeClip(gain, strikes) : await playChime(gain, strikes);
+      setState({ on: true, n: n + 1, level, result, done: false, via: sayUrl ? (say ?? "").toUpperCase() : clip ? "CLIP" : "TONE" });
       n += 1;
     };
     const show = setTimeout(() => setState((s) => ({ ...s, on: true })), 0);
     const first = setTimeout(ring, 2000);
-    const every = setInterval(ring, CHIME_TEST_EVERY_MS);
+    // An announcement runs up to ~15 s: give it room before the next.
+    const every = setInterval(ring, sayUrl ? 25_000 : CHIME_TEST_EVERY_MS);
     return () => {
       stopped = true;
       clearTimeout(show);
