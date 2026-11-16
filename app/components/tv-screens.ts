@@ -204,6 +204,11 @@ export const TV_SCREENS = [
     location: "Badminton courts",
     set: 'VIZIO M55Q6-L4, 55"',
     shows: "badminton-board",
+    /* ON since 2026-11-16 (Aniket: "yes, do the same for badminton. similar chime. similar
+       sounds/speech/narration"): the C5 E5 G5 chime and the badminton clips, played as
+       <audio> (this VIZIO is silent through Web Audio — the sound check, same day). */
+    chime: ["Badminton"],
+    announce: ["Badminton"],
   },
   {
     /* Added 2026-10-28 (10.1.10.65 on that day). A Fire TV, NOT a VIZIO, so tv-keeper
