@@ -92,6 +92,62 @@ export async function playChime(gain: number = CHIME_GAIN): Promise<ChimeResult>
   }
 }
 
+/* THE SAME CHIME AS A CLIP, played by an <audio> element (2026-11-16). At the sound
+   check the cricket Fire TV rang through Web Audio (above) once unlocked, but the badminton
+   VIZIO stayed silent with its volume at 100. On 2026-11-10 that set's browser did play
+   <audio> clips to the end, so this renders the identical ding-dong into a WAV (16-bit
+   mono, 22.05 kHz, built here: no file to fetch) and plays it as media. One clip per level,
+   cached as a blob: URL. `play()` resolving is "played"; NotAllowedError is "blocked". */
+const clips = new Map<number, string>();
+function chimeClip(gain: number): string {
+  const g = Math.max(0, Math.min(1, gain));
+  const hit = clips.get(g);
+  if (hit) return hit;
+  const rate = 22050;
+  const tail = Math.max(...CHIME_STRIKES.map((s) => s.at)) + CHIME_DECAY_S + 0.3;
+  const n = Math.ceil(tail * rate);
+  const buf = new Float32Array(n);
+  for (const { at, hz } of CHIME_STRIKES) {
+    for (const [mult, amp] of CHIME_PARTIALS) {
+      const len = CHIME_DECAY_S / Math.sqrt(mult);
+      const k = Math.log(amp / 0.0001) / len;
+      const i0 = Math.floor(at * rate);
+      const w = (2 * Math.PI * hz * mult) / rate;
+      for (let i = 0; i < Math.ceil(len * rate) && i0 + i < n; i++) {
+        const t = i / rate;
+        const env = t < 0.012 ? amp * (t / 0.012) : amp * Math.exp(-k * (t - 0.012));
+        buf[i0 + i] += env * Math.sin(w * i);
+      }
+    }
+  }
+  const scale = g / CHIME_PEAK;
+  const bytes = new ArrayBuffer(44 + n * 2);
+  const v = new DataView(bytes);
+  const str = (o: number, s: string) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  str(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); str(8, "WAVE"); str(12, "fmt ");
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  str(36, "data"); v.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, buf[i] * scale)) * 32767, true);
+  const url = URL.createObjectURL(new Blob([bytes], { type: "audio/wav" }));
+  clips.set(g, url);
+  return url;
+}
+
+/** Ring the chime once as an <audio> clip at `gain`. Never throws. */
+export async function playChimeClip(gain: number = CHIME_GAIN): Promise<ChimeResult> {
+  try {
+    const a = new Audio(chimeClip(gain));
+    a.volume = 1;
+    await a.play();
+    return "played";
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "NotAllowedError") return "blocked";
+    console.warn("[chime clip]", e instanceof Error ? e.message : e);
+    return "error";
+  }
+}
+
 /** Has this set already rung for `key`? Memory first, then localStorage — shared by every
  *  page of the origin on the set and kept across reloads and tv-keeper's relaunches into a
  *  new page (review, 2026-11-15: sessionStorage is per page), so the same end never rings
@@ -187,8 +243,8 @@ function AudioUnlock() {
 /** ?chimetest=<until> — the sound check (see the header). Renders nothing without a live
  *  deadline (chime-pure testUntil): after it, a set left on the test URL is silent. */
 export function ChimeTest() {
-  const [state, setState] = useState<{ on: boolean; n: number; level: number; result: string; done: boolean }>(
-    { on: false, n: 0, level: 0, result: "", done: false },
+  const [state, setState] = useState<{ on: boolean; n: number; level: number; result: string; done: boolean; via: string }>(
+    { on: false, n: 0, level: 0, result: "", done: false, via: "" },
   );
   useEffect(() => {
     let params: URLSearchParams;
@@ -200,6 +256,9 @@ export function ChimeTest() {
     const until = testUntil(params.get("chimetest"), Date.now());
     if (until === null) return;
     const pinned = Number(params.get("chimelevel")) || null;
+    /* &via=clip: ring the <audio> clip instead of Web Audio (2026-11-16, for the badminton
+       VIZIO, silent through Web Audio at the sound check). */
+    const clip = params.get("via") === "clip";
     const started = Date.now();
     let n = 0;
     let stopped = false;
@@ -211,8 +270,8 @@ export function ChimeTest() {
         return;
       }
       const { level, gain } = testLevel(n, pinned);
-      const result = await playChime(gain);
-      setState({ on: true, n: n + 1, level, result, done: false });
+      const result = clip ? await playChimeClip(gain) : await playChime(gain);
+      setState({ on: true, n: n + 1, level, result, done: false, via: clip ? "CLIP" : "TONE" });
       n += 1;
     };
     const show = setTimeout(() => setState((s) => ({ ...s, on: true })), 0);
@@ -240,7 +299,7 @@ export function ChimeTest() {
           ? "CHIME TEST OVER"
           : state.n === 0
             ? "CHIME TEST — first ring in 2 s"
-            : `CHIME TEST — LEVEL ${state.level} of ${CHIME_TEST_LEVELS.length} — ${state.result.toUpperCase()} — ring ${state.n}`}
+            : `CHIME TEST (${state.via}) — LEVEL ${state.level} of ${CHIME_TEST_LEVELS.length} — ${state.result.toUpperCase()} — ring ${state.n}`}
       </div>
     </>
   );
