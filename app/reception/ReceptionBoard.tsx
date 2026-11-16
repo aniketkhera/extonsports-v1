@@ -688,8 +688,11 @@ function NudgedFoot({
   const face: NudgeFace = ms ? nudgeFace(nudge.kind, nudge.endMs - ms) : { kind: "none" };
   /* The time-up chime (2026-11-15, TimeUpChime.tsx): rings once as TIME UP begins, on a
      TV page whose tv-screens.ts entry lists this sport in `chime` (TvScreen.tsx provides
-     the list around the whole page). Silent everywhere else, /reception's own page too. */
-  useTimeUpChime(sport, nudge.endMs, face.kind, ms);
+     the list around the whole page). Silent everywhere else, /reception's own page too.
+     PRIVATE BOOKINGS ONLY (2026-11-16, Aniket: "make this only for private bookings, not
+     PBA"): a partner's session ending (PBA, the cricket academy) never rings, whoever is
+     next; a private booking ending rings, whoever is waiting — PBA included. */
+  useTimeUpChime(sport, nudge.endMs, face.kind, ms, !e.brand);
   return <EntryFoot e={e} sport={sport} labels={labels} big={big} face={face} nudge={nudge} />;
 }
 
