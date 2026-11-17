@@ -47,7 +47,11 @@ import { PACK_PATH } from "../../lib/booking";
 // BookingThemeCarry goes too (second review, 2026-10-20): it only rewrites links to the
 // platform's booking page, and nothing on this path links there any more — the empty
 // state's "Book a court or lane" goes to this site's own home page instead.
-const PRIVATE_PATHS = ["/my-bookings"];
+//
+// /academies, 2026-11-16 (orangish-app docs/academy-page.md §4) — PBA's and CCCA's own page,
+// where a signed-in phone adds on-account court time. PRIVATE for the same reasons as
+// /my-bookings, and the bubble would sit over the grid's last column and the Book button.
+const PRIVATE_PATHS = ["/my-bookings", "/academies"];
 
 // /court-packs (/5-pack until 2026-10-22), 2026-10-21 (the court pack's buy page and its terms) — PUBLIC, so analytics
 // and the beacon stay, but not the bubble: on a phone the 82px "Book a court or lane"
