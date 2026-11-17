@@ -29,6 +29,18 @@ const nextConfig: NextConfig = {
       // "court packs" (Aniket), and this rule moved WITH it — left on the old path, the new
       // relay's answer would silently lose private/no-store.
       { source: '/api/court-packs/:path*', headers: MY_BOOKINGS_HEADERS },
+      // /academies, 2026-11-16 (orangish-app docs/academy-page.md §4): PBA's and CCCA's
+      // signed-in page — one partner's time, a sign-in token parked by /academies/link, and a
+      // write that adds on-account charges. The same three headers, for the same reasons; the
+      // route handlers set the first two themselves too.
+      //
+      // ⚠️ THE THREE PAGE PATHS BY NAME, NOT /academies/:path*. public/academies/ holds the
+      // CCCA shield and crest, served at /academies/ccca-*.png to the home page, the calendar
+      // and the wall TVs; a wildcard here would make those images no-store and noindex.
+      { source: '/academies', headers: MY_BOOKINGS_HEADERS },
+      { source: '/academies/link', headers: MY_BOOKINGS_HEADERS },
+      { source: '/academies/open', headers: MY_BOOKINGS_HEADERS },
+      { source: '/api/academies/:path*', headers: MY_BOOKINGS_HEADERS },
     ];
   },
 
