@@ -41,19 +41,22 @@ const ALIGN_SLACK_MS = 5;
      one that can escape useSyncExternalStore's listener) and no next timeout was
      set. The dead handle stayed in `timer`, so a new subscriber, which only starts
      the chain when `timer` is empty, could not restart it either. That held until
-     the page reloaded, which on a wall TV can be days.
+     the page was next loaded: within the hour on the VIZIOs, whose pages tv-keeper
+     relaunches about hourly, and for good on a page that nothing relaunches.
    - Now each subscriber is called inside its own try/catch, so one bad
-     subscriber neither stops the others nor the timer. Its error still goes to the
-     page's normal error reporting (console, window "error"), so a screen that throws
-     is seen, not hidden. The re-aim also sits in a `finally`.
+     subscriber neither stops the others nor the timer. Its error goes where an
+     uncaught throw from the old chain went (console, window "error"), so nothing is
+     hidden that was visible before. Nothing on the TVs collects those yet. The
+     re-aim also sits in a `finally`.
    - And a GUARD interval watches the aligned chain. If the last tick is more
-     than one period plus GUARD_EVERY_MS old, by Date.now() in either direction (a
-     TV whose clock is corrected backwards re-aligns too), it ticks at once and re-aims.
-     That covers a chain lost to anything not thought of here: a timeout dropped
-     over a TV's standby, a throw from a place that is not a subscriber. A setInterval
-     cannot die from a throw in its callback, which is why the plain (unaligned)
-     mode needs no guard. Worst case on the second ticker: the clock is back within
-     about 11 s.
+     than one period plus GUARD_EVERY_MS old, it ticks at once and re-aims. It
+     measures by Date.now() in EITHER direction, so a lost chain is still caught
+     when the TV's clock has just been set back (a live chain re-aligns by itself,
+     as every aim reads Date.now()). It is a backstop for a chain lost to anything
+     not thought of here, such as a TV browser dropping a timeout over standby. A
+     setInterval cannot die from a throw in its callback, which is why the plain
+     (unaligned) mode needs no guard. Worst case on the second ticker: the clock is
+     back within about 11 s.
    aim() clears any pending timeout before it sets one, so the guard, the finally and
    a re-subscribe in the middle of a tick can never leave two chains running. */
 const GUARD_EVERY_MS = 5_000;

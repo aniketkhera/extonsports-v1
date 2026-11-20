@@ -711,8 +711,12 @@ test("makeTicker({ align }): a subscriber that throws once does not stop the clo
   assert.match(String(reported[0]?.message), /Maximum update depth/);
   offBad();
   off();
+  const at = ticker.get();
   stepTo(t, 2_020_000);
-  assert.equal(seen.length, 5, "nothing after the last subscriber leaves, guard included");
+  /* `seen` alone cannot catch a timer left running (it would fire into an empty set),
+     but every tick writes the snapshot, so a leaked guard or chain would move it. */
+  assert.equal(ticker.get(), at, "nothing ticks after the last subscriber leaves, guard included");
+  assert.equal(seen.length, 5);
   const off2 = ticker.subscribe(() => seen.push(ticker.get()));
   stepTo(t, 2_021_500);
   assert.deepEqual(seen.slice(5), [2_021_005], "and it starts again for the next one");
@@ -743,6 +747,59 @@ test("makeTicker({ align }): the guard brings back a chain that was lost", async
   stepTo(t, 3_012_500);
   assert.deepEqual(seen, [3_001_005, 3_002_005, 3_010_000, 3_011_005, 3_012_005],
     "back, and on the whole seconds again");
+  off();
+});
+
+test("makeTicker({ align }): a lost chain is caught even when the TV's clock has just been set back", async (t) => {
+  /* Node's mock clock moves timers and Date together, so setting it back would hold every
+     pending timer back too. On a TV the timers run on a monotonic clock and only
+     Date.now() is corrected, so here the timers are mocked alone and Date.now() is
+     driven by hand: BASE + elapsed + offset. */
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval"] });
+  lendReportError(t);
+  const BASE = 6_000_000;
+  let elapsed = 0;
+  let offset = 0;
+  t.mock.method(Date, "now", () => BASE + elapsed + offset);
+  const run = (until) => { while (elapsed < until) { elapsed += 1; t.mock.timers.tick(1); } };
+  const { makeTicker } = await import("../components/ticker.ts");
+  const mocked = globalThis.setTimeout;
+  let drop = false;
+  globalThis.setTimeout = (fn, ms, ...rest) => mocked(drop ? () => {} : fn, ms, ...rest);
+  t.after(() => { globalThis.setTimeout = mocked; });
+  const ticker = makeTicker(1000, { align: true });
+  const seen = [];
+  const off = ticker.subscribe(() => seen.push(ticker.get()));
+  run(1500);
+  drop = true;
+  run(2500); // the tick at +2005 fires; the one it aims is swallowed
+  drop = false;
+  offset = -3_600_000; // and the TV's clock is corrected back an hour
+  run(4999);
+  assert.deepEqual(seen, [6_001_005, 6_002_005]);
+  /* The guard's look at +5000 finds the last tick an hour in the FUTURE. Measured one
+     way only it would wait out that hour; measured both ways it acts now, and the chain
+     re-aims on the corrected clock's whole seconds. */
+  run(7500);
+  assert.deepEqual(seen, [6_001_005, 6_002_005, 2_405_000, 2_406_005, 2_407_005]);
+  off();
+});
+
+test("makeTicker({ align }): leaving and rejoining inside a tick leaves one chain, not two", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: 5_000_000 });
+  lendReportError(t);
+  const { makeTicker } = await import("../components/ticker.ts");
+  const ticker = makeTicker(1000, { align: true });
+  const seen = [];
+  const count = () => seen.push(ticker.get());
+  /* The only subscriber leaves during the first tick and a new one joins at once. The
+     ticker stops, starts again with a timeout of its own, and the tick still running
+     then re-aims in its finally. aim() clearing the pending timeout keeps that to one
+     chain; without it (and before 19 Nov) every second after this ticked twice. Set's
+     forEach visits the newcomer in the same pass, hence the first entry. */
+  let off = ticker.subscribe(() => { off(); off = ticker.subscribe(count); });
+  stepTo(t, 5_004_500);
+  assert.deepEqual(seen, [5_001_005, 5_002_005, 5_003_005, 5_004_005]);
   off();
 });
 
