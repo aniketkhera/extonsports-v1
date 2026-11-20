@@ -98,6 +98,39 @@ answer is cached for 30 seconds, so a hundred parents refreshing at 6 pm is a ha
 calls. A failure is cached for the same 30 seconds, so Google being down does not turn a
 hundred refreshes into a hundred outbound requests.
 
+## When it goes wrong
+
+**The form says "We couldn't send that just now."** That is the route's one generic failure,
+and it is deliberately generic: the page must never tell a stranger whether an address is
+known. The cause is always in the logs, where each case prints its own line. Look at
+**Vercel → extonsports-v1 → Logs**, filter `[live/request]`:
+
+| Log line | Cause | Fix |
+|---|---|---|
+| `LIVE_LINK_KEY is not set` | the variable is missing on the project | add it, then **redeploy** |
+| `RESEND_API_KEY is not set` | same, for mail | add it, then redeploy |
+| `resend <status>` | Resend rejected the send | check the Resend dashboard for that status |
+| `resend threw: …` | could not reach Resend at all | network or outage; retry |
+
+⚠️ **Adding a variable is not enough on its own.** Vercel injects them at BUILD time, so a
+variable added after the deploy does not reach the running build — the feature keeps failing
+until you redeploy. This happened on the first run (2026-11-09): everything was configured
+except `LIVE_LINK_KEY`, which had never existed anywhere, because the other three were
+copied out of `.env.local` and that one is generated rather than issued.
+
+**The watch page says "We can't tell whether a session is on air."** That is the YouTube
+lookup failing, not the token being wrong. `[live]` in the same log names it. Run
+`node scripts/youtube-auth.mjs check` to tell a dead credential from a dead API.
+
+**The ssh command to start the stream appears to hang.** It has not: `nohup … &` still
+inherits ssh's pty, so the channel stays open even though the stream is running fine. Check
+with `pgrep -af sixup` and `tail ~/yt-test/yt.out`; the window can be closed.
+
+⛔ **Never `grep` the raw `ff-yt.log` for the rtmps line.** It contains the STREAM KEY in
+clear, and a stream key lets anyone broadcast to the channel. `sixup.sh` filters it out of
+its own output for exactly this reason (`grep -viE "key|live2"`). Done by accident
+2026-11-09; the key was reset afterwards.
+
 ## ⚠️ The rule nobody is enforcing yet
 
 Checked against the booking calendar on 2026-11-09: over the following ten days PBA and CCCA
