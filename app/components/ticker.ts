@@ -28,34 +28,90 @@ import { useSyncExternalStore } from "react";
    drifts the way a long-running setInterval does. */
 const ALIGN_SLACK_MS = 5;
 
+/* Why the aligned chain cannot stop for good any more, 2026-11-19.
+   ──────────────────────────────────────────────────────────────────────────
+   On 19 Nov the reception and vestibule TVs showed a frozen header clock for a good
+   part of an afternoon while every heartbeat said the page was healthy. The cause
+   is NOT proven; the likeliest is the TV's picture freezing below a page that kept
+   running, which nothing in here can fix. But the hunt found one way this file
+   could freeze the clock for good, and it is closed here:
+
+   - The chain re-aimed only if fire() RETURNED: `{ fire(); if (timer) aim(); }`.
+     One throw from any subscriber (React's "Maximum update depth exceeded" is the
+     one that can escape useSyncExternalStore's listener) and no next timeout was
+     set. The dead handle stayed in `timer`, so a new subscriber, which only starts
+     the chain when `timer` is empty, could not restart it either. That held until
+     the page reloaded, which on a wall TV can be days.
+   - Now each subscriber is called inside its own try/catch, so one bad
+     subscriber neither stops the others nor the timer. Its error still goes to the
+     page's normal error reporting (console, window "error"), so a screen that throws
+     is seen, not hidden. The re-aim also sits in a `finally`.
+   - And a GUARD interval watches the aligned chain. If the last tick is more
+     than one period plus GUARD_EVERY_MS old, by Date.now() in either direction (a
+     TV whose clock is corrected backwards re-aligns too), it ticks at once and re-aims.
+     That covers a chain lost to anything not thought of here: a timeout dropped
+     over a TV's standby, a throw from a place that is not a subscriber. A setInterval
+     cannot die from a throw in its callback, which is why the plain (unaligned)
+     mode needs no guard. Worst case on the second ticker: the clock is back within
+     about 11 s.
+   aim() clears any pending timeout before it sets one, so the guard, the finally and
+   a re-subscribe in the middle of a tick can never leave two chains running. */
+const GUARD_EVERY_MS = 5_000;
+
+/* reportError is the browser's own "uncaught, but keep going". The setTimeout throw is
+   the older way to the same place, for a TV browser that predates it. */
+function report(err: unknown) {
+  if (typeof reportError === "function") reportError(err);
+  else setTimeout(() => { throw err; });
+}
+
 export function makeTicker(ms: number, { align = false }: { align?: boolean } = {}) {
   let snapshot = 0;
+  let lastFire = 0;
+  let running = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
+  let guard: ReturnType<typeof setInterval> | null = null;
   const subs = new Set<() => void>();
   const fire = () => {
-    snapshot = Date.now();
-    subs.forEach((f) => f());
+    snapshot = lastFire = Date.now();
+    subs.forEach((f) => {
+      try { f(); } catch (err) { report(err); }
+    });
+  };
+  const step = () => {
+    try { fire(); } finally { if (running) aim(); }
   };
   const aim = () => {
-    timer = setTimeout(() => { fire(); if (timer) aim(); }, ms - (Date.now() % ms) + ALIGN_SLACK_MS);
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(step, ms - (Date.now() % ms) + ALIGN_SLACK_MS);
+  };
+  const check = () => {
+    if (Math.abs(Date.now() - lastFire) > ms + GUARD_EVERY_MS) step();
   };
   return {
     subscribe(cb: () => void) {
       subs.add(cb);
-      if (!timer) {
-        snapshot = Date.now();
-        if (align) aim();
-        else timer = setInterval(fire, ms);
+      if (!running) {
+        running = true;
+        snapshot = lastFire = Date.now();
+        if (align) {
+          aim();
+          guard = setInterval(check, GUARD_EVERY_MS);
+        } else timer = setInterval(fire, ms);
       }
       return () => {
         subs.delete(cb);
+        if (subs.size || !running) return;
+        running = false;
         /* clearTimeout and clearInterval clear the same list of timers (HTML spec),
            so either kind of handle goes with one call. */
-        if (!subs.size && timer) { clearTimeout(timer); timer = null; }
+        if (timer) clearTimeout(timer);
+        if (guard) clearInterval(guard);
+        timer = guard = null;
       };
     },
     /* Must be referentially stable between calls within one render pass, which
-       it is: only the interval ever writes it. Returning Date.now() here would
+       it is: only a tick (or a first subscriber) ever writes it. Returning Date.now() here would
        loop forever. */
     get: () => snapshot,
     getServer: () => 0,

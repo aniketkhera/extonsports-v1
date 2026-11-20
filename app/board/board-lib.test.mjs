@@ -680,6 +680,88 @@ test("makeTicker({ align }): ticks on the wall clock's boundaries, not the page 
   assert.equal(seen.length, 2, "nothing after the last subscriber leaves");
 });
 
+/* The frozen-clock guards, 2026-11-19 (reception + vestibule TVs, see ticker.ts). Each of
+   these fails on the ticker as it was before that day. Node has no reportError, so the
+   tests lend it one: it is where a subscriber's throw now goes instead of up the chain.
+   Time is stepped a millisecond at a time because the mock clock reads the END of a
+   tick() inside its callbacks (see above), and these care about exact instants. */
+function lendReportError(t) {
+  const reported = [];
+  globalThis.reportError = (e) => reported.push(e);
+  t.after(() => { delete globalThis.reportError; });
+  return reported;
+}
+const stepTo = (t, until) => { while (Date.now() < until) t.mock.timers.tick(1); };
+
+test("makeTicker({ align }): a subscriber that throws once does not stop the clock", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: 2_000_000 });
+  const reported = lendReportError(t);
+  const { makeTicker } = await import("../components/ticker.ts");
+  const ticker = makeTicker(1000, { align: true });
+  let thrown = false;
+  const seen = [];
+  const offBad = ticker.subscribe(() => {
+    if (!thrown) { thrown = true; throw new Error("Maximum update depth exceeded"); }
+  });
+  const off = ticker.subscribe(() => seen.push(ticker.get()));
+  stepTo(t, 2_005_500);
+  // Before 19 Nov: [] and nothing after — the throw came first and the chain was gone.
+  assert.deepEqual(seen, [2_001_005, 2_002_005, 2_003_005, 2_004_005, 2_005_005]);
+  assert.equal(reported.length, 1, "the throw is reported, not swallowed");
+  assert.match(String(reported[0]?.message), /Maximum update depth/);
+  offBad();
+  off();
+  stepTo(t, 2_020_000);
+  assert.equal(seen.length, 5, "nothing after the last subscriber leaves, guard included");
+  const off2 = ticker.subscribe(() => seen.push(ticker.get()));
+  stepTo(t, 2_021_500);
+  assert.deepEqual(seen.slice(5), [2_021_005], "and it starts again for the next one");
+  off2();
+});
+
+test("makeTicker({ align }): the guard brings back a chain that was lost", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: 3_000_000 });
+  lendReportError(t);
+  const { makeTicker } = await import("../components/ticker.ts");
+  /* Lose the chain the way nothing in the code can any more, so only the guard can
+     bring it back: swallow the one timeout that would have carried it on. */
+  const mocked = globalThis.setTimeout;
+  let drop = false;
+  globalThis.setTimeout = (fn, ms, ...rest) => mocked(drop ? () => {} : fn, ms, ...rest);
+  t.after(() => { globalThis.setTimeout = mocked; });
+  const ticker = makeTicker(1000, { align: true });
+  const seen = [];
+  const off = ticker.subscribe(() => seen.push(ticker.get()));
+  stepTo(t, 3_001_500);
+  drop = true;
+  stepTo(t, 3_002_500); // the 3_002_005 tick still fires; the one it aims is swallowed
+  drop = false;
+  stepTo(t, 3_009_999);
+  assert.deepEqual(seen, [3_001_005, 3_002_005], "lost: no ticks while the guard waits");
+  /* The guard looks every 5 s from the subscribe (3_005_000, 3_010_000, …) and acts once
+     the last tick is more than 1 s + 5 s old: at 3_010_000, it is 7_995 ms. */
+  stepTo(t, 3_012_500);
+  assert.deepEqual(seen, [3_001_005, 3_002_005, 3_010_000, 3_011_005, 3_012_005],
+    "back, and on the whole seconds again");
+  off();
+});
+
+test("makeTicker (plain interval): one throwing subscriber does not starve the rest", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: 4_000_000 });
+  const reported = lendReportError(t);
+  const { makeTicker } = await import("../components/ticker.ts");
+  const ticker = makeTicker(15_000);
+  const seen = [];
+  const offBad = ticker.subscribe(() => { throw new Error("bad subscriber"); });
+  const off = ticker.subscribe(() => seen.push(ticker.get()));
+  stepTo(t, 4_045_000);
+  // Before 19 Nov the interval kept going but forEach stopped at the throw: [].
+  assert.deepEqual(seen, [4_015_000, 4_030_000, 4_045_000]);
+  assert.equal(reported.length, 3);
+  offBad();
+  off();
+});
+
 /* Phoenix Throwball's crest, 2026-10-26 — Aniket: "add this logo to the booking calendar as
    well as show it on the TV with their booking". The marks are .tsx, which node cannot
    load, so these read the source; the files are read too, because a missing or wrong asset
