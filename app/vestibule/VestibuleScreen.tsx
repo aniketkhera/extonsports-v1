@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
 import useReloadOnDeploy from "../components/useReloadOnDeploy";
 import { ScreenHeader, BookingBand, BAND_GAP, BOOK_BAND, BAND_STAMP } from "../components/ScreenChrome";
 import LiveBand from "../components/LiveBand";
@@ -109,7 +110,50 @@ function Big({ e, sport, labels }: { e: Entry; sport: string; labels: string[] }
   );
 }
 
+/** The slot's scale, 0.6–1: how much the ON NOW / UP NEXT area has to shrink to fit
+ *  its card (2026-11-25). Aniket, with a photo of the set at 6:30 pm: "Vestibule.
+ *  Text is being cut. Pls resize." The LIVE NOW band (LiveBand.tsx, 12 Nov) takes 7.3%
+ *  of the screen's height while a stream is on, and that came out of these three cards:
+ *  each slot was 1.9 vh short (measured at 1920×1080), so every big time line lost its
+ *  foot. Off air nothing changes — the content fits and the scale stays 1.
+ *  How: the slot's sizes are all calc(N * var(--vw|--vh)), so the slot redefines those
+ *  two units at k times the box's, as .promoScale does at 0.8 — fonts, the shield, the
+ *  court boxes and the gaps all shrink in proportion, and the rows keep the card's full
+ *  width, so the big court boxes still line up with the NEXT row's. Height is near
+ *  enough linear in k that one step lands on it; the 0.5% dead band stops a pixel of
+ *  rounding from re-rendering it forever. When the band goes, the slot grows, the same
+ *  step takes k back up, and min(1, …) stops it at the screen as it was. No ResizeObserver (an old set's browser) =
+ *  the scale stays 1, which is the screen as it was. */
+function useSlotFit(slot: RefObject<HTMLDivElement | null>, inner: RefObject<HTMLDivElement | null>): number {
+  const [k, setK] = useState(1);
+  useEffect(() => {
+    const s = slot.current;
+    const c = inner.current;
+    if (!s || !c || typeof ResizeObserver === "undefined") return;
+    const measure = () => {
+      /* 99% of the slot: k lands within its dead band of the target, so aiming at
+         the slot itself left the content a quarter-pixel over it (measured). */
+      const avail = s.clientHeight * 0.99;
+      const need = c.offsetHeight;
+      if (!avail || !need) return;
+      setK((cur) => {
+        const next = Math.min(1, Math.max(0.6, (cur * avail) / need));
+        return Math.abs(next - cur) > 0.005 ? next : cur;
+      });
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(s);
+    ro.observe(c);
+    measure();
+    return () => ro.disconnect();
+  }, [slot, inner]);
+  return k;
+}
+
 function SportCard({ p, today }: { p: Panel; today: string }) {
+  const slotRef = useRef<HTMLDivElement>(null);
+  const fitRef = useRef<HTMLDivElement>(null);
+  const k = useSlotFit(slotRef, fitRef);
   const live = p.now.length > 0;
   const big = live ? p.now : p.upNext;
   const day = !live && big.length ? dayLabel(big[0].date, today) : "";
@@ -145,7 +189,15 @@ function SportCard({ p, today }: { p: Panel; today: string }) {
         )}
       </div>
 
-      <div className={v.slot}>
+      <div ref={slotRef} className={v.slot}>
+        <div
+          ref={fitRef}
+          className={v.fit}
+          style={k < 1 ? ({
+            "--vw": `calc(${k.toFixed(3)} * min(1vw, calc(1vh * 16 / 9)))`,
+            "--vh": `calc(${k.toFixed(3)} * min(1vh, calc(1vw * 9 / 16)))`,
+          } as CSSProperties) : undefined}
+        >
         {big.length === 0 ? (
           <div className={`text-cond ${v.allOpen}`}>ALL OPEN</div>
         ) : (
@@ -164,6 +216,7 @@ function SportCard({ p, today }: { p: Panel; today: string }) {
             )}
           </>
         )}
+        </div>
       </div>
 
       <div className={v.next}>
