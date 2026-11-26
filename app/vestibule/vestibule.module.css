@@ -80,6 +80,12 @@
   justify-content: center;
   justify-content: safe center;
 }
+/* What the slot measures and scales (useSlotFit in VestibuleScreen.tsx, 2026-11-25):
+   its own height, never squeezed by the slot's flex column, so it is what the content
+   needs. */
+.fit {
+  flex: none;
+}
 .slotLine {
   font-size: calc(1.15 * var(--vw));
   letter-spacing: 0.14em;
